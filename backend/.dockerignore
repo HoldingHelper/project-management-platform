@@ -1,0 +1,18 @@
+# Keep the build context small and avoid leaking local state into the image.
+.venv/
+**/__pycache__/
+**/*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+var/logs/*
+.git/
+.gitignore
+.env
+*.md
+tests/
+.vscode/
+.idea/
+.DS_Store

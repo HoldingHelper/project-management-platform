@@ -1,0 +1,829 @@
+"""Projects module REST endpoints (Products, Projects, Phases, Tasks, Dependencies)."""
+
+from __future__ import annotations
+
+from typing import Optional
+from uuid import UUID
+
+from fastapi import APIRouter, Body, Depends, File, Form, Query, Response, UploadFile, status
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.current_user import CurrentUser
+from app.core.database import get_db
+from app.core.deps import get_current_user, require_permission
+from app.core.exceptions import ValidationAppError
+from app.core.pagination import Page, PageParams
+from app.core.permissions import Permissions
+from app.modules.projects import service
+from app.modules.projects.ai_generation import (
+    confirm_generation,
+    create_generation_job,
+    get_generation_draft,
+    get_generation_job_status,
+    template_bytes,
+)
+from app.modules.projects.ai_schemas import (
+    ConfirmGenerationRequest,
+    GenerationDraftResponse,
+    GenerationJobResponse,
+)
+from app.modules.projects.schemas import (
+    AttachTaskRequest,
+    MilestoneCreate,
+    MilestoneRead,
+    MilestoneUpdate,
+    PhaseCreate,
+    PhaseRead,
+    PhaseUpdate,
+    PortfolioGantt,
+    ProductCreate,
+    ProductRead,
+    ProductUpdate,
+    ProgressBreakdown,
+    ProjectCreate,
+    ProjectDependencyCreate,
+    ProjectDependencyRead,
+    ProjectMemberCreate,
+    ProjectMemberRead,
+    ProjectOverview,
+    ProjectRead,
+    ProjectTimeline,
+    ProjectUpdate,
+    TaskCreate,
+    TaskDependencyCreate,
+    TaskDependencyRead,
+    TaskRead,
+    TaskUpdate,
+    UpdateChecklistItemRequest,
+    UpdateTaskStatusRequest,
+)
+
+portfolio_router = APIRouter(prefix="/portfolio", tags=["Projects - Portfolio"])
+
+products_router = APIRouter(prefix="/products", tags=["Projects - Products"])
+projects_router = APIRouter(prefix="/projects", tags=["Projects - Projects"])
+phases_router = APIRouter(prefix="/phases", tags=["Projects - Phases"])
+tasks_router = APIRouter(prefix="/tasks", tags=["Projects - Tasks"])
+dependencies_router = APIRouter(
+    prefix="/dependencies", tags=["Projects - Dependencies"]
+)
+
+
+async def _generation_request_content(
+    prompt_file: UploadFile | None,
+    extra_context: str | None,
+) -> tuple[str, str]:
+    chunks: list[str] = []
+    filename = "project-brief.md"
+    if prompt_file is not None:
+        file_bytes = await prompt_file.read()
+        if file_bytes:
+            chunks.append(file_bytes.decode("utf-8"))
+            filename = prompt_file.filename or filename
+    if extra_context and extra_context.strip():
+        chunks.append(
+            "## Optional: Extra uploaded context\n"
+            f"{extra_context.strip()}\n"
+        )
+    content = "\n\n".join(chunk.strip() for chunk in chunks if chunk.strip())
+    if not content:
+        raise ValidationAppError(
+            "Provide a brief file, Google Sheet URL, or extra notes.",
+            errors={"brief": ["File or extra context is required."]},
+        )
+    return content, filename
+
+
+# ---------- Products ----------
+@products_router.post(
+    "", response_model=ProductRead, status_code=status.HTTP_201_CREATED
+)
+async def create_product(
+    payload: ProductCreate,
+    current_user: CurrentUser = Depends(
+        require_permission(Permissions.PRODUCTS_MANAGE_ALL)
+    ),
+    db: AsyncSession = Depends(get_db),
+) -> ProductRead:
+    return await service.create_product(db, payload)
+
+
+@products_router.get("", response_model=Page[ProductRead])
+async def list_products(
+    params: PageParams = Depends(),
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Page[ProductRead]:
+    items, total = await service.list_products(db, params.page, params.page_size)
+    return Page.create(items, total, params)
+
+
+@products_router.get("/{product_id}", response_model=ProductRead)
+async def get_product(
+    product_id: UUID,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> ProductRead:
+    return await service.get_product(db, product_id)
+
+
+@products_router.put("/{product_id}", response_model=ProductRead)
+async def update_product(
+    product_id: UUID,
+    payload: ProductUpdate,
+    current_user: CurrentUser = Depends(
+        require_permission(Permissions.PRODUCTS_MANAGE_ALL)
+    ),
+    db: AsyncSession = Depends(get_db),
+) -> ProductRead:
+    return await service.update_product(db, product_id, payload)
+
+
+@products_router.get("/{product_id}/projects", response_model=Page[ProjectRead])
+async def get_projects_by_product(
+    product_id: UUID,
+    params: PageParams = Depends(),
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Page[ProjectRead]:
+    items, total = await service.list_projects_by_product(
+        db, product_id, params.page, params.page_size
+    )
+    return Page.create(items, total, params)
+
+
+# ---------- Projects ----------
+@projects_router.post(
+    "", response_model=ProjectRead, status_code=status.HTTP_201_CREATED
+)
+async def create_project(
+    payload: ProjectCreate,
+    current_user: CurrentUser = Depends(
+        require_permission(
+            Permissions.PROJECTS_MANAGE_ALL, Permissions.PROJECTS_MANAGE_ASSIGNED
+        )
+    ),
+    db: AsyncSession = Depends(get_db),
+) -> ProjectRead:
+    return await service.create_project(
+        db, payload, created_by_user_id=current_user.user_id
+    )
+
+
+@projects_router.get("/ai-template")
+async def download_ai_project_template(
+    current_user: CurrentUser = Depends(
+        require_permission(
+            Permissions.PROJECTS_MANAGE_ASSIGNED,
+            Permissions.PHASES_MANAGE_TEAM,
+            Permissions.TASKS_MANAGE_TEAM,
+            Permissions.TASKS_MANAGE_ALL,
+        )
+    ),
+) -> Response:
+    return Response(
+        content=template_bytes(),
+        media_type="text/markdown; charset=utf-8",
+        headers={
+            "Content-Disposition": 'attachment; filename="project_brief_template.md"'
+        },
+    )
+
+
+@projects_router.post(
+    "/generate",
+    response_model=GenerationJobResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+async def generate_project_draft(
+    prompt_file: UploadFile | None = File(None),
+    extra_context: str | None = Form(None),
+    current_user: CurrentUser = Depends(
+        require_permission(
+            Permissions.PROJECTS_MANAGE_ASSIGNED,
+            Permissions.PHASES_MANAGE_TEAM,
+            Permissions.TASKS_MANAGE_TEAM,
+            Permissions.TASKS_MANAGE_ALL,
+        )
+    ),
+    db: AsyncSession = Depends(get_db),
+) -> GenerationJobResponse:
+    content, filename = await _generation_request_content(prompt_file, extra_context)
+    job = await create_generation_job(
+        db,
+        user_id=current_user.user_id,
+        raw_input=content,
+        filename=filename,
+    )
+    return GenerationJobResponse(**job)
+
+
+@projects_router.get(
+    "/generation-jobs/{job_id}",
+    response_model=GenerationJobResponse,
+)
+async def get_project_generation_job(
+    job_id: UUID,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> GenerationJobResponse:
+    return GenerationJobResponse(
+        **await get_generation_job_status(
+            db,
+            job_id=job_id,
+            user_id=current_user.user_id,
+        )
+    )
+
+
+@projects_router.get(
+    "/generation-jobs/{job_id}/draft",
+    response_model=GenerationDraftResponse,
+)
+async def get_project_generation_draft(
+    job_id: UUID,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> GenerationDraftResponse:
+    return await get_generation_draft(
+        db,
+        job_id=job_id,
+        user_id=current_user.user_id,
+    )
+
+
+@projects_router.post("/generation-jobs/{job_id}/confirm")
+async def confirm_project_generation_job(
+    job_id: UUID,
+    payload: ConfirmGenerationRequest | None = Body(default=None),
+    current_user: CurrentUser = Depends(
+        require_permission(
+            Permissions.PROJECTS_MANAGE_ASSIGNED,
+            Permissions.PHASES_MANAGE_TEAM,
+            Permissions.TASKS_MANAGE_TEAM,
+            Permissions.TASKS_MANAGE_ALL,
+        )
+    ),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    return await confirm_generation(
+        db,
+        job_id,
+        current_user.user_id,
+        draft_override=payload.project if payload else None,
+    )
+
+
+@projects_router.get("", response_model=Page[ProjectRead])
+async def list_projects(
+    params: PageParams = Depends(),
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Page[ProjectRead]:
+    items, total = await service.list_all_projects(db, params.page, params.page_size)
+    return Page.create(items, total, params)
+
+
+@projects_router.post("/{project_id}/confirm-generation")
+async def confirm_project_generation(
+    project_id: UUID,
+    current_user: CurrentUser = Depends(
+        require_permission(
+            Permissions.PROJECTS_MANAGE_ASSIGNED,
+            Permissions.PHASES_MANAGE_TEAM,
+            Permissions.TASKS_MANAGE_TEAM,
+            Permissions.TASKS_MANAGE_ALL,
+        )
+    ),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    return await confirm_generation(db, project_id, current_user.user_id)
+
+
+@projects_router.post(
+    "/{project_id}/regenerate",
+    response_model=GenerationJobResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+async def regenerate_project_draft(
+    project_id: UUID,
+    prompt_file: UploadFile | None = File(None),
+    extra_context: str | None = Form(None),
+    current_user: CurrentUser = Depends(
+        require_permission(
+            Permissions.PROJECTS_MANAGE_ASSIGNED,
+            Permissions.PHASES_MANAGE_TEAM,
+            Permissions.TASKS_MANAGE_TEAM,
+            Permissions.TASKS_MANAGE_ALL,
+        )
+    ),
+    db: AsyncSession = Depends(get_db),
+) -> GenerationJobResponse:
+    content, filename = await _generation_request_content(prompt_file, extra_context)
+    job = await create_generation_job(
+        db,
+        user_id=current_user.user_id,
+        raw_input=content,
+        filename=filename,
+        existing_project_id=project_id,
+    )
+    return GenerationJobResponse(**job)
+
+
+@projects_router.post("/{project_id}/regenerate/confirm")
+async def confirm_project_regeneration(
+    project_id: UUID,
+    generation_run_id: UUID = Query(...),
+    current_user: CurrentUser = Depends(
+        require_permission(
+            Permissions.PROJECTS_MANAGE_ASSIGNED,
+            Permissions.PHASES_MANAGE_TEAM,
+            Permissions.TASKS_MANAGE_TEAM,
+            Permissions.TASKS_MANAGE_ALL,
+        )
+    ),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    return await confirm_generation(db, generation_run_id, current_user.user_id)
+
+
+@projects_router.get("/{project_id}", response_model=ProjectRead)
+async def get_project(
+    project_id: UUID,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> ProjectRead:
+    return await service.get_project(db, project_id)
+
+
+@projects_router.put("/{project_id}", response_model=ProjectRead)
+async def update_project(
+    project_id: UUID,
+    payload: ProjectUpdate,
+    current_user: CurrentUser = Depends(
+        require_permission(
+            Permissions.PROJECTS_MANAGE_ALL, Permissions.PROJECTS_MANAGE_ASSIGNED
+        )
+    ),
+    db: AsyncSession = Depends(get_db),
+) -> ProjectRead:
+    return await service.update_project(db, project_id, payload)
+
+
+@projects_router.post("/{project_id}/archive", response_model=ProjectRead)
+async def archive_project(
+    project_id: UUID,
+    current_user: CurrentUser = Depends(
+        require_permission(
+            Permissions.PROJECTS_MANAGE_ALL, Permissions.PROJECTS_MANAGE_ASSIGNED
+        )
+    ),
+    db: AsyncSession = Depends(get_db),
+) -> ProjectRead:
+    return await service.archive_project(db, project_id)
+
+
+@projects_router.delete(
+    "/{project_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
+)
+async def delete_project(
+    project_id: UUID,
+    current_user: CurrentUser = Depends(
+        require_permission(
+            Permissions.PROJECTS_MANAGE_ALL, Permissions.PROJECTS_MANAGE_ASSIGNED
+        )
+    ),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    await service.delete_project(db, project_id)
+
+
+@projects_router.get("/{project_id}/overview", response_model=ProjectOverview)
+async def get_project_overview(
+    project_id: UUID,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> ProjectOverview:
+    return await service.get_project_overview(db, project_id)
+
+
+@projects_router.get("/{project_id}/members", response_model=list[ProjectMemberRead])
+async def get_project_members(
+    project_id: UUID,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> list[ProjectMemberRead]:
+    return await service.list_project_members(db, project_id)
+
+
+@projects_router.delete(
+    "/{project_id}/members/{user_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
+)
+async def remove_project_member(
+    project_id: UUID,
+    user_id: UUID,
+    current_user: CurrentUser = Depends(
+        require_permission(
+            Permissions.PROJECTS_MANAGE_USERS, Permissions.PROJECTS_MANAGE_ALL
+        )
+    ),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    await service.remove_project_member(db, project_id, user_id)
+
+
+@projects_router.post(
+    "/{project_id}/milestones",
+    response_model=MilestoneRead,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_milestone(
+    project_id: UUID,
+    payload: MilestoneCreate,
+    current_user: CurrentUser = Depends(
+        require_permission(
+            Permissions.MILESTONES_MANAGE, Permissions.PROJECTS_MANAGE_ALL
+        )
+    ),
+    db: AsyncSession = Depends(get_db),
+) -> MilestoneRead:
+    return await service.create_milestone(
+        db, project_id, payload, created_by_user_id=current_user.user_id
+    )
+
+
+@projects_router.get("/{project_id}/milestones", response_model=list[MilestoneRead])
+async def list_milestones(
+    project_id: UUID,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> list[MilestoneRead]:
+    return await service.list_milestones(db, project_id)
+
+
+@projects_router.patch("/milestones/{milestone_id}", response_model=MilestoneRead)
+async def update_milestone(
+    milestone_id: UUID,
+    payload: MilestoneUpdate,
+    current_user: CurrentUser = Depends(
+        require_permission(
+            Permissions.MILESTONES_MANAGE, Permissions.PROJECTS_MANAGE_ALL
+        )
+    ),
+    db: AsyncSession = Depends(get_db),
+) -> MilestoneRead:
+    return await service.update_milestone(db, milestone_id, payload)
+
+
+@projects_router.delete(
+    "/milestones/{milestone_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
+)
+async def delete_milestone(
+    milestone_id: UUID,
+    current_user: CurrentUser = Depends(
+        require_permission(
+            Permissions.MILESTONES_MANAGE, Permissions.PROJECTS_MANAGE_ALL
+        )
+    ),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    await service.delete_milestone(db, milestone_id)
+
+
+@projects_router.post(
+    "/{project_id}/dependencies",
+    response_model=ProjectDependencyRead,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_project_dependency(
+    project_id: UUID,
+    payload: ProjectDependencyCreate,
+    current_user: CurrentUser = Depends(
+        require_permission(Permissions.PROJECTS_MANAGE_ALL)
+    ),
+    db: AsyncSession = Depends(get_db),
+) -> ProjectDependencyRead:
+    return await service.create_project_dependency(db, payload)
+
+
+@projects_router.delete(
+    "/dependencies/{dependency_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
+)
+async def delete_project_dependency(
+    dependency_id: UUID,
+    current_user: CurrentUser = Depends(
+        require_permission(Permissions.PROJECTS_MANAGE_ALL)
+    ),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    await service.delete_project_dependency(db, dependency_id)
+
+
+@projects_router.get("/{project_id}/timeline", response_model=ProjectTimeline)
+async def get_project_timeline(
+    project_id: UUID,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> ProjectTimeline:
+    return await service.get_project_timeline(db, project_id)
+
+
+@projects_router.get("/{project_id}/phases", response_model=list[PhaseRead])
+async def get_phases_by_project(
+    project_id: UUID,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> list[PhaseRead]:
+    return await service.list_phases_by_project(db, project_id)
+
+
+@projects_router.post(
+    "/{project_id}/members",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
+)
+async def add_project_member(
+    project_id: UUID,
+    payload: ProjectMemberCreate,
+    current_user: CurrentUser = Depends(
+        require_permission(
+            Permissions.PROJECTS_MANAGE_USERS, Permissions.PROJECTS_MANAGE_ALL
+        )
+    ),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    await service.add_project_member(db, project_id, payload)
+
+
+# ---------- Phases ----------
+@phases_router.post("", response_model=PhaseRead, status_code=status.HTTP_201_CREATED)
+async def create_phase(
+    payload: PhaseCreate,
+    current_user: CurrentUser = Depends(
+        require_permission(
+            Permissions.PHASES_MANAGE_ALL, Permissions.PHASES_MANAGE_TEAM
+        )
+    ),
+    db: AsyncSession = Depends(get_db),
+) -> PhaseRead:
+    return await service.create_phase(db, payload)
+
+
+@phases_router.get("/{phase_id}", response_model=PhaseRead)
+async def get_phase(
+    phase_id: UUID,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> PhaseRead:
+    return await service.get_phase(db, phase_id)
+
+
+@phases_router.put("/{phase_id}", response_model=PhaseRead)
+async def update_phase(
+    phase_id: UUID,
+    payload: PhaseUpdate,
+    current_user: CurrentUser = Depends(
+        require_permission(
+            Permissions.PHASES_MANAGE_ALL,
+            Permissions.PHASES_MANAGE_TEAM,
+            Permissions.PHASES_APPROVE,
+        )
+    ),
+    db: AsyncSession = Depends(get_db),
+) -> PhaseRead:
+    return await service.update_phase(db, phase_id, payload)
+
+
+@phases_router.get("/{phase_id}/tasks", response_model=list[TaskRead])
+async def get_tasks_by_phase(
+    phase_id: UUID,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> list[TaskRead]:
+    return await service.list_tasks_by_phase(db, phase_id)
+
+
+@phases_router.get("/{phase_id}/progress", response_model=ProgressBreakdown)
+async def get_phase_progress(
+    phase_id: UUID,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> ProgressBreakdown:
+    return await service.get_phase_progress_breakdown(db, phase_id)
+
+
+# ---------- Portfolio ----------
+@portfolio_router.get("/gantt", response_model=PortfolioGantt)
+async def get_portfolio_gantt(
+    include_archived: bool = Query(default=False),
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> PortfolioGantt:
+    return await service.get_portfolio_gantt(db, include_archived=include_archived)
+
+
+# ---------- Tasks ----------
+@tasks_router.get("", response_model=Page[TaskRead])
+async def list_tasks(
+    partition: Optional[str] = Query(default=None),
+    label: Optional[str] = Query(default=None),
+    assignee_user_id: Optional[UUID] = Query(default=None),
+    task_status: Optional[str] = Query(default=None, alias="status"),
+    unattached: Optional[bool] = Query(default=None),
+    parent_task_id: Optional[UUID] = Query(default=None),
+    search: Optional[str] = Query(default=None),
+    params: PageParams = Depends(),
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Page[TaskRead]:
+    items, total = await service.list_tasks(
+        db,
+        partition=partition,
+        label=label,
+        assignee_user_id=assignee_user_id,
+        status=task_status,
+        unattached=unattached,
+        parent_task_id=parent_task_id,
+        search=search,
+        page=params.page,
+        page_size=params.page_size,
+    )
+    return Page.create(items, total, params)
+
+
+@tasks_router.post("", response_model=TaskRead, status_code=status.HTTP_201_CREATED)
+async def create_task(
+    payload: TaskCreate,
+    current_user: CurrentUser = Depends(
+        require_permission(
+            Permissions.TASKS_MANAGE_ALL,
+            Permissions.TASKS_MANAGE_TEAM,
+            Permissions.TASKS_EDIT_ASSIGNED,
+        )
+    ),
+    db: AsyncSession = Depends(get_db),
+) -> TaskRead:
+    return await service.create_task(
+        db, payload, created_by_user_id=current_user.user_id
+    )
+
+
+@tasks_router.post("/{task_id}/attach", response_model=TaskRead)
+async def attach_task(
+    task_id: UUID,
+    payload: AttachTaskRequest,
+    current_user: CurrentUser = Depends(
+        require_permission(
+            Permissions.TASKS_MANAGE_ALL, Permissions.PROJECTS_MANAGE_ALL
+        )
+    ),
+    db: AsyncSession = Depends(get_db),
+) -> TaskRead:
+    return await service.attach_task_to_phase(db, task_id, payload.phase_id)
+
+
+@tasks_router.post("/{task_id}/detach", response_model=TaskRead)
+async def detach_task(
+    task_id: UUID,
+    current_user: CurrentUser = Depends(
+        require_permission(
+            Permissions.TASKS_MANAGE_ALL, Permissions.PROJECTS_MANAGE_ALL
+        )
+    ),
+    db: AsyncSession = Depends(get_db),
+) -> TaskRead:
+    return await service.detach_task_from_phase(db, task_id)
+
+
+@tasks_router.get("/{task_id}", response_model=TaskRead)
+async def get_task(
+    task_id: UUID,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> TaskRead:
+    return await service.get_task(db, task_id)
+
+
+@tasks_router.put("/{task_id}", response_model=TaskRead)
+async def update_task(
+    task_id: UUID,
+    payload: TaskUpdate,
+    current_user: CurrentUser = Depends(
+        require_permission(
+            Permissions.TASKS_MANAGE_ALL,
+            Permissions.TASKS_MANAGE_TEAM,
+            Permissions.TASKS_EDIT_ASSIGNED,
+        )
+    ),
+    db: AsyncSession = Depends(get_db),
+) -> TaskRead:
+    return await service.update_task(db, task_id, payload)
+
+
+@tasks_router.put("/{task_id}/status", response_model=TaskRead)
+async def update_task_status(
+    task_id: UUID,
+    payload: UpdateTaskStatusRequest,
+    current_user: CurrentUser = Depends(
+        require_permission(
+            Permissions.TASKS_MANAGE_ALL,
+            Permissions.TASKS_MANAGE_TEAM,
+            Permissions.TASKS_EDIT_ASSIGNED,
+            Permissions.TASKS_MANAGE_TESTING,
+            Permissions.TASKS_MANAGE_DESIGN,
+        )
+    ),
+    db: AsyncSession = Depends(get_db),
+) -> TaskRead:
+    return await service.update_task_status(
+        db, task_id, payload.status, changed_by_user_id=current_user.user_id
+    )
+
+
+@tasks_router.put("/{task_id}/checklist/{checklist_item_id}", response_model=TaskRead)
+async def update_task_checklist_item(
+    task_id: UUID,
+    checklist_item_id: UUID,
+    payload: UpdateChecklistItemRequest,
+    current_user: CurrentUser = Depends(
+        require_permission(
+            Permissions.TASKS_MANAGE_ALL,
+            Permissions.TASKS_MANAGE_TEAM,
+            Permissions.TASKS_EDIT_ASSIGNED,
+            Permissions.TASKS_MANAGE_TESTING,
+            Permissions.TASKS_MANAGE_DESIGN,
+        )
+    ),
+    db: AsyncSession = Depends(get_db),
+) -> TaskRead:
+    return await service.update_checklist_item(
+        db,
+        task_id=task_id,
+        checklist_item_id=checklist_item_id,
+        is_done=payload.is_done,
+        changed_by_user_id=current_user.user_id,
+    )
+
+
+@tasks_router.delete(
+    "/{task_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
+)
+async def delete_task(
+    task_id: UUID,
+    current_user: CurrentUser = Depends(
+        require_permission(
+            Permissions.TASKS_MANAGE_ALL,
+            Permissions.TASKS_MANAGE_TEAM,
+            Permissions.TASKS_EDIT_ASSIGNED,
+        )
+    ),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    await service.delete_task(db, task_id)
+
+
+# ---------- Dependencies ----------
+@dependencies_router.post(
+    "", response_model=TaskDependencyRead, status_code=status.HTTP_201_CREATED
+)
+async def create_dependency(
+    payload: TaskDependencyCreate,
+    current_user: CurrentUser = Depends(
+        require_permission(
+            Permissions.TASKS_MANAGE_ALL,
+            Permissions.TASKS_MANAGE_TEAM,
+            Permissions.PROJECTS_MANAGE_ALL,
+        )
+    ),
+    db: AsyncSession = Depends(get_db),
+) -> TaskDependencyRead:
+    return await service.create_dependency(db, payload)
+
+
+@dependencies_router.delete(
+    "/{dependency_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
+)
+async def delete_dependency(
+    dependency_id: UUID,
+    current_user: CurrentUser = Depends(
+        require_permission(
+            Permissions.TASKS_MANAGE_ALL,
+            Permissions.TASKS_MANAGE_TEAM,
+            Permissions.PROJECTS_MANAGE_ALL,
+        )
+    ),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    await service.delete_dependency(db, dependency_id)

@@ -1,0 +1,121 @@
+name: project-management-platform
+
+x-api-environment: &api-environment
+  APP_NAME: Project Management Platform API
+  ENVIRONMENT: development
+  DEBUG: "true"
+  DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-project_app}:${POSTGRES_PASSWORD:-project_dev_password}@postgres:5432/${POSTGRES_DB:-project_management}
+  POSTGRES_HOST: postgres
+  POSTGRES_PORT: "5432"
+  JWT_SECRET: ${JWT_SECRET:-local-development-secret-change-before-production}
+  REDIS_URL: redis://redis:6379/0
+  S3_ENDPOINT_URL: http://minio:9000
+  S3_ACCESS_KEY: ${MINIO_ROOT_USER:-project_minio_admin}
+  S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-project_minio_password}
+  S3_BUCKET: ${S3_BUCKET:-project-platform}
+  S3_REGION: us-east-1
+  S3_USE_SSL: "false"
+  CORS_ALLOWED_ORIGINS: '["http://localhost:3000"]'
+  FRONTEND_BASE_URL: http://localhost:3000
+  SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-admin@example.com}
+  SEED_ADMIN_USERNAME: ${SEED_ADMIN_USERNAME:-admin}
+  SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-ChangeMe123!}
+  OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+  PROJECT_AI_MODEL: ${PROJECT_AI_MODEL:-gpt-5.5}
+  LANGCHAIN_TRACING_V2: ${LANGCHAIN_TRACING_V2:-false}
+  LANGSMITH_API_KEY: ${LANGSMITH_API_KEY:-}
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-project_management}
+      POSTGRES_USER: ${POSTGRES_USER:-project_app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-project_dev_password}
+    ports:
+      - "55432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-project_minio_admin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-project_minio_password}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+
+  api:
+    image: project-management-platform-api:local
+    build: ./backend
+    environment:
+      <<: *api-environment
+      RUN_MIGRATIONS_ON_STARTUP: "true"
+      SEED_ON_STARTUP: "true"
+    ports:
+      - "8000:8000"
+    volumes:
+      - api-logs:/app/var/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+
+  generation-worker:
+    image: project-management-platform-api:local
+    build: ./backend
+    command: ["python", "-m", "app.workers.generation_worker"]
+    environment:
+      <<: *api-environment
+      RUN_MIGRATIONS_ON_STARTUP: "false"
+      SEED_ON_STARTUP: "false"
+    volumes:
+      - api-logs:/app/var/logs
+    depends_on:
+      api:
+        condition: service_started
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_WS_URL: ws://localhost:8000/ws
+        INTERNAL_API_URL: http://api:8000
+    environment:
+      INTERNAL_API_URL: http://api:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      api:
+        condition: service_started
+
+volumes:
+  postgres-data:
+  redis-data:
+  minio-data:
+  api-logs:
