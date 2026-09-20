@@ -36,6 +36,7 @@ import { AppError } from "@/lib/api/client";
 import { useTaskPartitions, useUserMap } from "@/lib/hooks";
 import { TASK_SORT_OPTIONS, sortTasks, type TaskSortMode } from "@/lib/task-sort";
 import type { TaskRead, UUID } from "@/lib/types";
+import { useViewState } from "@/lib/navigation";
 
 const STATUS_OPTIONS = [
   "NotStarted", "Ready", "InProgress", "Waiting", "Blocked",
@@ -65,19 +66,19 @@ export default function TasksPageWrapper() {
 function TasksPage() {
   const searchParams = useSearchParams();
   const { user, hasPermission, isSuperAdmin } = useAuth();
-  const [view, setView] = useState<string>(searchParams.get("view") ?? "all");
-  const [mode, setMode] = useState<string>("list");
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  const [partition, setPartition] = useState<string>("all");
-  const [projectFilter, setProjectFilter] = useState<string>("all");
-  const [assigneeFilter, setAssigneeFilter] = useState<string>("all");
-  const [createdMonth, setCreatedMonth] = useState("");
-  const [dueMonth, setDueMonth] = useState("");
-  const [label, setLabel] = useState<string>("");
-  const [status, setStatus] = useState<string>("");
-  const [unattachedOnly, setUnattachedOnly] = useState(false);
-  const [search, setSearch] = useState(searchParams.get("search") ?? "");
-  const [page, setPage] = useState(1);
+  const [view, setView] = useViewState<string>("task-view", searchParams.get("view") ?? "all");
+  const [mode, setMode] = useViewState<string>("task-mode", "list");
+  const [filtersOpen, setFiltersOpen] = useViewState("task-filters-open", false);
+  const [partition, setPartition] = useViewState<string>("task-partition", "all");
+  const [projectFilter, setProjectFilter] = useViewState<string>("task-project", "all");
+  const [assigneeFilter, setAssigneeFilter] = useViewState<string>("task-assignee", "all");
+  const [createdMonth, setCreatedMonth] = useViewState("task-created", "");
+  const [dueMonth, setDueMonth] = useViewState("task-due", "");
+  const [label, setLabel] = useViewState<string>("task-label", "");
+  const [status, setStatus] = useViewState<string>("task-status", "");
+  const [unattachedOnly, setUnattachedOnly] = useViewState("task-unattached", false);
+  const [search, setSearch] = useViewState("task-search", searchParams.get("search") ?? "");
+  const [page, setPage] = useViewState("task-page", 1);
   const [attachTarget, setAttachTarget] = useState<TaskRead | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const { nameOf, users } = useUserMap();

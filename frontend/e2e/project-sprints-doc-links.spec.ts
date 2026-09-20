@@ -226,6 +226,37 @@ async function login(page: Page, sessionUser: typeof user = user) {
   await expect(page).toHaveURL(/\/app\/(teams|docs)$/);
 }
 
+test("task navigation restores the source filters through Back and Forward", async ({ page }, testInfo) => {
+  const api = await installApi(page);
+  api.createdTask = {
+    id: TASK_ID, title: "Return to my filtered work", description: "Full task context",
+    phase_id: SPRINT_ID, parent_task_id: null, task_type: "Feature", priority: "P2", status: "Ready",
+    story_points: 3, estimated_hours: 2, actual_hours: 0, reviewer_user_id: null, github_url: null,
+    partition: "tech", start_date: null, due_date: null, assignee_user_ids: [], is_ticket: false,
+    ticket_recipient_team_ids: [], labels: [], checklist_items: [], board_order: 0,
+    created_by: "manual", created_at: NOW, updated_at: NOW,
+  };
+  await login(page);
+  await page.goto("/tasks");
+  if (testInfo.project.name === "phone") await page.getByRole("button", { name: /Filters/ }).click();
+  await page.getByPlaceholder("Search title…").fill("Return");
+  await page.getByRole("link", { name: "Return to my filtered work", exact: true }).first().click();
+  if (testInfo.project.name === "phone") {
+    await expect(page).toHaveURL(new RegExp(`/tasks/${TASK_ID}$`));
+    await page.getByRole("button", { name: "Back", exact: true }).click();
+  } else {
+    await expect(page.getByRole("dialog", { name: "Task details" })).toBeVisible();
+    await expect(page).toHaveURL(new RegExp(`task=${TASK_ID}`));
+    await page.goBack();
+    await expect(page.getByRole("dialog", { name: "Task details" })).toHaveCount(0);
+    await page.goForward();
+    await expect(page.getByRole("dialog", { name: "Task details" })).toBeVisible();
+    await page.getByRole("button", { name: "Close dialog", exact: true }).click();
+  }
+  await expect(page.getByPlaceholder("Search title…")).toHaveValue("Return");
+  await expect(page).toHaveURL(/\/tasks$/);
+});
+
 test("project dates, sprint planning, and searchable Docs links work together", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name === "tablet", "Desktop and phone cover the adaptive project workspace.");
   test.setTimeout(60_000);

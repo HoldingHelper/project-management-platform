@@ -82,6 +82,7 @@ import { GanttChart, type GanttBar } from "@/components/ds/GanttChart";
 import { ChannelConversation } from "@/components/chat/ChannelConversation";
 import { TaskEditorModal } from "@/components/tasks/TaskEditorModal";
 import TaskDetailClient from "@/app/(app)/tasks/[taskId]/TaskDetailClient";
+import { goBack, openTaskPreview, useViewState } from "@/lib/navigation";
 import { KANBAN_COLUMNS, relativeTime } from "@/lib/format";
 import { TASK_SORT_OPTIONS, sortTasks, type TaskSortMode } from "@/lib/task-sort";
 import { useAuth } from "@/lib/auth/AuthProvider";
@@ -186,7 +187,8 @@ function ProjectWorkspaceInner() {
     const params = new URLSearchParams(searchParams.toString());
     params.set("tab", key);
     // replace so tab switches don't stack history; task push adds one entry to go back to.
-    router.replace(`/projects/${projectId}?${params.toString()}`);
+    const { pmpView, pmpScroll, pmpReturnTo } = window.history.state ?? {};
+    window.history.replaceState({ pmpView, pmpScroll, pmpReturnTo }, "", `${location.pathname}?${params.toString()}`);
   };
   const [editOpen, setEditOpen] = useState(false);
   const { user, hasPermission, isSuperAdmin } = useAuth();
@@ -262,6 +264,7 @@ function ProjectWorkspaceInner() {
       <div>
         <Link
           href="/portfolio"
+          onClick={(event) => { if (!event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) { event.preventDefault(); goBack("/portfolio"); } }}
           style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--text-tertiary)", fontSize: 12.5, marginBottom: 10 }}
         >
           <ChevronLeft size={14} /> Portfolio
@@ -1015,9 +1018,9 @@ function BoardTab({
   const qc = useQueryClient();
   const toast = useToast();
   const { nameOf } = useUserMap();
-  const [phaseId, setPhaseId] = useState<UUID | null>(null);
+  const [phaseId, setPhaseId] = useViewState<UUID | null>(`project-${projectId}-sprint`, null);
   const [dragId, setDragId] = useState<UUID | null>(null);
-  const [sortMode, setSortMode] = useState<TaskSortMode>("manual");
+  const [sortMode, setSortMode] = useViewState<TaskSortMode>(`project-${projectId}-sort`, "manual");
   const [error, setError] = useState<string | null>(null);
   const [newPhaseOpen, setNewPhaseOpen] = useState(false);
   const [newTaskOpen, setNewTaskOpen] = useState(false);
@@ -1295,7 +1298,7 @@ function BoardTab({
                       key={t.id}
                       task={t}
                       nameOf={nameOf}
-                      onOpen={() => setSelectedTaskId(t.id)}
+                      onOpen={() => openTaskPreview(t.id)}
                       onDragStart={() => setDragId(t.id)}
                       onDragEnd={() => setDragId(null)}
                       onDropBefore={() => onDrop(col.statuses, t.id)}

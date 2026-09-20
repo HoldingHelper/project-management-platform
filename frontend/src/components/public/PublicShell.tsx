@@ -2,14 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowUpRight, Menu } from "lucide-react";
 import { BrandMark } from "./BrandMark";
 
 const links = [
-  { href: "/#method", label: "Method" },
-  { href: "/#workspaces", label: "Workspaces", sup: "04" },
-  { href: "/#capabilities", label: "Capabilities", sup: "06" },
+  { href: "/#workspaces", label: "Product" },
+  { href: "/#capabilities", label: "Capabilities" },
   { href: "/docs", label: "Docs" },
   { href: "/tutorials", label: "Tutorials" },
 ];
@@ -17,6 +16,27 @@ const links = [
 export function PublicShell({ children }: { children: ReactNode }) {
   const pathname = usePathname() || "";
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuButton = useRef<HTMLButtonElement>(null);
+  const navigation = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMenuOpen(false);
+        menuButton.current?.focus();
+      }
+    };
+    const onPointer = (event: PointerEvent) => {
+      if (!navigation.current?.contains(event.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onPointer);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onPointer);
+    };
+  }, [menuOpen]);
 
   return (
     <div className="substance-site">
@@ -24,8 +44,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
         Skip to main content
       </a>
 
-      {/* FIXED CAPSULE NAV (SUBSTANCE LAB PATTERN) */}
-      <nav aria-label="Public navigation" className="public-capsule-nav">
+      <nav ref={navigation} aria-label="Public navigation" className="public-capsule-nav">
         <div className="substance-capsule-bar">
           <BrandMark href="/" />
 
@@ -39,14 +58,13 @@ export function PublicShell({ children }: { children: ReactNode }) {
                   className={`substance-nav-link ${isActive ? "active" : ""}`}
                 >
                   {link.label}
-                  {link.sup && <sup className="sub-tag">{link.sup}</sup>}
                 </Link>
               );
             })}
           </div>
 
-          <div className="flex items-center gap-2">
-            <button className="lg:hidden" aria-label="Open navigation" aria-expanded={menuOpen} onClick={() => setMenuOpen(!menuOpen)}><Menu size={20} /></button>
+          <div className="pp-nav-actions flex items-center gap-2">
+            <button ref={menuButton} type="button" className="pp-menu-toggle lg:hidden" aria-label="Open navigation" aria-controls="public-mobile-navigation" aria-expanded={menuOpen} onClick={() => setMenuOpen(!menuOpen)}><Menu size={20} /></button>
             <Link href="/login" className="substance-nav-login">
               Log in
             </Link>
@@ -56,7 +74,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
             </Link>
           </div>
         </div>
-        {menuOpen && <div aria-label="Mobile public navigation" role="navigation" className="bg-white text-black rounded-xl p-4 flex flex-col gap-3 lg:hidden">
+        {menuOpen && <div id="public-mobile-navigation" aria-label="Mobile public navigation" role="navigation" className="pp-mobile-menu lg:hidden">
           {links.map(link => <Link key={link.href} href={link.href} onClick={() => setMenuOpen(false)}>{link.label}</Link>)}
           <Link href="/login" onClick={() => setMenuOpen(false)}>Log in</Link>
         </div>}
@@ -66,19 +84,17 @@ export function PublicShell({ children }: { children: ReactNode }) {
         {children}
       </main>
 
-      {/* SUBSTANCE LAB MINIMALIST FOOTER */}
       <footer className="substance-footer">
         <div className="public-container substance-footer-inner">
           <div className="footer-brand-wrap">
             <BrandMark />
             <p className="footer-lead">
-              Unified knowledge, agile execution, and real-time collaboration for engineering teams.
+              One connected workspace for projects, team knowledge, and everyday delivery.
             </p>
           </div>
 
           <div className="footer-links-row">
-            <Link href="/#method">Method</Link>
-            <Link href="/#workspaces">Workspaces</Link>
+            <Link href="/#workspaces">Product</Link>
             <Link href="/#capabilities">Capabilities</Link>
             <Link href="/docs">Documentation</Link>
             <Link href="/tutorials">Tutorials</Link>
@@ -90,7 +106,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
 
           <div className="footer-copy-bar">
             <span>© {new Date().getFullYear()} Project Management Platform</span>
-            <span>Project Management Platform Ecosystem</span>
+            <span>Tasks · Docs · Projects</span>
           </div>
         </div>
       </footer>

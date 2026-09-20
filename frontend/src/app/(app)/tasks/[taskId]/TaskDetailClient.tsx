@@ -64,6 +64,7 @@ import { useUserMap } from "@/lib/hooks";
 import { relativeTime } from "@/lib/format";
 import { useStaticExportParams } from "@/lib/static-export-route";
 import type { TaskRead, TaskStatus, UUID, Priority } from "@/lib/types";
+import { goBack } from "@/lib/navigation";
 
 const STATUS_OPTIONS: TaskStatus[] = [
   "NotStarted",
@@ -1089,21 +1090,9 @@ export default function TaskDetailPage({
 
 /** Smart Back Navigation */
 function BackLink({ router }: { router: ReturnType<typeof useRouter> }) {
-  const [canGoBack, setCanGoBack] = useState(false);
-  useEffect(() => {
-    setCanGoBack(window.history.length > 1);
-  }, []);
-
-  if (canGoBack) {
-    return (
-      <button type="button" onClick={() => router.back()} className="task-back-btn">
-        <ArrowLeft size={13} /> Back
-      </button>
-    );
-  }
   return (
-    <Link href="/tasks" className="task-back-btn">
-      <ArrowLeft size={13} /> Tasks
-    </Link>
+    <button type="button" onClick={() => goBack("/tasks")} className="task-back-btn">
+      <ArrowLeft size={13} /> Back
+    </button>
   );
 }

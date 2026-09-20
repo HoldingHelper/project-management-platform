@@ -6,11 +6,13 @@ set -e
 
 echo "🚀 Starting Project Management Platform API..."
 
-echo "⏳ Waiting for PostgreSQL at ${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}..."
-until nc -z "${POSTGRES_HOST:-postgres}" "${POSTGRES_PORT:-5432}"; do
-  sleep 1
-done
-echo "✅ PostgreSQL is ready!"
+if [ "${SKIP_DB_WAIT:-false}" != "true" ] && [ -n "${POSTGRES_HOST}" ] && [[ "${POSTGRES_HOST}" != /* ]]; then
+  echo "⏳ Waiting for PostgreSQL at ${POSTGRES_HOST}:${POSTGRES_PORT:-5432}..."
+  until nc -z "${POSTGRES_HOST}" "${POSTGRES_PORT:-5432}"; do
+    sleep 1
+  done
+  echo "✅ PostgreSQL is ready!"
+fi
 
 if [ "${RUN_MIGRATIONS_ON_STARTUP:-true}" = "true" ]; then
   echo "🔄 Applying database migrations (alembic upgrade head)..."

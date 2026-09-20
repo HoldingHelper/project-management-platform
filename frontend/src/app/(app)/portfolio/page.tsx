@@ -40,6 +40,7 @@ import { PortfolioGanttChart } from "@/components/gantt/PortfolioGanttChart";
 import { relativeTime } from "@/lib/format";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import type { PortfolioGantt, ProjectLevel, TaskRead, UUID } from "@/lib/types";
+import { useViewState } from "@/lib/navigation";
 
 const PROJECT_LEVELS: { value: ProjectLevel; label: string; detail: string }[] = [
   { value: "inter-team", label: "Inter-team", detail: "Inside one partition" },
@@ -114,10 +115,10 @@ function ProjectLevelBadge({ level }: { level: ProjectLevel }) {
 }
 
 export default function PortfolioPage() {
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useViewState("portfolio-search", "");
   const [createOpen, setCreateOpen] = useState(false);
-  const [timelinePartition, setTimelinePartition] = useState<string>("all");
-  const [showArchived, setShowArchived] = useState(false);
+  const [timelinePartition, setTimelinePartition] = useViewState<string>("portfolio-partition", "all");
+  const [showArchived, setShowArchived] = useViewState("portfolio-archived", false);
   const { hasPermission, isSuperAdmin } = useAuth();
   const projects = useQuery({ queryKey: ["projects"], queryFn: () => listProjects(1, 200) });
   const products = useQuery({ queryKey: ["products"], queryFn: () => listProducts(1, 200) });

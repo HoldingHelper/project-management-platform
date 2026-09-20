@@ -8,6 +8,7 @@ import { ChatPanel } from "@/components/chat/ChatPanel";
 import { GlobalSearch } from "./GlobalSearch";
 import { MobileNavigation } from "./MobileNavigation";
 import { DocsSidebar } from "@/components/docs/DocsSidebar";
+import { NavigationMemory } from "./NavigationMemory";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -55,6 +56,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </div>
       {!docsModule && <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />}
       {!docsModule && <MobileNavigation />}
+      <Suspense fallback={null}><NavigationMemory mainRef={mainRef} /></Suspense>
     </div>
   );
 }

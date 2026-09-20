@@ -46,3 +46,5 @@ mobile/android/
 *.p12
 *.mobileprovision
 google-service-account.json
+scripts/gcp_secrets.env
+docs/designs

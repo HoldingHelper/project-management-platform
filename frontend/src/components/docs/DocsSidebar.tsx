@@ -16,6 +16,7 @@ import {
   Star,
 } from "lucide-react";
 import { listDocPages, listDocSpaces, moveDocPage, type DocPageSummary } from "@/lib/api/docs";
+import { PlatformLogo } from "@/components/brand/PlatformLogo";
 
 export function DocsSidebar() {
   const pathname = usePathname();
@@ -102,25 +103,9 @@ export function DocsSidebar() {
       }}
     >
       <div className="internal-docs-brand">
-        <div
-          style={{
-            width: 26,
-            height: 26,
-            borderRadius: "var(--radius-1)",
-            background: "var(--accent-primary)",
-            color: "var(--text-on-accent)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontWeight: 800,
-            fontSize: 13,
-            marginRight: 4,
-          }}
-        >
-          H
-        </div>
+        <PlatformLogo size={28} style={{ marginRight: 3 }} />
         <BookOpenText size={18} />
-        <span>Platform Docs</span>
+        <span>Project Docs</span>
       </div>
 
       <nav aria-label="Internal documentation navigation">

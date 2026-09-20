@@ -9,6 +9,7 @@ import { Avatar, PresenceDot } from "@/components/ds";
 import { useNotifications } from "@/lib/stores/notifications";
 import { usePresence } from "@/lib/stores/presence";
 import { NAV_GROUPS, type AppNavItem } from "./navigation";
+import { PlatformLogo } from "@/components/brand/PlatformLogo";
 
 export function Sidebar({
   mobile = false,
@@ -63,26 +64,8 @@ export function Sidebar({
           borderBottom: "1px solid var(--border-subtle)",
         }}
       >
-        <div
-          style={{
-            width: 28,
-            height: 28,
-            borderRadius: "var(--radius-2)",
-            background: "var(--accent-primary)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "var(--text-on-accent)",
-            fontWeight: 800,
-            fontSize: 15,
-            boxShadow: "var(--shadow-accent)",
-          }}
-        >
-          H
-        </div>
-        <span style={{ fontWeight: 800, fontSize: 17, letterSpacing: "-0.02em" }}>
-          Hi<span style={{ color: "var(--accent-primary)" }}>G</span>
-        </span>
+        <PlatformLogo size={29} />
+        <span className="pmp-sidebar-wordmark"><span>Project <b>Platform</b></span><small>Management workspace</small></span>
       </div>
 
       {/* Grouped nav */}

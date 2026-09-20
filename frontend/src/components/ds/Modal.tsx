@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, type CSSProperties, type ReactNode } from "react";
 import { X } from "lucide-react";
+import { createPortal } from "react-dom";
 
 interface Props {
   open: boolean;
@@ -19,6 +20,8 @@ export function Modal({ open, onClose, title, children, footer, width = 480, clo
   const titleId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
 
   useEffect(() => {
     if (!open) return;
@@ -28,14 +31,16 @@ export function Modal({ open, onClose, title, children, footer, width = 480, clo
     const focusable = dialogRef.current?.querySelector<HTMLElement>(
       'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
     );
-    requestAnimationFrame(() => (focusable ?? dialogRef.current)?.focus());
+    const frame = requestAnimationFrame(() => (focusable ?? dialogRef.current)?.focus({ preventScroll: true }));
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      const dialogs = document.querySelectorAll('[role="dialog"][aria-modal="true"]');
+      if (dialogs[dialogs.length - 1] !== dialogRef.current) return;
+      if (e.key === "Escape") { e.preventDefault(); e.stopImmediatePropagation(); closeRef.current(); }
       if (e.key === "Tab" && dialogRef.current) {
         const controls = [...dialogRef.current.querySelectorAll<HTMLElement>(
           'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
         )];
-        if (!controls.length) return;
+        if (!controls.length) { e.preventDefault(); dialogRef.current.focus(); return; }
         const first = controls[0];
         const last = controls[controls.length - 1];
         if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
@@ -45,13 +50,14 @@ export function Modal({ open, onClose, title, children, footer, width = 480, clo
     window.addEventListener("keydown", onKey);
     return () => {
       window.removeEventListener("keydown", onKey);
+      cancelAnimationFrame(frame);
       document.body.style.overflow = previousOverflow;
-      returnFocusRef.current?.focus();
+      returnFocusRef.current?.focus({ preventScroll: true });
     };
-  }, [open, onClose]);
+  }, [open]);
 
-  if (!open) return null;
-  return (
+  if (!open || typeof document === "undefined") return null;
+  return createPortal(
     <div className="pmp-modal-backdrop" onMouseDown={(event) => {
       if (closeOnBackdrop && event.target === event.currentTarget) onClose();
     }}>
@@ -81,6 +87,6 @@ export function Modal({ open, onClose, title, children, footer, width = 480, clo
           <div className="pmp-modal-footer">{footer}</div>
         )}
       </div>
-    </div>
+    </div>, document.body
   );
 }

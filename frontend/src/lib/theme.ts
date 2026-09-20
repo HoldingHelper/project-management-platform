@@ -5,8 +5,8 @@ export type Theme = "dark" | "light";
 const KEY = "pmp.theme";
 
 export function getStoredTheme(): Theme {
-  if (typeof window === "undefined") return "dark";
-  return window.localStorage.getItem(KEY) === "light" ? "light" : "dark";
+  if (typeof window === "undefined") return "light";
+  return window.localStorage.getItem(KEY) === "dark" ? "dark" : "light";
 }
 
 export function applyTheme(theme: Theme): void {
@@ -18,6 +18,6 @@ export function applyTheme(theme: Theme): void {
 export const THEME_INIT_SCRIPT = `
 try {
   var t = localStorage.getItem(${JSON.stringify(KEY)});
-  if (t === "light") document.documentElement.dataset.theme = "light";
+  document.documentElement.dataset.theme = t === "dark" ? "dark" : "light";
 } catch (e) {}
 `;

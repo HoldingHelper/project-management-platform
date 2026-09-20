@@ -25,4 +25,4 @@ ENTRYPOINT ["./docker-entrypoint.sh"]
 # Single worker on purpose: the audit event bus and WebSocket ConnectionManager
 # are in-process singletons (cross-process fan-out would need the Redis pub/sub
 # backplane, which isn't wired yet). Scale out via replicas, not workers.
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
+CMD ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1"]

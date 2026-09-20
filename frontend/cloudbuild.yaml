@@ -1,0 +1,13 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '--build-arg'
+      - 'INTERNAL_API_URL=https://pmp-api-706796253833.europe-west1.run.app'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_WS_URL=wss://pmp-api-706796253833.europe-west1.run.app/ws'
+      - '-t'
+      - 'europe-west1-docker.pkg.dev/ava-persian/ava-persian-api/pmp-frontend:latest'
+      - '.'
+images:
+  - 'europe-west1-docker.pkg.dev/ava-persian/ava-persian-api/pmp-frontend:latest'
