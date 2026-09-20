@@ -1,0 +1,10 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { ArrowRight, BookOpenText, FolderKanban, KeyRound, MessageSquareText, Search, UsersRound } from "lucide-react";
+import { PublicDocsLayout } from "@/components/docs/PublicDocsLayout";
+import { DOC_CATEGORIES } from "@/lib/docs/content";
+import { getPublishedNavigation } from "@/lib/docs/server";
+import { PublishedWorkspaceDocs } from "@/components/docs/PublishedWorkspaceDocs";
+export const metadata:Metadata={title:"Documentation",description:"Searchable product documentation for projects, tasks, communication, teams, and workspace administration."};
+const icons=[BookOpenText,FolderKanban,Search,MessageSquareText,UsersRound,KeyRound];
+export default async function DocsHome(){const published=await getPublishedNavigation();const known=new Set(DOC_CATEGORIES.map(item=>item.slug));const categories=[...DOC_CATEGORIES.map(item=>({slug:item.slug,label:item.label,count:item.docs.length})),...published.filter(item=>!known.has(item.slug)).map(item=>({slug:item.slug,label:item.name,count:item.pages.length}))];return <PublicDocsLayout><header className="docs-home-hero"><span className="public-kicker">Documentation</span><h1>Find the answer. Keep moving.</h1><p>Guides for setting up the workspace, organizing projects, assigning work, collaborating, and managing access.</p></header><section className="docs-category-grid" aria-labelledby="browse-docs"><h2 id="browse-docs">Browse by topic</h2><div>{categories.map((category,index)=>{const Icon=icons[index%icons.length];return <Link href={`/docs/${category.slug}`} key={category.slug}><Icon size={21}/><span><b>{category.label}</b><small>{category.count} {category.count===1?"guide":"guides"}</small></span><ArrowRight size={17}/></Link>})}</div></section><PublishedWorkspaceDocs/><section className="docs-help"><h2>Start with the workspace overview</h2><p>Understand the Knowledge and Execution model before configuring your team.</p><Link href="/docs/getting-started/workspace-overview">Read the overview <ArrowRight size={15}/></Link></section></PublicDocsLayout>}

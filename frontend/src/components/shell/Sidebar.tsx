@@ -39,6 +39,7 @@ export function Sidebar({
   return (
     <aside
       className={mobile ? "pmp-sidebar pmp-sidebar-mobile" : "pmp-sidebar"}
+      aria-label={mobile ? "Mobile primary navigation" : "Primary navigation"}
       style={{
         width: mobile ? "100%" : "var(--pmp-sidebar-width)",
         flexShrink: 0,

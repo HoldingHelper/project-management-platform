@@ -144,7 +144,7 @@ async def main() -> int:
     parser.add_argument("--channel-id", required=True)
     parser.add_argument("--listeners", type=int, default=25)
     parser.add_argument("--username", default="admin")
-    parser.add_argument("--password", default="Admin123!@#")
+    parser.add_argument("--password", default="ChangeMe123!")
     args = parser.parse_args()
 
     base = args.base_url.rstrip("/")

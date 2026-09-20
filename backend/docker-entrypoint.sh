@@ -17,10 +17,16 @@ if [ "${RUN_MIGRATIONS_ON_STARTUP:-true}" = "true" ]; then
   alembic upgrade head
 fi
 
+if [ "${INIT_ADMIN_ON_STARTUP:-true}" = "true" ]; then
+  echo "👑 Ensuring RBAC catalog and root SuperAdmin exist (0 demo data)..."
+  python scripts/init_admin.py
+fi
+
 if [ "${SEED_ON_STARTUP:-false}" = "true" ]; then
-  echo "🌱 Seeding RBAC catalog + default admin..."
+  echo "🌱 Seeding demo datasets (SEED_ON_STARTUP=true)..."
   python scripts/seed_db.py
 fi
+
 
 echo "🌟 Launching process: $*"
 exec "$@"

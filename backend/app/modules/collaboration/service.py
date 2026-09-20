@@ -3,6 +3,7 @@ attachments and notifications."""
 
 from __future__ import annotations
 
+import re
 from typing import BinaryIO, List
 from uuid import UUID, uuid4
 
@@ -19,15 +20,38 @@ from app.modules.collaboration.models import (
     FileAttachment,
     Notification,
     Reaction,
+    UserDevice,
 )
 from app.modules.collaboration.schemas import (
     CommentCreate,
     CommentRead,
+    DeviceRead,
+    DeviceRegisterRequest,
     FileAttachmentRead,
     NotificationRead,
     ReactionCreate,
 )
 from app.shared.events import CommentAdded, NotificationRequested
+
+_MENTION_RE = re.compile(r"@([A-Za-z0-9_.-]+)")
+
+
+async def _resolve_mentions(db: AsyncSession, body: str) -> List[UUID]:
+    """Resolve @username tokens in comment body to user IDs."""
+    handles = set(_MENTION_RE.findall(body or ""))
+    if not handles:
+        return []
+    from app.modules.identity import repository as identity_repo
+
+    ids: List[UUID] = []
+    for handle in handles:
+        cleaned = handle.lower().strip()
+        user = await identity_repo.get_user_by_username(db, cleaned)
+        if user is None:
+            user = await identity_repo.get_user_by_email(db, cleaned)
+        if user is not None and user.id not in ids:
+            ids.append(user.id)
+    return ids
 
 
 async def create_comment(
@@ -49,32 +73,56 @@ async def create_comment(
             raise ValidationAppError(
                 "Parent comment must belong to the same entity."
             )
+
+    resolved_ids = await _resolve_mentions(db, payload.body)
+    all_mentioned_ids = list(
+        set(payload.mentioned_user_ids or []) | set(resolved_ids)
+    )
+
     comment = Comment(
         entity_type=payload.entity_type,
         entity_id=payload.entity_id,
         author_user_id=current_user.user_id,
         parent_comment_id=payload.parent_comment_id,
         body=payload.body,
-        mentioned_user_ids=payload.mentioned_user_ids,
+        mentioned_user_ids=all_mentioned_ids,
     )
     comment = await repo.create_comment(db, comment)
 
-    await event_bus.publish(
+    # Persistence is authoritative. Realtime fan-out and notification delivery
+    # must never keep the HTTP request open when Redis/WebSocket infrastructure
+    # is unavailable or slow.
+    event_bus.publish_sync_fire_and_forget(
         CommentAdded(
             entity_type=payload.entity_type,
             entity_id=payload.entity_id,
             author_user_id=current_user.user_id,
-            mentioned_user_ids=payload.mentioned_user_ids,
+            mentioned_user_ids=all_mentioned_ids,
         )
     )
-    for mentioned_user_id in payload.mentioned_user_ids:
-        await event_bus.publish(
+
+    entity_type_lower = payload.entity_type.lower()
+    if entity_type_lower == "task":
+        link = f"/tasks/{payload.entity_id}"
+    elif entity_type_lower == "project":
+        link = f"/projects/{payload.entity_id}"
+    else:
+        link = f"/{entity_type_lower}s/{payload.entity_id}"
+
+    sender_name = current_user.full_name or "A team member"
+
+    for mentioned_user_id in all_mentioned_ids:
+        if mentioned_user_id == current_user.user_id:
+            continue
+        event_bus.publish_sync_fire_and_forget(
             NotificationRequested(
                 user_id=mentioned_user_id,
                 type="mention",
-                title="You were mentioned in a comment",
+                title=f"{sender_name} mentioned you in a comment",
                 body=payload.body[:200],
-                link=f"/{payload.entity_type.lower()}/{payload.entity_id}",
+                link=link,
+                entity_type=payload.entity_type,
+                entity_id=payload.entity_id,
             )
         )
     return CommentRead.model_validate(comment)
@@ -164,6 +212,25 @@ async def get_file_download_url(
     return file_storage_service.presigned_url(attachment.storage_key)
 
 
+UUID_PATTERN = re.compile(
+    r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
+    re.IGNORECASE,
+)
+
+
+def humanize_notification_body(body: str | None) -> str:
+    if not body:
+        return ""
+    # Strip raw UUIDs if present in the text
+    cleaned = UUID_PATTERN.sub("", body)
+    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+    cleaned = re.sub(r"Task\s+was assigned to you", "You have been assigned to this task", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"Task\s+is blocked", "This task is blocked", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"Task\s+now depends on task", "Your task now depends on a predecessor task", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"\s+\.", ".", cleaned)
+    return cleaned or body
+
+
 async def create_notification_from_event(
     db: AsyncSession, event: NotificationRequested
 ) -> Notification:
@@ -171,7 +238,7 @@ async def create_notification_from_event(
         user_id=event.user_id,
         type=event.type,
         title=event.title,
-        body=event.body,
+        body=humanize_notification_body(event.body),
         link=event.link,
         entity_type=event.entity_type,
         entity_id=event.entity_id,
@@ -189,7 +256,12 @@ async def list_notifications(
     notifications = await repo.list_notifications(
         db, user_id, unread_only, action_required_only
     )
-    return [NotificationRead.model_validate(n) for n in notifications]
+    result = []
+    for n in notifications:
+        item = NotificationRead.model_validate(n)
+        item.body = humanize_notification_body(item.body)
+        result.append(item)
+    return result
 
 
 async def _get_own_notification(
@@ -292,3 +364,42 @@ async def reply_to_notification(
 
 async def count_unread_notifications(db: AsyncSession, user_id: UUID) -> int:
     return await repo.count_unread_notifications(db, user_id)
+
+
+async def register_device(
+    db: AsyncSession, user_id: UUID, payload: DeviceRegisterRequest
+) -> DeviceRead:
+    existing = await repo.get_device_by_token(db, payload.device_token)
+    if existing:
+        existing.user_id = user_id
+        existing.platform = payload.platform
+        existing.device_name = payload.device_name
+        existing.app_version = payload.app_version
+        existing.is_active = True
+        await db.commit()
+        await db.refresh(existing)
+        return DeviceRead.model_validate(existing)
+
+    device = UserDevice(
+        user_id=user_id,
+        device_token=payload.device_token,
+        platform=payload.platform,
+        device_name=payload.device_name,
+        app_version=payload.app_version,
+        is_active=True,
+    )
+    saved = await repo.save_device(db, device)
+    return DeviceRead.model_validate(saved)
+
+
+async def unregister_device(
+    db: AsyncSession, user_id: UUID, device_token: str
+) -> bool:
+    return await repo.unregister_device(db, device_token, user_id)
+
+
+async def list_user_devices(
+    db: AsyncSession, user_id: UUID
+) -> List[DeviceRead]:
+    devices = await repo.list_user_devices(db, user_id)
+    return [DeviceRead.model_validate(d) for d in devices]

@@ -2,8 +2,18 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { listUsers } from "@/lib/api/users";
+import { listTaskPartitions } from "@/lib/api/projects";
 import { displayName } from "@/lib/format";
 import type { UUID } from "@/lib/types";
+
+export function useTaskPartitions() {
+  const query = useQuery({
+    queryKey: ["task-partitions"],
+    queryFn: listTaskPartitions,
+    staleTime: 30_000,
+  });
+  return { ...query, partitions: query.data ?? [] };
+}
 
 /** Fetches all users once and exposes an id → full_name resolver. */
 export function useUserMap() {

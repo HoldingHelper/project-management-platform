@@ -14,6 +14,7 @@ from typing import List, Optional
 
 from sqlalchemy import (
     ARRAY,
+    Boolean,
     CheckConstraint,
     Date,
     DateTime,
@@ -50,6 +51,26 @@ SCHEMA = "projects"
 def _check(column: str, enum_cls) -> CheckConstraint:
     values = ", ".join(f"'{v.value}'" for v in enum_cls)
     return CheckConstraint(f"{column} IN ({values})", name=f"ck_{column}")
+
+
+class TaskPartition(Base, UUIDPKMixin, TimestampMixin, AuditableMixin):
+    """Administrator-managed task/project partition vocabulary.
+
+    Tasks and project taxonomy tags keep the stable ``slug`` while admins can
+    rename the human-facing label without rewriting every work item.
+    """
+
+    __tablename__ = "task_partitions"
+    __table_args__ = (
+        UniqueConstraint("name", name="uq_task_partitions_name"),
+        UniqueConstraint("slug", name="uq_task_partitions_slug"),
+        {"schema": SCHEMA},
+    )
+
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    slug: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    description: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    display_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
 
 class Product(Base, UUIDPKMixin, TimestampMixin, AuditableMixin):
@@ -127,7 +148,9 @@ class Project(Base, UUIDPKMixin, TimestampMixin, AuditableMixin):
     progress_percentage: Mapped[float] = mapped_column(
         Numeric(5, 2), default=0, nullable=False
     )
-    created_by: Mapped[str] = mapped_column(String(20), default="manual", nullable=False)
+    created_by: Mapped[str] = mapped_column(
+        String(20), default="manual", nullable=False
+    )
     last_modified_by: Mapped[str] = mapped_column(
         String(20), default="manual", nullable=False
     )
@@ -142,6 +165,9 @@ class Project(Base, UUIDPKMixin, TimestampMixin, AuditableMixin):
     )
     ai_summary_storage_key: Mapped[Optional[str]] = mapped_column(
         String(500), nullable=True
+    )
+    planning_mode: Mapped[str] = mapped_column(
+        String(20), default="sprints", nullable=False
     )
 
     product: Mapped["Product"] = relationship(back_populates="projects")
@@ -198,6 +224,7 @@ class Phase(Base, UUIDPKMixin, TimestampMixin, AuditableMixin):
     lead_assignee_user_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         UUID(as_uuid=True), nullable=True
     )
+    is_sprint: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     project: Mapped["Project"] = relationship(back_populates="phases")
     tasks: Mapped[List["TaskItem"]] = relationship(
@@ -257,6 +284,7 @@ class TaskItem(Base, UUIDPKMixin, TimestampMixin, AuditableMixin):
     status: Mapped[str] = mapped_column(
         String(20), default=TaskStatus.NOT_STARTED.value, nullable=False
     )
+    board_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     story_points: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     estimated_hours: Mapped[Optional[float]] = mapped_column(
         Numeric(8, 2), nullable=True
@@ -280,7 +308,13 @@ class TaskItem(Base, UUIDPKMixin, TimestampMixin, AuditableMixin):
     latest_finish: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     total_slack: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     is_critical: Mapped[bool] = mapped_column(default=False, nullable=False)
-    created_by: Mapped[str] = mapped_column(String(20), default="manual", nullable=False)
+    is_ticket: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    ticket_requested_by_user_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), nullable=True, index=True
+    )
+    created_by: Mapped[str] = mapped_column(
+        String(20), default="manual", nullable=False
+    )
     last_modified_by: Mapped[str] = mapped_column(
         String(20), default="manual", nullable=False
     )
@@ -491,12 +525,18 @@ class GenerationRun(Base, UUIDPKMixin, TimestampMixin):
         index=True,
     )
     status: Mapped[str] = mapped_column(String(30), default="draft", nullable=False)
-    operation: Mapped[str] = mapped_column(String(30), default="generate", nullable=False)
+    operation: Mapped[str] = mapped_column(
+        String(30), default="generate", nullable=False
+    )
     model: Mapped[Optional[str]] = mapped_column(String(80), nullable=True)
     input_storage_key: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     input_filename: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    prompt_storage_key: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
-    summary_storage_key: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    prompt_storage_key: Mapped[Optional[str]] = mapped_column(
+        String(500), nullable=True
+    )
+    summary_storage_key: Mapped[Optional[str]] = mapped_column(
+        String(500), nullable=True
+    )
     draft_json: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)
     change_set_json: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)
     resolved_assignees_json: Mapped[dict] = mapped_column(

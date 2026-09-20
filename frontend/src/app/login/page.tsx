@@ -7,6 +7,11 @@ import { AppError } from "@/lib/api/client";
 import { Button, Field, TextInput } from "@/components/ds";
 import { Eye, EyeOff, LogIn } from "lucide-react";
 import { AccessShell } from "@/components/ui/AccessShell";
+import Link from "next/link";
+
+function workspaceTarget() {
+  return window.localStorage.getItem("workspace.last-module") === "docs" ? "/app/docs" : "/app/teams";
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,16 +23,20 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
-    if (!loading && user) router.replace("/");
+    if (!loading && user) router.replace(workspaceTarget());
   }, [loading, user, router]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!email.trim() || !password) {
+      setError("Please enter your email or username and password.");
+      return;
+    }
     setError(null);
     setSubmitting(true);
     try {
       await login(email, password);
-      router.replace("/");
+      router.replace(workspaceTarget());
     } catch (err) {
       if (err instanceof AppError) {
         setError(err.status === 401 ? "Invalid email or password." : err.message);
@@ -69,10 +78,11 @@ export default function LoginPage() {
             }
           />
         </Field>
+        <div className="pmp-access-helper"><Link href="/forgot-password">Forgot password?</Link></div>
 
         {error && <div className="pmp-access-error" role="alert">{error}</div>}
 
-        <Button type="submit" disabled={submitting || !email || !password} className="pmp-access-submit">
+        <Button type="submit" disabled={submitting} className="pmp-access-submit">
           <LogIn size={17} /> {submitting ? "Signing in…" : "Sign in"}
         </Button>
       </form>

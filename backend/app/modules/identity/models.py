@@ -41,6 +41,9 @@ class User(Base, UUIDPKMixin, TimestampMixin, AuditableMixin):
     phone: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
     location: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
     presence_status: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)
+    status_text: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    status_emoji: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    status_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     mfa_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     mfa_secret: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
@@ -49,6 +52,9 @@ class User(Base, UUIDPKMixin, TimestampMixin, AuditableMixin):
         back_populates="user", cascade="all, delete-orphan"
     )
     refresh_tokens: Mapped[List["RefreshToken"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+    mcp_access_tokens: Mapped[List["McpAccessToken"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
 
@@ -75,6 +81,14 @@ class Role(Base, UUIDPKMixin):
     permissions: Mapped[List["RolePermission"]] = relationship(
         back_populates="role", cascade="all, delete-orphan"
     )
+
+    @property
+    def permission_codes(self) -> List[str]:
+        return sorted(
+            role_permission.permission.code
+            for role_permission in self.permissions
+            if role_permission.permission is not None
+        )
 
 
 class Permission(Base, UUIDPKMixin):
@@ -160,6 +174,44 @@ class RefreshToken(Base, UUIDPKMixin):
         return self.revoked_at is None and self.expires_at > utcnow()
 
 
+class McpAccessToken(Base, UUIDPKMixin):
+    """Revocable personal token used by remote MCP clients.
+
+    Only a SHA-256 digest is persisted. ``permission_codes`` is an upper bound;
+    effective permissions are intersected with the user's live RBAC grants on
+    every MCP request.
+    """
+
+    __tablename__ = "mcp_access_tokens"
+    __table_args__ = (
+        UniqueConstraint("token_hash", name="uq_mcp_access_tokens_token_hash"),
+        {"schema": SCHEMA},
+    )
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey(f"{SCHEMA}.users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    token_prefix: Mapped[str] = mapped_column(String(24), nullable=False)
+    token_hash: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    permission_codes: Mapped[list[str]] = mapped_column(JSONB, default=list, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    last_used_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    revoked_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    user: Mapped["User"] = relationship(back_populates="mcp_access_tokens")
+
+    @property
+    def is_active(self) -> bool:
+        from app.shared.base_model import utcnow
+
+        return self.revoked_at is None and self.expires_at > utcnow()
+
+
 class Invitation(Base, UUIDPKMixin, TimestampMixin, AuditableMixin):
     """Pending invitation to join the platform. The opaque token is stored
     hashed, mirroring PasswordResetToken."""
@@ -175,6 +227,15 @@ class Invitation(Base, UUIDPKMixin, TimestampMixin, AuditableMixin):
     )
     invited_by_user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), nullable=False
+    )
+    department_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), nullable=True
+    )
+    team_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), nullable=True
+    )
+    manager_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), nullable=True
     )
     token_hash: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
     expires_at: Mapped[datetime] = mapped_column(

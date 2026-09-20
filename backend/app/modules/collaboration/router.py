@@ -10,10 +10,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.current_user import CurrentUser
 from app.core.database import get_db
 from app.core.deps import get_current_user
+from app.core.permissions import Permissions
 from app.modules.collaboration import service
 from app.modules.collaboration.schemas import (
     CommentCreate,
     CommentRead,
+    DeviceRead,
+    DeviceRegisterRequest,
     FileAttachmentRead,
     NotificationRead,
     NotificationReplyRequest,
@@ -29,6 +32,9 @@ comments_router = APIRouter(prefix="/comments", tags=["Collaboration - Comments"
 files_router = APIRouter(prefix="/files", tags=["Collaboration - Files"])
 notifications_router = APIRouter(
     prefix="/notifications", tags=["Collaboration - Notifications"]
+)
+devices_router = APIRouter(
+    prefix="/devices", tags=["Collaboration - Mobile Devices"]
 )
 
 
@@ -185,3 +191,35 @@ async def mark_notification_read(
     return await service.mark_notification_read(
         db, notification_id, current_user.user_id
     )
+
+
+@devices_router.post(
+    "/register", response_model=DeviceRead, status_code=status.HTTP_201_CREATED
+)
+async def register_device(
+    payload: DeviceRegisterRequest,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> DeviceRead:
+    return await service.register_device(db, current_user.user_id, payload)
+
+
+@devices_router.delete(
+    "/{device_token}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
+)
+async def unregister_device(
+    device_token: str,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    await service.unregister_device(db, current_user.user_id, device_token)
+
+
+@devices_router.get("", response_model=list[DeviceRead])
+async def list_devices(
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> list[DeviceRead]:
+    return await service.list_user_devices(db, current_user.user_id)

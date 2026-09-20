@@ -18,9 +18,7 @@ def test_app_imports_and_routes_register():
 
     # Wave-1 refactor level: identity+invitations, projects+milestones+
     # portfolio, chat, notifications, analytics, search.
-    # FastAPI 0.141+ stores included routers as compact route groups. The
-    # generated OpenAPI paths remain the stable public registration boundary.
-    assert len(app.openapi()["paths"]) >= 110
+    assert len(app.routes) >= 110
 
 
 def test_health_and_auth_guards():
@@ -32,6 +30,10 @@ def test_health_and_auth_guards():
         assert client.get("/api/v1/users/me").status_code == 401
         assert client.get("/api/v1/chat/channels").status_code == 401
         assert client.get("/api/v1/analytics/velocity").status_code == 401
+        assert client.post(
+            "/api/v1/mcp",
+            json={"jsonrpc": "2.0", "id": 1, "method": "initialize"},
+        ).status_code == 401
 
 
 def test_permission_catalog_is_consistent():
@@ -40,10 +42,52 @@ def test_permission_catalog_is_consistent():
     all_codes = set(Permissions.all())
     assert "chat.access" in all_codes
     assert "users.invite" in all_codes
+    assert "docs.publish" in all_codes
     assert "CLevel" in ALL_ROLES
     for role, codes in ROLE_PERMISSIONS.items():
         assert role in ALL_ROLES
         assert set(codes) <= all_codes, f"unknown permission in {role}"
+
+
+def test_public_and_private_docs_routes_are_registered():
+    from app.main import app
+
+    paths = {route.path for route in app.routes}
+    assert "/api/v1/docs/public/navigation" in paths
+    assert "/api/v1/docs/spaces" in paths
+    assert "/api/v1/docs/pages/{page_id}/publish" in paths
+    assert "/api/v1/docs/pages/{page_id}/move" in paths
+    assert "/api/v1/docs/pages/{page_id}/revisions" in paths
+    assert "/api/v1/docs/pages/{page_id}/comments" in paths
+    # Admin user management & password override
+    assert "/api/v1/users/{user_id}" in paths
+    assert "/api/v1/users/{user_id}/reset-password" in paths
+    assert "/api/v1/mcp/tokens" in paths
+    assert "/api/v1/mcp/setup" in paths
+    assert "/api/v1/mcp/skill.md" in paths
+
+
+def test_admin_user_schemas():
+    from app.modules.identity.schemas import AdminResetPasswordRequest, AdminUpdateUserRequest
+
+    req = AdminUpdateUserRequest(
+        first_name="Alice",
+        last_name="Smith",
+        username="alicesmith",
+        email="alice@company.com",
+        job_title="Lead Architect",
+        is_active=True,
+        role_names=["SuperAdmin", "Developer"],
+    )
+    assert req.username == "alicesmith"
+    assert req.email == "alice@company.com"
+
+    pass_req = AdminResetPasswordRequest(new_password="SuperSecretPassword123!")
+    assert pass_req.new_password == "SuperSecretPassword123!"
+
+    with pytest.raises(ValidationError):
+        AdminResetPasswordRequest(new_password="short")
+
 
 
 def test_production_config_rejects_unsafe_defaults():
@@ -59,7 +103,7 @@ def test_production_config_rejects_unsafe_defaults():
         database_url="postgresql+asyncpg://pmp_app:strong_password@db/projectplatform",
         s3_access_key="pmp_prod_access",
         s3_secret_key="pmp_prod_secret",
-        seed_admin_password="a-production-only-admin-password",
+        INITIAL_ADMIN_PASSWORD="custom-strong-admin-password",
     )
     assert settings.is_production
 
@@ -106,3 +150,13 @@ async def test_notification_reply_upload_authorizes_only_owner():
     await authorize_entity_access(FakeDb(), owner, "notification_reply", notification_id)  # type: ignore[arg-type]
     with pytest.raises(NotFoundError):
         await authorize_entity_access(FakeDb(), other, "notification_reply", notification_id)  # type: ignore[arg-type]
+
+
+def test_public_seed_settings_remain_compatible():
+    from app.core.config import Settings
+
+    settings = Settings(_env_file=None, SEED_ADMIN_EMAIL="operator@example.com", SEED_ADMIN_PASSWORD="custom-password")
+    assert settings.initial_admin_email == "operator@example.com"
+    assert settings.initial_admin_password == "custom-password"
+    settings = Settings(_env_file=None, INITIAL_ADMIN_PASSWORD="new-password", SEED_ADMIN_PASSWORD="old-password")
+    assert settings.initial_admin_password == "new-password"

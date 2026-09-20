@@ -7,7 +7,7 @@ import re
 import time
 import uuid
 import csv
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from io import BytesIO
 from io import StringIO
 from pathlib import Path
@@ -934,7 +934,7 @@ def _summary_markdown(draft: GeneratedProject) -> str:
 async def _create_generated_tasks_batch(
     db: AsyncSession,
     *,
-    phase_id: UUID,
+    sprints: list[Phase],
     draft: GeneratedProject,
     run_id: UUID,
     user_id: UUID,
@@ -945,8 +945,19 @@ async def _create_generated_tasks_batch(
     now = datetime.now(timezone.utc)
 
     for item in draft.tasks:
+        sprint = next(
+            (
+                candidate
+                for candidate in sprints
+                if item.due_date
+                and candidate.start_date
+                and candidate.end_date
+                and candidate.start_date <= item.due_date <= candidate.end_date
+            ),
+            sprints[-1] if item.due_date and item.due_date > sprints[-1].end_date else sprints[0],
+        )
         task = TaskItem(
-            phase_id=phase_id,
+            phase_id=sprint.id,
             title=item.title,
             description=item.description,
             task_type=item.task_type,
@@ -1023,27 +1034,42 @@ async def confirm_generation(
     project.description = draft.description
     project.priority = draft.priority
     project.risk_level = draft.risk_level
-    project.start_date = draft.timeline_start
-    project.end_date = draft.timeline_end
-    project.estimated_completion_date = draft.timeline_end
+    if draft.timeline_start and draft.timeline_end:
+        project.start_date = draft.timeline_start
+        project.end_date = draft.timeline_end
+        project.estimated_completion_date = draft.timeline_end
+    else:
+        project.start_date = None
+        project.end_date = None
+        project.estimated_completion_date = None
     project.tags = draft.tags
     project.last_modified_by = "ai"
     project.generation_run_id = run.id
     project.ai_prompt_storage_key = run.prompt_storage_key
-    phase = Phase(
-        project_id=project.id,
-        name="AI Generated Plan",
-        phase_type=PhaseType.DEVELOPMENT.value,
-        sequence=1,
-        start_date=draft.timeline_start,
-        end_date=draft.timeline_end,
-    )
-    db.add(phase)
+    project.planning_mode = "sprints"
+    sprint_start = draft.timeline_start or date.today()
+    sprint_count = 1
+    if draft.timeline_end and draft.timeline_end >= sprint_start:
+        sprint_count = min(52, ((draft.timeline_end - sprint_start).days // 14) + 1)
+    sprints: list[Phase] = []
+    for index in range(sprint_count):
+        start = sprint_start + timedelta(days=index * 14)
+        sprint = Phase(
+            project_id=project.id,
+            name=f"Sprint {index + 1}",
+            phase_type=PhaseType.DEVELOPMENT.value,
+            sequence=index + 1,
+            start_date=start,
+            end_date=start + timedelta(days=13),
+            is_sprint=True,
+        )
+        db.add(sprint)
+        sprints.append(sprint)
     await db.flush()
 
     title_to_id, task_ids = await _create_generated_tasks_batch(
         db,
-        phase_id=phase.id,
+        sprints=sprints,
         draft=draft,
         run_id=run.id,
         user_id=user_id,
@@ -1081,7 +1107,8 @@ async def confirm_generation(
     run.resulting_task_ids = task_ids
     run.updated_at = datetime.now(timezone.utc)
     await db.commit()
-    await recalculate_phase_and_project_progress(db, phase.id)
+    for sprint in sprints:
+        await recalculate_phase_and_project_progress(db, sprint.id)
     await event_bus.publish(
         NotificationRequested(
             user_id=user_id,

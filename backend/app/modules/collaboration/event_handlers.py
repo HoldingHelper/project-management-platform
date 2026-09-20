@@ -45,16 +45,23 @@ async def _handle_notification_requested(event: NotificationRequested) -> None:
 
 
 async def _handle_task_assigned(event: TaskAssigned) -> None:
+    task_desc = f'"{event.task_title}"' if event.task_title else "A new task"
+    proj_suffix = f" in {event.project_name}" if event.project_name else ""
     for user_id in event.assignee_user_ids:
         await event_bus.publish(
             NotificationRequested(
                 user_id=user_id,
-                type="task_assigned",
-                title="You were assigned a task",
-                body=f"Task {event.task_id} was assigned to you.",
+                type="ticket_assigned" if event.is_ticket else "task_assigned",
+                title="A ticket needs your attention" if event.is_ticket else "You were assigned a task",
+                body=(
+                    f"Ticket {task_desc}{proj_suffix} was sent to you."
+                    if event.is_ticket
+                    else f"Task {task_desc}{proj_suffix} was assigned to you."
+                ),
                 link=f"/tasks/{event.task_id}",
                 entity_type="task",
                 entity_id=event.task_id,
+                requires_action=event.is_ticket,
             )
         )
 
@@ -73,12 +80,14 @@ async def _handle_task_status_changed(event: TaskStatusChanged) -> None:
 
 
 async def _handle_blocker_raised(event: BlockerRaised) -> None:
+    blocker_label = f'"{event.title}"' if event.title else (f'"{event.task_title}"' if event.task_title else "A task")
+    reason_part = f" Details: {event.description}" if event.description else ""
     await event_bus.publish(
         NotificationRequested(
             user_id=event.pending_on_user_id,
             type="blocker_raised",
             title="A blocker is pending on you",
-            body=f"Task {event.task_id} is blocked and pending your action.",
+            body=f"Blocker on {blocker_label} is waiting on your action.{reason_part}",
             link=f"/tasks/{event.task_id}",
             entity_type="blocker",
             entity_id=event.blocker_id,
@@ -88,16 +97,15 @@ async def _handle_blocker_raised(event: BlockerRaised) -> None:
 
 
 async def _handle_dependency_created(event: TaskDependencyCreated) -> None:
+    succ_name = f'"{event.successor_title}"' if event.successor_title else "Your task"
+    pred_name = f'"{event.predecessor_title}"' if event.predecessor_title else "a predecessor task"
     for user_id in event.successor_assignee_user_ids:
         await event_bus.publish(
             NotificationRequested(
                 user_id=user_id,
                 type="dependency_assigned",
                 title="Your task gained a dependency",
-                body=(
-                    f"Task {event.successor_task_id} now depends on "
-                    f"task {event.predecessor_task_id}."
-                ),
+                body=f"{succ_name} now depends on {pred_name}.",
                 link=f"/tasks/{event.successor_task_id}",
                 entity_type="task",
                 entity_id=event.successor_task_id,
@@ -124,12 +132,13 @@ async def _handle_project_status_changed(event: ProjectStatusChanged) -> None:
 
 
 async def _handle_project_member_added(event: ProjectMemberAdded) -> None:
+    proj_label = f'"{event.project_name}"' if event.project_name else "the project"
     await event_bus.publish(
         NotificationRequested(
             user_id=event.user_id,
             type="project_member_added",
             title="You were added to a project",
-            body=f"You were added as {event.role}.",
+            body=f"You were added to {proj_label} as {event.role}.",
             link=f"/projects/{event.project_id}",
             entity_type="project",
             entity_id=event.project_id,

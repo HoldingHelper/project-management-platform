@@ -109,3 +109,17 @@ class Notification(Base, UUIDPKMixin, TimestampMixin):
     resolved_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+
+
+class UserDevice(Base, UUIDPKMixin, TimestampMixin):
+    __tablename__ = "user_devices"
+    __table_args__ = {"schema": SCHEMA}
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), nullable=False, index=True
+    )
+    device_token: Mapped[str] = mapped_column(String(255), nullable=False, unique=True, index=True)
+    platform: Mapped[str] = mapped_column(String(20), nullable=False)  # "ios" | "android"
+    device_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    app_version: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)

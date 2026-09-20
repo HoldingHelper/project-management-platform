@@ -3,16 +3,18 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, CheckCheck, LogOut, Search, Settings, User as UserIcon } from "lucide-react";
+import { Bell, BookOpenText, CheckCheck, FolderKanban, LogOut, Search, Settings, Sparkles, User as UserIcon } from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { markAllNotificationsRead } from "@/lib/api/collaboration";
 import { setMyPresence } from "@/lib/api/users";
 import { Avatar, PresenceDot, PRESENCE_LABELS } from "@/components/ds";
+import { UserStatusPickerModal, UserStatusPill } from "@/components/status";
 import { useNotifications } from "@/lib/stores/notifications";
-import { usePresence } from "@/lib/stores/presence";
+import { usePresence, useUserStatus } from "@/lib/stores/presence";
 import type { PresenceStatus } from "@/lib/types";
-import { relativeTime } from "@/lib/format";
+import { formatNotificationBody, relativeTime } from "@/lib/format";
 import { getRouteMeta } from "./navigation";
+import { HeaderMeetingPill } from "@/components/calendar/HeaderMeetingPill";
 
 const PRESENCE_OPTIONS: PresenceStatus[] = ["online", "busy", "away", "focus"];
 
@@ -38,13 +40,16 @@ export function Header({
   const { user, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
+  const [statusModalOpen, setStatusModalOpen] = useState(false);
   const { notifications, unreadCount, refresh } = useNotifications();
   const myPresence = usePresence(user?.id);
+  const myStatus = useUserStatus(user?.id);
 
   const menuRef = useClickOutside(() => setMenuOpen(false));
   const bellRef = useClickOutside(() => setBellOpen(false));
 
   const match = getRouteMeta(pathname);
+  const docsModule = pathname.startsWith("/app/docs");
 
   async function handleLogout() {
     await logout();
@@ -79,16 +84,21 @@ export function Header({
         zIndex: "var(--z-sticky)",
       }}
     >
-      <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+      <div className="workspace-module-switcher" aria-label="Workspace modules">
+        <Link href="/app/docs" aria-current={docsModule ? "page" : undefined} onClick={() => window.localStorage.setItem("workspace.last-module", "docs")}><BookOpenText size={15}/>Docs</Link>
+        <Link href="/app/teams" aria-current={!docsModule ? "page" : undefined} onClick={() => window.localStorage.setItem("workspace.last-module", "teams")}><FolderKanban size={15}/>Teams</Link>
+      </div>
+
+      <div className="pmp-header-route" style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
         <div style={{ fontSize: 11, color: "var(--text-tertiary)", letterSpacing: "0.04em", textTransform: "uppercase" }}>
-          {match.crumb}
+          {docsModule ? "Knowledge" : match.crumb}
         </div>
-        <div style={{ fontSize: 16, fontWeight: 700, lineHeight: "20px" }}>{match.title}</div>
+        <div style={{ fontSize: 16, fontWeight: 700, lineHeight: "20px" }}>{docsModule ? "Internal Docs" : match.title}</div>
       </div>
 
       <div style={{ flex: 1 }} />
 
-      <button
+      {!docsModule && <button
         type="button"
         aria-label="Open global search"
         onClick={onOpenSearch}
@@ -111,7 +121,9 @@ export function Header({
         <Search size={15} style={{ color: "var(--text-tertiary)", flexShrink: 0 }} />
         <span style={{ fontSize: 13.5, flex: 1, minWidth: 0, textAlign: "left" }}>Search projects, tasks, people…</span>
         <span className="pmp-search-kbd">⌘K</span>
-      </button>
+      </button>}
+
+      <HeaderMeetingPill />
 
       <div ref={bellRef} style={{ position: "relative" }}>
         <button
@@ -206,7 +218,7 @@ export function Header({
             </div>
             {recent.length === 0 && (
               <div style={{ padding: 18, fontSize: 12.5, color: "var(--text-tertiary)", textAlign: "center" }}>
-                You're all caught up.
+                You&apos;re all caught up.
               </div>
             )}
             {recent.map((n) => (
@@ -221,12 +233,15 @@ export function Header({
                   {!n.is_read && (
                     <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--accent-primary)", flexShrink: 0 }} />
                   )}
-                  <div style={{ minWidth: 0 }}>
                     <div style={{ fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                       {n.title}
                     </div>
-                    <div style={{ fontSize: 11.5, color: "var(--text-tertiary)" }}>{relativeTime(n.created_at)}</div>
-                  </div>
+                    {n.body && (
+                      <div style={{ fontSize: 11.5, color: "var(--text-secondary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {formatNotificationBody(n.body)}
+                      </div>
+                    )}
+                    <div style={{ fontSize: 10.5, color: "var(--text-tertiary)" }}>{relativeTime(n.created_at)}</div>
                 </div>
               </Link>
             ))}
@@ -248,6 +263,17 @@ export function Header({
           </div>
         )}
       </div>
+
+      {/* Live Custom Status Pill in Top Right Header */}
+      <UserStatusPill
+        status={myStatus.status || myPresence}
+        emoji={user?.status_emoji || myStatus.status_emoji}
+        text={user?.status_text || myStatus.status_text}
+        interactive
+        onClick={() => setStatusModalOpen(true)}
+        size="md"
+        maxWidth={200}
+      />
 
       <div ref={menuRef} style={{ position: "relative" }}>
         <button
@@ -279,6 +305,35 @@ export function Header({
               <div style={{ fontSize: 13, fontWeight: 600 }}>{user?.full_name}</div>
               <div style={{ fontSize: 11, color: "var(--text-tertiary)" }}>{user?.email}</div>
             </div>
+
+            {/* Custom status shortcut */}
+            <button
+              type="button"
+              onClick={() => {
+                setMenuOpen(false);
+                setStatusModalOpen(true);
+              }}
+              className="pmp-row"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                width: "100%",
+                border: "none",
+                background: "transparent",
+                color: "var(--text-primary)",
+                cursor: "pointer",
+                padding: "9px 12px",
+                fontSize: 12.5,
+                fontWeight: 600,
+                textAlign: "left",
+                borderBottom: "1px solid var(--border-subtle)",
+              }}
+            >
+              <Sparkles size={14} style={{ color: "var(--accent-primary)" }} />
+              <span>Set custom status…</span>
+            </button>
+
             <div style={{ padding: "8px 12px", borderBottom: "1px solid var(--border-subtle)" }}>
               <div style={{ fontSize: 10.5, color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 6 }}>
                 Presence
@@ -348,6 +403,11 @@ export function Header({
           </div>
         )}
       </div>
+
+      <UserStatusPickerModal
+        isOpen={statusModalOpen}
+        onClose={() => setStatusModalOpen(false)}
+      />
     </header>
   );
 }

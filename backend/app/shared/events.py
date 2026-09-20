@@ -1,5 +1,5 @@
 """Cross-module integration events (the Python equivalent of the
-`ProjectPlatform.Contracts` MediatR notifications). These are the ONLY objects
+`Platform.Platform.Contracts` MediatR notifications). These are the ONLY objects
 one module may share with another at runtime via `app.core.events.event_bus`;
 modules must never import each other's `models.py`/`repository.py`.
 
@@ -33,6 +33,10 @@ class TaskStatusChanged:
 class TaskAssigned:
     task_id: UUID
     assignee_user_ids: List[UUID]
+    task_title: Optional[str] = None
+    project_name: Optional[str] = None
+    is_ticket: bool = False
+    requested_by_user_id: Optional[UUID] = None
     occurred_at: datetime = field(default_factory=_now)
 
 
@@ -42,6 +46,9 @@ class BlockerRaised:
     task_id: UUID
     pending_on_user_id: UUID
     severity: str
+    title: Optional[str] = None
+    description: Optional[str] = None
+    task_title: Optional[str] = None
     occurred_at: datetime = field(default_factory=_now)
 
 
@@ -58,6 +65,7 @@ class CommentAdded:
     entity_id: UUID
     author_user_id: UUID
     mentioned_user_ids: List[UUID]
+    entity_title: Optional[str] = None
     occurred_at: datetime = field(default_factory=_now)
 
 
@@ -112,6 +120,7 @@ class ProjectMemberAdded:
     project_id: UUID
     user_id: UUID
     role: str
+    project_name: Optional[str] = None
     occurred_at: datetime = field(default_factory=_now)
 
 
@@ -137,6 +146,8 @@ class TaskDependencyCreated:
     predecessor_task_id: UUID
     successor_task_id: UUID
     successor_assignee_user_ids: List[UUID] = field(default_factory=list)
+    predecessor_title: Optional[str] = None
+    successor_title: Optional[str] = None
     occurred_at: datetime = field(default_factory=_now)
 
 
@@ -153,4 +164,7 @@ class ChatMessageSent:
 class PresenceChanged:
     user_id: UUID
     status: str
+    status_text: Optional[str] = None
+    status_emoji: Optional[str] = None
+    status_expires_at: Optional[datetime] = None
     occurred_at: datetime = field(default_factory=_now)

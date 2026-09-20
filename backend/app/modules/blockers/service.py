@@ -61,6 +61,8 @@ async def create_blocker(
             task_id=blocker.blocked_task_id,
             pending_on_user_id=blocker.pending_on_user_id,
             severity=blocker.severity,
+            title=blocker.title,
+            description=blocker.description,
         )
     )
     return BlockerRead.model_validate(blocker)
@@ -101,6 +103,8 @@ async def update_blocker(
                 task_id=blocker.blocked_task_id,
                 pending_on_user_id=blocker.pending_on_user_id,
                 severity=blocker.severity,
+                title=blocker.title,
+                description=blocker.description,
             )
         )
     return BlockerRead.model_validate(blocker)

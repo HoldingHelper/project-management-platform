@@ -33,6 +33,16 @@ class InMemoryRateLimiter:
         self._hits.clear()
 
 
+def _get_client_ip(request: Request) -> str:
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    real_ip = request.headers.get("X-Real-IP")
+    if real_ip:
+        return real_ip.strip()
+    return request.client.host if request.client else "unknown"
+
+
 class RateLimitMiddleware(BaseHTTPMiddleware):
     def __init__(
         self, app, limiter: InMemoryRateLimiter, path_predicate: Callable[[str], bool]
@@ -43,7 +53,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next) -> Response:
         if self.path_predicate(request.url.path):
-            client_key = request.client.host if request.client else "unknown"
+            client_key = _get_client_ip(request)
             if not self.limiter.is_allowed(client_key):
                 return JSONResponse(
                     status_code=429,

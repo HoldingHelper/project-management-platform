@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     default: "Project Management Platform",
     template: "%s · Project Management Platform",
   },
-  description: "Enterprise project management platform",
+  description: "Project Management Platform — Open collaboration platform for projects, knowledge, and execution",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

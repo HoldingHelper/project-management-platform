@@ -25,7 +25,12 @@ from app.modules.identity.models import (
 async def get_user_by_id(db: AsyncSession, user_id: UUID) -> Optional[User]:
     result = await db.execute(
         select(User)
-        .options(selectinload(User.roles).selectinload(UserRole.role))
+        .options(
+            selectinload(User.roles)
+            .selectinload(UserRole.role)
+            .selectinload(Role.permissions)
+            .selectinload(RolePermission.permission)
+        )
         .where(User.id == user_id)
     )
     return result.scalar_one_or_none()
@@ -34,7 +39,12 @@ async def get_user_by_id(db: AsyncSession, user_id: UUID) -> Optional[User]:
 async def get_user_by_email(db: AsyncSession, email: str) -> Optional[User]:
     result = await db.execute(
         select(User)
-        .options(selectinload(User.roles).selectinload(UserRole.role))
+        .options(
+            selectinload(User.roles)
+            .selectinload(UserRole.role)
+            .selectinload(Role.permissions)
+            .selectinload(RolePermission.permission)
+        )
         .where(User.email == email.lower())
     )
     return result.scalar_one_or_none()
@@ -43,7 +53,12 @@ async def get_user_by_email(db: AsyncSession, email: str) -> Optional[User]:
 async def get_user_by_username(db: AsyncSession, username: str) -> Optional[User]:
     result = await db.execute(
         select(User)
-        .options(selectinload(User.roles).selectinload(UserRole.role))
+        .options(
+            selectinload(User.roles)
+            .selectinload(UserRole.role)
+            .selectinload(Role.permissions)
+            .selectinload(RolePermission.permission)
+        )
         .where(User.username == username.lower())
     )
     return result.scalar_one_or_none()
@@ -59,7 +74,12 @@ async def get_user_by_identifier(db: AsyncSession, identifier: str) -> Optional[
 async def list_users(
     db: AsyncSession, *, search: Optional[str], offset: int, limit: int
 ) -> tuple[Sequence[User], int]:
-    stmt = select(User).options(selectinload(User.roles).selectinload(UserRole.role))
+    stmt = select(User).options(
+        selectinload(User.roles)
+        .selectinload(UserRole.role)
+        .selectinload(Role.permissions)
+        .selectinload(RolePermission.permission)
+    )
     count_stmt = select(User)
     if search:
         like = f"%{search.lower()}%"
@@ -86,14 +106,47 @@ async def get_users_by_ids(db: AsyncSession, user_ids: List[UUID]) -> Sequence[U
         return []
     result = await db.execute(
         select(User)
-        .options(selectinload(User.roles).selectinload(UserRole.role))
+        .options(
+            selectinload(User.roles)
+            .selectinload(UserRole.role)
+            .selectinload(Role.permissions)
+            .selectinload(RolePermission.permission)
+        )
         .where(User.id.in_(user_ids))
     )
     return result.scalars().unique().all()
 
 
+async def delete_user(db: AsyncSession, user: User) -> None:
+    await db.delete(user)
+
+
 async def get_role_by_name(db: AsyncSession, name: str) -> Optional[Role]:
-    result = await db.execute(select(Role).where(Role.name == name))
+    result = await db.execute(
+        select(Role)
+        .options(
+            selectinload(Role.permissions).selectinload(RolePermission.permission)
+        )
+        .where(Role.name == name)
+    )
+    return result.scalar_one_or_none()
+
+
+async def get_role_by_id(db: AsyncSession, role_id: UUID) -> Optional[Role]:
+    result = await db.execute(
+        select(Role)
+        .options(selectinload(Role.permissions).selectinload(RolePermission.permission))
+        .where(Role.id == role_id)
+    )
+    return result.scalar_one_or_none()
+
+
+async def get_role_by_normalized_name(db: AsyncSession, name: str) -> Optional[Role]:
+    from sqlalchemy import func
+
+    result = await db.execute(
+        select(Role).where(func.lower(Role.name) == name.strip().lower())
+    )
     return result.scalar_one_or_none()
 
 
@@ -149,9 +202,7 @@ async def get_password_reset_token_by_hash(
 async def get_invitation_by_id(
     db: AsyncSession, invitation_id: UUID
 ) -> Optional[Invitation]:
-    result = await db.execute(
-        select(Invitation).where(Invitation.id == invitation_id)
-    )
+    result = await db.execute(select(Invitation).where(Invitation.id == invitation_id))
     return result.scalar_one_or_none()
 
 
@@ -181,15 +232,11 @@ async def get_pending_invitation_by_email(
 
 
 async def list_invitations(db: AsyncSession) -> Sequence[Invitation]:
-    result = await db.execute(
-        select(Invitation).order_by(Invitation.created_at.desc())
-    )
+    result = await db.execute(select(Invitation).order_by(Invitation.created_at.desc()))
     return result.scalars().all()
 
 
-async def get_user_settings(
-    db: AsyncSession, user_id: UUID
-) -> Optional[UserSettings]:
+async def get_user_settings(db: AsyncSession, user_id: UUID) -> Optional[UserSettings]:
     result = await db.execute(
         select(UserSettings).where(UserSettings.user_id == user_id)
     )

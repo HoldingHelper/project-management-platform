@@ -1,4 +1,4 @@
-fastapi==0.141.1
+fastapi==0.115.6
 uvicorn[standard]==0.34.0
 sqlalchemy==2.0.36
 greenlet==3.5.3  # required by SQLAlchemy's async engine (asyncio greenlet bridge)
@@ -7,14 +7,14 @@ alembic==1.14.0
 pydantic==2.10.4
 pydantic-settings==2.7.1
 email-validator==2.2.0
-pyjwt==2.13.0
+pyjwt==2.10.1
 bcrypt==4.2.1
-python-multipart==0.0.32
+python-multipart==0.0.20
 redis==5.2.1
 boto3==1.35.90
 httpx==0.28.1  # outbound HTTP client (Google Drive integration)
-cryptography==50.0.0  # Fernet encryption for stored OAuth refresh tokens
-websockets==15.0.1
+cryptography==44.0.0  # Fernet encryption for stored OAuth refresh tokens
+websockets==14.1
 python-slugify==8.0.4
 structlog==24.4.0
 openpyxl==3.1.5
@@ -22,8 +22,8 @@ langchain-core>=1.1.0
 langchain-openai>=1.1.0
 openai>=1.40.0
 tiktoken>=0.10.0
-langgraph==1.2.10
-langgraph-prebuilt==1.1.0
-langgraph-checkpoint==4.1.1
-langgraph-sdk==0.4.2
-langsmith==0.10.15
+langgraph==1.0.8
+langgraph-prebuilt==1.0.7
+langgraph-checkpoint==3.0.1
+langgraph-sdk==0.3.6
+strawberry-graphql[fastapi]>=0.250.0

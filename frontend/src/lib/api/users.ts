@@ -51,6 +51,21 @@ export function listPermissions() {
   return apiFetch<PermissionRead[]>("/permissions");
 }
 
+export function createRole(input: {
+  name: string;
+  description?: string;
+  permission_codes: string[];
+}) {
+  return apiFetch<RoleRead>("/roles", { method: "POST", body: input });
+}
+
+export function updateRolePermissions(roleId: UUID, permission_codes: string[]) {
+  return apiFetch<RoleRead>(`/roles/${roleId}`, {
+    method: "PATCH",
+    body: { permission_codes },
+  });
+}
+
 // ---- Admin: user management ----
 export function createUser(input: {
   email: string;
@@ -59,6 +74,9 @@ export function createUser(input: {
   first_name: string;
   last_name: string;
   job_title?: string;
+  department_id?: UUID | null;
+  team_id?: UUID | null;
+  manager_id?: UUID | null;
   role_names: string[];
 }) {
   return apiFetch<UserRead>("/users", { method: "POST", body: input }).then(normalizeUser);
@@ -71,11 +89,50 @@ export function assignRoles(userId: UUID, role_names: string[]) {
   }).then(normalizeUser);
 }
 
+export function deleteUser(userId: UUID) {
+  return apiFetch<void>(`/users/${userId}`, { method: "DELETE" });
+}
+
+export function adminUpdateUser(
+  userId: UUID,
+  input: {
+    first_name?: string;
+    last_name?: string;
+    username?: string;
+    email?: string;
+    job_title?: string;
+    department_id?: UUID | null;
+    team_id?: UUID | null;
+    manager_id?: UUID | null;
+    bio?: string;
+    is_active?: boolean;
+    role_names?: string[];
+  },
+) {
+  return apiFetch<UserRead>(`/users/${userId}`, {
+    method: "PATCH",
+    body: input,
+  }).then(normalizeUser);
+}
+
+export function adminResetPassword(userId: UUID, new_password: string) {
+  return apiFetch<void>(`/users/${userId}/reset-password`, {
+    method: "POST",
+    body: { new_password },
+  });
+}
+
 // ---- Invitations ----
-export function createInvitation(email: string, role_name: string) {
+export function createInvitation(
+  email: string,
+  role_name: string,
+  department_id?: UUID | null,
+  team_id?: UUID | null,
+  manager_id?: UUID | null,
+) {
   return apiFetch<InvitationRead>("/users/invitations", {
     method: "POST",
-    body: { email, role_name },
+    body: { email, role_name, department_id, team_id, manager_id },
   });
 }
 export function listInvitations() {
@@ -136,10 +193,24 @@ export function updateMySettings(input: {
   });
 }
 
-// ---- Presence ----
+// ---- Presence & Status ----
 export function setMyPresence(status: PresenceStatus) {
   return apiFetch<void>("/users/me/presence", { method: "POST", body: { status } });
 }
+export function updateMyStatus(input: {
+  presence_status?: PresenceStatus;
+  status_text?: string | null;
+  status_emoji?: string | null;
+  clear_after_minutes?: number | null;
+}) {
+  return apiFetch<UserRead>("/users/me/status", {
+    method: "PUT",
+    body: input,
+  }).then(normalizeUser);
+}
+export function clearMyStatus() {
+  return apiFetch<UserRead>("/users/me/status", { method: "DELETE" }).then(normalizeUser);
+}
 export function getPresenceSnapshot() {
-  return apiFetch<Record<string, PresenceStatus>>("/users/presence");
+  return apiFetch<Record<string, PresenceStatus | { status: PresenceStatus; custom_status?: { text?: string; emoji?: string; expires_at?: string } }>>("/users/presence");
 }

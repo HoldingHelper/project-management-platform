@@ -29,7 +29,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.audit import register_audit_listeners
 from app.core.cache import get_redis
 from app.core.config import get_settings
-from app.core.database import engine
+from app.core.database import AsyncSessionLocal, engine
 from app.core.exception_handlers import register_exception_handlers
 from app.core.logging import configure_logging
 from app.core.middleware import CorrelationIdMiddleware
@@ -38,11 +38,19 @@ from app.core.security import TOKEN_TYPE_ACCESS, decode_token
 from app.core.storage import file_storage_service
 from app.core.websocket_manager import connection_manager
 
+from app.graphql.context import get_graphql_context
+from app.graphql.schema import schema as graphql_schema
+from strawberry.fastapi import GraphQLRouter
+
 # Domain routers -------------------------------------------------------------
 from app.modules.analytics.event_handlers import register_analytics_event_handlers
 from app.modules.analytics.router import router as analytics_router
 from app.modules.analytics.router import search_router
+from app.modules.automations.router import automations_router
+from app.modules.automations.service import register_automation_event_listeners
 from app.modules.blockers.router import blockers_router, pending_work_router
+from app.modules.calendar.router import calendar_router
+from app.modules.calendar import service as calendar_service
 from app.modules.chat.event_handlers import register_chat_event_handlers
 from app.modules.chat.router import chat_router
 from app.modules.collaboration.event_handlers import (
@@ -50,25 +58,34 @@ from app.modules.collaboration.event_handlers import (
 )
 from app.modules.collaboration.router import (
     comments_router,
+    devices_router,
     files_router,
     notifications_router,
 )
 from app.modules.identity.router import rbac_router
+from app.modules.integrations.github.router import github_router
+from app.modules.integrations.router import integrations_router
+from app.modules.integrations.whatsapp.router import whatsapp_router
+from app.modules.mcp.router import mcp_router
 from app.modules.music.router import music_router
 from app.modules.identity.router import router as auth_router
 from app.modules.identity.router import users_router
+from app.modules.docs.router import docs_router, public_docs_router
 from app.modules.organization.router import (
     departments_router,
     employees_router,
+    organization_router,
     skills_router,
     teams_router,
 )
 from app.modules.projects.router import (
     dependencies_router,
     phases_router,
+    partitions_router,
     portfolio_router,
     products_router,
     projects_router,
+    sprints_router,
     tasks_router,
 )
 
@@ -81,10 +98,8 @@ logger = structlog.get_logger(__name__)
 _auth_limiter = InMemoryRateLimiter(
     max_requests=settings.auth_rate_limit_per_minute, window_seconds=60
 )
-
 _RATE_LIMITED_SUFFIXES = (
     "/auth/login",
-    "/auth/refresh",
     "/auth/forgot-password",
     "/auth/reset-password",
 )
@@ -92,6 +107,19 @@ _RATE_LIMITED_SUFFIXES = (
 
 def _is_rate_limited_path(path: str) -> bool:
     return path.endswith(_RATE_LIMITED_SUFFIXES)
+
+
+async def _calendar_reminder_worker() -> None:
+    """Periodic background worker checking for upcoming meetings (T-10m & T-2m)."""
+    while True:
+        try:
+            await asyncio.sleep(60)
+            async with AsyncSessionLocal() as db:
+                await calendar_service.check_and_dispatch_meeting_reminders(db)
+        except asyncio.CancelledError:
+            break
+        except Exception as exc:
+            logger.warning("calendar_reminder_worker_error", error=str(exc))
 
 
 # --- Application lifecycle ---------------------------------------------------
@@ -110,6 +138,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     register_collaboration_event_handlers()
     register_analytics_event_handlers()
     register_chat_event_handlers()
+    register_automation_event_listeners()
 
     # 2. Ensure the object-storage bucket exists. Best-effort: the API must
     #    still boot in environments where MinIO/S3 isn't reachable yet -- file
@@ -128,6 +157,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             connection_manager.backplane_listener(), name="ws-backplane"
         )
 
+    # 4. Background meeting reminder worker
+    reminder_task = asyncio.create_task(
+        _calendar_reminder_worker(), name="calendar-reminders"
+    )
+
     logger.info(
         "application_startup",
         app_name=settings.app_name,
@@ -141,6 +175,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         backplane_task.cancel()
         with contextlib.suppress(asyncio.CancelledError):
             await backplane_task
+    reminder_task.cancel()
+    with contextlib.suppress(asyncio.CancelledError):
+        await reminder_task
     await engine.dispose()
     with contextlib.suppress(Exception):
         await get_redis().aclose()
@@ -185,11 +222,14 @@ _MODULE_ROUTERS: tuple[APIRouter, ...] = (
     departments_router,
     teams_router,
     employees_router,
+    organization_router,
     skills_router,
     products_router,
     projects_router,
     portfolio_router,
     phases_router,
+    sprints_router,
+    partitions_router,
     tasks_router,
     dependencies_router,
     blockers_router,
@@ -197,14 +237,32 @@ _MODULE_ROUTERS: tuple[APIRouter, ...] = (
     comments_router,
     files_router,
     notifications_router,
+    devices_router,
     chat_router,
     music_router,
     analytics_router,
     search_router,
+    public_docs_router,
+    docs_router,
+    calendar_router,
+    github_router,
+    whatsapp_router,
+    integrations_router,
+    automations_router,
+    mcp_router,
 )
 
 for module_router in _MODULE_ROUTERS:
     app.include_router(module_router, prefix=settings.api_v1_prefix)
+
+# --- GraphQL Engine ---------------------------------------------------------
+graphql_app = GraphQLRouter(
+    schema=graphql_schema,
+    context_getter=get_graphql_context,
+    graphql_ide="graphiql",
+)
+app.include_router(graphql_app, prefix="/graphql", tags=["GraphQL"])
+app.include_router(graphql_app, prefix=f"{settings.api_v1_prefix}/graphql", tags=["GraphQL"])
 
 
 # --- Infra endpoints --------------------------------------------------------

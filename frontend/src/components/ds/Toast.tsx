@@ -19,8 +19,18 @@ interface Toast {
   message: string;
 }
 
-const ToastContext = createContext<{ push: (message: string, kind?: Kind) => void }>({
+interface ToastContextValue {
+  push: (message: string, kind?: Kind) => void;
+  success: (message: string) => void;
+  error: (message: string) => void;
+  info: (message: string) => void;
+}
+
+const ToastContext = createContext<ToastContextValue>({
   push: () => {},
+  success: () => {},
+  error: () => {},
+  info: () => {},
 });
 
 const ICONS = { info: Info, success: CheckCircle2, error: AlertTriangle };
@@ -39,11 +49,15 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setToasts((prev) => [...prev, { id, kind, message }]);
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 4500);
+    }, 4000);
   }, []);
 
+  const success = useCallback((message: string) => push(message, "success"), [push]);
+  const error = useCallback((message: string) => push(message, "error"), [push]);
+  const info = useCallback((message: string) => push(message, "info"), [push]);
+
   return (
-    <ToastContext.Provider value={{ push }}>
+    <ToastContext.Provider value={{ push, success, error, info }}>
       {children}
       <div
         className="pmp-toast-viewport"

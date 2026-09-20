@@ -1,0 +1,38 @@
+# Learn more https://docs.expo.dev/more/expo-cli/#file-system
+
+node_modules/
+.expo/
+dist/
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+pnpm-debug.*
+
+# Native build artifacts
+/ios/Pods/
+/ios/build/
+/ios/DerivedData/
+/ios/.xcode.env.local
+/android/.gradle/
+/android/app/build/
+/android/build/
+/android/local.properties
+/android/.cxx/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Signing keys & credentials
+*.jks
+*.p8
+*.p12
+*.key
+*.keystore
+*.mobileprovision
+*.orig.*
+web-build/
+
+# macOS
+.DS_Store

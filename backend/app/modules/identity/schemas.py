@@ -52,6 +52,16 @@ class UserRead(BaseModel):
     phone: Optional[str] = None
     location: Optional[str] = None
     presence_status: Optional[str] = None
+    status_text: Optional[str] = None
+    status_emoji: Optional[str] = None
+    status_expires_at: Optional[datetime] = None
+    department_id: Optional[UUID] = None
+    department_name: Optional[str] = None
+    team_id: Optional[UUID] = None
+    team_name: Optional[str] = None
+    manager_id: Optional[UUID] = None
+    manager_name: Optional[str] = None
+    manager_email: Optional[str] = None
     is_active: bool
     mfa_enabled: bool
     roles: List[str] = Field(default_factory=list)
@@ -91,17 +101,15 @@ class CreateUserRequest(BaseModel):
     first_name: str = Field(min_length=1, max_length=100)
     last_name: str = Field(min_length=1, max_length=100)
     job_title: Optional[str] = None
+    department_id: Optional[UUID] = None
+    team_id: Optional[UUID] = None
+    manager_id: Optional[UUID] = None
     role_names: List[str] = Field(default_factory=list)
 
     @field_validator("role_names")
     @classmethod
     def validate_roles(cls, roles: List[str]) -> List[str]:
-        from app.core.permissions import ALL_ROLES
-
-        for r in roles:
-            if r not in ALL_ROLES:
-                raise ValueError(f"Unknown role '{r}'.")
-        return roles
+        return list(dict.fromkeys(role.strip() for role in roles if role.strip()))
 
 
 class AssignRolesRequest(BaseModel):
@@ -110,12 +118,43 @@ class AssignRolesRequest(BaseModel):
     @field_validator("role_names")
     @classmethod
     def validate_roles(cls, roles: List[str]) -> List[str]:
-        from app.core.permissions import ALL_ROLES
+        normalized = list(dict.fromkeys(role.strip() for role in roles if role.strip()))
+        if not normalized:
+            raise ValueError("At least one role is required.")
+        return normalized
 
-        for r in roles:
-            if r not in ALL_ROLES:
-                raise ValueError(f"Unknown role '{r}'.")
-        return roles
+
+class CreateRoleRequest(BaseModel):
+    name: str = Field(min_length=2, max_length=100, pattern=r"^[A-Za-z][A-Za-z0-9 _-]*$")
+    description: Optional[str] = Field(default=None, max_length=500)
+    permission_codes: List[str] = Field(default_factory=list)
+
+    @field_validator("name", mode="before")
+    @classmethod
+    def normalize_name(cls, name: str) -> str:
+        return " ".join(name.split())
+
+    @field_validator("description", mode="before")
+    @classmethod
+    def normalize_description(cls, description: Optional[str]) -> Optional[str]:
+        if description is None:
+            return None
+        normalized = description.strip()
+        return normalized or None
+
+    @field_validator("permission_codes")
+    @classmethod
+    def normalize_permissions(cls, codes: List[str]) -> List[str]:
+        return list(dict.fromkeys(code.strip() for code in codes if code.strip()))
+
+
+class UpdateRolePermissionsRequest(BaseModel):
+    permission_codes: List[str] = Field(default_factory=list)
+
+    @field_validator("permission_codes")
+    @classmethod
+    def normalize_permissions(cls, codes: List[str]) -> List[str]:
+        return list(dict.fromkeys(code.strip() for code in codes if code.strip()))
 
 
 class RoleRead(BaseModel):
@@ -123,6 +162,7 @@ class RoleRead(BaseModel):
     id: UUID
     name: str
     description: Optional[str] = None
+    permission_codes: List[str] = Field(default_factory=list)
 
 
 class PermissionRead(BaseModel):
@@ -140,20 +180,58 @@ class UserSummary(BaseModel):
     email: str
     avatar_url: Optional[str] = None
     is_active: bool
+    presence_status: Optional[str] = None
+    status_text: Optional[str] = None
+    status_emoji: Optional[str] = None
+    status_expires_at: Optional[datetime] = None
+    department_id: Optional[UUID] = None
+    department_name: Optional[str] = None
+    team_id: Optional[UUID] = None
+    team_name: Optional[str] = None
+    manager_id: Optional[UUID] = None
+    manager_name: Optional[str] = None
+
+
+class CustomStatusUpdateRequest(BaseModel):
+    presence_status: Optional[str] = None
+    status_text: Optional[str] = Field(default=None, max_length=255)
+    status_emoji: Optional[str] = Field(default=None, max_length=32)
+    clear_after_minutes: Optional[int] = Field(default=None, ge=1, le=10080)
+
+    @field_validator("presence_status")
+    @classmethod
+    def validate_presence_status(cls, status: Optional[str]) -> Optional[str]:
+        if status is not None and status not in PRESENCE_STATUSES:
+            raise ValueError(
+                f"Status must be one of {', '.join(PRESENCE_STATUSES)}."
+            )
+        return status
+
+
+class UserStatusRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    user_id: UUID
+    presence_status: str
+    status_text: Optional[str] = None
+    status_emoji: Optional[str] = None
+    status_expires_at: Optional[datetime] = None
 
 
 class CreateInvitationRequest(BaseModel):
     email: EmailStr
     role_name: str
+    department_id: Optional[UUID] = None
+    team_id: Optional[UUID] = None
+    manager_id: Optional[UUID] = None
 
     @field_validator("role_name")
     @classmethod
     def validate_role(cls, role: str) -> str:
-        from app.core.permissions import ALL_ROLES
-
-        if role not in ALL_ROLES:
-            raise ValueError(f"Unknown role '{role}'.")
-        return role
+        normalized = role.strip()
+        if not normalized:
+            raise ValueError("Role is required.")
+        return normalized
 
 
 class InvitationRead(BaseModel):
@@ -163,11 +241,19 @@ class InvitationRead(BaseModel):
     email: str
     role_name: str
     invited_by_user_id: UUID
+    department_id: Optional[UUID] = None
+    department_name: Optional[str] = None
+    team_id: Optional[UUID] = None
+    team_name: Optional[str] = None
+    manager_id: Optional[UUID] = None
+    manager_name: Optional[str] = None
     expires_at: datetime
     accepted_at: Optional[datetime] = None
     revoked_at: Optional[datetime] = None
     created_at: datetime
     status: str  # pending | accepted | revoked | expired
+    invite_token: Optional[str] = None
+    invite_url: Optional[str] = None
 
 
 class InvitationPublicRead(BaseModel):
@@ -175,6 +261,9 @@ class InvitationPublicRead(BaseModel):
 
     email: str
     role_name: str
+    department_name: Optional[str] = None
+    team_name: Optional[str] = None
+    manager_name: Optional[str] = None
     expires_at: datetime
 
 
@@ -230,3 +319,31 @@ class PresenceUpdateRequest(BaseModel):
                 f"Status must be one of {', '.join(PRESENCE_STATUSES)}."
             )
         return status
+
+
+class AdminUpdateUserRequest(BaseModel):
+    first_name: Optional[str] = Field(default=None, min_length=1, max_length=100)
+    last_name: Optional[str] = Field(default=None, min_length=1, max_length=100)
+    username: Optional[str] = Field(default=None, min_length=2, max_length=64)
+    email: Optional[EmailStr] = None
+    job_title: Optional[str] = Field(default=None, max_length=150)
+    department_id: Optional[UUID] = None
+    team_id: Optional[UUID] = None
+    manager_id: Optional[UUID] = None
+    bio: Optional[str] = Field(default=None, max_length=2000)
+    is_active: Optional[bool] = None
+    role_names: Optional[List[str]] = None
+
+    @field_validator("role_names")
+    @classmethod
+    def validate_roles(cls, roles: Optional[List[str]]) -> Optional[List[str]]:
+        if roles is None:
+            return None
+        normalized = list(dict.fromkeys(role.strip() for role in roles if role.strip()))
+        if not normalized:
+            raise ValueError("At least one role is required.")
+        return normalized
+
+
+class AdminResetPasswordRequest(BaseModel):
+    new_password: str = Field(min_length=8)

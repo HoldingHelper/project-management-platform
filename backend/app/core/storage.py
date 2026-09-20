@@ -3,7 +3,7 @@ module for task/phase/blocker file attachments."""
 
 from __future__ import annotations
 
-from typing import BinaryIO
+from typing import Any, BinaryIO
 
 import boto3
 from botocore.client import Config as BotoConfig
@@ -15,17 +15,21 @@ settings = get_settings()
 
 class FileStorageService:
     def __init__(self) -> None:
-        self._client = boto3.client(
-            "s3",
-            endpoint_url=settings.s3_endpoint_url,
-            aws_access_key_id=settings.s3_access_key,
-            aws_secret_access_key=settings.s3_secret_key,
-            region_name=settings.s3_region,
-            use_ssl=settings.s3_use_ssl,
-            config=BotoConfig(
+        client_kwargs: dict[str, Any] = {
+            "region_name": settings.s3_region or "eu-central-1",
+            "use_ssl": settings.s3_use_ssl,
+            "config": BotoConfig(
                 signature_version="s3v4", s3={"addressing_style": "path"}
             ),
-        )
+        }
+        if settings.s3_endpoint_url and settings.s3_endpoint_url.strip():
+            client_kwargs["endpoint_url"] = settings.s3_endpoint_url.strip()
+        if settings.s3_access_key and settings.s3_access_key.strip():
+            client_kwargs["aws_access_key_id"] = settings.s3_access_key.strip()
+        if settings.s3_secret_key and settings.s3_secret_key.strip():
+            client_kwargs["aws_secret_access_key"] = settings.s3_secret_key.strip()
+
+        self._client = boto3.client("s3", **client_kwargs)
         self._bucket = settings.s3_bucket
 
     def ensure_bucket(self) -> None:

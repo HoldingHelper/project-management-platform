@@ -3,14 +3,13 @@
 from functools import lru_cache
 from typing import List, Self
 
-from pydantic import model_validator
+from pydantic import AliasChoices, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _DEFAULT_JWT_SECRET = "CHANGE_ME_dev_only_secret_key_please_override_in_env"
 _DEFAULT_DB_PASSWORD = "pmp_dev_password"
 _DEFAULT_S3_ACCESS_KEY = "pmp_minio_admin"
 _DEFAULT_S3_SECRET_KEY = "pmp_minio_password"
-_DEFAULT_SEED_ADMIN_PASSWORD = "ChangeMe123!"
 
 
 class Settings(BaseSettings):
@@ -29,12 +28,22 @@ class Settings(BaseSettings):
         "postgresql+asyncpg://pmp_app:pmp_dev_password@localhost:5432/projectplatform"
     )
     database_echo: bool = False
+    postgres_host: str = ""
+    postgres_port: int = 5432
+    postgres_db: str = ""
+    postgres_user: str = ""
+    postgres_password: str = ""
 
     # JWT / Auth
     jwt_secret: str = _DEFAULT_JWT_SECRET
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 15
     refresh_token_expire_days: int = 7
+
+    # Initial Admin Bootstrap
+    initial_admin_email: str = Field("admin@example.com", validation_alias=AliasChoices("INITIAL_ADMIN_EMAIL", "SEED_ADMIN_EMAIL"))
+    initial_admin_username: str = Field("admin", validation_alias=AliasChoices("INITIAL_ADMIN_USERNAME", "SEED_ADMIN_USERNAME"))
+    initial_admin_password: str = Field("ChangeMe123!", validation_alias=AliasChoices("INITIAL_ADMIN_PASSWORD", "SEED_ADMIN_PASSWORD"))
 
     # Redis
     redis_url: str = "redis://localhost:6379/0"
@@ -44,11 +53,12 @@ class Settings(BaseSettings):
     # (publishing is best-effort); disable only for Redis-less local runs/tests.
     realtime_backplane_enabled: bool = True
 
-    # Google Drive integration (music channels). Empty = feature disabled;
-    # the /music/drive endpoints return a clear error until configured.
+    # Google Drive & Calendar integration
     google_oauth_client_id: str = ""
     google_oauth_client_secret: str = ""
     google_oauth_redirect_uri: str = "http://localhost:3000/drive/callback"
+    google_calendar_redirect_uri: str = "http://localhost:3000/calendar/callback"
+    calendar_sync_interval_seconds: int = 300
     # Fernet key for encrypting stored Google refresh tokens at rest.
     # Generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
     music_token_encryption_key: str = ""
@@ -62,11 +72,26 @@ class Settings(BaseSettings):
     music_cache_bucket: str = "music-cache"
     music_cache_max_bytes: int = 5 * 1024 * 1024 * 1024
 
+    # GitHub Organization & User OAuth Integration
+    github_webhook_secret: str = ""
+    github_org_token: str = ""
+    github_client_id: str = ""
+    github_client_secret: str = ""
+
+    # Telegram Bot Integration
+    telegram_bot_token: str = ""
+    telegram_bot_username: str = "YourConfiguredBot"
+
+    # WhatsApp Cloud API & Bot Integration
+    whatsapp_api_token: str = ""
+    whatsapp_phone_number_id: str = ""
+    whatsapp_verify_token: str = ""
+
     # S3 / MinIO
     s3_endpoint_url: str = "http://localhost:9000"
     s3_access_key: str = "pmp_minio_admin"
     s3_secret_key: str = "pmp_minio_password"
-    s3_bucket: str = "pmp-platform"
+    s3_bucket: str = "project-management-platform"
     s3_region: str = "us-east-1"
     s3_use_ssl: bool = False
 
@@ -78,13 +103,6 @@ class Settings(BaseSettings):
 
     # Rate limiting (login brute-force mitigation)
     auth_rate_limit_per_minute: int = 10
-
-    # Optional local/demo administrator created by scripts/seed_db.py.
-    seed_admin_email: str = "admin@example.com"
-    seed_admin_username: str = "admin"
-    seed_admin_password: str = _DEFAULT_SEED_ADMIN_PASSWORD
-    seed_admin_first_name: str = "Project"
-    seed_admin_last_name: str = "Admin"
 
     # AI project generation (LangGraph + OpenAI)
     openai_api_key: str = ""
@@ -106,6 +124,23 @@ class Settings(BaseSettings):
         return self.environment.lower() in {"production", "prod"}
 
     @model_validator(mode="after")
+    def compose_database_url(self) -> Self:
+        if (
+            self.postgres_host
+            and self.postgres_user
+            and self.postgres_password
+            and self.postgres_db
+        ):
+            from urllib.parse import quote_plus
+
+            user = quote_plus(self.postgres_user)
+            pwd = quote_plus(self.postgres_password)
+            port = self.postgres_port or 5432
+            ssl_query = "?ssl=require" if self.is_production else ""
+            self.database_url = f"postgresql+asyncpg://{user}:{pwd}@{self.postgres_host}:{port}/{self.postgres_db}{ssl_query}"
+        return self
+
+    @model_validator(mode="after")
     def validate_production_secrets(self) -> Self:
         if not self.is_production:
             return self
@@ -114,20 +149,20 @@ class Settings(BaseSettings):
         if self.debug:
             errors.append("DEBUG must be false in production.")
         if (
-            self.jwt_secret == _DEFAULT_JWT_SECRET
+            self.jwt_secret in {_DEFAULT_JWT_SECRET, "local-development-secret-change-before-production", "replace-with-at-least-32-random-characters"}
             or len(self.jwt_secret.strip()) < 32
         ):
             errors.append(
                 "JWT_SECRET must be overridden with at least 32 characters."
             )
-        if _DEFAULT_DB_PASSWORD in self.database_url:
+        if any(value in self.database_url for value in (_DEFAULT_DB_PASSWORD, "project_dev_password")):
             errors.append("DATABASE_URL must not use the development password.")
-        if self.s3_access_key == _DEFAULT_S3_ACCESS_KEY:
+        if self.s3_access_key and self.s3_access_key in {_DEFAULT_S3_ACCESS_KEY, "project_minio_admin"}:
             errors.append("S3_ACCESS_KEY must not use the development default.")
-        if self.s3_secret_key == _DEFAULT_S3_SECRET_KEY:
+        if self.s3_secret_key and self.s3_secret_key in {_DEFAULT_S3_SECRET_KEY, "project_minio_password"}:
             errors.append("S3_SECRET_KEY must not use the development default.")
-        if self.seed_admin_password == _DEFAULT_SEED_ADMIN_PASSWORD:
-            errors.append("SEED_ADMIN_PASSWORD must not use the development default.")
+        if self.initial_admin_password == "ChangeMe123!":
+            errors.append("INITIAL_ADMIN_PASSWORD or SEED_ADMIN_PASSWORD must not use the development default.")
         if self.google_oauth_client_id and not self.music_token_encryption_key:
             errors.append(
                 "MUSIC_TOKEN_ENCRYPTION_KEY is required when Google Drive "

@@ -4,14 +4,16 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarDays, ExternalLink, Link2, Plus, SlidersHorizontal, X } from "lucide-react";
+import { CalendarDays, ExternalLink, GripVertical, Link2, Plus, SlidersHorizontal, Ticket, X } from "lucide-react";
 import {
   attachTask,
   detachTask,
-  getProjectPhases,
+  getProjectSprints,
   listProjects,
   listTasks,
+  reorderTasks,
   updateTask,
+  updateTaskStatus,
 } from "@/lib/api/projects";
 import {
   Avatar,
@@ -31,7 +33,8 @@ import { TaskEditorModal } from "@/components/tasks/TaskEditorModal";
 import { PageHeader, PAGE_STYLE, Spinner } from "@/components/ui/States";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { AppError } from "@/lib/api/client";
-import { useUserMap } from "@/lib/hooks";
+import { useTaskPartitions, useUserMap } from "@/lib/hooks";
+import { TASK_SORT_OPTIONS, sortTasks, type TaskSortMode } from "@/lib/task-sort";
 import type { TaskRead, UUID } from "@/lib/types";
 
 const STATUS_OPTIONS = [
@@ -61,8 +64,7 @@ export default function TasksPageWrapper() {
 
 function TasksPage() {
   const searchParams = useSearchParams();
-  const { hasPermission, isSuperAdmin } = useAuth();
-  const { user } = useAuth();
+  const { user, hasPermission, isSuperAdmin } = useAuth();
   const [view, setView] = useState<string>(searchParams.get("view") ?? "all");
   const [mode, setMode] = useState<string>("list");
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -79,6 +81,7 @@ function TasksPage() {
   const [attachTarget, setAttachTarget] = useState<TaskRead | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const { nameOf, users } = useUserMap();
+  const { partitions } = useTaskPartitions();
 
   useEffect(() => {
     const nextView = searchParams.get("view");
@@ -86,7 +89,7 @@ function TasksPage() {
   }, [searchParams]);
 
   const canAttach = isSuperAdmin() || hasPermission("tasks.manage_all", "projects.manage_all");
-  const canCreate = isSuperAdmin() || hasPermission("tasks.manage_all", "tasks.manage_team", "tasks.edit_assigned");
+  const canCreate = Boolean(user);
 
   const { data, error, isError, isFetching, isLoading, refetch } = useQuery({
     queryKey: ["tasks", partition, label, status, unattachedOnly, search],
@@ -108,7 +111,7 @@ function TasksPage() {
       const rows = await Promise.all(
         (projects.data?.items ?? []).map(async (project) => ({
           project,
-          phases: await getProjectPhases(project.id),
+          phases: await getProjectSprints(project.id),
         })),
       );
       const phaseToProject = new Map<UUID, { id: UUID; name: string }>();
@@ -152,6 +155,20 @@ function TasksPage() {
   }, [allRows, view, user, projectFilter, phaseToProject, assigneeFilter, createdMonth, dueMonth]);
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / 50));
   const pageRows = filteredRows.slice((page - 1) * 50, page * 50);
+
+  const queryClient = useQueryClient();
+  const toast = useToast();
+
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ taskId, nextStatus }: { taskId: UUID; nextStatus: string }) =>
+      updateTaskStatus(taskId, nextStatus as any),
+    onSuccess: (saved) => {
+      toast.push(saved.status === "Done" ? "Task completed." : "Task status updated.", "success");
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["phase-tasks"] });
+    },
+    onError: () => toast.push("Could not update task status.", "error"),
+  });
 
   const columns: Column<TaskRead>[] = useMemo(
     () => [
@@ -219,6 +236,7 @@ function TasksPage() {
       {
         key: "labels",
         header: "Labels",
+        sortValue: (t) => t.labels.join(", ").toLocaleLowerCase(),
         render: (t) => (
           <span style={{ display: "flex", gap: 4 }}>
             {t.labels.map((l) => (
@@ -233,17 +251,39 @@ function TasksPage() {
         key: "status",
         header: "Status",
         sortValue: (t) => String(t.status),
-        render: (t) => <StatusChip status={String(t.status)} label={STATUS_LABELS[String(t.status)] ?? String(t.status)} />,
+        render: (t) => (
+          <StatusChip
+            status={String(t.status)}
+            label={STATUS_LABELS[String(t.status)] ?? String(t.status)}
+            onChange={
+              canCreate
+                ? (next) => updateStatusMutation.mutate({ taskId: t.id, nextStatus: next })
+                : undefined
+            }
+          />
+        ),
       },
       {
         key: "type",
         header: "Type",
         sortValue: (t) => String(t.task_type),
-        render: (t) => <span style={smallPill}>{t.task_type}</span>,
+        render: (t) => (
+          <span style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+            <span style={smallPill}>{t.task_type}</span>
+            {t.is_ticket && <span style={{ ...smallPill, color: "var(--primary)" }}><Ticket size={11} /> Ticket</span>}
+          </span>
+        ),
+      },
+      {
+        key: "priority",
+        header: "Priority",
+        sortValue: (t) => ({ P0: 0, P1: 1, P2: 2, P3: 3 }[String(t.priority)] ?? 99),
+        render: (t) => <PriorityBadge level={t.priority} compact />,
       },
       {
         key: "assignees",
         header: "Assignees",
+        sortValue: (t) => t.assignee_user_ids.map((id) => nameOf(id)).sort().join(", ").toLocaleLowerCase(),
         render: (t) => (
           <span style={{ display: "flex" }}>
             {t.assignee_user_ids.slice(0, 4).map((id, i) => (
@@ -271,7 +311,7 @@ function TasksPage() {
       {
         key: "attached",
         header: "Project",
-        sortValue: (t) => (t.phase_id ? 0 : 1),
+        sortValue: (t) => t.phase_id ? phaseToProject.get(t.phase_id)?.name.toLocaleLowerCase() ?? "" : "zzzz",
         render: (t) =>
           t.phase_id ? (
             <span style={{ color: "var(--status-completed)", fontSize: 12 }}>
@@ -419,11 +459,7 @@ function TasksPage() {
           }}
           options={[
             { value: "all", label: "All partitions" },
-            { value: "business", label: "Business" },
-            { value: "tech", label: "Tech" },
-            { value: "operations", label: "Operations" },
-            { value: "marketing", label: "Marketing" },
-            { value: "sales", label: "Sales" },
+            ...partitions.map((item) => ({ value: item.slug, label: item.name })),
           ]}
         />
         <Select
@@ -576,6 +612,7 @@ function MonthlyTaskPlanner({
   const queryClient = useQueryClient();
   const toast = useToast();
   const [dragId, setDragId] = useState<UUID | null>(null);
+  const [sortMode, setSortMode] = useState<TaskSortMode>("manual");
   const [anchor, setAnchor] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -592,8 +629,13 @@ function MonthlyTaskPlanner({
   }, [anchor]);
 
   const moveTask = useMutation({
-    mutationFn: ({ id, targetMonth }: { id: UUID; targetMonth: string }) =>
-      updateTask(id, { due_date: targetMonth === "unscheduled" ? null : endOfMonthIso(targetMonth) }),
+    mutationFn: async ({ task, targetMonth, groups }: { task: TaskRead; targetMonth: string; groups: UUID[][] }) => {
+      const currentMonth = task.due_date?.slice(0, 7) ?? "unscheduled";
+      if (currentMonth !== targetMonth) {
+        await updateTask(task.id, { due_date: targetMonth === "unscheduled" ? null : endOfMonthIso(targetMonth) });
+      }
+      await Promise.all(groups.filter((group) => group.length > 0).map((group) => reorderTasks(group)));
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
       queryClient.invalidateQueries({ queryKey: ["project-overview"] });
@@ -608,17 +650,26 @@ function MonthlyTaskPlanner({
       if (key && map.has(key)) map.get(key)!.push(task);
       else if (!key) map.get("unscheduled")!.push(task);
     }
+    for (const [key, tasks] of map) map.set(key, sortTasks(tasks, sortMode, nameOf));
     return map;
-  }, [rows, months]);
+  }, [rows, months, nameOf, sortMode]);
 
-  const dropOn = (targetMonth: string) => {
+  const dropOn = (targetMonth: string, beforeId?: UUID) => {
     if (!dragId) return;
+    if (beforeId === dragId) {
+      setDragId(null);
+      return;
+    }
     const task = rows.find((row) => row.id === dragId);
     setDragId(null);
     if (!task) return;
     const current = task.due_date?.slice(0, 7) ?? "unscheduled";
-    if (current === targetMonth) return;
-    moveTask.mutate({ id: task.id, targetMonth });
+    const sourceOrder = (grouped.get(current) ?? []).filter((item) => item.id !== task.id).map((item) => item.id);
+    const targetOrder = (grouped.get(targetMonth) ?? []).filter((item) => item.id !== task.id).map((item) => item.id);
+    const insertAt = beforeId ? targetOrder.indexOf(beforeId) : targetOrder.length;
+    targetOrder.splice(insertAt < 0 ? targetOrder.length : insertAt, 0, task.id);
+    setSortMode("manual");
+    moveTask.mutate({ task, targetMonth, groups: current === targetMonth ? [targetOrder] : [sourceOrder, targetOrder] });
   };
 
   return (
@@ -627,7 +678,13 @@ function MonthlyTaskPlanner({
         <div style={{ display: "inline-flex", alignItems: "center", gap: 8, color: "var(--text-secondary)", fontSize: 13, fontWeight: 700 }}>
           <CalendarDays size={16} /> Monthly delivery plan
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <Select
+            aria-label="Sort tasks in monthly planner"
+            value={sortMode}
+            onChange={(event) => setSortMode(event.target.value as TaskSortMode)}
+            options={TASK_SORT_OPTIONS}
+          />
           <Button
             variant="secondary"
             onClick={() => setAnchor((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1))}
@@ -674,6 +731,15 @@ function MonthlyTaskPlanner({
                     key={task.id}
                     draggable={canAttach}
                     onDragStart={() => setDragId(task.id)}
+                    onDragEnd={() => setDragId(null)}
+                    onDragOver={(event) => {
+                      if (canAttach) event.preventDefault();
+                    }}
+                    onDrop={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      dropOn(bucket, task.id);
+                    }}
                     style={{
                       border: "1px solid var(--border-subtle)",
                       borderRadius: "var(--radius-2)",
@@ -682,6 +748,11 @@ function MonthlyTaskPlanner({
                       cursor: canAttach ? "grab" : "default",
                     }}
                   >
+                    {canAttach && (
+                      <span title="Drag to reorder or move" aria-hidden="true" style={{ float: "right", color: "var(--text-tertiary)", cursor: "grab" }}>
+                        <GripVertical size={15} />
+                      </span>
+                    )}
                     <Link
                       href={`/tasks/${task.id}`}
                       style={{ display: "block", color: "var(--text-primary)", textDecoration: "none", fontSize: 13.5, fontWeight: 800, lineHeight: "18px" }}
@@ -690,6 +761,7 @@ function MonthlyTaskPlanner({
                     </Link>
                     <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                       <StatusChip status={String(task.status)} label={STATUS_LABELS[String(task.status)] ?? String(task.status)} />
+                      {task.is_ticket && <span style={{ ...smallPill, color: "var(--primary)" }}><Ticket size={11} /> Ticket</span>}
                       <span style={smallPill}>{task.partition ?? "No partition"}</span>
                     </div>
                     <div style={{ marginTop: 8, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
@@ -785,7 +857,7 @@ function AttachModal({ task, onClose }: { task: TaskRead | null; onClose: () => 
   });
   const { data: phases } = useQuery({
     queryKey: ["project-phases", projectId],
-    queryFn: () => getProjectPhases(projectId as UUID),
+    queryFn: () => getProjectSprints(projectId as UUID),
     enabled: !!projectId,
   });
 
@@ -839,11 +911,11 @@ function AttachModal({ task, onClose }: { task: TaskRead | null; onClose: () => 
             options={(projects?.items ?? []).map((p) => ({ value: p.id, label: p.name }))}
           />
         </Field>
-        <Field label="Phase">
+        <Field label="Sprint">
           <Select
             value={phaseId}
             onChange={(e) => setPhaseId(e.target.value as UUID)}
-            placeholder={projectId ? "Choose a phase…" : "Pick a project first"}
+            placeholder={projectId ? "Choose a sprint…" : "Pick a project first"}
             options={(phases ?? []).map((ph) => ({ value: ph.id, label: ph.name }))}
           />
         </Field>

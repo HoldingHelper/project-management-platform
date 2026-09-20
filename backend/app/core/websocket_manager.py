@@ -30,7 +30,7 @@ import asyncio
 import contextlib
 import json
 from collections import defaultdict
-from typing import Any, DefaultDict, Dict, Set
+from typing import Any, DefaultDict, Dict, Optional, Set
 from uuid import UUID, uuid4
 
 from fastapi import WebSocket
@@ -53,6 +53,7 @@ class ConnectionManager:
         # from socket lifecycle; a manual status wins while the user is
         # connected and is cleared on their last disconnect.
         self._manual_presence: Dict[str, str] = {}
+        self._custom_status: Dict[str, dict] = {}
 
     async def connect(self, websocket: WebSocket, user_id: UUID) -> None:
         await websocket.accept()
@@ -84,27 +85,61 @@ class ConnectionManager:
             return "offline"
         return self._manual_presence.get(str(user_id), "online")
 
-    async def set_presence(self, user_id: UUID, status: str) -> None:
+    def get_custom_status(self, user_id: UUID) -> Optional[dict]:
+        return self._custom_status.get(str(user_id))
+
+    async def set_presence(
+        self,
+        user_id: UUID,
+        status: str,
+        status_text: Optional[str] = None,
+        status_emoji: Optional[str] = None,
+        status_expires_at: Optional[Any] = None,
+    ) -> None:
         key = str(user_id)
         if status in ("online", "offline"):
             self._manual_presence.pop(key, None)
         else:
             self._manual_presence[key] = status
+
+        if status_text is not None or status_emoji is not None:
+            if not status_text and not status_emoji:
+                self._custom_status.pop(key, None)
+            else:
+                self._custom_status[key] = {
+                    "text": status_text,
+                    "emoji": status_emoji,
+                    "expires_at": status_expires_at.isoformat() if hasattr(status_expires_at, "isoformat") else status_expires_at,
+                }
         await self.broadcast_presence(user_id)
 
-    def presence_snapshot(self) -> Dict[str, str]:
+    def presence_snapshot(self) -> Dict[str, Any]:
         """Status for every currently-connected user (offline users omitted)."""
-        return {
-            uid: self._manual_presence.get(uid, "online")
-            for uid, sockets in self._user_connections.items()
-            if sockets
-        }
+        snapshot = {}
+        for uid, sockets in self._user_connections.items():
+            if sockets:
+                item: Dict[str, Any] = {
+                    "status": self._manual_presence.get(uid, "online"),
+                }
+                custom = self._custom_status.get(uid)
+                if custom:
+                    item["custom_status"] = custom
+                snapshot[uid] = item
+        return snapshot
 
     async def broadcast_presence(self, user_id: UUID) -> None:
+        key = str(user_id)
+        payload: Dict[str, Any] = {
+            "user_id": key,
+            "status": self.get_presence(user_id),
+        }
+        custom = self._custom_status.get(key)
+        if custom:
+            payload["custom_status"] = custom
         await self.broadcast_to_group(
             PRESENCE_GROUP,
             "presence.changed",
-            {"user_id": str(user_id), "status": self.get_presence(user_id)},
+            payload,
         )
 
     # -- groups -------------------------------------------------------------

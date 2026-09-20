@@ -43,7 +43,7 @@ class GeneratedTask(BaseModel):
         "Testing",
         "Deployment",
     ] = "Feature"
-    partition: Literal["tech", "operations", "business", "marketing", "sales"] = "business"
+    partition: str = Field(default="business", min_length=1, max_length=32)
 
 
 class GeneratedMilestone(BaseModel):

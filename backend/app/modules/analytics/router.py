@@ -16,10 +16,20 @@ from app.core.permissions import Permissions
 from app.modules.analytics import service
 from app.modules.analytics.schemas import (
     AuditLogRead,
+    BottleneckItem,
+    BurndownReport,
+    CompletionTrends,
+    ContributionRow,
+    DORAMetricsReport,
+    EnhancedExecutiveKPIReport,
     ExecutiveDashboard,
+    FlowMetricsReport,
     HeatmapCell,
     PersonalDashboard,
+    PredictabilityReport,
     ProjectHealthReport,
+    VelocityReport,
+    WorkloadRow,
 )
 
 router = APIRouter(prefix="/analytics", tags=["Analytics"])
@@ -200,4 +210,59 @@ async def upload_long_term_planning(
     raise HTTPException(
         status_code=501,
         detail="Long-term planning upload is planned but not implemented yet.",
+    )
+
+
+# --- Enhanced KPI, DORA, Flow & Predictability Endpoints --------------------
+
+@router.get("/kpis/dora", response_model=DORAMetricsReport)
+async def get_dora_kpis(
+    range_days: int = Query(default=30, ge=7, le=365),
+    project_id: Optional[UUID] = Query(default=None),
+    current_user: CurrentUser = Depends(_view_analytics),
+    db: AsyncSession = Depends(get_db),
+) -> DORAMetricsReport:
+    """Return Google Cloud DORA metrics (Deployment Frequency, Lead Time, CFR, MTTR)."""
+    return await service.get_dora_metrics(
+        db, range_days=range_days, project_id=project_id
+    )
+
+
+@router.get("/kpis/flow", response_model=FlowMetricsReport)
+async def get_flow_kpis(
+    range_days: int = Query(default=30, ge=7, le=365),
+    project_id: Optional[UUID] = Query(default=None),
+    current_user: CurrentUser = Depends(_view_analytics),
+    db: AsyncSession = Depends(get_db),
+) -> FlowMetricsReport:
+    """Return Flow Framework value stream metrics (Velocity by Type, Investment Distribution, Load, Efficiency)."""
+    return await service.get_flow_metrics(
+        db, range_days=range_days, project_id=project_id
+    )
+
+
+@router.get("/kpis/predictability", response_model=PredictabilityReport)
+async def get_predictability_kpis(
+    range_days: int = Query(default=30, ge=7, le=365),
+    project_id: Optional[UUID] = Query(default=None),
+    current_user: CurrentUser = Depends(_view_analytics),
+    db: AsyncSession = Depends(get_db),
+) -> PredictabilityReport:
+    """Return project predictability score, on-time delivery rate, and Cumulative Flow Diagram (CFD)."""
+    return await service.get_predictability_and_cfd(
+        db, range_days=range_days, project_id=project_id
+    )
+
+
+@router.get("/kpis/executive-summary", response_model=EnhancedExecutiveKPIReport)
+async def get_enhanced_kpi_summary(
+    range_days: int = Query(default=30, ge=7, le=365),
+    project_id: Optional[UUID] = Query(default=None),
+    category: Optional[str] = Query(default=None),
+    current_user: CurrentUser = Depends(_view_analytics),
+    db: AsyncSession = Depends(get_db),
+) -> EnhancedExecutiveKPIReport:
+    """Return consolidated executive KPI dashboard with DORA, Flow, Predictability, and AI Executive Insights."""
+    return await service.get_enhanced_kpi_dashboard(
+        db, range_days=range_days, project_id=project_id, category=category
     )

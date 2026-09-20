@@ -15,7 +15,7 @@ import {
 import { Button, Tabs, TextInput, useToast } from "@/components/ds";
 import { EmptyState, PageHeader, PAGE_STYLE, Spinner } from "@/components/ui/States";
 import { VoiceRecorder } from "@/components/voice/VoiceRecorder";
-import { relativeTime } from "@/lib/format";
+import { formatNotificationBody, relativeTime } from "@/lib/format";
 import { useNotifications } from "@/lib/stores/notifications";
 import type { NotificationRead } from "@/lib/types";
 
@@ -190,7 +190,7 @@ function NotificationCard({
               <span style={{ fontSize: 11.5, color: "var(--status-completed)" }}>Resolved</span>
             )}
           </div>
-          <div style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 4 }}>{n.body}</div>
+          <div style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 4 }}>{formatNotificationBody(n.body)}</div>
 
           <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
             {n.link && (

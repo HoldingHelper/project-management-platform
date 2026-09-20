@@ -17,11 +17,15 @@ from app.modules.identity import service
 from app.modules.identity.repository import list_permissions, list_roles
 from app.modules.identity.schemas import (
     AcceptInvitationRequest,
+    AdminResetPasswordRequest,
+    AdminUpdateUserRequest,
     AssignRolesRequest,
     ChangeEmailRequest,
     ChangePasswordRequest,
     CreateInvitationRequest,
+    CreateRoleRequest,
     CreateUserRequest,
+    CustomStatusUpdateRequest,
     ForgotPasswordRequest,
     InvitationPublicRead,
     InvitationRead,
@@ -33,6 +37,7 @@ from app.modules.identity.schemas import (
     ResetPasswordRequest,
     RoleRead,
     TokenResponse,
+    UpdateRolePermissionsRequest,
     UpdateProfileRequest,
     UpdateUserSettingsRequest,
     UserRead,
@@ -197,6 +202,30 @@ async def set_my_presence(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
+@users_router.put("/me/status", response_model=UserRead)
+async def update_my_status(
+    payload: CustomStatusUpdateRequest,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> UserRead:
+    return await service.set_custom_status(
+        db,
+        current_user.user_id,
+        presence_status=payload.presence_status,
+        status_text=payload.status_text,
+        status_emoji=payload.status_emoji,
+        clear_after_minutes=payload.clear_after_minutes,
+    )
+
+
+@users_router.delete("/me/status", response_model=UserRead)
+async def clear_my_status(
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> UserRead:
+    return await service.clear_custom_status(db, current_user.user_id)
+
+
 @users_router.get("/presence", response_model=dict)
 async def get_presence_snapshot(
     current_user: CurrentUser = Depends(get_current_user),
@@ -223,6 +252,9 @@ async def create_invitation(
         email=payload.email,
         role_name=payload.role_name,
         invited_by_user_id=current_user.user_id,
+        department_id=payload.department_id,
+        team_id=payload.team_id,
+        manager_id=payload.manager_id,
     )
 
 
@@ -277,9 +309,16 @@ async def get_user(
 @users_router.post("", response_model=UserRead, status_code=status.HTTP_201_CREATED)
 async def create_user(
     payload: CreateUserRequest,
-    current_user: CurrentUser = Depends(require_permission(Permissions.MANAGE_USERS)),
+    current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> UserRead:
+    is_dept_mgr = False
+    if payload.department_id:
+        from app.modules.organization.service import is_department_manager
+        is_dept_mgr = await is_department_manager(db, current_user.user_id, payload.department_id)
+    if not (current_user.is_super_admin() or current_user.has_permission(Permissions.MANAGE_USERS) or is_dept_mgr):
+        from app.core.exceptions import ForbiddenError
+        raise ForbiddenError("You do not have permission to create users.")
     return await service.create_user(
         db,
         email=payload.email,
@@ -289,16 +328,90 @@ async def create_user(
         job_title=payload.job_title,
         role_names=payload.role_names,
         username=payload.username,
+        department_id=payload.department_id,
+        team_id=payload.team_id,
+        manager_id=payload.manager_id,
     )
+
+
+@users_router.delete(
+    "/{user_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None
+)
+async def delete_user(
+    user_id: UUID,
+    current_user: CurrentUser = Depends(require_permission(Permissions.MANAGE_USERS)),
+    db: AsyncSession = Depends(get_db),
+) -> Response:
+    await service.delete_user(db, user_id=user_id, acting_user_id=current_user.user_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@users_router.patch("/{user_id}", response_model=UserRead)
+async def admin_update_user(
+    user_id: UUID,
+    payload: AdminUpdateUserRequest,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> UserRead:
+    from app.modules.organization.service import get_employee_context, is_department_manager
+    ctx = await get_employee_context(db, user_id)
+    is_dept_mgr = False
+    if ctx and ctx.department_id:
+        is_dept_mgr = await is_department_manager(db, current_user.user_id, ctx.department_id)
+    if not (current_user.is_super_admin() or current_user.has_permission(Permissions.MANAGE_USERS) or is_dept_mgr):
+        from app.core.exceptions import ForbiddenError
+        raise ForbiddenError("You do not have permission to update this user.")
+    return await service.admin_update_user(
+        db,
+        user_id=user_id,
+        first_name=payload.first_name,
+        last_name=payload.last_name,
+        username=payload.username,
+        email=payload.email,
+        job_title=payload.job_title,
+        department_id=payload.department_id,
+        team_id=payload.team_id,
+        manager_id=payload.manager_id,
+        bio=payload.bio,
+        is_active=payload.is_active,
+        role_names=payload.role_names,
+    )
+
+
+@users_router.post(
+    "/{user_id}/reset-password",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
+)
+async def admin_reset_password(
+    user_id: UUID,
+    payload: AdminResetPasswordRequest,
+    current_user: CurrentUser = Depends(require_permission(Permissions.MANAGE_USERS)),
+    db: AsyncSession = Depends(get_db),
+) -> Response:
+    await service.admin_reset_password(
+        db,
+        user_id=user_id,
+        new_password=payload.new_password,
+    )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @users_router.put("/{user_id}/roles", response_model=UserRead)
 async def assign_roles(
     user_id: UUID,
     payload: AssignRolesRequest,
-    current_user: CurrentUser = Depends(require_permission(Permissions.MANAGE_ROLES)),
+    current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> UserRead:
+    from app.modules.organization.service import get_employee_context, is_department_manager
+    ctx = await get_employee_context(db, user_id)
+    is_dept_mgr = False
+    if ctx and ctx.department_id:
+        is_dept_mgr = await is_department_manager(db, current_user.user_id, ctx.department_id)
+    if not (current_user.is_super_admin() or current_user.has_permission(Permissions.MANAGE_ROLES) or is_dept_mgr):
+        from app.core.exceptions import ForbiddenError
+        raise ForbiddenError("You do not have permission to assign roles.")
     return await service.assign_roles(
         db, user_id=user_id, role_names=payload.role_names
     )
@@ -311,6 +424,40 @@ async def get_roles(
 ) -> list[RoleRead]:
     roles = await list_roles(db)
     return [RoleRead.model_validate(r) for r in roles]
+
+
+@rbac_router.post(
+    "/roles",
+    response_model=RoleRead,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_role(
+    payload: CreateRoleRequest,
+    current_user: CurrentUser = Depends(require_permission(Permissions.MANAGE_ROLES)),
+    db: AsyncSession = Depends(get_db),
+) -> RoleRead:
+    role = await service.create_role(
+        db,
+        name=payload.name,
+        description=payload.description,
+        permission_codes=payload.permission_codes,
+    )
+    return RoleRead.model_validate(role)
+
+
+@rbac_router.patch("/roles/{role_id}", response_model=RoleRead)
+async def update_role_permissions(
+    role_id: UUID,
+    payload: UpdateRolePermissionsRequest,
+    current_user: CurrentUser = Depends(require_permission(Permissions.MANAGE_ROLES)),
+    db: AsyncSession = Depends(get_db),
+) -> RoleRead:
+    role = await service.update_role_permissions(
+        db,
+        role_id=role_id,
+        permission_codes=payload.permission_codes,
+    )
+    return RoleRead.model_validate(role)
 
 
 @rbac_router.get("/permissions", response_model=list[PermissionRead])

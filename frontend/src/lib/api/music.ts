@@ -1,4 +1,4 @@
-import { apiFetch } from "./client";
+import { apiFetch, resolveApiResourceUrl } from "./client";
 import type {
   DriveFolder,
   DriveStatus,
@@ -27,6 +27,9 @@ export function joinMusicChannel(channelId: UUID) {
 }
 export function leaveMusicChannel(channelId: UUID) {
   return apiFetch<void>(`/music/channels/${channelId}/leave`, { method: "POST" });
+}
+export function deleteMusicChannel(channelId: UUID) {
+  return apiFetch<void>(`/music/channels/${channelId}`, { method: "DELETE" });
 }
 
 // ---- Members ----
@@ -57,7 +60,7 @@ export function sendPlaybackCommand(
 export function getStreamUrl(channelId: UUID, fileId: string) {
   return apiFetch<{ url: string }>(
     `/music/channels/${channelId}/tracks/${encodeURIComponent(fileId)}/stream-url`,
-  );
+  ).then(({ url }) => ({ url: resolveApiResourceUrl(url) }));
 }
 
 // ---- Google Drive ----

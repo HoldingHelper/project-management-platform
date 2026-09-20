@@ -69,6 +69,12 @@ class Employee(Base, UUIDPKMixin, TimestampMixin, AuditableMixin):
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), nullable=False, index=True
     )
+    department_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey(f"{SCHEMA}.departments.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     team_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey(f"{SCHEMA}.teams.id", ondelete="SET NULL"),
@@ -86,6 +92,7 @@ class Employee(Base, UUIDPKMixin, TimestampMixin, AuditableMixin):
     )  # ISO date, kept simple
     status: Mapped[str] = mapped_column(String(30), default="Active", nullable=False)
 
+    department: Mapped[Optional["Department"]] = relationship()
     team: Mapped[Optional["Team"]] = relationship(back_populates="employees")
     manager: Mapped[Optional["Employee"]] = relationship(remote_side="Employee.id")
     skills: Mapped[List["EmployeeSkill"]] = relationship(

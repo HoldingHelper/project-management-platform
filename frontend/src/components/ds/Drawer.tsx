@@ -9,13 +9,15 @@ interface Props {
   side?: "right" | "left";
   style?: CSSProperties;
   className?: string;
+  ariaLabel?: string;
 }
 
 /** In-flow side panel (used by the chat rail): animates its width so the
     main content reflows instead of being overlapped. */
-export function Drawer({ open, width = 380, children, side = "right", style, className = "" }: Props) {
+export function Drawer({ open, width = 380, children, side = "right", style, className = "", ariaLabel }: Props) {
   return (
     <aside
+      aria-label={ariaLabel}
       className={`${className} ${open ? "is-open" : ""}`.trim()}
       style={{
         width: open ? width : 0,

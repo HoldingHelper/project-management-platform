@@ -18,6 +18,7 @@ import {
   Shuffle,
   SkipBack,
   SkipForward,
+  Trash2,
   Volume2,
 } from "lucide-react";
 import { Avatar, Button, Field, Select, TextInput, useToast } from "@/components/ds";
@@ -26,6 +27,7 @@ import { useUserMap } from "@/lib/hooks";
 import {
   getDriveAuthUrl,
   getDriveStatus,
+  deleteMusicChannel,
   joinMusicChannel,
   listDriveFolders,
   listMusicMembers,
@@ -56,6 +58,18 @@ export function MusicChannelView({ item }: { item: MusicChannelListItem }) {
       toast.push("Could not join the channel.", "error");
     } finally {
       setJoining(false);
+    }
+  }
+
+  async function removeChannel() {
+    if (!window.confirm(`Delete music channel “${item.channel.name}”? This cannot be undone.`)) return;
+    try {
+      await deleteMusicChannel(item.channel.id);
+      player.closeChannel();
+      await queryClient.invalidateQueries({ queryKey: ["music-channels"] });
+      toast.push("Music channel deleted.", "success");
+    } catch (error) {
+      toast.push(error instanceof Error ? error.message : "Could not delete the music channel.", "error");
     }
   }
 
@@ -123,6 +137,11 @@ export function MusicChannelView({ item }: { item: MusicChannelListItem }) {
       {state && state.playlist.length > 0 && <Playlist item={item} />}
       {isOwner && <DriveSection item={item} />}
       <MembersSection item={item} isOwner={isOwner} />
+      {isOwner && (
+        <Button variant="secondary" onClick={removeChannel}>
+          <Trash2 size={14} /> Delete music channel
+        </Button>
+      )}
       {!canControl && (
         <div style={{ fontSize: 11.5, color: "var(--text-tertiary)", display: "flex", alignItems: "center", gap: 6 }}>
           <Headphones size={13} /> Listening mode — the owner can grant you playback control.

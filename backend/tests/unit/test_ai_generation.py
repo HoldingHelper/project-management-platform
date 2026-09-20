@@ -48,7 +48,7 @@ def test_required_validation_marks_none_missing():
 
 
 def test_unresolved_guide_fields_are_non_blocking_hints():
-    parsed = {"project name / working title": "Free Carwash Campaign"}
+    parsed = {"project name / working title": "Customer Welcome Campaign"}
     assert "Project name / working title" not in unresolved_guide_fields(parsed)
     assert "Project goal / objective" in unresolved_guide_fields(parsed)
 
@@ -68,7 +68,7 @@ def test_google_sheet_export_urls_extracts_unique_csv_exports():
 
 def test_parse_google_sheet_csv_extracts_fixed_template_tasks():
     csv_text = """Project name,timeline ,Lead Team,priority,status,phases
-Free Carwash Campaign,2026-07-08...2026-07-09,Ali and Zahra,P0,Delayed,Launch
+Customer Welcome Campaign,2026-07-08...2026-07-09,Alex and Sam,P0,Delayed,Launch
 Tasks,assigners,reviewers (Reviewer 1 → Reviewer 2),priority,level,timeline,description,checklist,type,dependency
 Checklist for post,,,P0,Marketing,2026-07-08...2026-07-09,Image + caption,,,
 Google Sheet integration,,,P0,Tech,2026-07-08...2026-07-09,Pre-defined message,,,
@@ -82,7 +82,7 @@ Google Sheet integration,,,P0,Tech,2026-07-08...2026-07-09,Pre-defined message,,
 
 def test_source_task_coverage_detects_missing_sheet_rows():
     draft = GeneratedProject(
-        name="Free Carwash Campaign",
+        name="Customer Welcome Campaign",
         description="Detailed plan for a campaign launch with operational and marketing execution.",
         goal="Generate qualified leads.",
         tasks=[
@@ -102,7 +102,7 @@ def test_source_task_coverage_detects_missing_sheet_rows():
 
 def test_generated_schema_uses_platform_enums():
     project = GeneratedProject(
-        name="Free Carwash Campaign",
+        name="Customer Welcome Campaign",
         description="Detailed plan for a campaign launch with operational and marketing execution.",
         goal="Generate qualified leads.",
         priority="P1",

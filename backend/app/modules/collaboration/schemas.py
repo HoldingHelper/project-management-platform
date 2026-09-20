@@ -71,3 +71,23 @@ class NotificationReplyRequest(BaseModel):
 
     body: Optional[str] = None
     attachment_id: Optional[UUID] = None
+
+
+class DeviceRegisterRequest(BaseModel):
+    device_token: str = Field(min_length=5, max_length=255)
+    platform: str = Field(pattern="^(ios|android)$")
+    device_name: Optional[str] = Field(None, max_length=100)
+    app_version: Optional[str] = Field(None, max_length=50)
+
+
+class DeviceRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: UUID
+    user_id: UUID
+    device_token: str
+    platform: str
+    device_name: Optional[str] = None
+    app_version: Optional[str] = None
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime

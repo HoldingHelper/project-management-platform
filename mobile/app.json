@@ -1,0 +1,53 @@
+{
+  "expo": {
+    "name": "Project Management Platform",
+    "slug": "project-management-platform",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "projectplatform",
+    "userInterfaceStyle": "dark",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "org.example.projectplatform",
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Use Face ID to securely authenticate to the Project Management Platform.",
+        "NSMicrophoneUsageDescription": "Record voice notes for chat and task comments.",
+        "UIBackgroundModes": [
+          "audio",
+          "fetch",
+          "remote-notification"
+        ]
+      }
+    },
+    "android": {
+      "package": "org.example.projectplatform",
+      "permissions": [
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT",
+        "RECORD_AUDIO",
+        "POST_NOTIFICATIONS",
+        "RECEIVE_BOOT_COMPLETED"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow Project Management Platform to use Face ID for instant login."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#00E261",
+          "sounds": []
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

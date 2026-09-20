@@ -9,10 +9,11 @@ interface Props extends SelectHTMLAttributes<HTMLSelectElement> {
   placeholder?: string;
 }
 
-export function Select({ options, placeholder, style, ...rest }: Props) {
+export function Select({ options, placeholder, style, className, ...rest }: Props) {
   return (
     <select
       {...rest}
+      className={`pmp-select ${className ?? ""}`.trim()}
       style={{
         minHeight: 44,
         padding: "0 32px 0 12px",

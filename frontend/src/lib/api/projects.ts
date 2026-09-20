@@ -12,9 +12,28 @@ import type {
   ProjectRead,
   ProjectTimeline,
   TaskRead,
+  TaskPartitionRead,
   TaskStatus,
   UUID,
 } from "@/lib/types";
+
+// ---- Task partitions ----
+export function listTaskPartitions() {
+  return apiFetch<TaskPartitionRead[]>("/partitions");
+}
+
+export function createTaskPartition(input: { name: string; description?: string; display_order?: number }) {
+  return apiFetch<TaskPartitionRead>("/partitions", { method: "POST", body: input });
+}
+
+export function updateTaskPartition(id: UUID, input: { name?: string; description?: string | null; display_order?: number }) {
+  return apiFetch<TaskPartitionRead>(`/partitions/${id}`, { method: "PATCH", body: input });
+}
+
+export function deleteTaskPartition(id: UUID, replacementPartitionId?: UUID) {
+  const query = replacementPartitionId ? `?replacement_partition_id=${replacementPartitionId}` : "";
+  return apiFetch<void>(`/partitions/${id}${query}`, { method: "DELETE" });
+}
 
 // ---- Products ----
 export function listProducts(page = 1, page_size = 100) {
@@ -33,6 +52,9 @@ export function getProject(id: UUID) {
 }
 export function getProjectPhases(id: UUID) {
   return apiFetch<PhaseRead[]>(`/projects/${id}/phases`);
+}
+export function getProjectSprints(id: UUID) {
+  return apiFetch<PhaseRead[]>(`/projects/${id}/sprints`);
 }
 export function getProjectTimeline(id: UUID) {
   return apiFetch<ProjectTimeline>(`/projects/${id}/timeline`);
@@ -163,6 +185,15 @@ export function getPhaseTasks(id: UUID) {
 export function getPhaseProgress(id: UUID) {
   return apiFetch<ProgressBreakdown>(`/phases/${id}/progress`);
 }
+export function getSprint(id: UUID) {
+  return apiFetch<PhaseRead>(`/sprints/${id}`);
+}
+export function getSprintTasks(id: UUID) {
+  return apiFetch<TaskRead[]>(`/sprints/${id}/tasks`);
+}
+export function getSprintProgress(id: UUID) {
+  return apiFetch<ProgressBreakdown>(`/sprints/${id}/progress`);
+}
 
 // ---- Tasks ----
 export function getTask(id: UUID) {
@@ -172,6 +203,13 @@ export function updateTaskStatus(id: UUID, status: TaskStatus) {
   return apiFetch<TaskRead>(`/tasks/${id}/status`, {
     method: "PUT",
     body: { status },
+  });
+}
+
+export function reorderTasks(task_ids: UUID[]) {
+  return apiFetch<void>("/tasks/reorder", {
+    method: "PUT",
+    body: { task_ids },
   });
 }
 
@@ -224,6 +262,9 @@ export function createTask(input: {
   start_date?: string;
   due_date?: string;
   assignee_user_ids?: UUID[];
+  is_ticket?: boolean;
+  ticket_recipient_user_ids?: UUID[];
+  ticket_recipient_team_ids?: UUID[];
   label_names?: string[];
   checklist_items?: { text: string; order: number }[];
 }) {
@@ -265,6 +306,12 @@ export function createProject(input: {
   status?: string;
   budget?: number;
   tags?: string[];
+  sprints?: {
+    name: string;
+    start_date: string;
+    end_date: string;
+    lead_assignee_user_id?: UUID;
+  }[];
 }) {
   return apiFetch<ProjectRead>("/projects", { method: "POST", body: input });
 }
@@ -293,6 +340,17 @@ export function createPhase(input: {
   return apiFetch<PhaseRead>("/phases", { method: "POST", body: input });
 }
 
+export function createSprint(input: {
+  project_id: UUID;
+  name: string;
+  sequence?: number;
+  start_date?: string;
+  end_date?: string;
+  lead_assignee_user_id?: UUID;
+}) {
+  return apiFetch<PhaseRead>("/sprints", { method: "POST", body: input });
+}
+
 export function getProjectOverview(id: UUID) {
   return apiFetch<ProjectOverview>(`/projects/${id}/overview`);
 }
@@ -310,6 +368,17 @@ export function addProjectMember(id: UUID, user_id: UUID, role: string) {
 
 export function removeProjectMember(id: UUID, user_id: UUID) {
   return apiFetch<void>(`/projects/${id}/members/${user_id}`, { method: "DELETE" });
+}
+
+export function transferProjectAdmin(
+  id: UUID,
+  new_admin_user_id: UUID,
+  previous_admin_role: string,
+) {
+  return apiFetch<ProjectMemberRead>(`/projects/${id}/admin`, {
+    method: "PUT",
+    body: { new_admin_user_id, previous_admin_role },
+  });
 }
 
 // ---- Milestones ----

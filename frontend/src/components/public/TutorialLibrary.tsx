@@ -1,0 +1,6 @@
+"use client";
+import { useState } from "react";
+import Link from "next/link";
+import { ArrowRight, CirclePlay } from "lucide-react";
+import { TUTORIALS } from "@/lib/docs/content";
+export function TutorialLibrary(){const filters=["All",...Array.from(new Set(TUTORIALS.map(v=>v.category)))];const [active,setActive]=useState("All");const shown=active==="All"?TUTORIALS:TUTORIALS.filter(v=>v.category===active);return <><div className="tutorial-filters" aria-label="Tutorial categories">{filters.map(filter=><button type="button" key={filter} onClick={()=>setActive(filter)} aria-pressed={active===filter}>{filter}</button>)}</div><div className="tutorial-library" aria-live="polite">{shown.map(video=><article key={video.href}><div className="tutorial-thumb"><CirclePlay size={42}/><span>{video.category}</span></div><h2>{video.title}</h2><p>{video.description}</p><Link href={video.href}>Read guide <ArrowRight size={15}/></Link></article>)}{shown.length===0&&<div className="docs-zero"><h2>No tutorials in this category yet</h2><p>Choose All or browse the written documentation while new videos are prepared.</p><button type="button" onClick={()=>setActive("All")}>Show all tutorials</button></div>}</div></>}

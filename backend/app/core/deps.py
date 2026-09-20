@@ -45,6 +45,7 @@ async def get_current_user(
         full_name=payload.get("name", ""),
         roles=payload.get("roles", []),
         permissions=payload.get("permissions", []),
+        allow_role_bypass=payload.get("allow_role_bypass", True),
     )
     current_user_id_var.set(user.user_id)
     return user

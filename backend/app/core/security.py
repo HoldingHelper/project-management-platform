@@ -41,6 +41,7 @@ def create_access_token(
     roles: List[str],
     permissions: List[str],
     expires_delta: Optional[timedelta] = None,
+    allow_role_bypass: bool = True,
 ) -> str:
     now = datetime.now(timezone.utc)
     expire = now + (
@@ -52,6 +53,7 @@ def create_access_token(
         "name": full_name,
         "roles": roles,
         "permissions": permissions,
+        "allow_role_bypass": allow_role_bypass,
         "type": TOKEN_TYPE_ACCESS,
         "iat": now,
         "exp": expire,

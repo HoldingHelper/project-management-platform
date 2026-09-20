@@ -186,8 +186,13 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
       await audio.play();
       setBlocked(false);
       return true;
-    } catch {
-      setBlocked(true);
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "NotAllowedError") {
+        setBlocked(true);
+      } else {
+        setBlocked(false);
+        setErrored(true);
+      }
       return false;
     }
   }, [clampedExpected, correctDrift]);
@@ -235,6 +240,7 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
       setDuration(0);
     } catch {
       loadedTrackRef.current = null;
+      setErrored(true);
     }
   }, [reconcile]);
 
@@ -432,7 +438,8 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
         audio.src = url;
         audio.load();
       } catch {
-        setBlocked(true);
+        setBlocked(false);
+        setErrored(true);
         return;
       }
     }

@@ -22,6 +22,7 @@ RUN mkdir -p /app/var/logs && chmod +x docker-entrypoint.sh
 EXPOSE 8000
 
 ENTRYPOINT ["./docker-entrypoint.sh"]
-# Run one worker per container; scale horizontally with additional replicas.
-# Redis Pub/Sub distributes realtime events between replicas.
+# Single worker on purpose: the audit event bus and WebSocket ConnectionManager
+# are in-process singletons (cross-process fan-out would need the Redis pub/sub
+# backplane, which isn't wired yet). Scale out via replicas, not workers.
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]

@@ -1,11 +1,21 @@
-"""Projects module REST endpoints (Products, Projects, Phases, Tasks, Dependencies)."""
+"""Projects module REST endpoints (Products, Projects, Sprints, Tasks, Dependencies)."""
 
 from __future__ import annotations
 
 from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Body, Depends, File, Form, Query, Response, UploadFile, status
+from fastapi import (
+    APIRouter,
+    Body,
+    Depends,
+    File,
+    Form,
+    Query,
+    Response,
+    UploadFile,
+    status,
+)
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.current_user import CurrentUser
@@ -41,6 +51,7 @@ from app.modules.projects.schemas import (
     ProductUpdate,
     ProgressBreakdown,
     ProjectCreate,
+    ProjectAdminTransfer,
     ProjectDependencyCreate,
     ProjectDependencyRead,
     ProjectMemberCreate,
@@ -49,9 +60,13 @@ from app.modules.projects.schemas import (
     ProjectRead,
     ProjectTimeline,
     ProjectUpdate,
+    ReorderTasksRequest,
     TaskCreate,
     TaskDependencyCreate,
     TaskDependencyRead,
+    TaskPartitionCreate,
+    TaskPartitionRead,
+    TaskPartitionUpdate,
     TaskRead,
     TaskUpdate,
     UpdateChecklistItemRequest,
@@ -62,11 +77,62 @@ portfolio_router = APIRouter(prefix="/portfolio", tags=["Projects - Portfolio"])
 
 products_router = APIRouter(prefix="/products", tags=["Projects - Products"])
 projects_router = APIRouter(prefix="/projects", tags=["Projects - Projects"])
-phases_router = APIRouter(prefix="/phases", tags=["Projects - Phases"])
+phases_router = APIRouter(prefix="/phases", tags=["Projects - Legacy Phases"])
+sprints_router = APIRouter(prefix="/sprints", tags=["Projects - Sprints"])
 tasks_router = APIRouter(prefix="/tasks", tags=["Projects - Tasks"])
+partitions_router = APIRouter(prefix="/partitions", tags=["Projects - Partitions"])
 dependencies_router = APIRouter(
     prefix="/dependencies", tags=["Projects - Dependencies"]
 )
+
+
+# ---------- Partitions ----------
+@partitions_router.get("", response_model=list[TaskPartitionRead])
+async def list_task_partitions(
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> list[TaskPartitionRead]:
+    return await service.list_task_partitions(db)
+
+
+@partitions_router.post(
+    "", response_model=TaskPartitionRead, status_code=status.HTTP_201_CREATED
+)
+async def create_task_partition(
+    payload: TaskPartitionCreate,
+    current_user: CurrentUser = Depends(
+        require_permission(Permissions.MANAGE_USERS, Permissions.MANAGE_SETTINGS)
+    ),
+    db: AsyncSession = Depends(get_db),
+) -> TaskPartitionRead:
+    return await service.create_task_partition(db, payload)
+
+
+@partitions_router.patch("/{partition_id}", response_model=TaskPartitionRead)
+async def update_task_partition(
+    partition_id: UUID,
+    payload: TaskPartitionUpdate,
+    current_user: CurrentUser = Depends(
+        require_permission(Permissions.MANAGE_USERS, Permissions.MANAGE_SETTINGS)
+    ),
+    db: AsyncSession = Depends(get_db),
+) -> TaskPartitionRead:
+    return await service.update_task_partition(db, partition_id, payload)
+
+
+@partitions_router.delete(
+    "/{partition_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None
+)
+async def delete_task_partition(
+    partition_id: UUID,
+    replacement_partition_id: Optional[UUID] = Query(default=None),
+    current_user: CurrentUser = Depends(
+        require_permission(Permissions.MANAGE_USERS, Permissions.MANAGE_SETTINGS)
+    ),
+    db: AsyncSession = Depends(get_db),
+) -> Response:
+    await service.delete_task_partition(db, partition_id, replacement_partition_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 async def _generation_request_content(
@@ -82,8 +148,7 @@ async def _generation_request_content(
             filename = prompt_file.filename or filename
     if extra_context and extra_context.strip():
         chunks.append(
-            "## Optional: Extra uploaded context\n"
-            f"{extra_context.strip()}\n"
+            "## Optional: Extra uploaded context\n" f"{extra_context.strip()}\n"
         )
     content = "\n\n".join(chunk.strip() for chunk in chunks if chunk.strip())
     if not content:
@@ -160,7 +225,9 @@ async def create_project(
     payload: ProjectCreate,
     current_user: CurrentUser = Depends(
         require_permission(
-            Permissions.PROJECTS_MANAGE_ALL, Permissions.PROJECTS_MANAGE_ASSIGNED
+            Permissions.PROJECTS_CREATE,
+            Permissions.PROJECTS_MANAGE_ALL,
+            Permissions.PROJECTS_MANAGE_ASSIGNED,
         )
     ),
     db: AsyncSession = Depends(get_db),
@@ -426,14 +493,25 @@ async def get_project_members(
 async def remove_project_member(
     project_id: UUID,
     user_id: UUID,
-    current_user: CurrentUser = Depends(
-        require_permission(
-            Permissions.PROJECTS_MANAGE_USERS, Permissions.PROJECTS_MANAGE_ALL
-        )
-    ),
+    current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> None:
+    await service.require_project_admin(db, project_id, current_user)
     await service.remove_project_member(db, project_id, user_id)
+
+
+@projects_router.put(
+    "/{project_id}/admin",
+    response_model=ProjectMemberRead,
+)
+async def transfer_project_admin(
+    project_id: UUID,
+    payload: ProjectAdminTransfer,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> ProjectMemberRead:
+    await service.require_project_admin(db, project_id, current_user)
+    return await service.transfer_project_admin(db, project_id, payload)
 
 
 @projects_router.post(
@@ -536,7 +614,8 @@ async def get_project_timeline(
     return await service.get_project_timeline(db, project_id)
 
 
-@projects_router.get("/{project_id}/phases", response_model=list[PhaseRead])
+@projects_router.get("/{project_id}/sprints", response_model=list[PhaseRead])
+@projects_router.get("/{project_id}/phases", response_model=list[PhaseRead], deprecated=True)
 async def get_phases_by_project(
     project_id: UUID,
     current_user: CurrentUser = Depends(get_current_user),
@@ -553,18 +632,16 @@ async def get_phases_by_project(
 async def add_project_member(
     project_id: UUID,
     payload: ProjectMemberCreate,
-    current_user: CurrentUser = Depends(
-        require_permission(
-            Permissions.PROJECTS_MANAGE_USERS, Permissions.PROJECTS_MANAGE_ALL
-        )
-    ),
+    current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> None:
+    await service.require_project_admin(db, project_id, current_user)
     await service.add_project_member(db, project_id, payload)
 
 
 # ---------- Phases ----------
-@phases_router.post("", response_model=PhaseRead, status_code=status.HTTP_201_CREATED)
+@sprints_router.post("", response_model=PhaseRead, status_code=status.HTTP_201_CREATED)
+@phases_router.post("", response_model=PhaseRead, status_code=status.HTTP_201_CREATED, deprecated=True)
 async def create_phase(
     payload: PhaseCreate,
     current_user: CurrentUser = Depends(
@@ -577,7 +654,8 @@ async def create_phase(
     return await service.create_phase(db, payload)
 
 
-@phases_router.get("/{phase_id}", response_model=PhaseRead)
+@sprints_router.get("/{phase_id}", response_model=PhaseRead)
+@phases_router.get("/{phase_id}", response_model=PhaseRead, deprecated=True)
 async def get_phase(
     phase_id: UUID,
     current_user: CurrentUser = Depends(get_current_user),
@@ -586,7 +664,8 @@ async def get_phase(
     return await service.get_phase(db, phase_id)
 
 
-@phases_router.put("/{phase_id}", response_model=PhaseRead)
+@sprints_router.put("/{phase_id}", response_model=PhaseRead)
+@phases_router.put("/{phase_id}", response_model=PhaseRead, deprecated=True)
 async def update_phase(
     phase_id: UUID,
     payload: PhaseUpdate,
@@ -602,7 +681,8 @@ async def update_phase(
     return await service.update_phase(db, phase_id, payload)
 
 
-@phases_router.get("/{phase_id}/tasks", response_model=list[TaskRead])
+@sprints_router.get("/{phase_id}/tasks", response_model=list[TaskRead])
+@phases_router.get("/{phase_id}/tasks", response_model=list[TaskRead], deprecated=True)
 async def get_tasks_by_phase(
     phase_id: UUID,
     current_user: CurrentUser = Depends(get_current_user),
@@ -611,7 +691,8 @@ async def get_tasks_by_phase(
     return await service.list_tasks_by_phase(db, phase_id)
 
 
-@phases_router.get("/{phase_id}/progress", response_model=ProgressBreakdown)
+@sprints_router.get("/{phase_id}/progress", response_model=ProgressBreakdown)
+@phases_router.get("/{phase_id}/progress", response_model=ProgressBreakdown, deprecated=True)
 async def get_phase_progress(
     phase_id: UUID,
     current_user: CurrentUser = Depends(get_current_user),
@@ -662,18 +743,25 @@ async def list_tasks(
 @tasks_router.post("", response_model=TaskRead, status_code=status.HTTP_201_CREATED)
 async def create_task(
     payload: TaskCreate,
-    current_user: CurrentUser = Depends(
-        require_permission(
-            Permissions.TASKS_MANAGE_ALL,
-            Permissions.TASKS_MANAGE_TEAM,
-            Permissions.TASKS_EDIT_ASSIGNED,
-        )
-    ),
+    current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> TaskRead:
     return await service.create_task(
-        db, payload, created_by_user_id=current_user.user_id
+        db, payload, created_by_user_id=current_user.user_id, current_user=current_user
     )
+
+
+@tasks_router.put(
+    "/reorder", status_code=status.HTTP_204_NO_CONTENT, response_model=None
+)
+async def reorder_tasks(
+    payload: ReorderTasksRequest,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Response:
+    await service.require_task_board_access(db, current_user, payload.task_ids)
+    await service.reorder_tasks(db, payload.task_ids)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @tasks_router.post("/{task_id}/attach", response_model=TaskRead)
@@ -716,33 +804,20 @@ async def get_task(
 async def update_task(
     task_id: UUID,
     payload: TaskUpdate,
-    current_user: CurrentUser = Depends(
-        require_permission(
-            Permissions.TASKS_MANAGE_ALL,
-            Permissions.TASKS_MANAGE_TEAM,
-            Permissions.TASKS_EDIT_ASSIGNED,
-        )
-    ),
+    current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> TaskRead:
-    return await service.update_task(db, task_id, payload)
+    return await service.update_task(db, task_id, payload, current_user)
 
 
 @tasks_router.put("/{task_id}/status", response_model=TaskRead)
 async def update_task_status(
     task_id: UUID,
     payload: UpdateTaskStatusRequest,
-    current_user: CurrentUser = Depends(
-        require_permission(
-            Permissions.TASKS_MANAGE_ALL,
-            Permissions.TASKS_MANAGE_TEAM,
-            Permissions.TASKS_EDIT_ASSIGNED,
-            Permissions.TASKS_MANAGE_TESTING,
-            Permissions.TASKS_MANAGE_DESIGN,
-        )
-    ),
+    current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> TaskRead:
+    await service.require_task_board_access(db, current_user, [task_id])
     return await service.update_task_status(
         db, task_id, payload.status, changed_by_user_id=current_user.user_id
     )
@@ -753,17 +828,10 @@ async def update_task_checklist_item(
     task_id: UUID,
     checklist_item_id: UUID,
     payload: UpdateChecklistItemRequest,
-    current_user: CurrentUser = Depends(
-        require_permission(
-            Permissions.TASKS_MANAGE_ALL,
-            Permissions.TASKS_MANAGE_TEAM,
-            Permissions.TASKS_EDIT_ASSIGNED,
-            Permissions.TASKS_MANAGE_TESTING,
-            Permissions.TASKS_MANAGE_DESIGN,
-        )
-    ),
+    current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> TaskRead:
+    await service.require_task_edit_access(db, current_user, task_id)
     return await service.update_checklist_item(
         db,
         task_id=task_id,
@@ -780,15 +848,10 @@ async def update_task_checklist_item(
 )
 async def delete_task(
     task_id: UUID,
-    current_user: CurrentUser = Depends(
-        require_permission(
-            Permissions.TASKS_MANAGE_ALL,
-            Permissions.TASKS_MANAGE_TEAM,
-            Permissions.TASKS_EDIT_ASSIGNED,
-        )
-    ),
+    current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> None:
+    await service.require_task_edit_access(db, current_user, task_id)
     await service.delete_task(db, task_id)
 
 

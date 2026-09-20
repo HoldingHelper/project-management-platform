@@ -1,0 +1,6 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { ArrowRight, BookOpenText, CirclePlay, LifeBuoy } from "lucide-react";
+import { PublicContentPage } from "@/components/public/PublicContentPage";
+export const metadata:Metadata={title:"Resources",description:"Guides, tutorials, and help for the Project Management Platform."};
+export default function ResourcesPage(){const rows=[{icon:BookOpenText,title:"Documentation",text:"Detailed guides for projects, tasks, communication, teams, and administration.",href:"/docs"},{icon:CirclePlay,title:"Tutorials",text:"Focused walkthroughs connected to the relevant written guide.",href:"/tutorials"},{icon:LifeBuoy,title:"Troubleshooting",text:"Clear recovery steps for access, setup, and everyday workflow problems.",href:"/docs/getting-started/signing-in"}];return <PublicContentPage eyebrow="Resources" title="Learn the system in the format that fits the moment." intro="Start broad, follow a guided tutorial, or find the exact answer in documentation search."><section className="public-section public-container resource-list">{rows.map(({icon:Icon,...row})=><Link href={row.href} key={row.title}><Icon size={24}/><div><h2>{row.title}</h2><p>{row.text}</p></div><ArrowRight size={20}/></Link>)}</section></PublicContentPage>}

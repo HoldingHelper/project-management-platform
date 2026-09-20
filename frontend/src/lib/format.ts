@@ -26,10 +26,9 @@ export function semanticColor(status: SemanticStatus) {
 export function toSemantic(status: string): SemanticStatus {
   const s = status.toLowerCase().replace(/_/g, "-");
   if (["completed", "done", "closed", "resolved"].includes(s)) return "completed";
-  if (["blocked", "on-hold"].includes(s)) return "blocked";
-  if (["delayed", "at-risk", "cancelled", "overdue", "late"].includes(s)) return "delayed";
-  if (["in-progress", "inprogress", "active", "review", "testing", "waiting", "ready"].includes(s))
-    return "in-progress";
+  if (["blocked", "on-hold", "cancelled"].includes(s)) return "blocked";
+  if (["delayed", "at-risk", "overdue", "late", "review", "testing"].includes(s)) return "delayed";
+  if (["in-progress", "inprogress", "active", "waiting"].includes(s)) return "in-progress";
   return "not-started";
 }
 
@@ -94,4 +93,16 @@ export function initials(name: string): string {
   if (parts.length === 0) return "?";
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+export function formatNotificationBody(body?: string | null): string {
+  if (!body) return "";
+  const uuidRegex = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
+  let text = body.replace(uuidRegex, "").replace(/\s{2,}/g, " ").trim();
+  text = text
+    .replace(/^Task\s+was assigned to you\.?/i, "You were assigned to this task.")
+    .replace(/^Task\s+is blocked/i, "This task is blocked")
+    .replace(/Task\s+now depends on task\.?/i, "This task now depends on a predecessor task.")
+    .replace(/\s+\./g, ".");
+  return text || body;
 }

@@ -11,19 +11,34 @@ import {
   type ReactNode,
 } from "react";
 import { getPresenceSnapshot } from "@/lib/api/users";
-import type { PresenceStatus, UUID } from "@/lib/types";
+import type { PresenceStatus, UserPresenceInfo, UUID } from "@/lib/types";
 import { useRealtimeEvent } from "@/lib/ws/RealtimeProvider";
 
-type PresenceMap = Record<string, PresenceStatus>;
+type PresenceInfoMap = Record<string, UserPresenceInfo>;
 
-const PresenceContext = createContext<PresenceMap>({});
+const PresenceContext = createContext<PresenceInfoMap>({});
 
 export function PresenceProvider({ children }: { children: ReactNode }) {
-  const [map, setMap] = useState<PresenceMap>({});
+  const [map, setMap] = useState<PresenceInfoMap>({});
 
   useEffect(() => {
     getPresenceSnapshot()
-      .then(setMap)
+      .then((raw) => {
+        const normalized: PresenceInfoMap = {};
+        for (const [uid, val] of Object.entries(raw)) {
+          if (typeof val === "string") {
+            normalized[uid] = { status: val as PresenceStatus };
+          } else if (val && typeof val === "object") {
+            normalized[uid] = {
+              status: val.status,
+              status_text: val.custom_status?.text ?? null,
+              status_emoji: val.custom_status?.emoji ?? null,
+              status_expires_at: val.custom_status?.expires_at ?? null,
+            };
+          }
+        }
+        setMap(normalized);
+      })
       .catch(() => {});
   }, []);
 
@@ -31,15 +46,20 @@ export function PresenceProvider({ children }: { children: ReactNode }) {
     ["presence.changed"],
     (evt) => {
       const userId = evt.data.user_id as string;
-      const status = evt.data.status as PresenceStatus;
+      const status = (evt.data.status as PresenceStatus) || "online";
+      const custom = evt.data.custom_status as { text?: string; emoji?: string; expires_at?: string } | undefined;
       if (!userId) return;
+
       setMap((prev) => {
-        if (status === "offline") {
-          const next = { ...prev };
-          delete next[userId];
-          return next;
-        }
-        return { ...prev, [userId]: status };
+        return {
+          ...prev,
+          [userId]: {
+            status,
+            status_text: custom?.text !== undefined ? custom.text : prev[userId]?.status_text ?? null,
+            status_emoji: custom?.emoji !== undefined ? custom.emoji : prev[userId]?.status_emoji ?? null,
+            status_expires_at: custom?.expires_at !== undefined ? custom.expires_at : prev[userId]?.status_expires_at ?? null,
+          },
+        };
       });
     },
     ["presence"],
@@ -51,9 +71,15 @@ export function PresenceProvider({ children }: { children: ReactNode }) {
 export function usePresence(userId?: UUID | null): PresenceStatus {
   const map = useContext(PresenceContext);
   if (!userId) return "offline";
-  return map[userId] ?? "offline";
+  return map[userId]?.status ?? "offline";
 }
 
-export function usePresenceMap(): PresenceMap {
+export function useUserStatus(userId?: UUID | null): UserPresenceInfo {
+  const map = useContext(PresenceContext);
+  if (!userId) return { status: "offline" };
+  return map[userId] ?? { status: "offline" };
+}
+
+export function usePresenceMap(): PresenceInfoMap {
   return useContext(PresenceContext);
 }

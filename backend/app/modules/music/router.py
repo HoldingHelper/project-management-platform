@@ -91,6 +91,19 @@ async def leave_channel(
     await service.leave_channel(db, channel_id, current_user.user_id)
 
 
+@music_router.delete(
+    "/channels/{channel_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
+)
+async def delete_channel(
+    channel_id: UUID,
+    current_user: CurrentUser = Depends(_music_access),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    await service.delete_channel(db, channel_id, current_user.user_id)
+
+
 @music_router.get("/channels/{channel_id}/state", response_model=PlaybackStateRead)
 async def get_playback_state(
     channel_id: UUID,

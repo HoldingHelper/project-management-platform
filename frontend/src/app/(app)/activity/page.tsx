@@ -29,11 +29,11 @@ const ACTION_COLOR: Record<string, string> = {
 };
 
 const FIELD_LABELS: Record<string, string> = {
-  phase_id: "Phase",
+  phase_id: "Sprint",
   product_id: "Product line",
   project_id: "Project",
   parent_task_id: "Parent task",
-  lead_assignee_user_id: "Phase lead",
+  lead_assignee_user_id: "Sprint lead",
   reviewer_user_id: "Reviewer",
   pending_on_user_id: "Pending on",
   owner_user_id: "Owner",

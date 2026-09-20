@@ -19,6 +19,7 @@ import {
   Music,
   PenSquare,
   Plus,
+  Search,
   Square,
   X,
 } from "lucide-react";
@@ -38,6 +39,8 @@ import type {
   ChannelListItem,
   MusicChannelListItem,
   PresenceStatus,
+  UserPresenceInfo,
+  UserRead,
   UUID,
 } from "@/lib/types";
 
@@ -88,7 +91,13 @@ export function ChatPanel() {
   }, [canChat, open]);
 
   useEffect(() => {
-    const openChat = () => setOpen(true);
+    const openChat = (e?: Event) => {
+      setOpen(true);
+      const custom = e as CustomEvent<{ channelId?: UUID }>;
+      if (custom?.detail?.channelId) {
+        setActiveChannel(custom.detail.channelId);
+      }
+    };
     window.addEventListener("pmp:open-chat", openChat);
     return () => window.removeEventListener("pmp:open-chat", openChat);
   }, []);
@@ -124,6 +133,7 @@ export function ChatPanel() {
       {!open && (
         <aside
           className="pmp-chat-rail no-print"
+          aria-label="Team chat"
           style={{
             width: 72,
             minWidth: 72,
@@ -164,8 +174,11 @@ export function ChatPanel() {
             {directMessages.slice(0, 14).map((item) => {
               const uid = item.dm_user_id;
               const meta = userMeta(uid);
-              const status = (presence[uid ?? ""] ?? "offline") as PresenceStatus;
-              const title = `${displayName(item)} - ${PRESENCE_LABELS[status]}${meta?.job_title ? ` - ${meta.job_title}` : ""}${meta?.bio ? ` - ${meta.bio}` : ""}`;
+              const dmInfo = uid ? presence[uid] : undefined;
+              const status = (dmInfo?.status ?? (meta?.presence_status as PresenceStatus) ?? "offline") as PresenceStatus;
+              const statusEmoji = dmInfo?.status_emoji ?? meta?.status_emoji;
+              const statusText = dmInfo?.status_text ?? meta?.status_text;
+              const title = `${displayName(item)} - ${statusEmoji ? `${statusEmoji} ` : ""}${statusText ? `"${statusText}" · ` : ""}${PRESENCE_LABELS[status]}${meta?.job_title ? ` - ${meta.job_title}` : ""}`;
               return (
                 <button
                   key={item.channel.id}
@@ -178,7 +191,7 @@ export function ChatPanel() {
                   style={railAvatarButton}
                 >
                   <Avatar name={displayName(item)} size={34} />
-                  <PresenceDot status={status} overlay size={8} />
+                  <PresenceDot status={status} overlay size={10} />
                   {item.unread_count > 0 && <UnreadBadge count={item.unread_count} small />}
                 </button>
               );
@@ -192,7 +205,7 @@ export function ChatPanel() {
         </aside>
       )}
 
-      <Drawer open={open} width={420} className="pmp-chat-drawer">
+      <Drawer open={open} width={420} className="pmp-chat-drawer" ariaLabel="Team communication">
         <div className="pmp-chat-header"
           style={{
             display: "flex",
@@ -231,20 +244,65 @@ export function ChatPanel() {
                 <ChevronLeft size={16} />
               </button>
               {active.channel.type === "dm" ? (
-                <span style={{ position: "relative", display: "inline-flex" }}>
-                  <Avatar name={nameOf(active.dm_user_id)} size={26} />
-                  <PresenceDot
-                    status={(presence[active.dm_user_id ?? ""] ?? "offline") as PresenceStatus}
-                    overlay
-                    size={8}
-                  />
-                </span>
+                (() => {
+                  const meta = active.dm_user_id ? userMeta(active.dm_user_id) : undefined;
+                  const dmInfo = active.dm_user_id ? presence[active.dm_user_id] : undefined;
+                  const statusVal = (dmInfo?.status ?? (meta?.presence_status as PresenceStatus) ?? "offline") as PresenceStatus;
+                  const statusEmoji = dmInfo?.status_emoji ?? meta?.status_emoji;
+                  const statusText = dmInfo?.status_text ?? meta?.status_text;
+                  return (
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 0 }}>
+                      <span style={{ position: "relative", display: "inline-flex", flexShrink: 0 }}>
+                        <Avatar name={nameOf(active.dm_user_id)} size={30} />
+                        <PresenceDot status={statusVal} overlay size={10} />
+                      </span>
+                      <div style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <span style={{ fontWeight: 700, fontSize: 13.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {displayName(active)}
+                          </span>
+                          {statusEmoji && (
+                            <span
+                              title={statusText ? `${statusEmoji} ${statusText}` : undefined}
+                              style={{
+                                fontSize: 11.5,
+                                background: "var(--surface-3)",
+                                padding: "0 5px",
+                                borderRadius: "var(--radius-full)",
+                                border: "1px solid var(--border-subtle)",
+                                lineHeight: 1.3,
+                              }}
+                            >
+                              {statusEmoji}
+                            </span>
+                          )}
+                        </div>
+                        <div style={{ fontSize: 11, color: "var(--text-tertiary)", display: "flex", alignItems: "center", gap: 5, marginTop: 1 }}>
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                            <PresenceDot status={statusVal} size={7} glow={false} />
+                            <span>{PRESENCE_LABELS[statusVal]}</span>
+                          </span>
+                          {statusText && (
+                            <>
+                              <span>·</span>
+                              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--text-secondary)", fontStyle: "italic" }}>
+                                {statusText}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()
               ) : (
-                <Hash size={16} style={{ color: "var(--text-tertiary)" }} />
+                <>
+                  <Hash size={16} style={{ color: "var(--text-tertiary)" }} />
+                  <span style={{ fontWeight: 700, fontSize: 14, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {displayName(active)}
+                  </span>
+                </>
               )}
-              <span style={{ fontWeight: 700, fontSize: 14, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {displayName(active)}
-              </span>
             </>
           ) : (
             <>
@@ -276,6 +334,7 @@ export function ChatPanel() {
               musicChannels={canMusic ? musicChannels ?? [] : null}
               displayName={displayName}
               presence={presence}
+              users={users}
               onOpen={(id) => {
                 setMusicViewOpen(false);
                 setActiveChannel(id);
@@ -296,6 +355,7 @@ export function ChatPanel() {
         open={newDmOpen}
         onClose={() => setNewDmOpen(false)}
         users={users.filter((u) => u.id !== user?.id)}
+        presence={presence}
         onCreated={(channelId) => {
           setNewDmOpen(false);
           queryClient.invalidateQueries({ queryKey: ["chat-channels"] });
@@ -323,6 +383,7 @@ function ChannelList({
   musicChannels,
   displayName,
   presence,
+  users,
   onOpen,
   onOpenMusic,
   onNewMusic,
@@ -331,7 +392,8 @@ function ChannelList({
   channels: ChannelListItem[];
   musicChannels: MusicChannelListItem[] | null;
   displayName: (c: ChannelListItem) => string;
-  presence: Record<string, PresenceStatus>;
+  presence: Record<string, UserPresenceInfo>;
+  users: UserRead[];
   onOpen: (id: UUID) => void;
   onOpenMusic: (item: MusicChannelListItem) => void;
   onNewMusic: () => void;
@@ -343,85 +405,157 @@ function ChannelList({
   const dms = channels.filter((c) => c.channel.type === "dm");
   const anyPlaying = (musicChannels ?? []).some((m) => m.is_playing);
 
-  const renderItem = (item: ChannelListItem) => (
-    <button
-      key={item.channel.id}
-      onClick={() => onOpen(item.channel.id)}
-      className="pmp-channel-row pmp-row"
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 10,
-        width: "100%",
-        border: "none",
-        background: "transparent",
-        cursor: "pointer",
-        padding: "9px 14px",
-        textAlign: "left",
-        color: "var(--text-primary)",
-      }}
-    >
-      {item.channel.type === "dm" ? (
-        <span style={{ position: "relative", display: "inline-flex", flexShrink: 0 }}>
-          <Avatar name={displayName(item)} size={30} />
-          <PresenceDot status={presence[item.dm_user_id ?? ""] ?? "offline"} overlay size={8} />
-        </span>
-      ) : (
-        <span
-          style={{
-            width: 30,
-            height: 30,
-            borderRadius: "var(--radius-2)",
-            background: "var(--surface-2)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "var(--text-tertiary)",
-            flexShrink: 0,
-          }}
-        >
-          <Hash size={14} />
-        </span>
-      )}
-      <span style={{ flex: 1, minWidth: 0 }}>
-        <span style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 6 }}>
-          <span style={{ fontSize: 13, fontWeight: item.unread_count > 0 ? 800 : 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {displayName(item)}
+  const renderItem = (item: ChannelListItem) => {
+    const meta = item.dm_user_id ? users.find((u) => u.id === item.dm_user_id) : undefined;
+    const dmInfo = item.dm_user_id ? presence[item.dm_user_id] : undefined;
+    const statusVal = (dmInfo?.status ?? (meta?.presence_status as PresenceStatus) ?? "offline") as PresenceStatus;
+    const statusEmoji = dmInfo?.status_emoji ?? meta?.status_emoji;
+    const statusText = dmInfo?.status_text ?? meta?.status_text;
+
+    return (
+      <button
+        key={item.channel.id}
+        onClick={() => onOpen(item.channel.id)}
+        className="pmp-channel-row pmp-row"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 11,
+          width: "100%",
+          border: "none",
+          background: "transparent",
+          cursor: "pointer",
+          padding: "9px 14px",
+          textAlign: "left",
+          color: "var(--text-primary)",
+          borderRadius: "var(--radius-sm)",
+          transition: "background 0.15s ease",
+        }}
+      >
+        {item.channel.type === "dm" ? (
+          <span style={{ position: "relative", display: "inline-flex", flexShrink: 0 }}>
+            <Avatar name={displayName(item)} size={32} />
+            <PresenceDot status={statusVal} overlay size={10} />
           </span>
-          {item.last_message_at && (
-            <span style={{ fontSize: 10.5, color: "var(--text-tertiary)", flexShrink: 0 }}>
-              {relativeTime(item.last_message_at)}
-            </span>
-          )}
-        </span>
-        {item.last_message_preview && (
-          <span style={{ display: "block", fontSize: 11.5, color: "var(--text-tertiary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {item.last_message_preview}
+        ) : (
+          <span
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: "var(--radius-2)",
+              background: "var(--surface-2)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "var(--text-tertiary)",
+              flexShrink: 0,
+            }}
+          >
+            <Hash size={14} />
           </span>
         )}
-      </span>
-      {item.unread_count > 0 && (
-        <span
-          style={{
-            minWidth: 18,
-            height: 18,
-            padding: "0 5px",
-            borderRadius: "var(--radius-full)",
-            background: "var(--accent-secondary)",
-            color: "#fff",
-            fontSize: 10.5,
-            fontWeight: 800,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flexShrink: 0,
-          }}
-        >
-          {item.unread_count}
+        <span style={{ flex: 1, minWidth: 0 }}>
+          <span style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6 }}>
+            <span style={{ fontSize: 13, fontWeight: item.unread_count > 0 ? 700 : 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: 6 }}>
+              <span>{displayName(item)}</span>
+              {statusEmoji && (
+                <span
+                  title={statusText ? `${statusEmoji} ${statusText}` : undefined}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 3,
+                    padding: "0 5px",
+                    borderRadius: "var(--radius-full)",
+                    background: "var(--surface-3)",
+                    border: "1px solid var(--border-subtle)",
+                    fontSize: 11,
+                    lineHeight: 1.3,
+                    flexShrink: 0,
+                  }}
+                >
+                  <span>{statusEmoji}</span>
+                </span>
+              )}
+            </span>
+            {item.last_message_at && (
+              <span style={{ fontSize: 10.5, color: "var(--text-tertiary)", flexShrink: 0 }}>
+                {relativeTime(item.last_message_at)}
+              </span>
+            )}
+          </span>
+
+          {item.last_message_preview ? (
+            <span
+              style={{
+                display: "block",
+                fontSize: 11.5,
+                color: item.unread_count > 0 ? "var(--text-primary)" : "var(--text-tertiary)",
+                fontWeight: item.unread_count > 0 ? 600 : 400,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                marginTop: 2,
+              }}
+            >
+              {item.last_message_preview}
+            </span>
+          ) : statusText ? (
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+                fontSize: 11,
+                color: "var(--text-secondary)",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                marginTop: 2,
+              }}
+            >
+              <span style={{ color: "var(--text-tertiary)" }}>Status:</span>
+              <span style={{ fontStyle: "italic", overflow: "hidden", textOverflow: "ellipsis" }}>{statusText}</span>
+            </span>
+          ) : meta?.job_title ? (
+            <span
+              style={{
+                display: "block",
+                fontSize: 11,
+                color: "var(--text-tertiary)",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                marginTop: 2,
+              }}
+            >
+              {meta.job_title}
+            </span>
+          ) : null}
         </span>
-      )}
-    </button>
-  );
+        {item.unread_count > 0 && (
+          <span
+            style={{
+              minWidth: 18,
+              height: 18,
+              padding: "0 5px",
+              borderRadius: "var(--radius-full)",
+              background: "var(--accent-secondary)",
+              color: "#fff",
+              fontSize: 10.5,
+              fontWeight: 800,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
+            {item.unread_count}
+          </span>
+        )}
+      </button>
+    );
+  };
 
   return (
     <div className="pmp-channel-list" style={{ flex: 1, overflowY: "auto", padding: "8px 0" }}>
@@ -725,25 +859,39 @@ function NewDmModal({
   open,
   onClose,
   users,
+  presence,
   onCreated,
 }: {
   open: boolean;
   onClose: () => void;
-  users: { id: UUID; full_name: string }[];
+  users: UserRead[];
+  presence: Record<string, UserPresenceInfo>;
   onCreated: (channelId: UUID) => void;
 }) {
-  const [userId, setUserId] = useState("");
+  const [search, setSearch] = useState("");
   const [creating, setCreating] = useState(false);
 
-  async function create() {
-    if (!userId) return;
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return users;
+    return users.filter(
+      (u) =>
+        u.full_name.toLowerCase().includes(q) ||
+        u.email.toLowerCase().includes(q) ||
+        (u.job_title && u.job_title.toLowerCase().includes(q)) ||
+        (u.department_name && u.department_name.toLowerCase().includes(q)) ||
+        (u.status_text && u.status_text.toLowerCase().includes(q))
+    );
+  }, [users, search]);
+
+  async function handleSelect(uid: UUID) {
     setCreating(true);
     try {
-      const channel = await createDm(userId as UUID);
+      const channel = await createDm(uid);
       onCreated(channel.id);
     } finally {
       setCreating(false);
-      setUserId("");
+      setSearch("");
     }
   }
 
@@ -751,24 +899,110 @@ function NewDmModal({
     <Modal
       open={open}
       onClose={onClose}
-      title="New direct message"
+      title="New Direct Message"
       footer={
-        <>
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button disabled={!userId || creating} onClick={create}>
-            {creating ? "Opening…" : "Start conversation"}
-          </Button>
-        </>
+        <Button variant="secondary" onClick={onClose}>
+          Close
+        </Button>
       }
     >
-      <Field label="Teammate">
-        <Select
-          value={userId}
-          onChange={(e) => setUserId(e.target.value)}
-          placeholder="Choose a person…"
-          options={users.map((u) => ({ value: u.id, label: u.full_name }))}
-        />
-      </Field>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div style={{ position: "relative" }}>
+          <Search size={15} style={{ position: "absolute", left: 12, top: 11, color: "var(--text-tertiary)" }} />
+          <TextInput
+            placeholder="Search teammates by name, role, status…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ paddingLeft: 34 }}
+            autoFocus
+          />
+        </div>
+
+        <div style={{ maxHeight: 320, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4 }}>
+          {filtered.length === 0 ? (
+            <div style={{ padding: "20px 0", textAlign: "center", color: "var(--text-tertiary)", fontSize: 13 }}>
+              No teammates found matching &ldquo;{search}&rdquo;
+            </div>
+          ) : (
+            filtered.map((u) => {
+              const live = presence[u.id];
+              const statusVal = live?.status ?? u.presence_status ?? "offline";
+              const emoji = live?.status_emoji ?? u.status_emoji;
+              const statusText = live?.status_text ?? u.status_text;
+
+              return (
+                <button
+                  key={u.id}
+                  type="button"
+                  disabled={creating}
+                  onClick={() => handleSelect(u.id)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    padding: "9px 12px",
+                    borderRadius: "var(--radius-md)",
+                    border: "1px solid transparent",
+                    background: "var(--surface-2)",
+                    color: "var(--text-primary)",
+                    cursor: creating ? "default" : "pointer",
+                    textAlign: "left",
+                    transition: "all 0.15s ease",
+                  }}
+                  className="pmp-row"
+                >
+                  <span style={{ position: "relative", display: "inline-flex", flexShrink: 0 }}>
+                    <Avatar name={u.full_name} size={34} />
+                    <PresenceDot status={statusVal} overlay size={10} />
+                  </span>
+
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ fontWeight: 600, fontSize: 13.5 }}>{u.full_name}</span>
+                      {emoji && (
+                        <span
+                          title={statusText || undefined}
+                          style={{
+                            fontSize: 11.5,
+                            background: "var(--surface-3)",
+                            padding: "0 5px",
+                            borderRadius: "var(--radius-full)",
+                            border: "1px solid var(--border-subtle)",
+                            lineHeight: 1.3,
+                          }}
+                        >
+                          {emoji}
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: 11.5, color: "var(--text-tertiary)", display: "flex", alignItems: "center", gap: 6, marginTop: 1 }}>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                        <PresenceDot status={statusVal} size={7} glow={false} />
+                        <span>{PRESENCE_LABELS[statusVal]}</span>
+                      </span>
+                      {statusText ? (
+                        <>
+                          <span>·</span>
+                          <span style={{ fontStyle: "italic", color: "var(--text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {statusText}
+                          </span>
+                        </>
+                      ) : u.job_title ? (
+                        <>
+                          <span>·</span>
+                          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {u.job_title}
+                          </span>
+                        </>
+                      ) : null}
+                    </div>
+                  </div>
+                </button>
+              );
+            })
+          )}
+        </div>
+      </div>
     </Modal>
   );
 }

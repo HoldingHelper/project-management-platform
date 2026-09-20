@@ -1,21 +1,23 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Archive, Bot, Layers3, Plus, Search, UsersRound } from "lucide-react";
+import { Archive, Bot, Layers3, Plus, Search, UsersRound, X } from "lucide-react";
 import {
   addProjectMember,
   attachTask,
   createProduct,
-  createPhase,
   createProject,
+  getProjectSprints,
   getPortfolioGantt,
   listProducts,
   listProjects,
   listTasks,
 } from "@/lib/api/projects";
-import { useUserMap } from "@/lib/hooks";
+import { addDocLink, listDocPages, searchDocPages } from "@/lib/api/docs";
+import { SearchSuggestionInput } from "@/components/docs/SearchSuggestionInput";
+import { useTaskPartitions, useUserMap } from "@/lib/hooks";
 import {
   Avatar,
   Button,
@@ -124,8 +126,14 @@ export default function PortfolioPage() {
     queryFn: () => getPortfolioGantt(showArchived),
   });
   const { nameOf } = useUserMap();
+  const { partitions } = useTaskPartitions();
+  const projectPartitions = partitions.length
+    ? [{ value: "all", label: "All partitions" }, ...partitions.map((item) => ({ value: item.slug, label: item.name }))]
+    : PROJECT_PARTITIONS;
 
-  const canCreate = isSuperAdmin() || hasPermission("projects.manage_all");
+  const canCreate =
+    isSuperAdmin() ||
+    hasPermission("projects.create", "projects.manage_all", "projects.manage_assigned");
   const canGenerate =
     isSuperAdmin() ||
     hasPermission("projects.manage_assigned", "phases.manage_team", "tasks.manage_team", "tasks.manage_all");
@@ -188,6 +196,7 @@ export default function PortfolioPage() {
             setShowArchived={setShowArchived}
             loading={gantt.isLoading}
             data={visibleGantt}
+            partitions={projectPartitions}
             focused
           />
         }
@@ -199,6 +208,7 @@ export default function PortfolioPage() {
           setShowArchived={setShowArchived}
           loading={gantt.isLoading}
           data={visibleGantt}
+          partitions={projectPartitions}
         />
       </FocusCard>
 
@@ -272,7 +282,7 @@ export default function PortfolioPage() {
         </div>
       </section>
 
-      <CreateProjectModal open={createOpen} onClose={() => setCreateOpen(false)} />
+      <CreateProjectModal open={createOpen} onClose={() => setCreateOpen(false)} partitions={projectPartitions} />
     </div>
   );
 }
@@ -284,6 +294,7 @@ function TimelinePanel({
   setShowArchived,
   loading,
   data,
+  partitions,
   focused = false,
 }: {
   timelinePartition: string;
@@ -292,13 +303,14 @@ function TimelinePanel({
   setShowArchived: (show: boolean) => void;
   loading: boolean;
   data: PortfolioGantt;
+  partitions: { value: string; label: string }[];
   focused?: boolean;
 }) {
   return (
     <div style={{ minHeight: focused ? 560 : undefined }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
         <Tabs
-          items={PROJECT_PARTITIONS.map((partition) => ({ key: partition.value, label: partition.label }))}
+          items={partitions.map((partition) => ({ key: partition.value, label: partition.label }))}
           active={timelinePartition}
           onChange={setTimelinePartition}
         />
@@ -326,8 +338,14 @@ function TimelinePanel({
   );
 }
 
-const PRODUCT_LINES = ["Core Product", "Client Work", "Internal"];
-const DEFAULT_PHASES = ["Discovery", "Design", "Build", "Launch"];
+const PRODUCT_LINES = ["PMP", "GMALL", "Organization"];
+const DEFAULT_SPRINTS = ["Sprint 1", "Sprint 2", "Sprint 3", "Sprint 4"];
+
+function addDaysIso(value: string, days: number) {
+  const [year, month, day] = value.split("-").map(Number);
+  const result = new Date(Date.UTC(year, month - 1, day + days));
+  return result.toISOString().slice(0, 10);
+}
 const PROJECT_STATUSES = [
   { value: "not-started", label: "Not started" },
   { value: "in-progress", label: "In progress" },
@@ -344,10 +362,10 @@ const HEALTH_STATUSES = [
   { value: "completed", label: "Completed" },
 ];
 
-function CreateProjectModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onClose: () => void; partitions: { value: string; label: string }[] }) {
   const toast = useToast();
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user, hasPermission, isSuperAdmin } = useAuth();
   const { users, nameOf } = useUserMap();
   const products = useQuery({ queryKey: ["products"], queryFn: () => listProducts(1, 200), enabled: open });
   const backlog = useQuery({
@@ -356,7 +374,7 @@ function CreateProjectModal({ open, onClose }: { open: boolean; onClose: () => v
     enabled: open,
   });
   const [form, setForm] = useState({
-    product_line: "Core Product",
+    product_line: "PMP",
     name: "",
     description: "",
     priority: "P2",
@@ -366,8 +384,8 @@ function CreateProjectModal({ open, onClose }: { open: boolean; onClose: () => v
     start_date: "",
     end_date: "",
     actual_completion_date: "",
-    phase_count: "4",
-    phase_names: DEFAULT_PHASES.join("\n"),
+    sprint_count: "4",
+    sprint_names: DEFAULT_SPRINTS.join("\n"),
     project_manager_id: "",
     lead_ids: [] as UUID[],
     task_ids: [] as UUID[],
@@ -375,25 +393,57 @@ function CreateProjectModal({ open, onClose }: { open: boolean; onClose: () => v
     partition: "tech",
     tags: "",
   });
+  const [docSearch, setDocSearch] = useState("");
+  const [selectedDocs, setSelectedDocs] = useState<{ id: string; title: string }[]>([]);
+  const docs = useQuery({
+    queryKey: ["project-create-doc-search", docSearch],
+    queryFn: () => docSearch.trim().length >= 2 ? searchDocPages(docSearch.trim()) : listDocPages(),
+    enabled: open,
+  });
+  const canCreateProducts = isSuperAdmin() || hasPermission("products.manage_all");
+  const availableProductLines = useMemo(() => {
+    const existingNames = (products.data?.items ?? []).map((product) => product.name);
+    return canCreateProducts
+      ? Array.from(new Set([...PRODUCT_LINES, ...existingNames]))
+      : existingNames;
+  }, [canCreateProducts, products.data]);
+
+  useEffect(() => {
+    if (!open || canCreateProducts || availableProductLines.length === 0) return;
+    if (!availableProductLines.some((name) => name === form.product_line)) {
+      setForm((current) => ({ ...current, product_line: availableProductLines[0] }));
+    }
+  }, [availableProductLines, canCreateProducts, form.product_line, open]);
 
   const create = useMutation({
     mutationFn: async () => {
-      const line = form.product_line || "Core Product";
+      const line = form.product_line || "PMP";
       const existingProduct = (products.data?.items ?? []).find(
         (p) => p.name.trim().toLowerCase() === line.trim().toLowerCase(),
       );
       let productId = existingProduct?.id;
       if (!productId) {
+        if (!canCreateProducts) {
+          throw new Error("Choose an existing product line to create this project.");
+        }
         const createdProduct = await createProduct({
           name: line,
           owner_user_id: user!.id,
           description:
-            line === "Internal"
-              ? "Shared product line for internal and cross-functional work."
+            line === "Organization"
+              ? "Shared organizational product line for work that spans PMP and GMALL."
               : `${line} product line`,
         });
         productId = createdProduct.id;
       }
+
+      const count = Math.max(1, Math.min(52, Number(form.sprint_count) || 1));
+      const sprintNames = form.sprint_names
+        .split("\n")
+        .map((name) => name.trim())
+        .filter(Boolean);
+      while (sprintNames.length < count) sprintNames.push(`Sprint ${sprintNames.length + 1}`);
+      const sprintStart = form.start_date || new Date().toISOString().slice(0, 10);
 
       const project = await createProject({
         product_id: productId as UUID,
@@ -408,6 +458,15 @@ function CreateProjectModal({ open, onClose }: { open: boolean; onClose: () => v
         estimated_completion_date: form.end_date || undefined,
         actual_completion_date: form.actual_completion_date || undefined,
         tags: tagsWithTaxonomy(form.tags, form.level, form.partition),
+        sprints: Array.from({ length: count }, (_, index) => {
+          const start = addDaysIso(sprintStart, index * 14);
+          return {
+            name: sprintNames[index],
+            start_date: start,
+            end_date: addDaysIso(start, 13),
+            lead_assignee_user_id: form.lead_ids[index % Math.max(form.lead_ids.length, 1)],
+          };
+        }),
       });
 
       const memberRoles = new Map<UUID, string>();
@@ -420,42 +479,36 @@ function CreateProjectModal({ open, onClose }: { open: boolean; onClose: () => v
         ),
       );
 
-      const count = Math.max(1, Math.min(12, Number(form.phase_count) || 1));
-      const phaseNames = form.phase_names
-        .split("\n")
-        .map((name) => name.trim())
-        .filter(Boolean);
-      while (phaseNames.length < count) phaseNames.push(`Phase ${phaseNames.length + 1}`);
-      const createdPhases = [];
-      for (let i = 0; i < count; i += 1) {
-        createdPhases.push(
-          await createPhase({
-            project_id: project.id,
-            name: phaseNames[i],
-            phase_type: i === 0 ? "Requirements" : i === count - 1 ? "Deployment" : "Development",
-            sequence: i + 1,
-            start_date: i === 0 ? form.start_date || undefined : undefined,
-            end_date: i === count - 1 ? form.end_date || undefined : undefined,
-            lead_assignee_user_id: form.lead_ids[i % Math.max(form.lead_ids.length, 1)],
-          }),
-        );
+      const createdSprints = await getProjectSprints(project.id);
+      const targetSprint = createdSprints[0]?.id;
+      if (targetSprint) {
+        await Promise.all(form.task_ids.map((taskId) => attachTask(taskId, targetSprint).catch(() => undefined)));
       }
 
-      const targetPhase = createdPhases[0]?.id;
-      if (targetPhase) {
-        await Promise.all(form.task_ids.map((taskId) => attachTask(taskId, targetPhase).catch(() => undefined)));
-      }
+      const docResults = await Promise.allSettled(
+        selectedDocs.map((doc) => addDocLink(doc.id, { entity_type: "project", entity_id: project.id })),
+      );
 
-      return project;
+      return { project, docLinkFailures: docResults.filter((result) => result.status === "rejected").length };
     },
-    onSuccess: () => {
-      toast.push("Project created with phases, members, and selected tasks.", "success");
+    onSuccess: ({ docLinkFailures }) => {
+      toast.push(
+        docLinkFailures
+          ? `Project created, but ${docLinkFailures} document link(s) could not be added.`
+          : "Project created with two-week sprints, members, tasks, and documents.",
+        docLinkFailures ? "error" : "success",
+      );
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["portfolio-gantt"] });
       queryClient.invalidateQueries({ queryKey: ["chat-channels"] });
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      setSelectedDocs([]);
+      setDocSearch("");
       onClose();
+    },
+    onError: (error) => {
+      toast.push(error instanceof Error ? error.message : "Could not create project.", "error");
     },
   });
 
@@ -470,7 +523,15 @@ function CreateProjectModal({ open, onClose }: { open: boolean; onClose: () => v
       task_ids: f.task_ids.includes(id) ? f.task_ids.filter((x) => x !== id) : [...f.task_ids, id],
     }));
 
-  const valid = form.name.trim().length > 0 && form.product_line.trim().length > 0;
+  const datesPaired = Boolean(form.start_date) === Boolean(form.end_date);
+  const datesOrdered = !form.start_date || !form.end_date || form.end_date >= form.start_date;
+  const valid = form.name.trim().length > 0
+    && form.product_line.trim().length > 0
+    && availableProductLines.length > 0
+    && Boolean(form.sprint_names.trim())
+    && datesPaired
+    && datesOrdered
+    && (!form.actual_completion_date || Boolean(form.start_date && form.end_date));
   const unattachedTasks = backlog.data?.items ?? [];
 
   return (
@@ -512,14 +573,19 @@ function CreateProjectModal({ open, onClose }: { open: boolean; onClose: () => v
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.15fr) minmax(280px, 0.85fr)", gap: 18 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <Field label="Project name">
-            <TextInput value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="e.g. Customer Portal" />
+            <TextInput value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="e.g. GMall Rebuild" />
           </Field>
           <Field label="Product line">
             <Select
               value={form.product_line}
               onChange={(e) => setForm((f) => ({ ...f, product_line: e.target.value }))}
-              options={PRODUCT_LINES.map((p) => ({ value: p, label: p }))}
+              options={availableProductLines.map((p) => ({ value: p, label: p }))}
             />
+            {availableProductLines.length === 0 && (
+              <span style={{ fontSize: 11.5, color: "var(--status-delayed)" }}>
+                An administrator must create a product line before the first project can be added.
+              </span>
+            )}
           </Field>
           <Field label="Project level">
             <Select
@@ -532,7 +598,7 @@ function CreateProjectModal({ open, onClose }: { open: boolean; onClose: () => v
             <Select
               value={form.partition}
               onChange={(e) => setForm((f) => ({ ...f, partition: e.target.value }))}
-              options={PROJECT_PARTITIONS.filter((partition) => partition.value !== "all").map((partition) => ({ value: partition.value, label: partition.label }))}
+              options={partitions.filter((partition) => partition.value !== "all")}
             />
           </Field>
           <Field label="Description (Markdown)">
@@ -558,16 +624,24 @@ function CreateProjectModal({ open, onClose }: { open: boolean; onClose: () => v
             </Field>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 10 }}>
-            <Field label="Start date">
+            <Field label="Planned start">
               <TextInput type="date" value={form.start_date} onChange={(e) => setForm((f) => ({ ...f, start_date: e.target.value }))} />
             </Field>
-            <Field label="End date">
+            <Field label="Planned end">
               <TextInput type="date" value={form.end_date} onChange={(e) => setForm((f) => ({ ...f, end_date: e.target.value }))} />
             </Field>
-            <Field label="Actual completion">
-              <TextInput type="date" value={form.actual_completion_date} onChange={(e) => setForm((f) => ({ ...f, actual_completion_date: e.target.value }))} />
+            <Field label="Actual end date">
+              <TextInput
+                type="date"
+                value={form.actual_completion_date}
+                onChange={(e) => setForm((f) => ({ ...f, actual_completion_date: e.target.value }))}
+                disabled={!form.start_date || !form.end_date}
+                title={!form.start_date || !form.end_date ? "Set both planned dates first." : undefined}
+              />
             </Field>
           </div>
+          {!datesPaired && <div style={{ fontSize: 11.5, color: "var(--status-delayed)" }}>Set both planned dates or leave both empty.</div>}
+          {!datesOrdered && <div style={{ fontSize: 11.5, color: "var(--status-delayed)" }}>Planned end must be on or after planned start.</div>}
           <Field label="Tags">
             <TextInput value={form.tags} onChange={(e) => setForm((f) => ({ ...f, tags: e.target.value }))} placeholder="planning, migration, customer-facing" />
           </Field>
@@ -578,22 +652,56 @@ function CreateProjectModal({ open, onClose }: { open: boolean; onClose: () => v
             <MarkdownPreview value={form.description} />
           </Card>
           <div style={{ display: "grid", gridTemplateColumns: "100px 1fr", gap: 10 }}>
-            <Field label="Phases">
+            <Field label="Sprints">
               <TextInput
                 type="number"
                 min={1}
-                max={12}
-                value={form.phase_count}
-                onChange={(e) => setForm((f) => ({ ...f, phase_count: e.target.value }))}
+                max={52}
+                value={form.sprint_count}
+                onChange={(e) => setForm((f) => ({ ...f, sprint_count: e.target.value }))}
               />
             </Field>
-            <Field label="Phase names">
+            <Field label="Sprint names">
               <TextArea
-                value={form.phase_names}
-                onChange={(e) => setForm((f) => ({ ...f, phase_names: e.target.value }))}
+                value={form.sprint_names}
+                onChange={(e) => setForm((f) => ({ ...f, sprint_names: e.target.value }))}
                 style={{ minHeight: 88 }}
               />
             </Field>
+          </div>
+          <div style={{ fontSize: 11.5, color: "var(--text-tertiary)", marginTop: -6 }}>
+            Every sprint is scheduled as an exact 14-day window. New projects always include at least one sprint.
+          </div>
+          <div>
+            <div style={sectionLabel}>Connected documents</div>
+            <SearchSuggestionInput
+              value={docSearch}
+              options={(docs.data ?? [])
+                .filter((doc) => !selectedDocs.some((selected) => selected.id === doc.id))
+                .map((doc) => ({ id: doc.id, label: doc.title, detail: doc.excerpt ?? "Internal Docs" }))}
+              placeholder="Search documents…"
+              ariaLabel="Search documents to connect to project"
+              onChange={setDocSearch}
+              onSelect={(option) => {
+                setSelectedDocs((current) => [...current, { id: option.id, title: option.label }]);
+                setDocSearch("");
+              }}
+            />
+            {selectedDocs.length > 0 && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
+                {selectedDocs.map((doc) => (
+                  <button
+                    key={doc.id}
+                    type="button"
+                    onClick={() => setSelectedDocs((current) => current.filter((item) => item.id !== doc.id))}
+                    style={selectedDocPill}
+                    aria-label={`Remove document ${doc.title}`}
+                  >
+                    {doc.title} <X size={12} />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           <Field label="Project manager">
             <Select
@@ -629,7 +737,7 @@ function CreateProjectModal({ open, onClose }: { open: boolean; onClose: () => v
             </div>
             {form.task_ids.length > 0 && (
               <div style={{ marginTop: 6, fontSize: 11.5, color: "var(--text-tertiary)" }}>
-                {form.task_ids.length} task(s) will land in the first phase.
+                {form.task_ids.length} task(s) will land in the first sprint.
               </div>
             )}
           </div>
@@ -649,6 +757,20 @@ const sectionLabel: React.CSSProperties = {
   letterSpacing: "0.04em",
   color: "var(--text-tertiary)",
   marginBottom: 6,
+};
+
+const selectedDocPill: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 5,
+  border: "1px solid var(--border-default)",
+  borderRadius: "var(--radius-full)",
+  background: "var(--surface-2)",
+  color: "var(--text-secondary)",
+  padding: "5px 9px",
+  cursor: "pointer",
+  fontSize: 12,
+  fontWeight: 700,
 };
 
 const pickerGrid: React.CSSProperties = {

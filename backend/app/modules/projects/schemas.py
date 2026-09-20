@@ -6,7 +6,7 @@ from datetime import date, datetime
 from typing import List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.modules.projects.enums import (
     DependencyType,
@@ -65,6 +65,21 @@ class ProductRead(BaseModel):
 
 
 # ---------- Project ----------
+class ProjectSprintCreate(BaseModel):
+    """A new delivery sprint. Sprint dates are inclusive and span 14 days."""
+
+    name: str = Field(min_length=1, max_length=200)
+    start_date: date
+    end_date: date
+    lead_assignee_user_id: Optional[UUID] = None
+
+    @model_validator(mode="after")
+    def validate_two_week_window(self) -> "ProjectSprintCreate":
+        if (self.end_date - self.start_date).days != 13:
+            raise ValueError("A sprint must span exactly 14 calendar days.")
+        return self
+
+
 class ProjectCreate(BaseModel):
     product_id: UUID
     name: str = Field(min_length=1, max_length=200)
@@ -79,6 +94,19 @@ class ProjectCreate(BaseModel):
     health_status: HealthStatus = HealthStatus.ON_TRACK
     status: ProjectStatus = ProjectStatus.NOT_STARTED
     tags: List[str] = Field(default_factory=list)
+    sprints: List[ProjectSprintCreate] = Field(default_factory=list, max_length=52)
+
+    @model_validator(mode="after")
+    def validate_project_dates(self) -> "ProjectCreate":
+        if (self.start_date is None) != (self.end_date is None):
+            raise ValueError("Project start and end dates must be set together.")
+        if self.start_date and self.end_date and self.end_date < self.start_date:
+            raise ValueError("Project end date cannot be before its start date.")
+        if self.actual_completion_date and not (self.start_date and self.end_date):
+            raise ValueError(
+                "Actual end date requires planned project start and end dates."
+            )
+        return self
 
 
 class ProjectUpdate(BaseModel):
@@ -119,6 +147,7 @@ class ProjectRead(BaseModel):
     generation_run_id: Optional[UUID] = None
     ai_prompt_storage_key: Optional[str] = None
     ai_summary_storage_key: Optional[str] = None
+    planning_mode: str = "sprints"
     created_at: datetime
     updated_at: datetime
 
@@ -143,6 +172,17 @@ class ProjectMemberRead(BaseModel):
     project_id: UUID
     user_id: UUID
     role: str
+
+
+class ProjectAdminTransfer(BaseModel):
+    new_admin_user_id: UUID
+    previous_admin_role: ProjectMemberRole = ProjectMemberRole.TEAM_LEAD
+
+    @model_validator(mode="after")
+    def validate_previous_admin_role(self) -> "ProjectAdminTransfer":
+        if self.previous_admin_role == ProjectMemberRole.PROJECT_MANAGER:
+            raise ValueError("Previous project admins must receive a non-admin role.")
+        return self
 
 
 # ---------- Phase ----------
@@ -179,11 +219,37 @@ class PhaseRead(BaseModel):
     status: str
     progress_percentage: float
     lead_assignee_user_id: Optional[UUID] = None
+    is_sprint: bool = True
     created_at: datetime
     updated_at: datetime
 
 
 # ---------- Task ----------
+class TaskPartitionCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    description: Optional[str] = Field(default=None, max_length=500)
+    display_order: int = Field(default=0, ge=0, le=10_000)
+
+
+class TaskPartitionUpdate(BaseModel):
+    name: Optional[str] = Field(default=None, min_length=1, max_length=100)
+    description: Optional[str] = Field(default=None, max_length=500)
+    display_order: Optional[int] = Field(default=None, ge=0, le=10_000)
+
+
+class TaskPartitionRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: UUID
+    name: str
+    slug: str
+    description: Optional[str] = None
+    display_order: int
+    task_count: int = 0
+    project_count: int = 0
+    created_at: datetime
+    updated_at: datetime
+
+
 class ChecklistItemCreate(BaseModel):
     text: str = Field(min_length=1, max_length=500)
     order: int = 0
@@ -214,6 +280,9 @@ class TaskCreate(BaseModel):
     start_date: Optional[date] = None
     due_date: Optional[date] = None
     assignee_user_ids: List[UUID] = Field(default_factory=list)
+    is_ticket: bool = False
+    ticket_recipient_user_ids: List[UUID] = Field(default_factory=list)
+    ticket_recipient_team_ids: List[UUID] = Field(default_factory=list)
     label_ids: List[UUID] = Field(default_factory=list)
     label_names: List[str] = Field(default_factory=list)
     checklist_items: List[ChecklistItemCreate] = Field(default_factory=list)
@@ -228,14 +297,22 @@ class TaskUpdate(BaseModel):
     estimated_hours: Optional[float] = None
     actual_hours: Optional[float] = None
     reviewer_user_id: Optional[UUID] = None
+    github_url: Optional[str] = Field(default=None, max_length=512)
     partition: Optional[str] = None
     start_date: Optional[date] = None
     due_date: Optional[date] = None
     assignee_user_ids: Optional[List[UUID]] = None
+    label_ids: Optional[List[UUID]] = None
+    label_names: Optional[List[str]] = None
+    checklist_items: Optional[List[ChecklistItemCreate]] = None
 
 
 class UpdateTaskStatusRequest(BaseModel):
     status: TaskStatus
+
+
+class ReorderTasksRequest(BaseModel):
+    task_ids: List[UUID] = Field(min_length=1, max_length=500)
 
 
 class UpdateChecklistItemRequest(BaseModel):
@@ -243,7 +320,7 @@ class UpdateChecklistItemRequest(BaseModel):
 
 
 class AttachTaskRequest(BaseModel):
-    """Attach a standalone task to a project phase (admin flow)."""
+    """Attach a standalone task to a project sprint (legacy field name)."""
 
     phase_id: UUID
 
@@ -258,6 +335,7 @@ class TaskRead(BaseModel):
     task_type: str
     priority: str
     status: str
+    board_order: int = 0
     story_points: Optional[int] = None
     estimated_hours: Optional[float] = None
     actual_hours: Optional[float] = None
@@ -276,6 +354,8 @@ class TaskRead(BaseModel):
     latest_finish: Optional[float] = None
     total_slack: Optional[float] = None
     is_critical: bool = False
+    is_ticket: bool = False
+    ticket_requested_by_user_id: Optional[UUID] = None
     created_by: str = "manual"
     last_modified_by: str = "manual"
     generation_run_id: Optional[UUID] = None
@@ -406,6 +486,7 @@ class PortfolioGanttProject(BaseModel):
     start_date: Optional[date] = None
     end_date: Optional[date] = None
     current_phase: Optional[str] = None
+    current_sprint: Optional[str] = None
     tags: List[str] = Field(default_factory=list)
     milestones: List[MilestoneRead] = Field(default_factory=list)
 
@@ -436,7 +517,9 @@ class UpcomingDeadline(BaseModel):
 class ProjectOverview(BaseModel):
     project: ProjectRead
     phases: List[PhaseRead]
+    sprints: List[PhaseRead]
     current_phase: Optional[PhaseRead] = None
+    current_sprint: Optional[PhaseRead] = None
     members: List[ProjectMemberRead]
     milestones: List[MilestoneRead]
     task_stats: TaskStats

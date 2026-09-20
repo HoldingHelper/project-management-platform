@@ -9,6 +9,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, Diamond, GripHorizontal, ZoomIn, ZoomOut } from "lucide-react";
 import { toSemantic, semanticColor } from "@/lib/format";
+import { StatusChip } from "@/components/ds";
 import type { PortfolioGantt } from "@/lib/types";
 
 const DAY_MS = 86_400_000;
@@ -21,6 +22,7 @@ interface Layout {
   row: number;
   color: string;
   bg: string;
+  healthStatus: string;
   pulse: boolean;
   progress: number;
   currentPhase?: string | null;
@@ -111,8 +113,8 @@ export function PortfolioGanttChart({
 
   if (dated.length === 0) {
     return (
-      <div style={{ padding: 24, fontSize: 13, color: "var(--text-tertiary)" }}>
-        No projects have start dates yet — set start/end dates to see them on the timeline.
+      <div style={{ padding: 32, fontSize: 13, color: "var(--text-tertiary)", textAlign: "center", background: "var(--surface-2)", borderRadius: "var(--radius-3)", border: "1px solid var(--border-subtle)" }}>
+        No projects have start dates scheduled. Set start and due dates to view them on the interactive timeline.
       </div>
     );
   }
@@ -127,16 +129,16 @@ export function PortfolioGanttChart({
   const max = baseMax + offsetDays * DAY_MS;
   const totalDays = Math.max(14, Math.round((max - min) / DAY_MS));
 
-  const labelWidth = 260;
-  const dayWidth = Math.max(8, Math.min(38, (1280 / totalDays) * zoom));
+  const labelWidth = 320;
+  const dayWidth = Math.max(12, Math.min(48, (1280 / totalDays) * zoom * 1.3));
   dayWidthRef.current = dayWidth;
   const gridWidth = totalDays * dayWidth;
-  const rowHeight = 52;
-  const barHeight = 22;
+  const rowHeight = 56;
+  const barHeight = 24;
 
   const x = (iso: string) => ((new Date(iso).getTime() - min) / DAY_MS) * dayWidth;
-
   const xMs = (ms: number) => ((ms - min) / DAY_MS) * dayWidth;
+
   const rows: Layout[] = dated.map((p, i) => {
     const dragging = barDrag && barDrag.id === p.id;
     const start = dragging ? xMs(barDrag.startMs) : x(p.start_date!);
@@ -153,13 +155,14 @@ export function PortfolioGanttChart({
       id: p.id,
       name: p.name,
       left: start,
-      width: Math.max(end - start, 10),
+      width: Math.max(end - start, 14),
       row: i,
       color: fg,
       bg,
+      healthStatus: String(p.health_status),
       pulse: semantic === "blocked" || semantic === "delayed",
       progress: Number(p.progress_percentage),
-      currentPhase: p.current_phase,
+      currentPhase: p.current_sprint ?? p.current_phase,
       startMs,
       endMs,
       milestones: p.milestones
@@ -184,18 +187,18 @@ export function PortfolioGanttChart({
     months.push({
       label: cursor.toLocaleDateString([], { month: "short", year: "numeric" }),
       x: ((cursor.getTime() - min) / DAY_MS) * dayWidth,
-      width: Math.max(64, ((next.getTime() - cursor.getTime()) / DAY_MS) * dayWidth),
+      width: Math.max(72, ((next.getTime() - cursor.getTime()) / DAY_MS) * dayWidth),
     });
     cursor.setMonth(cursor.getMonth() + 1);
   }
 
-  // Dated tick row: pick a step so labels stay ~70px apart and never collide.
-  // Denser when zoomed in (each day wide), sparser when zoomed out.
-  const stepDays = dayWidth >= 26 ? 1 : dayWidth >= 14 ? 2 : dayWidth >= 8 ? 7 : 14;
+  // Adaptive tick spacing: guarantee minimum 72px between ticks to eliminate all text collisions
+  const minPxPerTick = 72;
+  const rawStep = Math.ceil(minPxPerTick / dayWidth);
+  const stepDays = rawStep <= 1 ? 1 : rawStep <= 3 ? 3 : rawStep <= 7 ? 7 : rawStep <= 14 ? 14 : rawStep <= 30 ? 30 : 60;
   const dayTicks: { label: string; x: number }[] = [];
   const tickCursor = new Date(min);
   tickCursor.setHours(0, 0, 0, 0);
-  // Align the first tick to a step boundary from the range start.
   while (tickCursor.getTime() < max) {
     dayTicks.push({
       label: tickCursor.toLocaleDateString([], { month: "short", day: "numeric" }),
@@ -316,31 +319,38 @@ export function PortfolioGanttChart({
         </div>
 
         <div style={{ display: "flex" }}>
-          {/* Labels */}
-          <div style={{ width: labelWidth, flexShrink: 0 }}>
+          {/* Labels Column matching Project Timeline */}
+          <div style={{ width: labelWidth, flexShrink: 0, borderRight: "1px solid var(--border-default)", background: "var(--surface-1)" }}>
             {rows.map((r) => (
               <div
                 key={r.id}
                 style={{
                   height: rowHeight,
                   display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "center",
-                  paddingRight: 16,
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "0 14px",
                   borderTop: "1px solid var(--border-subtle)",
+                  gap: 8,
                 }}
               >
-                <Link
-                  href={`/projects/${r.id}`}
-                  style={{ fontSize: 13.5, fontWeight: 800, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
-                >
-                  {r.name}
-                </Link>
-                {r.currentPhase && (
-                  <span style={{ fontSize: 10.5, color: "var(--text-tertiary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                    {r.currentPhase}
-                  </span>
-                )}
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <Link
+                    href={`/projects/${r.id}`}
+                    style={{ fontSize: 13, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block", color: "var(--text-primary)", textDecoration: "none" }}
+                    title={r.name}
+                  >
+                    {r.name}
+                  </Link>
+                  {r.currentPhase && (
+                    <span style={{ fontSize: 10.5, color: "var(--text-tertiary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block" }}>
+                      {r.currentPhase}
+                    </span>
+                  )}
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                  <StatusChip status={r.healthStatus} />
+                </div>
               </div>
             ))}
           </div>
@@ -358,13 +368,33 @@ export function PortfolioGanttChart({
             {dayTicks.map((t) => (
               <div
                 key={`vline-${t.x}`}
-                style={{ position: "absolute", top: 0, bottom: 0, left: t.x, width: 1, background: "var(--border-subtle)", opacity: 0.5, pointerEvents: "none" }}
+                style={{ position: "absolute", top: 0, bottom: 0, left: t.x, width: 1, background: "var(--border-subtle)", opacity: 0.4, pointerEvents: "none" }}
               />
             ))}
 
-            {/* Today line */}
+            {/* Today line & today pill */}
             {todayX >= 0 && todayX <= gridWidth && (
-              <div style={{ position: "absolute", top: 0, bottom: 0, left: todayX, width: 2, background: "var(--status-delayed)", zIndex: 3 }} />
+              <>
+                <div style={{ position: "absolute", top: 0, bottom: 0, left: todayX, width: 2, background: "var(--status-delayed)", zIndex: 3 }} />
+                <div
+                  style={{
+                    position: "absolute",
+                    top: -18,
+                    left: todayX,
+                    transform: "translateX(-50%)",
+                    background: "var(--status-delayed)",
+                    color: "#FFFFFF",
+                    fontSize: 9.5,
+                    fontWeight: 800,
+                    padding: "1px 6px",
+                    borderRadius: "var(--radius-full)",
+                    zIndex: 4,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  Today
+                </div>
+              </>
             )}
 
             {/* Dependency arrows */}

@@ -235,6 +235,22 @@ async def leave_channel(
         await db.commit()
 
 
+async def delete_channel(
+    db: AsyncSession, channel_id: UUID, user_id: UUID
+) -> None:
+    """Permanently delete a room and its dependent membership/playback rows."""
+    channel = await _require_channel(db, channel_id)
+    if channel.owner_user_id != user_id:
+        raise ForbiddenError("Only the channel creator can delete this music channel.")
+    await db.delete(channel)
+    await db.commit()
+    await connection_manager.broadcast_to_group(
+        LOBBY_GROUP,
+        "music.lobby",
+        {"channel_id": str(channel_id), "deleted": True},
+    )
+
+
 async def list_members(
     db: AsyncSession, channel_id: UUID, user_id: UUID
 ) -> List[MusicMemberRead]:

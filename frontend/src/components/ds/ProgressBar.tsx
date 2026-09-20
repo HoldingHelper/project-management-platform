@@ -1,29 +1,45 @@
-import { blockMeter } from "@/lib/format";
-
 interface Props {
   percent: number;
   blocks?: number;
   showLabel?: boolean;
 }
 
-/** The signature discrete block meter: ██████░░░░ 68% */
+/** Accessible continuous progress indicator used for projects and sprints. */
 export function ProgressBar({ percent, blocks = 20, showLabel = true }: Props) {
   const pct = Math.round(Math.max(0, Math.min(100, percent)));
+  void blocks;
   return (
-    <span className="pmp-progress" style={{ display: "inline-flex", alignItems: "center", gap: 10, width: "100%" }}>
+    <span
+      className="pmp-progress"
+      role="progressbar"
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={pct}
+      aria-label={`Progress: ${pct}%`}
+      style={{ display: "inline-flex", alignItems: "center", gap: 10, width: "100%" }}
+    >
       <span
         style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 12,
-          letterSpacing: 0.5,
-          color: "var(--accent-primary)",
+          position: "relative",
+          height: 8,
+          borderRadius: "var(--radius-full)",
+          background: "var(--surface-3)",
           overflow: "hidden",
-          whiteSpace: "nowrap",
           flex: 1,
           minWidth: 0,
         }}
       >
-        {blockMeter(pct, blocks)}
+        <span
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: `${pct}%`,
+            borderRadius: "inherit",
+            background:
+              "linear-gradient(90deg, var(--accent-primary), color-mix(in srgb, var(--accent-primary) 72%, var(--accent-secondary)))",
+            transition: "width 220ms ease",
+          }}
+        />
       </span>
       {showLabel && (
         <span

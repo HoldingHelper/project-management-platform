@@ -17,6 +17,17 @@ import {
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api/v1";
 
+/** Resolve API-returned relative resource URLs against the configured API.
+ * Static production is hosted on a different origin, so resolving `/api/v1`
+ * against `window.location` would incorrectly request the CloudFront site. */
+export function resolveApiResourceUrl(url: string): string {
+  if (/^https?:\/\//i.test(url)) return url;
+  if (url.startsWith("/api/v1")) {
+    return `${API_BASE_URL.replace(/\/$/, "")}${url.slice("/api/v1".length)}`;
+  }
+  return `${API_BASE_URL.replace(/\/$/, "")}/${url.replace(/^\//, "")}`;
+}
+
 export class AppError extends Error {
   status: number;
   type: string;

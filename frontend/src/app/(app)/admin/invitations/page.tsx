@@ -72,9 +72,22 @@ export default function AdminInvitationsPage() {
       align: "right",
       render: (i) =>
         i.status === "pending" ? (
-          <Button variant="tertiary" onClick={() => revoke.mutate(i.id)} disabled={revoke.isPending}>
-            Revoke
-          </Button>
+          <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+            <Button
+              variant="secondary"
+              onClick={async () => {
+                const origin = typeof window !== "undefined" ? window.location.origin : "";
+                const url = i.invite_url || (i.invite_token ? `${origin}/accept-invitation/${i.invite_token}` : `${origin}/accept-invitation/${i.id}`);
+                await navigator.clipboard.writeText(url);
+                toast.push("Invite link copied to clipboard!", "success");
+              }}
+            >
+              Copy Link
+            </Button>
+            <Button variant="tertiary" onClick={() => revoke.mutate(i.id)} disabled={revoke.isPending}>
+              Revoke
+            </Button>
+          </div>
         ) : null,
     },
   ];

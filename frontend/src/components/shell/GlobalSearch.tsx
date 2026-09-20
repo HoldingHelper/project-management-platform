@@ -9,7 +9,8 @@ import { listProjects, listTasks } from "@/lib/api/projects";
 import { listUsers } from "@/lib/api/users";
 
 const PAGES = [
-  { title: "Home Dashboard", href: "/", kind: "Page", Icon: Activity },
+  { title: "Home Dashboard", href: "/app/teams", kind: "Page", Icon: Activity },
+  { title: "Internal Docs", href: "/app/docs", kind: "Page", Icon: FolderKanban },
   { title: "Projects", href: "/portfolio", kind: "Page", Icon: FolderKanban },
   { title: "Tasks", href: "/tasks", kind: "Page", Icon: CheckSquare },
   { title: "Timeline", href: "/timeline", kind: "Page", Icon: Activity },
@@ -17,6 +18,7 @@ const PAGES = [
   { title: "Team Performance", href: "/performance", kind: "Page", Icon: User },
   { title: "Notifications", href: "/notifications", kind: "Page", Icon: Activity },
   { title: "Admin Users", href: "/admin/users", kind: "Page", Icon: User },
+  { title: "Settings", href: "/settings", kind: "Page", Icon: User },
 ];
 
 export function GlobalSearch({ open, onClose }: { open: boolean; onClose: () => void }) {

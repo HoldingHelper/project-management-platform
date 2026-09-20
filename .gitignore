@@ -37,3 +37,12 @@ var/logs/
 .vscode/
 .idea/
 .DS_Store
+
+# Generated native projects and signing configuration
+mobile/ios/
+mobile/android/
+.expo/
+*.jks
+*.p12
+*.mobileprovision
+google-service-account.json

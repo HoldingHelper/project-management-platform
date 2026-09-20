@@ -13,6 +13,7 @@ from app.modules.collaboration.models import (
     FileAttachment,
     Notification,
     Reaction,
+    UserDevice,
 )
 
 
@@ -140,3 +141,43 @@ async def count_unread_notifications(db: AsyncSession, user_id: UUID) -> int:
         )
     )
     return len(result.scalars().all())
+
+
+async def get_device_by_token(
+    db: AsyncSession, device_token: str
+) -> Optional[UserDevice]:
+    result = await db.execute(
+        select(UserDevice).where(UserDevice.device_token == device_token)
+    )
+    return result.scalar_one_or_none()
+
+
+async def save_device(
+    db: AsyncSession, device: UserDevice
+) -> UserDevice:
+    db.add(device)
+    await db.commit()
+    await db.refresh(device)
+    return device
+
+
+async def list_user_devices(
+    db: AsyncSession, user_id: UUID
+) -> Sequence[UserDevice]:
+    result = await db.execute(
+        select(UserDevice).where(
+            UserDevice.user_id == user_id, UserDevice.is_active.is_(True)
+        )
+    )
+    return result.scalars().all()
+
+
+async def unregister_device(
+    db: AsyncSession, device_token: str, user_id: UUID
+) -> bool:
+    device = await get_device_by_token(db, device_token)
+    if device and device.user_id == user_id:
+        device.is_active = False
+        await db.commit()
+        return True
+    return False

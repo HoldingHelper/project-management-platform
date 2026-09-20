@@ -9,7 +9,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   CornerDownRight,
   FileText,
-  Image,
+  Image as ImageIcon,
   Paperclip,
   SendHorizonal,
   SmilePlus,
@@ -24,13 +24,14 @@ import {
   sendMessage,
 } from "@/lib/api/chat";
 import { getFileDownloadUrl, listFiles, uploadFile } from "@/lib/api/collaboration";
-import { Avatar, useToast } from "@/components/ds";
+import { Avatar, PresenceDot, useToast } from "@/components/ds";
 import { VoiceRecorder } from "@/components/voice/VoiceRecorder";
 import { VoiceBubble } from "@/components/chat/VoiceBubble";
 import { useRealtimeEvent } from "@/lib/ws/RealtimeProvider";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { useUserMap } from "@/lib/hooks";
-import type { FileAttachmentRead, MessageRead, UUID } from "@/lib/types";
+import { usePresenceMap } from "@/lib/stores/presence";
+import type { FileAttachmentRead, MessageRead, PresenceStatus, UUID } from "@/lib/types";
 
 const QUICK_EMOJI = ["👍", "🎉", "❤️", "😂", "👀", "✅"];
 const COMPOSER_EMOJI = ["👍", "🎉", "❤️", "😂", "👀", "✅", "🔥", "🙏", "💡", "🚀", "⚠️", "📌", "✅", "🤝", "✨", "🧠"];
@@ -45,6 +46,7 @@ export function ChannelConversation({
 }) {
   const { user } = useAuth();
   const { nameOf, users } = useUserMap();
+  const presence = usePresenceMap();
   const toast = useToast();
   const queryClient = useQueryClient();
   const [body, setBody] = useState("");
@@ -206,14 +208,40 @@ export function ChannelConversation({
 
   function renderMessage(m: MessageRead, inThread = false) {
     const mine = m.sender_user_id === user?.id;
+    const senderPresence = m.sender_user_id ? presence[m.sender_user_id] : undefined;
+    const senderMeta = users.find((u) => u.id === m.sender_user_id);
+    const statusVal = (senderPresence?.status ?? (senderMeta?.presence_status as PresenceStatus) ?? "offline") as PresenceStatus;
+    const statusEmoji = senderPresence?.status_emoji ?? senderMeta?.status_emoji;
+    const statusText = senderPresence?.status_text ?? senderMeta?.status_text;
+
     const grouped: Record<string, number> = {};
     for (const r of m.reactions) grouped[r.emoji] = (grouped[r.emoji] ?? 0) + 1;
     return (
       <div key={m.id} className={`pmp-chat-message ${mine ? "is-mine" : ""} ${inThread ? "is-thread" : ""}`} style={{ display: "flex", gap: 10, padding: "6px 14px" }}>
-        <Avatar name={nameOf(m.sender_user_id)} size={28} />
+        <span style={{ position: "relative", display: "inline-flex", flexShrink: 0 }}>
+          <Avatar name={nameOf(m.sender_user_id)} size={28} />
+          <PresenceDot status={statusVal} overlay size={8} />
+        </span>
         <div className="pmp-chat-message-content" style={{ flex: 1, minWidth: 0 }}>
-          <div className="pmp-chat-message-meta" style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-            <span style={{ fontWeight: 700, fontSize: 13 }}>{nameOf(m.sender_user_id)}</span>
+          <div className="pmp-chat-message-meta" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontWeight: 700, fontSize: 13, display: "inline-flex", alignItems: "center", gap: 5 }}>
+              {nameOf(m.sender_user_id)}
+              {statusEmoji && (
+                <span
+                  title={statusText ? `${statusEmoji} ${statusText}` : undefined}
+                  style={{
+                    fontSize: 11,
+                    background: "var(--surface-3)",
+                    padding: "0 4px",
+                    borderRadius: "var(--radius-full)",
+                    border: "1px solid var(--border-subtle)",
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {statusEmoji}
+                </span>
+              )}
+            </span>
             <span style={{ fontSize: 10.5, color: "var(--text-tertiary)" }}>
               {new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
             </span>
@@ -391,7 +419,7 @@ export function ChannelConversation({
                     fontSize: 12,
                   }}
                 >
-                  {file.type.startsWith("image/") ? <Image size={13} /> : file.type.startsWith("video/") ? <Video size={13} /> : <FileText size={13} />}
+                  {file.type.startsWith("image/") ? <ImageIcon size={13} /> : file.type.startsWith("video/") ? <Video size={13} /> : <FileText size={13} />}
                   <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{file.name}</span>
                   <button
                     type="button"
@@ -578,7 +606,7 @@ function MessageAttachment({
     if (nextUrl) window.open(nextUrl, "_blank", "noopener,noreferrer");
   }
 
-  const Icon = kind === "image" ? Image : kind === "video" ? Video : FileText;
+  const Icon = kind === "image" ? ImageIcon : kind === "video" ? Video : FileText;
 
   return (
     <div

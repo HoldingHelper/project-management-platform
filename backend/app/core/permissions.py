@@ -1,7 +1,7 @@
-"""The canonical RBAC permission catalog and role -> permission matrix.
+"""The canonical RBAC permission catalog and default role -> permission matrix.
 
-This is the single source of truth referenced by every module. Permission
-code strings must never be renamed once shipped (additive changes only).
+Database grants become authoritative after roles are seeded. Permission code
+strings must never be renamed once shipped (additive changes only).
 """
 
 from __future__ import annotations
@@ -19,6 +19,7 @@ class Permissions:
 
     PROJECTS_VIEW_ALL = "projects.view_all"
     PROJECTS_VIEW_ASSIGNED = "projects.view_assigned"
+    PROJECTS_CREATE = "projects.create"
     PROJECTS_MANAGE_ALL = "projects.manage_all"
     PROJECTS_MANAGE_ASSIGNED = "projects.manage_assigned"
     PROJECTS_MANAGE_USERS = "projects.manage_users"
@@ -36,6 +37,7 @@ class Permissions:
     TASKS_UPLOAD_FILES = "tasks.upload_files"
     TASKS_MANAGE_TESTING = "tasks.manage_testing"
     TASKS_MANAGE_DESIGN = "tasks.manage_design"
+    TASKS_ASSIGN = "tasks.assign"
 
     REQUIREMENTS_CREATE = "requirements.create"
 
@@ -52,6 +54,12 @@ class Permissions:
     ANALYTICS_VIEW_ORG = "analytics.view_org"
     ANALYTICS_EXPORT = "analytics.export"
     PLANNING_UPLOAD = "planning.upload"
+
+    DOCS_VIEW = "docs.view"
+    DOCS_COMMENT = "docs.comment"
+    DOCS_EDIT = "docs.edit"
+    DOCS_MANAGE = "docs.manage"
+    DOCS_PUBLISH = "docs.publish"
 
     @classmethod
     def all(cls) -> list[str]:
@@ -97,8 +105,11 @@ ROLE_PERMISSIONS: dict[str, list[str]] = {
         # long-term planning. No day-to-day management permissions.
         Permissions.PRODUCTS_VIEW_ALL,
         Permissions.PROJECTS_VIEW_ALL,
+        Permissions.PROJECTS_CREATE,
         Permissions.PHASES_VIEW,
         Permissions.TASKS_VIEW,
+        Permissions.TASKS_MANAGE_ALL,
+        Permissions.TASKS_ASSIGN,
         Permissions.REPORTS_VIEW,
         Permissions.REPORTS_VIEW_EXECUTIVE,
         Permissions.TIMELINES_VIEW,
@@ -108,13 +119,17 @@ ROLE_PERMISSIONS: dict[str, list[str]] = {
         Permissions.CHAT_ACCESS,
         Permissions.MUSIC_ACCESS,
         Permissions.READONLY_ACCESS,
+        Permissions.DOCS_VIEW,
+        Permissions.DOCS_COMMENT,
     ],
     ROLE_COMPANY_MANAGER: [
         Permissions.PRODUCTS_VIEW_ALL,
+        Permissions.PROJECTS_CREATE,
         Permissions.PROJECTS_MANAGE_ALL,
         Permissions.PHASES_APPROVE,
         Permissions.PHASES_MANAGE_TEAM,
         Permissions.TASKS_MANAGE_ALL,
+        Permissions.TASKS_ASSIGN,
         Permissions.REPORTS_VIEW_EXECUTIVE,
         Permissions.REPORTS_VIEW,
         Permissions.TIMELINES_VIEW,
@@ -125,13 +140,20 @@ ROLE_PERMISSIONS: dict[str, list[str]] = {
         Permissions.MUSIC_ACCESS,
         Permissions.ANALYTICS_VIEW_ORG,
         Permissions.ANALYTICS_EXPORT,
+        Permissions.DOCS_VIEW,
+        Permissions.DOCS_COMMENT,
+        Permissions.DOCS_EDIT,
+        Permissions.DOCS_MANAGE,
+        Permissions.DOCS_PUBLISH,
     ],
     ROLE_PROJECT_MANAGER: [
         Permissions.PRODUCTS_VIEW_ASSIGNED,
+        Permissions.PROJECTS_CREATE,
         Permissions.PROJECTS_MANAGE_ASSIGNED,
         Permissions.PHASES_APPROVE,
         Permissions.PHASES_MANAGE_TEAM,
         Permissions.TASKS_MANAGE_ALL,
+        Permissions.TASKS_ASSIGN,
         Permissions.PROJECTS_MANAGE_USERS,
         Permissions.REPORTS_VIEW,
         Permissions.TIMELINES_VIEW,
@@ -141,17 +163,25 @@ ROLE_PERMISSIONS: dict[str, list[str]] = {
         Permissions.CHAT_ACCESS,
         Permissions.MUSIC_ACCESS,
         Permissions.ANALYTICS_EXPORT,
+        Permissions.DOCS_VIEW,
+        Permissions.DOCS_COMMENT,
+        Permissions.DOCS_EDIT,
     ],
     ROLE_TEAM_LEAD: [
         Permissions.PRODUCTS_VIEW_ASSIGNED,
+        Permissions.PROJECTS_CREATE,
         Permissions.PROJECTS_VIEW_ASSIGNED,
         Permissions.PHASES_MANAGE_TEAM,
         Permissions.TASKS_MANAGE_TEAM,
+        Permissions.TASKS_ASSIGN,
         Permissions.REPORTS_VIEW,
         Permissions.TASKS_COMMENT,
         Permissions.TASKS_UPLOAD_FILES,
         Permissions.CHAT_ACCESS,
         Permissions.MUSIC_ACCESS,
+        Permissions.DOCS_VIEW,
+        Permissions.DOCS_COMMENT,
+        Permissions.DOCS_EDIT,
     ],
     ROLE_DEVELOPER: [
         Permissions.PRODUCTS_VIEW_ASSIGNED,
@@ -161,6 +191,8 @@ ROLE_PERMISSIONS: dict[str, list[str]] = {
         Permissions.TASKS_UPLOAD_FILES,
         Permissions.CHAT_ACCESS,
         Permissions.MUSIC_ACCESS,
+        Permissions.DOCS_VIEW,
+        Permissions.DOCS_COMMENT,
     ],
     ROLE_QA: [
         Permissions.PRODUCTS_VIEW_ASSIGNED,
@@ -170,6 +202,8 @@ ROLE_PERMISSIONS: dict[str, list[str]] = {
         Permissions.TASKS_UPLOAD_FILES,
         Permissions.CHAT_ACCESS,
         Permissions.MUSIC_ACCESS,
+        Permissions.DOCS_VIEW,
+        Permissions.DOCS_COMMENT,
     ],
     ROLE_UIUX: [
         Permissions.PRODUCTS_VIEW_ASSIGNED,
@@ -179,6 +213,9 @@ ROLE_PERMISSIONS: dict[str, list[str]] = {
         Permissions.TASKS_UPLOAD_FILES,
         Permissions.CHAT_ACCESS,
         Permissions.MUSIC_ACCESS,
+        Permissions.DOCS_VIEW,
+        Permissions.DOCS_COMMENT,
+        Permissions.DOCS_EDIT,
     ],
     ROLE_BUSINESS_ANALYST: [
         Permissions.PRODUCTS_VIEW_ASSIGNED,
@@ -188,11 +225,15 @@ ROLE_PERMISSIONS: dict[str, list[str]] = {
         Permissions.TASKS_COMMENT,
         Permissions.CHAT_ACCESS,
         Permissions.MUSIC_ACCESS,
+        Permissions.DOCS_VIEW,
+        Permissions.DOCS_COMMENT,
+        Permissions.DOCS_EDIT,
     ],
     ROLE_CLIENT: [
         Permissions.READONLY_ACCESS,
         Permissions.CHAT_ACCESS,
         Permissions.MUSIC_ACCESS,
+        Permissions.DOCS_VIEW,
     ],
     ROLE_GUEST: [],
 }

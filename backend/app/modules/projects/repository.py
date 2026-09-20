@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import List, Optional, Sequence, Tuple
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -23,6 +23,7 @@ from app.modules.projects.models import (
     TaskItem,
     TaskLabel,
     TaskLabelAssignment,
+    TaskPartition,
     TaskStatusTransition,
 )
 
@@ -31,6 +32,91 @@ _TASK_LOAD_OPTIONS = (
     selectinload(TaskItem.checklist_items),
     selectinload(TaskItem.label_assignments).selectinload(TaskLabelAssignment.label),
 )
+
+
+# ---------- Partitions ----------
+async def list_task_partitions(db: AsyncSession) -> Sequence[TaskPartition]:
+    result = await db.execute(
+        select(TaskPartition).order_by(
+            TaskPartition.display_order, TaskPartition.name, TaskPartition.id
+        )
+    )
+    return result.scalars().all()
+
+
+async def get_task_partition(
+    db: AsyncSession, partition_id: UUID
+) -> Optional[TaskPartition]:
+    result = await db.execute(
+        select(TaskPartition).where(TaskPartition.id == partition_id)
+    )
+    return result.scalar_one_or_none()
+
+
+async def get_task_partition_by_slug(
+    db: AsyncSession, slug: str
+) -> Optional[TaskPartition]:
+    result = await db.execute(
+        select(TaskPartition).where(TaskPartition.slug == slug)
+    )
+    return result.scalar_one_or_none()
+
+
+async def get_task_partition_by_name(
+    db: AsyncSession, name: str
+) -> Optional[TaskPartition]:
+    result = await db.execute(
+        select(TaskPartition).where(func.lower(TaskPartition.name) == name.lower())
+    )
+    return result.scalar_one_or_none()
+
+
+async def partition_usage_counts(
+    db: AsyncSession, slug: str
+) -> tuple[int, int]:
+    task_count = (
+        await db.execute(
+            select(func.count(TaskItem.id)).where(TaskItem.partition == slug)
+        )
+    ).scalar_one()
+    project_count = (
+        await db.execute(
+            select(func.count(Project.id)).where(
+                Project.tags.any(f"partition:{slug}")
+            )
+        )
+    ).scalar_one()
+    return int(task_count), int(project_count)
+
+
+async def replace_partition_references(
+    db: AsyncSession, old_slug: str, replacement_slug: Optional[str]
+) -> None:
+    await db.execute(
+        update(TaskItem)
+        .where(TaskItem.partition == old_slug)
+        .values(partition=replacement_slug)
+    )
+    projects = (
+        await db.execute(
+            select(Project).where(Project.tags.any(f"partition:{old_slug}"))
+        )
+    ).scalars().all()
+    old_tag = f"partition:{old_slug}"
+    replacement_tag = (
+        f"partition:{replacement_slug}" if replacement_slug is not None else None
+    )
+    for project in projects:
+        tags = [tag for tag in project.tags if tag != old_tag]
+        if replacement_tag and replacement_tag not in tags:
+            tags.append(replacement_tag)
+        project.tags = tags
+
+
+async def delete_task_partition(
+    db: AsyncSession, partition: TaskPartition
+) -> None:
+    await db.delete(partition)
 
 
 # ---------- Products ----------
@@ -324,6 +410,7 @@ async def list_tasks_by_phase(db: AsyncSession, phase_id: UUID) -> Sequence[Task
         select(TaskItem)
         .options(*_TASK_LOAD_OPTIONS)
         .where(TaskItem.phase_id == phase_id)
+        .order_by(TaskItem.board_order, TaskItem.created_at, TaskItem.id)
     )
     return result.scalars().unique().all()
 
@@ -336,6 +423,7 @@ async def list_tasks_by_project(
         .join(Phase, TaskItem.phase_id == Phase.id)
         .options(*_TASK_LOAD_OPTIONS)
         .where(Phase.project_id == project_id)
+        .order_by(TaskItem.board_order, TaskItem.created_at, TaskItem.id)
     )
     return result.scalars().unique().all()
 
@@ -366,6 +454,40 @@ async def set_task_assignees(
     await db.flush()
     for user_id in user_ids:
         db.add(TaskAssignee(task_id=task_id, user_id=user_id))
+
+
+async def set_task_labels(
+    db: AsyncSession, task_id: UUID, label_ids: List[UUID]
+) -> None:
+    result = await db.execute(
+        select(TaskLabelAssignment).where(TaskLabelAssignment.task_id == task_id)
+    )
+    for existing in result.scalars().all():
+        await db.delete(existing)
+    await db.flush()
+    for label_id in dict.fromkeys(label_ids):
+        db.add(TaskLabelAssignment(task_id=task_id, label_id=label_id))
+
+
+async def set_task_checklist(
+    db: AsyncSession, task_id: UUID, items: List[ChecklistItem]
+) -> None:
+    result = await db.execute(
+        select(ChecklistItem)
+        .where(ChecklistItem.task_id == task_id)
+        .order_by(ChecklistItem.order, ChecklistItem.id)
+    )
+    existing = list(result.scalars().all())
+    for index, item in enumerate(items):
+        if index < len(existing):
+            current = existing[index]
+            current.text = item.text
+            current.order = item.order
+        else:
+            item.task_id = task_id
+            db.add(item)
+    for stale in existing[len(items) :]:
+        await db.delete(stale)
 
 
 # ---------- Dependencies ----------

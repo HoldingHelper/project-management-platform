@@ -43,6 +43,26 @@ export interface Page<T> {
 // ---- Identity ----
 export type PresenceStatus = "online" | "busy" | "away" | "focus" | "offline";
 
+export interface UserCustomStatus {
+  text?: string | null;
+  emoji?: string | null;
+  expires_at?: string | null;
+}
+
+export interface UserPresenceInfo {
+  status: PresenceStatus;
+  status_text?: string | null;
+  status_emoji?: string | null;
+  status_expires_at?: string | null;
+}
+
+export interface CustomStatusUpdateRequest {
+  presence_status?: PresenceStatus;
+  status_text?: string | null;
+  status_emoji?: string | null;
+  clear_after_minutes?: number | null;
+}
+
 export interface UserRead {
   id: UUID;
   email: string;
@@ -55,7 +75,17 @@ export interface UserRead {
   bio?: string | null;
   phone?: string | null;
   location?: string | null;
-  presence_status?: string | null;
+  presence_status?: PresenceStatus | string | null;
+  status_text?: string | null;
+  status_emoji?: string | null;
+  status_expires_at?: string | null;
+  department_id?: UUID | null;
+  department_name?: string | null;
+  team_id?: UUID | null;
+  team_name?: string | null;
+  manager_id?: UUID | null;
+  manager_name?: string | null;
+  manager_email?: string | null;
   is_active: boolean;
   mfa_enabled: boolean;
   roles: string[];
@@ -68,14 +98,29 @@ export interface InvitationRead {
   email: string;
   role_name: string;
   invited_by_user_id: UUID;
+  department_id?: UUID | null;
+  department_name?: string | null;
+  team_id?: UUID | null;
+  team_name?: string | null;
+  manager_id?: UUID | null;
+  manager_name?: string | null;
   expires_at: string;
   accepted_at?: string | null;
   revoked_at?: string | null;
   created_at: string;
   status: "pending" | "accepted" | "revoked" | "expired";
+  invite_token?: string | null;
+  invite_url?: string | null;
 }
 
-export interface InvitationPublicRead { email: string; role_name: string; expires_at: string; }
+export interface InvitationPublicRead {
+  email: string;
+  role_name: string;
+  department_name?: string | null;
+  team_name?: string | null;
+  manager_name?: string | null;
+  expires_at: string;
+}
 
 export interface UserSettingsRead {
   notification_prefs: Record<string, unknown>;
@@ -91,14 +136,108 @@ export interface TokenResponse {
   user: UserRead;
 }
 
-export interface RoleRead { id: UUID; name: string; description: string | null; }
+export interface RoleRead {
+  id: UUID;
+  name: string;
+  description: string | null;
+  permission_codes: string[];
+}
 export interface PermissionRead { id: UUID; code: string; description: string | null; }
 
 // ---- Organization ----
-export interface DepartmentRead { id: UUID; name: string; description?: string | null; head_of_department_user_id?: UUID | null; }
-export interface TeamRead { id: UUID; department_id: UUID; name: string; description?: string | null; lead_user_id?: UUID | null; }
-export interface EmployeeRead { id: UUID; user_id: UUID; team_id?: UUID | null; manager_employee_id?: UUID | null; job_title?: string | null; hire_date?: string | null; status: string; }
+export interface DepartmentRead {
+  id: UUID;
+  name: string;
+  description?: string | null;
+  head_of_department_user_id?: UUID | null;
+  head_of_department_name?: string | null;
+  teams_count?: number;
+  members_count?: number;
+}
+
+export interface DepartmentCreate {
+  name: string;
+  description?: string | null;
+  head_of_department_user_id?: UUID | null;
+}
+
+export interface DepartmentUpdate {
+  name?: string;
+  description?: string | null;
+  head_of_department_user_id?: UUID | null;
+}
+
+export interface TeamRead {
+  id: UUID;
+  department_id: UUID;
+  name: string;
+  description?: string | null;
+  lead_user_id?: UUID | null;
+  lead_user_name?: string | null;
+  department_name?: string | null;
+  member_count?: number;
+}
+
+export interface TeamCreate {
+  department_id: UUID;
+  name: string;
+  description?: string | null;
+  lead_user_id?: UUID | null;
+}
+
+export interface TeamUpdate {
+  name?: string;
+  description?: string | null;
+  department_id?: UUID;
+  lead_user_id?: UUID | null;
+}
+
+export interface EmployeeRead {
+  id: UUID;
+  user_id: UUID;
+  department_id?: UUID | null;
+  department_name?: string | null;
+  team_id?: UUID | null;
+  team_name?: string | null;
+  manager_employee_id?: UUID | null;
+  job_title?: string | null;
+  hire_date?: string | null;
+  status: string;
+}
+
 export interface SkillRead { id: UUID; name: string; category?: string | null; }
+
+export interface OrgTreeNode {
+  id: UUID; // user_id
+  employee_id?: UUID | null;
+  full_name: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  job_title?: string | null;
+  avatar_url?: string | null;
+  bio?: string | null;
+  department_id?: UUID | null;
+  department_name?: string | null;
+  team_id?: UUID | null;
+  team_name?: string | null;
+  manager_user_id?: UUID | null;
+  manager_name?: string | null;
+  presence_status?: PresenceStatus | string | null;
+  status_text?: string | null;
+  status_emoji?: string | null;
+  role_names: string[];
+  direct_reports_count: number;
+  direct_reports: OrgTreeNode[];
+}
+
+export interface OrgTreeResponse {
+  roots: OrgTreeNode[];
+  total_departments: number;
+  total_teams: number;
+  total_employees: number;
+  unassigned: OrgTreeNode[];
+}
 
 // ---- Projects domain ----
 export interface ProductRead {
@@ -137,6 +276,7 @@ export interface ProjectRead {
   generation_run_id?: UUID | null;
   ai_prompt_storage_key?: string | null;
   ai_summary_storage_key?: string | null;
+  planning_mode: "sprints" | "legacy" | string;
   created_at: string;
   updated_at: string;
 }
@@ -152,9 +292,12 @@ export interface PhaseRead {
   status: PhaseStatus | string;
   progress_percentage: number;
   lead_assignee_user_id?: UUID | null;
+  is_sprint: boolean;
   created_at: string;
   updated_at: string;
 }
+
+export type SprintRead = PhaseRead;
 
 export interface TaskRead {
   id: UUID;
@@ -165,6 +308,7 @@ export interface TaskRead {
   task_type: TaskType | string;
   priority: Priority | string;
   status: TaskStatus | string;
+  board_order: number;
   story_points?: number | null;
   estimated_hours?: number | null;
   actual_hours?: number | null;
@@ -183,9 +327,23 @@ export interface TaskRead {
   latest_finish?: number | null;
   total_slack?: number | null;
   is_critical: boolean;
+  is_ticket: boolean;
+  ticket_requested_by_user_id?: UUID | null;
   created_by?: string;
   last_modified_by?: string;
   generation_run_id?: UUID | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TaskPartitionRead {
+  id: UUID;
+  name: string;
+  slug: string;
+  description?: string | null;
+  display_order: number;
+  task_count: number;
+  project_count: number;
   created_at: string;
   updated_at: string;
 }
@@ -255,6 +413,7 @@ export interface PortfolioGanttProject {
   start_date?: string | null;
   end_date?: string | null;
   current_phase?: string | null;
+  current_sprint?: string | null;
   tags: string[];
   level?: ProjectLevel | string | null;
   milestones: MilestoneRead[];
@@ -272,7 +431,9 @@ export interface UpcomingDeadline { task_id: UUID; title: string; due_date: stri
 export interface ProjectOverview {
   project: ProjectRead;
   phases: PhaseRead[];
+  sprints?: SprintRead[];
   current_phase?: PhaseRead | null;
+  current_sprint?: SprintRead | null;
   members: ProjectMemberRead[];
   milestones: MilestoneRead[];
   task_stats: TaskStats;
@@ -417,8 +578,16 @@ export interface ExecutiveDashboard {
   recent_activity: AuditLogRead[];
 }
 export interface PersonalDashboard {
-  upcoming_deadlines: unknown[];
-  late_tasks: unknown[];
+  assigned_tasks_total: number;
+  open_tasks: number;
+  in_progress_tasks: number;
+  completed_tasks: number;
+  blocked_tasks: number;
+  attention_required_tasks: number;
+  unscheduled_open_tasks: number;
+  completion_rate_percent: number;
+  upcoming_deadlines: Array<{ task_id: UUID; title: string; due_date: string }>;
+  late_tasks: Array<{ task_id: UUID; title: string; due_date: string }>;
   velocity_points_completed: number;
   hours_logged: number;
 }

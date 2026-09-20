@@ -22,7 +22,7 @@ import asyncio
 import logging
 import tempfile
 import time
-from typing import AsyncIterator, Awaitable, Callable, Optional
+from typing import Any, AsyncIterator, Awaitable, Callable, Optional
 
 import boto3
 from botocore.client import Config as BotoConfig
@@ -63,17 +63,21 @@ class MusicCacheService:
 
     def __init__(self) -> None:
         settings = get_settings()
-        self._client = boto3.client(
-            "s3",
-            endpoint_url=settings.s3_endpoint_url,
-            aws_access_key_id=settings.s3_access_key,
-            aws_secret_access_key=settings.s3_secret_key,
-            region_name=settings.s3_region,
-            use_ssl=settings.s3_use_ssl,
-            config=BotoConfig(
+        client_kwargs: dict[str, Any] = {
+            "region_name": settings.s3_region or "eu-central-1",
+            "use_ssl": settings.s3_use_ssl,
+            "config": BotoConfig(
                 signature_version="s3v4", s3={"addressing_style": "path"}
             ),
-        )
+        }
+        if settings.s3_endpoint_url and settings.s3_endpoint_url.strip():
+            client_kwargs["endpoint_url"] = settings.s3_endpoint_url.strip()
+        if settings.s3_access_key and settings.s3_access_key.strip():
+            client_kwargs["aws_access_key_id"] = settings.s3_access_key.strip()
+        if settings.s3_secret_key and settings.s3_secret_key.strip():
+            client_kwargs["aws_secret_access_key"] = settings.s3_secret_key.strip()
+
+        self._client = boto3.client("s3", **client_kwargs)
         self._bucket = settings.music_cache_bucket
         self._max_bytes = settings.music_cache_max_bytes
         self._bucket_ready = False

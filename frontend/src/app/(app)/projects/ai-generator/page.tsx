@@ -17,15 +17,18 @@ import {
 } from "@/lib/api/projects";
 import { Alert, Button, Field, Select, StatusChip, TextArea, TextInput, useToast } from "@/components/ds";
 import { PageHeader, PAGE_STYLE } from "@/components/ui/States";
+import { useTaskPartitions } from "@/lib/hooks";
 
 const priorityOptions = ["P0", "P1", "P2", "P3"].map((value) => ({ value, label: value }));
 const riskOptions = ["Low", "Medium", "High", "Critical"].map((value) => ({ value, label: value }));
 const statusOptions = ["NotStarted", "Ready", "InProgress", "Waiting", "Blocked", "Review", "Testing", "Done", "Cancelled", "Archived"].map((value) => ({ value, label: value }));
 const taskTypeOptions = ["Feature", "Bug", "Enhancement", "Research", "Documentation", "Meeting", "Testing", "Deployment"].map((value) => ({ value, label: value }));
-const partitionOptions = ["tech", "operations", "business", "marketing", "sales"].map((value) => ({ value, label: value }));
+const fallbackPartitionOptions = ["tech", "operations", "business", "marketing", "sales"].map((value) => ({ value, label: value }));
 
 export default function AiProjectGeneratorPage() {
   const toast = useToast();
+  const { partitions } = useTaskPartitions();
+  const partitionOptions = partitions.length ? partitions.map((item) => ({ value: item.slug, label: item.name })) : fallbackPartitionOptions;
   const [file, setFile] = useState<File | null>(null);
   const [extraContext, setExtraContext] = useState("");
   const [job, setJob] = useState<GenerationJobResponse | null>(null);
@@ -171,7 +174,7 @@ export default function AiProjectGeneratorPage() {
             <GuideItem title="Helpful fields" text="Name, goal, stakeholders, timeline, team members, constraints can come from the brief or Sheet." />
             <GuideItem title="Voice friendly" text="You can dictate into GPT or Claude, paste the transcript into the template, then upload." />
             <GuideItem title="Sheets context" text="Paste shared Google Sheets URLs in the brief; private sheets are rejected for review." />
-            <GuideItem title="Assignees" text="Use names or emails from your workspace. Unknown people are left unresolved for manual review." />
+            <GuideItem title="Assignees" text="Use real names or emails from the workspace. Unknown people are left unresolved for manual review." />
           </div>
         </div>
       </section>
