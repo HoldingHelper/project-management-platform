@@ -154,7 +154,7 @@ function highlightedText(text: string, highlights: TextHighlight[]): ReactNode {
 }
 
 function inline(text: string, highlights: TextHighlight[] = []): ReactNode[] {
-  const parts = text.split(/(`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*|\[[^\]]+\]\([^)]+\)|@[A-Za-z0-9_.-]+)/g);
+  const parts = text.split(/(`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*|\[\[[^\]]+\]\]|\[\d+\]|\[[^\]]+\]\([^)]+\)|@[A-Za-z0-9_.-]+)/g);
   return parts.map((part, i) => {
     if (part.startsWith("@") && part.length > 1) {
       return (
@@ -172,6 +172,67 @@ function inline(text: string, highlights: TextHighlight[] = []): ReactNode[] {
             fontFamily: "var(--font-mono)",
             margin: "0 2px",
           }}
+        >
+          {part}
+        </span>
+      );
+    }
+    if (part.startsWith("[[") && part.endsWith("]]")) {
+      const inner = part.slice(2, -2);
+      const [targetRaw, aliasRaw] = inner.split("|");
+      const target = targetRaw.trim();
+      const alias = aliasRaw ? aliasRaw.trim() : target;
+      return (
+        <span
+          key={i}
+          className="inline-wikilink-pill"
+          data-wikilink={target}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "2px",
+            padding: "1px 7px",
+            borderRadius: "4px",
+            background: "rgba(99, 102, 241, 0.12)",
+            color: "var(--accent-primary, #818cf8)",
+            border: "1px solid rgba(99, 102, 241, 0.28)",
+            cursor: "pointer",
+            fontSize: "0.92em",
+            fontWeight: 500,
+            margin: "0 2px",
+            textDecoration: "none",
+            transition: "background 0.15s ease",
+          }}
+          title={`WikiLink: ${target}`}
+        >
+          <span style={{ opacity: 0.5, fontSize: "0.8em" }}>[[</span>
+          <span>{alias}</span>
+          <span style={{ opacity: 0.5, fontSize: "0.8em" }}>]]</span>
+        </span>
+      );
+    }
+    if (/^\[\d+\]$/.test(part)) {
+      return (
+        <span
+          key={i}
+          className="inline-citation-badge"
+          data-citation={part.slice(1, -1)}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "0 5px",
+            fontSize: "0.72em",
+            fontWeight: 700,
+            borderRadius: "9999px",
+            background: "rgba(16, 185, 129, 0.16)",
+            color: "#34d399",
+            border: "1px solid rgba(16, 185, 129, 0.35)",
+            cursor: "pointer",
+            margin: "0 2px",
+            verticalAlign: "super",
+          }}
+          title={`Citation ${part}`}
         >
           {part}
         </span>

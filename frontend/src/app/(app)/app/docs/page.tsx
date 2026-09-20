@@ -15,6 +15,7 @@ import {
   Star,
 } from "lucide-react";
 import { Button, Modal, TextInput, TextArea } from "@/components/ds";
+import { KnowledgeWorkspaceShell } from "@/components/docs/workspace/KnowledgeWorkspaceShell";
 import { AppError } from "@/lib/api/client";
 import {
   createDocPage,
@@ -44,6 +45,21 @@ function InternalDocsHomeContent() {
   const searchParams = useSearchParams();
   const categoryParam = searchParams.get("category");
   const viewParam = searchParams.get("view");
+  const modeParam = searchParams.get("mode");
+  const pageIdParam = searchParams.get("pageId") || undefined;
+  const spaceIdParam = searchParams.get("spaceId") || undefined;
+
+  // Render Knowledge Workspace by default unless classic mode or specific legacy view is requested
+  const isWorkspace = modeParam !== "classic" && (!viewParam || modeParam === "workspace");
+  if (isWorkspace) {
+    return (
+      <KnowledgeWorkspaceShell
+        initialPageId={pageIdParam}
+        initialSpaceId={spaceIdParam}
+      />
+    );
+  }
+
   const view = (viewParam === "recent" || viewParam === "favorites" || viewParam === "search" || viewParam === "all-pages" || viewParam === "settings")
     ? viewParam
     : "all";

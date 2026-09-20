@@ -1,14 +1,15 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Literal, Optional
+from typing import Any, Literal, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, field_validator, model_validator
 
 Visibility = Literal["public", "workspace", "selected", "admins", "private", "inherit"]
-Status = Literal["draft", "internal", "published"]
+Status = Literal["draft", "internal", "published", "archived"]
 DocCategory = Literal["Technical", "Marketing", "Operations", "Platform", "Business", "Designs"]
+DocType = Literal["document", "adr", "runbook", "rfc", "source_note"]
 
 
 class SpaceCreate(BaseModel):
@@ -55,6 +56,8 @@ class PageCreate(BaseModel):
     responsible_user_id: Optional[UUID] = None
     position: int = Field(default=0, ge=0)
     youtube_url: Optional[str] = Field(default=None, max_length=500)
+    doc_type: DocType = "document"
+    tags: list[str] = Field(default_factory=list)
 
     @field_validator("youtube_url")
     @classmethod
@@ -76,6 +79,8 @@ class PageUpdate(BaseModel):
     seo_title: Optional[str] = Field(default=None, max_length=240)
     seo_description: Optional[str] = Field(default=None, max_length=500)
     position: Optional[int] = Field(default=None, ge=0)
+    doc_type: Optional[DocType] = None
+    tags: Optional[list[str]] = None
 
     @field_validator("youtube_url")
     @classmethod
@@ -107,13 +112,38 @@ class PageRead(BaseModel):
     youtube_url: Optional[str]
     seo_title: Optional[str]
     seo_description: Optional[str]
+    doc_type: str = "document"
+    tags: list[str] = Field(default_factory=list)
     created_by: UUID
     updated_by: UUID
     created_at: datetime
     updated_at: datetime
 
+    @field_validator("doc_type", mode="before")
+    @classmethod
+    def validate_doc_type(cls, v: Any) -> str:
+        return v or "document"
+
+    @field_validator("tags", mode="before")
+    @classmethod
+    def validate_tags(cls, v: Any) -> list[str]:
+        if not v:
+            return []
+        if isinstance(v, list):
+            res = []
+            for item in v:
+                if isinstance(item, str):
+                    res.append(item)
+                elif hasattr(item, "tag") and hasattr(item.tag, "name"):
+                    res.append(item.tag.name)
+                elif hasattr(item, "name"):
+                    res.append(item.name)
+            return res
+        return []
+
 
 class PageSummary(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     id: UUID
     space_id: UUID
     parent_page_id: Optional[UUID]
@@ -122,9 +152,188 @@ class PageSummary(BaseModel):
     excerpt: Optional[str]
     status: str
     visibility: str
+    doc_type: str = "document"
+    tags: list[str] = Field(default_factory=list)
     responsible_user_id: Optional[UUID] = None
     position: int
     updated_at: datetime
+
+    @field_validator("doc_type", mode="before")
+    @classmethod
+    def validate_doc_type(cls, v: Any) -> str:
+        return v or "document"
+
+    @field_validator("tags", mode="before")
+    @classmethod
+    def validate_tags(cls, v: Any) -> list[str]:
+        if not v:
+            return []
+        if isinstance(v, list):
+            res = []
+            for item in v:
+                if isinstance(item, str):
+                    res.append(item)
+                elif hasattr(item, "tag") and hasattr(item.tag, "name"):
+                    res.append(item.tag.name)
+                elif hasattr(item, "name"):
+                    res.append(item.name)
+            return res
+        return []
+
+
+class RelationRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: UUID
+    source_page_id: UUID
+    target_page_id: Optional[UUID] = None
+    target_title: str
+    relation_type: str
+    anchor_text: Optional[str] = None
+    confidence: str
+    confidence_score: float
+    created_at: datetime
+    # Caller details for backlinks
+    source_page_title: Optional[str] = None
+    source_page_slug: Optional[str] = None
+    source_page_excerpt: Optional[str] = None
+
+
+class TagRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: UUID
+    name: str
+    color: Optional[str] = None
+    page_count: int = 0
+
+
+class TagCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=64)
+    color: Optional[str] = Field(default=None, max_length=32)
+
+
+class SourceCreate(BaseModel):
+    title: str = Field(min_length=1, max_length=240)
+    source_type: str = Field(pattern="^(url|pdf|code|text|adr|runbook)$")
+    source_url: Optional[str] = Field(default=None, max_length=1000)
+    content_text: Optional[str] = None
+    metadata_json: dict = Field(default_factory=dict)
+    space_id: Optional[UUID] = None
+    page_id: Optional[UUID] = None
+
+
+class SourceRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: UUID
+    space_id: Optional[UUID] = None
+    page_id: Optional[UUID] = None
+    title: str
+    source_type: str
+    source_url: Optional[str] = None
+    content_text: str
+    metadata_json: dict
+    status: str
+    error_message: Optional[str] = None
+    chunk_count: int = 0
+    created_by: UUID
+    created_at: datetime
+    updated_at: datetime
+
+
+class SourceChunkRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: UUID
+    source_id: UUID
+    chunk_index: int
+    content: str
+    token_count: int
+    created_at: datetime
+
+
+class GraphNode(BaseModel):
+    id: str
+    label: str
+    title: str
+    doc_type: str = "document"
+    category: str = "Platform"
+    space_id: Optional[str] = None
+    cluster_id: int = 0
+    degree: int = 0
+
+
+class GraphEdge(BaseModel):
+    source: str
+    target: str
+    relation_type: str = "links_to"
+    confidence_score: float = 1.0
+
+
+class GraphResponse(BaseModel):
+    nodes: list[GraphNode]
+    edges: list[GraphEdge]
+
+
+class SearchResultItem(BaseModel):
+    id: UUID
+    result_type: Literal["page", "source", "section"] = "page"
+    title: str
+    slug: str
+    space_id: UUID
+    space_name: Optional[str] = None
+    excerpt: Optional[str] = None
+    snippet_html: Optional[str] = None
+    matching_field: str = "content"
+    rank_score: float = 0.0
+    doc_type: str = "document"
+    tags: list[str] = Field(default_factory=list)
+    updated_at: datetime
+
+
+class SearchResponse(BaseModel):
+    query: str
+    total: int
+    results: list[SearchResultItem]
+
+
+class AICitationRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    key: int = 1
+    source_type: Literal["page", "source"] = "page"
+    source_id: UUID
+    chunk_id: Optional[UUID] = None
+    title: str
+    excerpt: str
+    location_anchor: Optional[str] = None
+
+
+class AIChatRequest(BaseModel):
+    session_id: Optional[UUID] = None
+    question: str = Field(min_length=1, max_length=2000, validation_alias=AliasChoices("question", "prompt"))
+    context_page_ids: list[UUID] = Field(default_factory=list, validation_alias=AliasChoices("context_page_ids", "page_ids"))
+    context_source_ids: list[UUID] = Field(default_factory=list, validation_alias=AliasChoices("context_source_ids", "source_ids"))
+    action: Optional[Literal["summarize", "adr", "runbook", "checklist", "explain", "contradictions"]] = None
+
+    @property
+    def prompt(self) -> str:
+        return self.question
+
+    @property
+    def page_ids(self) -> list[UUID]:
+        return self.context_page_ids
+
+    @property
+    def source_ids(self) -> list[UUID]:
+        return self.context_source_ids
+
+
+class AIChatMessageRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: UUID
+    role: str
+    content: str
+    model: str
+    tokens_used: Optional[int] = None
+    created_at: datetime
+    citations: list[AICitationRead] = Field(default_factory=list)
 
 
 class SearchResult(BaseModel):

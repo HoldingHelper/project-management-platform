@@ -3,14 +3,43 @@ from __future__ import annotations
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Query, Response, UploadFile, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.current_user import CurrentUser
-from app.core.deps import get_current_user, require_permission
 from app.core.database import get_db
+from app.core.deps import get_current_user, require_permission
 from app.core.permissions import Permissions
-from app.modules.docs import service
-from app.modules.docs.schemas import AttachmentCreate, AttachmentRead, CommentCreate, CommentRead, EntityDocLinkRead, LinkCreate, LinkRead, PageCreate, PageMove, PageRead, PageSummary, PageUpdate, PermissionGrant, PermissionRead, RevisionRead, SearchResult, SpaceCreate, SpaceRead, SpaceUpdate
+from app.modules.docs import ai_service, graph_service, search_service, service, sources_service
+from app.modules.docs.schemas import (
+    AIChatRequest,
+    AttachmentCreate,
+    AttachmentRead,
+    CommentCreate,
+    CommentRead,
+    EntityDocLinkRead,
+    GraphResponse,
+    LinkCreate,
+    LinkRead,
+    PageCreate,
+    PageMove,
+    PageRead,
+    PageSummary,
+    PageUpdate,
+    PermissionGrant,
+    PermissionRead,
+    RelationRead,
+    RevisionRead,
+    SearchResponse,
+    SearchResult,
+    SearchResultItem,
+    SourceCreate,
+    SourceRead,
+    SpaceCreate,
+    SpaceRead,
+    SpaceUpdate,
+    TagRead,
+)
 
 public_docs_router = APIRouter(prefix="/docs/public", tags=["Public documentation"])
 docs_router = APIRouter(prefix="/docs", tags=["Documentation"])
@@ -218,3 +247,164 @@ async def delete_link(
 ) -> Response:
     await service.delete_link(db, user, page_id, link_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# --- Knowledge Workspace Endpoints ---
+
+
+@docs_router.get("/pages/{page_id}/backlinks", response_model=list[RelationRead])
+async def page_backlinks(
+    page_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+) -> list[RelationRead]:
+    return await service.get_page_backlinks(db, user, page_id)
+
+
+@docs_router.get("/wikilink-suggestions")
+async def wikilink_suggestions(
+    q: str = Query(default="", max_length=100),
+    space_id: UUID | None = None,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+) -> list[dict]:
+    return await service.get_wikilink_autocomplete(db, user, q, space_id=space_id)
+
+
+@docs_router.get("/search/v2", response_model=SearchResponse)
+async def search_v2(
+    q: str = Query(min_length=1, max_length=120),
+    space_id: UUID | None = None,
+    tag: str | None = None,
+    doc_type: str | None = None,
+    limit: int = Query(default=20, ge=1, le=100),
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+) -> SearchResponse:
+    return await search_service.search_pages_v2(
+        db, user, q, space_id=space_id, tag=tag, doc_type=doc_type, limit=limit
+    )
+
+
+@docs_router.get("/search/quick", response_model=list[SearchResultItem])
+async def search_quick(
+    q: str = Query(default="", max_length=100),
+    limit: int = Query(default=10, ge=1, le=50),
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+) -> list[SearchResultItem]:
+    return await search_service.quick_search(db, user, q, limit=limit)
+
+
+@docs_router.get("/graph/local", response_model=GraphResponse)
+async def graph_local(
+    page_id: UUID,
+    depth: int = Query(default=1, ge=1, le=2),
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+) -> GraphResponse:
+    return await graph_service.get_local_graph(db, user, page_id, depth=depth)
+
+
+@docs_router.get("/graph/global", response_model=GraphResponse)
+async def graph_global(
+    space_id: UUID | None = None,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+) -> GraphResponse:
+    return await graph_service.get_global_graph(db, user, space_id=space_id)
+
+
+@docs_router.post("/sources", response_model=SourceRead, status_code=status.HTTP_201_CREATED)
+async def create_source(
+    payload: SourceCreate,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(require_permission(Permissions.DOCS_EDIT, Permissions.DOCS_MANAGE)),
+) -> SourceRead:
+    return await sources_service.create_source(db, user, payload)
+
+
+@docs_router.get("/sources", response_model=list[SourceRead])
+async def list_sources(
+    space_id: UUID | None = None,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+) -> list[SourceRead]:
+    return await sources_service.list_sources(db, user, space_id=space_id)
+
+
+@docs_router.get("/sources/{source_id}", response_model=SourceRead)
+async def get_source(
+    source_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+) -> SourceRead:
+    return await sources_service.get_source(db, user, source_id)
+
+
+@docs_router.delete("/sources/{source_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_source(
+    source_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+) -> Response:
+    await sources_service.delete_source(db, user, source_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@docs_router.post("/ai/chat/stream")
+async def ai_chat_stream(
+    payload: AIChatRequest,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+) -> StreamingResponse:
+    generator = ai_service.stream_chat_response(db, user, payload)
+    return StreamingResponse(generator, media_type="text/event-stream")
+
+
+@docs_router.get("/ai/sessions")
+async def ai_sessions(
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+) -> list[dict]:
+    return await ai_service.list_chat_sessions(db, user)
+
+
+@docs_router.get("/ai/sessions/{session_id}/messages")
+async def ai_session_messages(
+    session_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+) -> list[dict]:
+    return await ai_service.get_chat_session_messages(db, user, session_id)
+
+
+@docs_router.get("/tags", response_model=list[TagRead])
+async def list_tags(
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+) -> list[TagRead]:
+    return await service.list_tags(db, user)
+
+
+@docs_router.post("/pages/{page_id}/tags/{tag_name}", status_code=status.HTTP_204_NO_CONTENT)
+async def add_page_tag(
+    page_id: UUID,
+    tag_name: str,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+) -> Response:
+    await service.add_page_tag(db, user, page_id, tag_name)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@docs_router.delete("/pages/{page_id}/tags/{tag_name}", status_code=status.HTTP_204_NO_CONTENT)
+async def remove_page_tag(
+    page_id: UUID,
+    tag_name: str,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+) -> Response:
+    await service.remove_page_tag(db, user, page_id, tag_name)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+

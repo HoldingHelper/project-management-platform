@@ -12,8 +12,9 @@ from app.core.current_user import CurrentUser
 from app.core.exceptions import ForbiddenError, NotFoundError, ValidationAppError
 from app.core.storage import file_storage_service
 from app.modules.docs import repository as repo
-from app.modules.docs.models import DocAttachment, DocComment, DocLink, DocPage, DocPermission, DocRevision, DocSpace
-from app.modules.docs.schemas import AttachmentCreate, AttachmentRead, CommentCreate, CommentRead, EntityDocLinkRead, LinkCreate, LinkRead, PageCreate, PageMove, PageRead, PageSummary, PageUpdate, PermissionGrant, PermissionRead, RevisionRead, SearchResult, SpaceCreate, SpaceRead, SpaceUpdate
+from app.modules.docs.models import DocAttachment, DocComment, DocLink, DocPage, DocPageTag, DocPermission, DocRevision, DocSpace, DocTag
+from app.modules.docs.relations import list_backlinks, resolve_stubs_for_new_page, sync_page_relations, wikilink_suggestions
+from app.modules.docs.schemas import AttachmentCreate, AttachmentRead, CommentCreate, CommentRead, EntityDocLinkRead, LinkCreate, LinkRead, PageCreate, PageMove, PageRead, PageSummary, PageUpdate, PermissionGrant, PermissionRead, RelationRead, RevisionRead, SearchResult, SpaceCreate, SpaceRead, SpaceUpdate, TagRead
 from app.shared.base_model import utcnow
 
 
@@ -170,6 +171,8 @@ async def create_page(db: AsyncSession, user: CurrentUser, space_id: UUID, paylo
     db.add(page)
     await db.commit()
     await db.refresh(page)
+    await resolve_stubs_for_new_page(db, page.id, page.space_id, page.title, page.slug)
+    await sync_page_relations(db, page.id, page.space_id, page.content)
     return PageRead.model_validate(page)
 
 
@@ -247,6 +250,8 @@ async def update_page(db: AsyncSession, user: CurrentUser, page_id: UUID, payloa
     page.updated_by = user.user_id
     await db.commit()
     await db.refresh(page)
+    if "content" in changes:
+        await sync_page_relations(db, page.id, page.space_id, page.content)
     return PageRead.model_validate(page)
 
 
@@ -533,3 +538,78 @@ async def add_comment(db: AsyncSession, user: CurrentUser, page_id: UUID, payloa
 async def list_comments(db: AsyncSession, user: CurrentUser, page_id: UUID) -> list[CommentRead]:
     await get_page(db, user, page_id)
     return [CommentRead.model_validate(c) for c in await repo.list_comments(db, page_id)]
+
+
+async def get_page_backlinks(db: AsyncSession, user: CurrentUser, page_id: UUID) -> list[RelationRead]:
+    await get_page(db, user, page_id)
+    return await list_backlinks(db, page_id)
+
+
+async def get_wikilink_autocomplete(
+    db: AsyncSession,
+    user: CurrentUser,
+    query: str,
+    space_id: UUID | None = None,
+) -> list[dict]:
+    return await wikilink_suggestions(db, query, space_id=space_id)
+
+
+async def list_tags(db: AsyncSession, user: CurrentUser) -> list[TagRead]:
+    stmt = select(DocTag).order_by(DocTag.name.asc())
+    result = await db.execute(stmt)
+    tags = result.scalars().all()
+    return [TagRead.model_validate(t) for t in tags]
+
+
+async def add_page_tag(
+    db: AsyncSession,
+    user: CurrentUser,
+    page_id: UUID,
+    tag_name: str,
+) -> None:
+    page = await repo.get_page(db, page_id)
+    if not page:
+        raise NotFoundError("Documentation page", page_id)
+    if not await _page_editable(db, user, page):
+        raise ForbiddenError("You do not have permission to edit this page.")
+
+    clean_name = tag_name.strip().lstrip("#").lower()
+    if not clean_name:
+        raise ValidationAppError("Tag name cannot be empty.")
+
+    stmt = select(DocTag).where(DocTag.name == clean_name)
+    res = await db.execute(stmt)
+    tag = res.scalar_one_or_none()
+    if not tag:
+        tag = DocTag(name=clean_name)
+        db.add(tag)
+        await db.flush()
+
+    pt_stmt = select(DocPageTag).where(DocPageTag.page_id == page_id, DocPageTag.tag_id == tag.id)
+    pt_res = await db.execute(pt_stmt)
+    if not pt_res.scalar_one_or_none():
+        page_tag = DocPageTag(page_id=page_id, tag_id=tag.id)
+        db.add(page_tag)
+        await db.commit()
+
+
+async def remove_page_tag(
+    db: AsyncSession,
+    user: CurrentUser,
+    page_id: UUID,
+    tag_name: str,
+) -> None:
+    page = await repo.get_page(db, page_id)
+    if not page:
+        raise NotFoundError("Documentation page", page_id)
+    if not await _page_editable(db, user, page):
+        raise ForbiddenError("You do not have permission to edit this page.")
+
+    clean_name = tag_name.strip().lstrip("#").lower()
+    stmt = select(DocTag).where(DocTag.name == clean_name)
+    res = await db.execute(stmt)
+    tag = res.scalar_one_or_none()
+    if tag:
+        del_stmt = delete(DocPageTag).where(DocPageTag.page_id == page_id, DocPageTag.tag_id == tag.id)
+        await db.execute(del_stmt)
+        await db.commit()

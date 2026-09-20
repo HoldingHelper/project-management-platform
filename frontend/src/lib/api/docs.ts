@@ -22,6 +22,8 @@ export type DocPageSummary = {
   excerpt?: string | null;
   status: string;
   visibility: string;
+  doc_type?: string;
+  tags?: string[];
   responsible_user_id?: string | null;
   position: number;
   updated_at: string;
@@ -32,6 +34,8 @@ export type DocPage = DocPageSummary & {
   youtube_url?: string | null;
   seo_title?: string | null;
   seo_description?: string | null;
+  doc_type?: string;
+  tags?: string[];
   created_by: string;
   updated_by: string;
   created_at: string;
@@ -130,6 +134,8 @@ export const createDocPage = (
     content?: string;
     parent_page_id?: string | null;
     responsible_user_id?: string | null;
+    visibility?: string;
+    doc_type?: string;
   }
 ) => apiFetch<DocPage>(`/docs/spaces/${spaceId}/pages`, { method: "POST", body });
 export const getDocPage = (pageId: string) => apiFetch<DocPage>(`/docs/pages/${pageId}`);
@@ -146,8 +152,9 @@ export const updateDocPage = (
       | "seo_title"
       | "seo_description"
       | "parent_page_id"
-      | "position"
       | "responsible_user_id"
+      | "position"
+      | "doc_type"
     >
   >
 ) => apiFetch<DocPage>(`/docs/pages/${pageId}`, { method: "PATCH", body });
@@ -221,3 +228,234 @@ export const listPublicDocNavigation = () =>
   apiFetch<PublicDocNavigation[]>("/docs/public/navigation", { auth: false });
 export const getPublicDocPage = (pageId: string) =>
   apiFetch<DocPage>(`/docs/public/pages/${pageId}`, { auth: false });
+
+// --- Knowledge Workspace Types & APIs ---
+
+export type DocRelation = {
+  id: string;
+  source_page_id: string;
+  target_page_id?: string | null;
+  target_title: string;
+  relation_type: string;
+  anchor_text?: string | null;
+  confidence: string;
+  confidence_score: number;
+  created_at: string;
+};
+
+export type DocTag = {
+  id: string;
+  name: string;
+  color?: string | null;
+  page_count: number;
+};
+
+export type DocSource = {
+  id: string;
+  space_id?: string | null;
+  page_id?: string | null;
+  title: string;
+  source_type: "url" | "pdf" | "code" | "text" | "adr" | "runbook" | string;
+  source_url?: string | null;
+  content_text: string;
+  metadata_json?: Record<string, unknown>;
+  status: "pending" | "processing" | "ready" | "failed";
+  error_message?: string | null;
+  chunk_count: number;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type GraphNode = {
+  id: string;
+  label: string;
+  title?: string;
+  doc_type: string;
+  category?: string;
+  space_id?: string | null;
+  degree: number;
+  is_stub?: boolean;
+  group?: string | null;
+};
+
+export type GraphEdge = {
+  source: string;
+  target: string;
+  relation_type: string;
+  confidence_score?: number;
+  weight?: number;
+};
+
+export type GraphResponse = {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+  total_nodes?: number;
+  total_edges?: number;
+};
+
+export type SearchResultItem = {
+  id: string;
+  result_type: "page" | "source" | "section";
+  title: string;
+  slug: string;
+  space_id: string;
+  space_name?: string | null;
+  excerpt?: string | null;
+  snippet_html?: string | null;
+  matching_field: string;
+  rank_score: number;
+  doc_type: string;
+  tags?: string[];
+  updated_at?: string;
+};
+
+export type SearchResponse = {
+  query: string;
+  total: number;
+  results: SearchResultItem[];
+};
+
+export type AICitation = {
+  citation_index: number;
+  source_type: "page" | "source";
+  page_id?: string | null;
+  source_id?: string | null;
+  source_title: string;
+  page_slug?: string | null;
+  space_slug?: string | null;
+  text_anchor?: string | null;
+};
+
+export type AIChatRequest = {
+  session_id?: string | null;
+  question: string;
+  context_page_ids?: string[];
+  context_source_ids?: string[];
+  action?: "summarize" | "adr" | "runbook" | "checklist" | "explain" | "contradictions" | null;
+};
+
+export const listPageBacklinks = (pageId: string) =>
+  apiFetch<DocRelation[]>(`/docs/pages/${pageId}/backlinks`);
+
+export const getWikilinkSuggestions = (q: string, spaceId?: string) =>
+  apiFetch<Array<{ title: string; slug: string; space_id: string; doc_type: string; exists: boolean }>>(
+    `/docs/wikilink-suggestions?q=${encodeURIComponent(q)}${spaceId ? `&space_id=${encodeURIComponent(spaceId)}` : ""}`
+  );
+
+export const searchDocsV2 = (params: {
+  q: string;
+  space_id?: string;
+  tag?: string;
+  doc_type?: string;
+  limit?: number;
+}) => {
+  const qs = new URLSearchParams();
+  qs.set("q", params.q);
+  if (params.space_id) qs.set("space_id", params.space_id);
+  if (params.tag) qs.set("tag", params.tag);
+  if (params.doc_type) qs.set("doc_type", params.doc_type);
+  if (params.limit) qs.set("limit", params.limit.toString());
+  return apiFetch<SearchResponse>(`/docs/search/v2?${qs.toString()}`);
+};
+
+export const quickSearchDocs = (q: string, limit = 10) =>
+  apiFetch<SearchResultItem[]>(`/docs/search/quick?q=${encodeURIComponent(q)}&limit=${limit}`);
+
+export const getLocalGraph = (pageId: string, depth = 1) =>
+  apiFetch<GraphResponse>(`/docs/graph/local?page_id=${encodeURIComponent(pageId)}&depth=${depth}`);
+
+export const getGlobalGraph = (spaceId?: string) =>
+  apiFetch<GraphResponse>(`/docs/graph/global${spaceId ? `?space_id=${encodeURIComponent(spaceId)}` : ""}`);
+
+export const listDocSources = (spaceId?: string) =>
+  apiFetch<DocSource[]>(`/docs/sources${spaceId ? `?space_id=${encodeURIComponent(spaceId)}` : ""}`);
+
+export const createDocSource = (body: {
+  title: string;
+  source_type: string;
+  space_id?: string;
+  url?: string;
+  content?: string;
+  meta_info?: Record<string, unknown>;
+}) => apiFetch<DocSource>("/docs/sources", { method: "POST", body });
+
+export const deleteDocSource = (sourceId: string) =>
+  apiFetch<void>(`/docs/sources/${sourceId}`, { method: "DELETE" });
+
+export const listDocTags = () =>
+  apiFetch<DocTag[]>("/docs/tags");
+
+export const addDocPageTag = (pageId: string, tag: string) =>
+  apiFetch<void>(`/docs/pages/${pageId}/tags/${encodeURIComponent(tag)}`, { method: "POST" });
+
+export const removeDocPageTag = (pageId: string, tag: string) =>
+  apiFetch<void>(`/docs/pages/${pageId}/tags/${encodeURIComponent(tag)}`, { method: "DELETE" });
+
+export async function streamKnowledgeChat(
+  req: AIChatRequest,
+  callbacks: {
+    onCitations?: (citations: AICitation[]) => void;
+    onToken?: (token: string) => void;
+    onDone?: (sessionId: string, messageId?: string) => void;
+    onError?: (err: Error) => void;
+  }
+) {
+  try {
+    const { getAccessToken } = await import("@/lib/auth/token-store");
+    const { API_BASE_URL } = await import("./client");
+    const token = getAccessToken();
+
+    const response = await fetch(`${API_BASE_URL}/docs/ai/chat/stream`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(req),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const reader = response.body?.getReader();
+    if (!reader) throw new Error("Response body is null");
+
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n\n");
+      buffer = lines.pop() || "";
+
+      for (const line of lines) {
+        if (line.startsWith("data: ")) {
+          try {
+            const data = JSON.parse(line.slice(6));
+            if (data.type === "citations" && callbacks.onCitations) {
+              callbacks.onCitations(data.citations);
+            } else if (data.type === "token" && callbacks.onToken) {
+              callbacks.onToken(data.content);
+            } else if (data.type === "done" && callbacks.onDone) {
+              callbacks.onDone(data.session_id, data.message_id);
+            }
+          } catch (e) {
+            console.error("Failed to parse SSE event", e, line);
+          }
+        }
+      }
+    }
+  } catch (err: any) {
+    if (callbacks.onError) {
+      callbacks.onError(err);
+    } else {
+      console.error("AI Chat stream error:", err);
+    }
+  }
+}
+

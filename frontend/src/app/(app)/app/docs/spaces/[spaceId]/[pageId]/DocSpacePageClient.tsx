@@ -72,7 +72,7 @@ export default function DocumentEditor() {
     spaceId: string;
     pageId: string;
   }>();
-  const [, pageId] = useStaticExportParams(
+  const [spaceId, pageId] = useStaticExportParams(
     [exportedSpaceId, exportedPageId],
     ["app", "docs", "spaces"]
   );
@@ -517,6 +517,28 @@ export default function DocumentEditor() {
           )}
         </div>
         <div>
+          <Link
+            href={`/app/docs?pageId=${pageId}&spaceId=${spaceId}`}
+            className="doc-icon-action"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "0 12px",
+              height: 38,
+              borderRadius: "var(--radius-2, 8px)",
+              background: "rgba(99, 102, 241, 0.15)",
+              color: "var(--accent-primary, #818cf8)",
+              border: "1px solid rgba(99, 102, 241, 0.3)",
+              fontSize: 12,
+              fontWeight: 600,
+              textDecoration: "none",
+            }}
+            title="Open in connected Knowledge Workspace"
+          >
+            <BookOpenText size={15} />
+            <span>Workspace</span>
+          </Link>
           <button
             type="button"
             className="doc-icon-action"
