@@ -10,7 +10,7 @@ export function ProgressBar({ percent, blocks = 20, showLabel = true }: Props) {
   void blocks;
   return (
     <span
-      className="hig-progress"
+      className="pmp-progress"
       role="progressbar"
       aria-valuemin={0}
       aria-valuemax={100}

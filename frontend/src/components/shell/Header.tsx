@@ -68,12 +68,12 @@ export function Header({
 
   return (
     <header
-      className="hig-app-header no-print"
+      className="pmp-app-header no-print"
       style={{
         display: "flex",
         alignItems: "center",
         gap: 16,
-        height: "var(--hig-header-height)",
+        height: "var(--pmp-header-height)",
         padding: "0 20px",
         flexShrink: 0,
         borderBottom: "1px solid var(--border-subtle)",
@@ -89,7 +89,7 @@ export function Header({
         <Link href="/app/teams" aria-current={!docsModule ? "page" : undefined} onClick={() => window.localStorage.setItem("workspace.last-module", "teams")}><FolderKanban size={15}/>Teams</Link>
       </div>
 
-      <div className="hig-header-route" style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+      <div className="pmp-header-route" style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
         <div style={{ fontSize: 11, color: "var(--text-tertiary)", letterSpacing: "0.04em", textTransform: "uppercase" }}>
           {docsModule ? "Knowledge" : match.crumb}
         </div>
@@ -102,7 +102,7 @@ export function Header({
         type="button"
         aria-label="Open global search"
         onClick={onOpenSearch}
-        className="hig-global-search-trigger hig-row"
+        className="pmp-global-search-trigger pmp-row"
         style={{
           display: "flex",
           alignItems: "center",
@@ -120,14 +120,14 @@ export function Header({
       >
         <Search size={15} style={{ color: "var(--text-tertiary)", flexShrink: 0 }} />
         <span style={{ fontSize: 13.5, flex: 1, minWidth: 0, textAlign: "left" }}>Search projects, tasks, people…</span>
-        <span className="hig-search-kbd">⌘K</span>
+        <span className="pmp-search-kbd">⌘K</span>
       </button>}
 
       <HeaderMeetingPill />
 
       <div ref={bellRef} style={{ position: "relative" }}>
         <button
-          className="hig-icon-btn"
+          className="pmp-icon-btn"
           title="Notifications"
           aria-label={`Notifications${unreadCount ? `, ${unreadCount} unread` : ""}`}
           onClick={() => setBellOpen((o) => !o)}
@@ -228,7 +228,7 @@ export function Header({
                 key={n.id}
                 href="/notifications"
                 onClick={() => setBellOpen(false)}
-                className="hig-row"
+                className="pmp-row"
                 style={{ display: "block", padding: "10px 12px", borderBottom: "1px solid var(--border-subtle)" }}
               >
                 <div style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
@@ -250,7 +250,7 @@ export function Header({
             <Link
               href="/notifications"
               onClick={() => setBellOpen(false)}
-              className="hig-row"
+              className="pmp-row"
               style={{
                 display: "block",
                 padding: "10px 12px",
@@ -317,7 +317,7 @@ export function Header({
                 setMenuOpen(false);
                 setStatusModalOpen(true);
               }}
-              className="hig-row"
+              className="pmp-row"
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -371,7 +371,7 @@ export function Header({
             <Link
               href={`/profile/${user?.id}`}
               onClick={() => setMenuOpen(false)}
-              className="hig-row"
+              className="pmp-row"
               style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", fontSize: 13, color: "var(--text-secondary)" }}
             >
               <UserIcon size={15} /> My profile
@@ -379,14 +379,14 @@ export function Header({
             <Link
               href="/settings"
               onClick={() => setMenuOpen(false)}
-              className="hig-row"
+              className="pmp-row"
               style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", fontSize: 13, color: "var(--text-secondary)" }}
             >
               <Settings size={15} /> Settings
             </Link>
             <button
               onClick={handleLogout}
-              className="hig-row"
+              className="pmp-row"
               style={{
                 display: "flex",
                 alignItems: "center",

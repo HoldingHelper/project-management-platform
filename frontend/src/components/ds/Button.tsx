@@ -42,7 +42,7 @@ export function Button({ variant = "primary", size = "md", children, style, disa
     <button
       {...rest}
       disabled={disabled}
-      className={`hig-btn hig-btn-${variant}${className ? ` ${className}` : ""}`}
+      className={`pmp-btn pmp-btn-${variant}${className ? ` ${className}` : ""}`}
       style={{
         ...base,
         ...sizes[size],

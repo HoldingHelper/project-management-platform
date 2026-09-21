@@ -57,7 +57,7 @@ export function StatusChip({
 
   const chipContent = (
     <span
-      className="hig-status-chip"
+      className="pmp-status-chip"
       data-status={semantic}
       style={{
         display: "inline-flex",
@@ -84,7 +84,7 @@ export function StatusChip({
       title={onChange && !disabled ? "Click to change status" : undefined}
     >
       <span
-        className="hig-status-dot"
+        className="pmp-status-dot"
         style={{
           width: size === "sm" ? 6 : 7,
           height: size === "sm" ? 6 : 7,

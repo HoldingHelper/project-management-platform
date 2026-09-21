@@ -8,24 +8,24 @@ interface CheckboxProps {
 
 export function Checkbox({ checked, onChange, label }: CheckboxProps) {
   return (
-    <label style={{ display: "inline-flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13.5, userSelect: "none" }}>
+    <label style={{ display: "inline-flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13.5 }}>
       <span
         onClick={() => onChange(!checked)}
         style={{
           width: 18,
           height: 18,
-          borderRadius: 6,
+          borderRadius: 5,
           border: `1px solid ${checked ? "var(--accent-primary)" : "var(--border-default)"}`,
           background: checked ? "var(--accent-primary)" : "transparent",
           display: "inline-flex",
           alignItems: "center",
           justifyContent: "center",
-          color: "#04160b",
+          color: "#fff",
           fontSize: 12,
           fontWeight: 800,
           transition: "all var(--duration-fast) var(--ease-spring)",
           transform: checked ? "scale(1)" : "scale(0.96)",
-          boxShadow: checked ? "0 0 10px var(--green-glow)" : "none",
+          boxShadow: checked ? "0 0 10px rgba(75, 141, 255, 0.35)" : "none",
         }}
       >
         {checked && (
@@ -42,14 +42,10 @@ export function Checkbox({ checked, onChange, label }: CheckboxProps) {
 export function Switch({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
   return (
     <span
-      role="switch"
-      aria-checked={checked}
-      tabIndex={0}
-      onKeyDown={(e) => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); onChange(!checked); } }}
       onClick={() => onChange(!checked)}
       style={{
-        width: 40,
-        height: 24,
+        width: 38,
+        height: 22,
         borderRadius: "var(--radius-full)",
         background: checked ? "var(--accent-primary)" : "var(--surface-3)",
         border: `1px solid ${checked ? "transparent" : "var(--border-default)"}`,
@@ -57,8 +53,7 @@ export function Switch({ checked, onChange }: { checked: boolean; onChange: (v: 
         alignItems: "center",
         padding: "2px",
         cursor: "pointer",
-        outline: "none",
-        boxShadow: checked ? "0 0 12px var(--green-glow)" : "none",
+        boxShadow: checked ? "0 0 12px rgba(75, 141, 255, 0.35)" : "none",
         transition: "background var(--duration-base) var(--ease-spring), border-color var(--duration-base) var(--ease-spring), box-shadow var(--duration-base) var(--ease-spring)",
       }}
     >
