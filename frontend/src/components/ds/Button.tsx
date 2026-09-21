@@ -26,7 +26,7 @@ const base: React.CSSProperties = {
   whiteSpace: "nowrap",
   border: "1px solid transparent",
   transition:
-    "background var(--duration-fast) var(--ease-standard), border-color var(--duration-fast), transform var(--duration-fast), opacity var(--duration-fast)",
+    "background var(--duration-fast) var(--ease-spring), border-color var(--duration-fast) var(--ease-spring), transform var(--duration-fast) var(--ease-spring), box-shadow var(--duration-base) var(--ease-spring), opacity var(--duration-fast)",
 };
 
 const variants: Record<Variant, React.CSSProperties> = {
@@ -42,7 +42,7 @@ export function Button({ variant = "primary", size = "md", children, style, disa
     <button
       {...rest}
       disabled={disabled}
-      className={`pmp-btn pmp-btn-${variant}${className ? ` ${className}` : ""}`}
+      className={`hig-btn hig-btn-${variant}${className ? ` ${className}` : ""}`}
       style={{
         ...base,
         ...sizes[size],

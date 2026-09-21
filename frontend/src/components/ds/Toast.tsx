@@ -60,7 +60,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={{ push, success, error, info }}>
       {children}
       <div
-        className="pmp-toast-viewport"
+        className="hig-toast-viewport"
         role="status"
         aria-live="polite"
         aria-atomic="true"
@@ -79,23 +79,25 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           return (
             <div
               key={t.id}
-              className="pmp-toast"
+              className="hig-toast"
               data-kind={t.kind}
               style={{
                 display: "flex",
                 alignItems: "center",
                 gap: 10,
                 background: "var(--surface-2)",
-                border: `1px solid ${COLORS[t.kind]}`,
-                borderRadius: "var(--radius-2)",
-                boxShadow: "var(--shadow-md)",
-                padding: "10px 14px",
+                border: `1px solid color-mix(in srgb, ${COLORS[t.kind]} 45%, var(--border-default))`,
+                borderRadius: "var(--radius-3)",
+                boxShadow: "0 16px 36px -4px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.08)",
+                padding: "12px 16px",
                 maxWidth: 380,
                 fontSize: 13,
+                animation: "smoothSlideInBottom var(--duration-base) var(--ease-spring)",
+                backdropFilter: "blur(12px)",
               }}
             >
-              <Icon size={15} style={{ color: COLORS[t.kind], flexShrink: 0 }} />
-              <span>{t.message}</span>
+              <Icon size={16} style={{ color: COLORS[t.kind], flexShrink: 0 }} />
+              <span style={{ fontWeight: 500 }}>{t.message}</span>
             </div>
           );
         })}

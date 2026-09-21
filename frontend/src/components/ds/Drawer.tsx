@@ -23,7 +23,7 @@ export function Drawer({ open, width = 380, children, side = "right", style, cla
         width: open ? width : 0,
         minWidth: open ? width : 0,
         overflow: "hidden",
-        transition: "width var(--duration-base) var(--ease-standard), min-width var(--duration-base) var(--ease-standard)",
+        transition: "width var(--duration-base) var(--ease-spring), min-width var(--duration-base) var(--ease-spring), border-color var(--duration-fast) var(--ease-spring)",
         borderLeft: side === "right" && open ? "1px solid var(--border-default)" : "none",
         borderRight: side === "left" && open ? "1px solid var(--border-default)" : "none",
         background: "var(--surface-1)",
@@ -33,7 +33,11 @@ export function Drawer({ open, width = 380, children, side = "right", style, cla
         ...style,
       }}
     >
-      {open && children}
+      {open && (
+        <div style={{ minWidth: width, height: "100%", display: "flex", flexDirection: "column", animation: "smoothFadeIn var(--duration-base) var(--ease-spring)" }}>
+          {children}
+        </div>
+      )}
     </aside>
   );
 }

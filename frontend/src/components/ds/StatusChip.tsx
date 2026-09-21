@@ -57,7 +57,7 @@ export function StatusChip({
 
   const chipContent = (
     <span
-      className="pmp-status-chip"
+      className="hig-status-chip"
       data-status={semantic}
       style={{
         display: "inline-flex",
@@ -72,7 +72,7 @@ export function StatusChip({
         whiteSpace: "nowrap",
         cursor: onChange && !disabled ? "pointer" : "default",
         userSelect: "none",
-        transition: "all 140ms ease",
+        transition: "all var(--duration-fast) var(--ease-spring)",
         border: `1px solid color-mix(in srgb, ${fg} 25%, transparent)`,
       }}
       onClick={(e) => {
@@ -84,7 +84,7 @@ export function StatusChip({
       title={onChange && !disabled ? "Click to change status" : undefined}
     >
       <span
-        className="pmp-status-dot"
+        className="hig-status-dot"
         style={{
           width: size === "sm" ? 6 : 7,
           height: size === "sm" ? 6 : 7,
@@ -95,7 +95,7 @@ export function StatusChip({
       />
       <span>{label ?? defLabel}</span>
       {onChange && !disabled && (
-        <ChevronDown size={11} style={{ opacity: 0.7, marginLeft: -1 }} />
+        <ChevronDown size={11} style={{ opacity: 0.7, marginLeft: -1, transition: "transform var(--duration-fast) var(--ease-spring)", transform: open ? "rotate(180deg)" : "rotate(0)" }} />
       )}
     </span>
   );
@@ -126,7 +126,9 @@ export function StatusChip({
             borderRadius: "var(--radius-2)",
             background: "var(--surface-1)",
             border: "1px solid var(--border-default)",
-            boxShadow: "0 10px 28px rgba(0, 0, 0, 0.45)",
+            boxShadow: "0 16px 40px -6px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.08)",
+            animation: "smoothScaleUp var(--duration-fast) var(--ease-spring)",
+            transformOrigin: "top left",
             display: "grid",
             gap: 2,
           }}

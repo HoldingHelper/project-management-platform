@@ -68,12 +68,12 @@ export function Header({
 
   return (
     <header
-      className="pmp-app-header no-print"
+      className="hig-app-header no-print"
       style={{
         display: "flex",
         alignItems: "center",
         gap: 16,
-        height: "var(--pmp-header-height)",
+        height: "var(--hig-header-height)",
         padding: "0 20px",
         flexShrink: 0,
         borderBottom: "1px solid var(--border-subtle)",
@@ -89,7 +89,7 @@ export function Header({
         <Link href="/app/teams" aria-current={!docsModule ? "page" : undefined} onClick={() => window.localStorage.setItem("workspace.last-module", "teams")}><FolderKanban size={15}/>Teams</Link>
       </div>
 
-      <div className="pmp-header-route" style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+      <div className="hig-header-route" style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
         <div style={{ fontSize: 11, color: "var(--text-tertiary)", letterSpacing: "0.04em", textTransform: "uppercase" }}>
           {docsModule ? "Knowledge" : match.crumb}
         </div>
@@ -102,7 +102,7 @@ export function Header({
         type="button"
         aria-label="Open global search"
         onClick={onOpenSearch}
-        className="pmp-global-search-trigger pmp-row"
+        className="hig-global-search-trigger hig-row"
         style={{
           display: "flex",
           alignItems: "center",
@@ -120,14 +120,14 @@ export function Header({
       >
         <Search size={15} style={{ color: "var(--text-tertiary)", flexShrink: 0 }} />
         <span style={{ fontSize: 13.5, flex: 1, minWidth: 0, textAlign: "left" }}>Search projects, tasks, people…</span>
-        <span className="pmp-search-kbd">⌘K</span>
+        <span className="hig-search-kbd">⌘K</span>
       </button>}
 
       <HeaderMeetingPill />
 
       <div ref={bellRef} style={{ position: "relative" }}>
         <button
-          className="pmp-icon-btn"
+          className="hig-icon-btn"
           title="Notifications"
           aria-label={`Notifications${unreadCount ? `, ${unreadCount} unread` : ""}`}
           onClick={() => setBellOpen((o) => !o)}
@@ -179,10 +179,12 @@ export function Header({
               width: 340,
               background: "var(--surface-2)",
               border: "1px solid var(--border-default)",
-              borderRadius: "var(--radius-2)",
-              boxShadow: "var(--shadow-lg)",
+              borderRadius: "var(--radius-3)",
+              boxShadow: "0 20px 48px -8px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.08)",
               zIndex: 20,
               overflow: "hidden",
+              animation: "smoothScaleUp var(--duration-fast) var(--ease-spring)",
+              transformOrigin: "top right",
             }}
           >
             <div
@@ -226,7 +228,7 @@ export function Header({
                 key={n.id}
                 href="/notifications"
                 onClick={() => setBellOpen(false)}
-                className="pmp-row"
+                className="hig-row"
                 style={{ display: "block", padding: "10px 12px", borderBottom: "1px solid var(--border-subtle)" }}
               >
                 <div style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
@@ -248,7 +250,7 @@ export function Header({
             <Link
               href="/notifications"
               onClick={() => setBellOpen(false)}
-              className="pmp-row"
+              className="hig-row"
               style={{
                 display: "block",
                 padding: "10px 12px",
@@ -294,11 +296,13 @@ export function Header({
               top: 44,
               background: "var(--surface-2)",
               border: "1px solid var(--border-default)",
-              borderRadius: "var(--radius-2)",
-              boxShadow: "var(--shadow-lg)",
+              borderRadius: "var(--radius-3)",
+              boxShadow: "0 20px 48px -8px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.08)",
               minWidth: 220,
               zIndex: 20,
               overflow: "hidden",
+              animation: "smoothScaleUp var(--duration-fast) var(--ease-spring)",
+              transformOrigin: "top right",
             }}
           >
             <div style={{ padding: "10px 12px", borderBottom: "1px solid var(--border-subtle)" }}>
@@ -313,7 +317,7 @@ export function Header({
                 setMenuOpen(false);
                 setStatusModalOpen(true);
               }}
-              className="pmp-row"
+              className="hig-row"
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -367,7 +371,7 @@ export function Header({
             <Link
               href={`/profile/${user?.id}`}
               onClick={() => setMenuOpen(false)}
-              className="pmp-row"
+              className="hig-row"
               style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", fontSize: 13, color: "var(--text-secondary)" }}
             >
               <UserIcon size={15} /> My profile
@@ -375,14 +379,14 @@ export function Header({
             <Link
               href="/settings"
               onClick={() => setMenuOpen(false)}
-              className="pmp-row"
+              className="hig-row"
               style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", fontSize: 13, color: "var(--text-secondary)" }}
             >
               <Settings size={15} /> Settings
             </Link>
             <button
               onClick={handleLogout}
-              className="pmp-row"
+              className="hig-row"
               style={{
                 display: "flex",
                 alignItems: "center",

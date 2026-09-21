@@ -10,7 +10,7 @@ export function ProgressBar({ percent, blocks = 20, showLabel = true }: Props) {
   void blocks;
   return (
     <span
-      className="pmp-progress"
+      className="hig-progress"
       role="progressbar"
       aria-valuemin={0}
       aria-valuemax={100}
@@ -37,7 +37,7 @@ export function ProgressBar({ percent, blocks = 20, showLabel = true }: Props) {
             borderRadius: "inherit",
             background:
               "linear-gradient(90deg, var(--accent-primary), color-mix(in srgb, var(--accent-primary) 72%, var(--accent-secondary)))",
-            transition: "width 220ms ease",
+            transition: "width var(--duration-slow) var(--ease-spring)",
           }}
         />
       </span>

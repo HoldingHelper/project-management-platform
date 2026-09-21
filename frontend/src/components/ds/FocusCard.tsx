@@ -41,7 +41,7 @@ export function FocusCard({
       {right}
       <button
         type="button"
-        className="pmp-icon-btn"
+        className="hig-icon-btn"
         onClick={() => setFocused(true)}
         title="Focus chart"
         aria-label={`Focus ${String(title)} chart`}
@@ -59,15 +59,15 @@ export function FocusCard({
       </Card>
       {mounted && focused
         ? createPortal(
-            <div className="pmp-focus-backdrop" role="dialog" aria-modal="true" aria-label="Focused chart">
-              <section className="pmp-focus-panel">
-                <div className="pmp-focus-header">
+            <div className="hig-focus-backdrop" role="dialog" aria-modal="true" aria-label="Focused chart">
+              <section className="hig-focus-panel">
+                <div className="hig-focus-header">
                   <div style={{ fontSize: 18, fontWeight: 800, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {title}
                   </div>
                   <button
                     type="button"
-                    className="pmp-icon-btn"
+                    className="hig-icon-btn"
                     onClick={() => setFocused(false)}
                     title="Exit focus"
                     aria-label="Exit chart focus"
@@ -76,7 +76,7 @@ export function FocusCard({
                     <Minimize2 size={16} />
                   </button>
                 </div>
-                <div className="pmp-focus-body">{focusChildren ?? children}</div>
+                <div className="hig-focus-body">{focusChildren ?? children}</div>
               </section>
             </div>,
             document.body,
@@ -98,4 +98,5 @@ const iconBtn: React.CSSProperties = {
   alignItems: "center",
   justifyContent: "center",
   flexShrink: 0,
+  transition: "transform var(--duration-fast) var(--ease-spring), color var(--duration-fast), background var(--duration-fast), border-color var(--duration-fast)",
 };
