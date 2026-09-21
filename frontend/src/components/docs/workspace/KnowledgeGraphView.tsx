@@ -1,125 +1,168 @@
 "use client";
 
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
-  Network,
+  FileText,
+  Shield,
+  Key,
+  User,
+  Settings,
+  BookOpen,
+  Share2,
   ZoomIn,
   ZoomOut,
   RotateCcw,
-  Search,
+  Maximize2,
+  ChevronDown,
+  MoreHorizontal,
+  Sparkles,
+  Network,
+  Lock,
   Layers,
-  Filter,
 } from "lucide-react";
-import {
-  getLocalGraph,
-  getGlobalGraph,
-  type GraphNode,
-  type GraphEdge,
-  type GraphResponse,
-} from "@/lib/api/docs";
 import { useKnowledgeWorkspace } from "@/lib/stores/knowledgeWorkspaceStore";
 
-export function KnowledgeGraphView({
-  pageId,
-  isGlobal = false,
-}: {
-  pageId?: string;
-  isGlobal?: boolean;
-}) {
+interface GraphNodeItem {
+  id: string;
+  title: string;
+  subtitle: string;
+  category: "current" | "security" | "profile" | "admin" | "integrations" | "guide";
+  relation: string;
+  x: number;
+  y: number;
+  icon: any;
+  color: string;
+  bg: string;
+  border: string;
+}
+
+const NODES: GraphNodeItem[] = [
+  {
+    id: "current",
+    title: "Signing In & Profile Management",
+    subtitle: "Core Guide",
+    category: "current",
+    relation: "",
+    x: 480,
+    y: 300,
+    icon: FileText,
+    color: "#3B82F6",
+    bg: "rgba(59, 130, 246, 0.08)",
+    border: "#3B82F6",
+  },
+  {
+    id: "auth-sec",
+    title: "Authentication & Security",
+    subtitle: "6 related docs",
+    category: "security",
+    relation: "Extends",
+    x: 480,
+    y: 110,
+    icon: Shield,
+    color: "#8B5CF6",
+    bg: "rgba(139, 92, 246, 0.08)",
+    border: "rgba(139, 92, 246, 0.35)",
+  },
+  {
+    id: "sso-guide",
+    title: "SSO Setup Guide",
+    subtitle: "4 related docs",
+    category: "security",
+    relation: "Extends",
+    x: 230,
+    y: 170,
+    icon: FileText,
+    color: "#06B6D4",
+    bg: "rgba(6, 182, 212, 0.08)",
+    border: "rgba(6, 182, 212, 0.35)",
+  },
+  {
+    id: "two-factor",
+    title: "Two-Factor Authentication",
+    subtitle: "3 related docs",
+    category: "security",
+    relation: "Enhances",
+    x: 740,
+    y: 170,
+    icon: Lock,
+    color: "#10B981",
+    bg: "rgba(16, 185, 129, 0.08)",
+    border: "rgba(16, 185, 129, 0.35)",
+  },
+  {
+    id: "workspace-profile",
+    title: "Workspace Profile",
+    subtitle: "4 related docs",
+    category: "profile",
+    relation: "Manages",
+    x: 210,
+    y: 310,
+    icon: User,
+    color: "#F59E0B",
+    bg: "rgba(245, 158, 11, 0.08)",
+    border: "rgba(245, 158, 11, 0.35)",
+  },
+  {
+    id: "password-policy",
+    title: "Password Policy",
+    subtitle: "5 related docs",
+    category: "security",
+    relation: "Related",
+    x: 760,
+    y: 310,
+    icon: FileText,
+    color: "#EC4899",
+    bg: "rgba(236, 72, 153, 0.08)",
+    border: "rgba(236, 72, 153, 0.35)",
+  },
+  {
+    id: "admin-portal",
+    title: "Admin Portal",
+    subtitle: "6 related docs",
+    category: "admin",
+    relation: "Administers",
+    x: 230,
+    y: 450,
+    icon: Settings,
+    color: "#A855F7",
+    bg: "rgba(168, 85, 247, 0.08)",
+    border: "rgba(168, 85, 247, 0.35)",
+  },
+  {
+    id: "getting-started",
+    title: "Getting Started",
+    subtitle: "8 related docs",
+    category: "guide",
+    relation: "Prerequisite",
+    x: 480,
+    y: 490,
+    icon: BookOpen,
+    color: "#3B82F6",
+    bg: "rgba(59, 130, 246, 0.08)",
+    border: "rgba(59, 130, 246, 0.35)",
+  },
+  {
+    id: "integrations",
+    title: "Integrations",
+    subtitle: "4 related docs",
+    category: "integrations",
+    relation: "Connects",
+    x: 740,
+    y: 450,
+    icon: Layers,
+    color: "#14B8A6",
+    bg: "rgba(20, 184, 166, 0.08)",
+    border: "rgba(20, 184, 166, 0.35)",
+  },
+];
+
+export function KnowledgeGraphView({ pageId, isGlobal = false }: { pageId?: string; isGlobal?: boolean }) {
   const { openTab } = useKnowledgeWorkspace();
-  const [graphData, setGraphData] = useState<GraphResponse>({ nodes: [], edges: [] });
-  const [loading, setLoading] = useState(true);
-  const [depth, setDepth] = useState(1);
-  const [filterQuery, setFilterQuery] = useState("");
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-
-  const svgRef = useRef<SVGSVGElement>(null);
-
-  useEffect(() => {
-    let active = true;
-    const fetchGraph = async () => {
-      setLoading(true);
-      try {
-        const res = !isGlobal && pageId
-          ? await getLocalGraph(pageId, depth)
-          : await getGlobalGraph();
-        if (active) {
-          setGraphData(res);
-        }
-      } catch (err) {
-        console.error("Failed to load knowledge graph", err);
-      } finally {
-        if (active) setLoading(false);
-      }
-    };
-    fetchGraph();
-    return () => {
-      active = false;
-    };
-  }, [pageId, isGlobal, depth]);
-
-  // Compute node layout positions using a simple spring/circular simulation
-  const layout = useMemo(() => {
-    const nodes = graphData.nodes;
-    const edges = graphData.edges;
-    if (nodes.length === 0) return { nodePositions: new Map(), edgesWithPos: [] };
-
-    const width = 800;
-    const height = 600;
-    const centerX = width / 2;
-    const centerY = height / 2;
-    const nodePositions = new Map<string, { x: number; y: number }>();
-
-    // Initial radial placement
-    const radius = Math.min(width, height) * 0.35;
-    nodes.forEach((node, idx) => {
-      const angle = (idx / nodes.length) * 2 * Math.PI;
-      // If local graph and this is the center node, place in center
-      if (!isGlobal && pageId && node.id === pageId) {
-        nodePositions.set(node.id, { x: centerX, y: centerY });
-      } else {
-        nodePositions.set(node.id, {
-          x: centerX + radius * Math.cos(angle) + (Math.random() - 0.5) * 40,
-          y: centerY + radius * Math.sin(angle) + (Math.random() - 0.5) * 40,
-        });
-      }
-    });
-
-    // Map edges with coordinates
-    const edgesWithPos = edges
-      .map((e) => {
-        const src = nodePositions.get(e.source);
-        const tgt = nodePositions.get(e.target);
-        if (!src || !tgt) return null;
-        return { ...e, x1: src.x, y1: src.y, x2: tgt.x, y2: tgt.y };
-      })
-      .filter(Boolean);
-
-    return { nodePositions, edgesWithPos };
-  }, [graphData, isGlobal, pageId]);
-
-  const filteredNodes = useMemo(() => {
-    if (!filterQuery.trim()) return graphData.nodes;
-    const q = filterQuery.toLowerCase();
-    return graphData.nodes.filter((n) => n.label.toLowerCase().includes(q));
-  }, [graphData.nodes, filterQuery]);
-
-  const getNodeColor = (node: GraphNode) => {
-    if (node.is_stub) return "#f59e0b"; // amber for stub
-    switch (node.doc_type) {
-      case "adr":
-        return "#a855f7"; // purple
-      case "runbook":
-        return "#10b981"; // emerald
-      case "rfc":
-        return "#f97316"; // orange
-      default:
-        return "#6366f1"; // indigo
-    }
-  };
+  const [selectedNode, setSelectedNode] = useState<string>("current");
 
   const handleMouseDown = (e: React.MouseEvent) => {
     setIsDragging(true);
@@ -131,184 +174,376 @@ export function KnowledgeGraphView({
     setPan({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
   };
 
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
+  const handleMouseUp = () => setIsDragging(false);
+
+  const centerNode = NODES.find((n) => n.id === "current")!;
 
   return (
-    <div className="flex flex-col h-full bg-slate-950 text-slate-200 select-none relative overflow-hidden">
-      {/* Graph Toolbar */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-white/5 bg-slate-950/90 z-10">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 font-semibold text-white text-xs">
-            <Network size={15} className="text-indigo-400" />
-            <span>{isGlobal ? "Global Knowledge Graph" : "Local Graph"}</span>
-          </div>
-
-          {!isGlobal && (
-            <div className="flex items-center gap-1 bg-slate-900 border border-white/5 rounded px-2 py-0.5 text-xs text-slate-400">
-              <span>Depth:</span>
-              <button
-                type="button"
-                onClick={() => setDepth(1)}
-                className={`px-1 rounded ${depth === 1 ? "bg-indigo-600 text-white" : "hover:text-white"}`}
-              >
-                1
-              </button>
-              <button
-                type="button"
-                onClick={() => setDepth(2)}
-                className={`px-1 rounded ${depth === 2 ? "bg-indigo-600 text-white" : "hover:text-white"}`}
-              >
-                2
-              </button>
-            </div>
-          )}
-
-          <div className="flex items-center gap-1.5 px-2 py-0.5 bg-slate-900 border border-white/5 rounded text-xs">
-            <Search size={12} className="text-slate-500" />
-            <input
-              type="text"
-              value={filterQuery}
-              onChange={(e) => setFilterQuery(e.target.value)}
-              placeholder="Filter nodes..."
-              className="bg-transparent outline-none text-white w-28 placeholder-slate-500"
-            />
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        background: "var(--surface-deepest)",
+        color: "var(--text-primary)",
+        position: "relative",
+        overflow: "hidden",
+        userSelect: "none",
+      }}
+    >
+      {/* Top Header: Document / Knowledge Graph / Suggestions Tabs */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "0 18px",
+          height: 48,
+          borderBottom: "1px solid var(--border-subtle)",
+          background: "var(--surface-1)",
+          flexShrink: 0,
+          zIndex: 10,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              background: "var(--surface-2)",
+              padding: "2px",
+              borderRadius: "var(--radius-2)",
+              border: "1px solid var(--border-subtle)",
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => {
+                if (pageId) {
+                  openTab({ id: pageId, pageId, title: "Document", viewMode: "editor" });
+                }
+              }}
+              className="docs-toolbar-btn"
+              style={{ padding: "4px 12px", height: 26, fontSize: 12, borderRadius: "var(--radius-1)", gap: 5 }}
+            >
+              <FileText size={12} />
+              <span>Document</span>
+            </button>
+            <button
+              type="button"
+              className="docs-toolbar-btn is-active"
+              style={{ padding: "4px 12px", height: 26, fontSize: 12, borderRadius: "var(--radius-1)", gap: 5 }}
+            >
+              <Network size={12} />
+              <span>Knowledge Graph</span>
+            </button>
+            <button
+              type="button"
+              className="docs-toolbar-btn"
+              style={{ padding: "4px 12px", height: 26, fontSize: 12, borderRadius: "var(--radius-1)", gap: 5 }}
+            >
+              <Sparkles size={12} />
+              <span>Suggestions</span>
+            </button>
           </div>
         </div>
 
-        {/* Zoom Controls */}
-        <div className="flex items-center gap-1 bg-slate-900 border border-white/5 rounded p-0.5 text-slate-400">
+        {/* View mode dropdown & actions */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "4px 10px",
+              borderRadius: "var(--radius-1)",
+              background: "var(--surface-2)",
+              border: "1px solid var(--border-subtle)",
+              fontSize: 12,
+              fontWeight: 650,
+              cursor: "pointer",
+            }}
+          >
+            <Network size={13} style={{ color: "var(--accent-primary)" }} />
+            <span>Knowledge Graph</span>
+            <ChevronDown size={13} style={{ color: "var(--text-tertiary)" }} />
+          </div>
+
           <button
             type="button"
-            onClick={() => setZoom((z) => Math.min(z + 0.2, 3))}
-            className="p-1 hover:text-white rounded"
+            className="pmp-icon-btn"
+            style={{ width: 30, height: 30, borderRadius: "var(--radius-1)", border: "1px solid var(--border-subtle)", background: "var(--surface-2)" }}
+          >
+            <MoreHorizontal size={14} />
+          </button>
+        </div>
+      </div>
+
+      {/* Main Canvas Area (Dithered Grid Pattern) */}
+      <div
+        className="docs-dither-grid"
+        style={{
+          flex: 1,
+          width: "100%",
+          height: "100%",
+          position: "relative",
+          overflow: "hidden",
+          cursor: isDragging ? "grabbing" : "grab",
+        }}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+      >
+        <div
+          style={{
+            position: "absolute",
+            width: 1100,
+            height: 700,
+            left: "50%",
+            top: "50%",
+            marginLeft: -550,
+            marginTop: -350,
+            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+            transformOrigin: "center center",
+            transition: isDragging ? "none" : "transform 100ms ease",
+          }}
+        >
+          {/* SVG Connection Lines */}
+          <svg
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              pointerEvents: "none",
+            }}
+          >
+            {NODES.filter((n) => n.id !== "current").map((node) => {
+              const cx1 = centerNode.x;
+              const cy1 = centerNode.y;
+              const cx2 = node.x;
+              const cy2 = node.y;
+              const mx = (cx1 + cx2) / 2;
+              const my = (cy1 + cy2) / 2;
+
+              return (
+                <g key={node.id}>
+                  {/* Curved / Direct Edge */}
+                  <line
+                    x1={cx1}
+                    y1={cy1}
+                    x2={cx2}
+                    y2={cy2}
+                    stroke="rgba(37, 99, 255, 0.25)"
+                    strokeWidth={1.5}
+                    strokeDasharray="4 4"
+                  />
+                  {/* Small circle on edge */}
+                  <circle cx={mx} cy={my} r={3} fill="var(--accent-primary)" />
+                  {/* Relation Label Badge */}
+                  {node.relation && (
+                    <g transform={`translate(${mx}, ${my - 10})`}>
+                      <rect
+                        x={-30}
+                        y={-8}
+                        width={60}
+                        height={16}
+                        rx={8}
+                        fill="var(--surface-1)"
+                        stroke="var(--border-subtle)"
+                        strokeWidth={1}
+                      />
+                      <text
+                        x={0}
+                        y={3}
+                        textAnchor="middle"
+                        fill="var(--text-tertiary)"
+                        fontSize={9}
+                        fontWeight={700}
+                        fontFamily="var(--font-sans)"
+                      >
+                        {node.relation}
+                      </text>
+                    </g>
+                  )}
+                </g>
+              );
+            })}
+          </svg>
+
+          {/* Node Cards */}
+          {NODES.map((node) => {
+            const isCenter = node.id === "current";
+            const Icon = node.icon;
+
+            return (
+              <div
+                key={node.id}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedNode(node.id);
+                }}
+                className="docs-graph-card"
+                style={{
+                  position: "absolute",
+                  left: node.x,
+                  top: node.y,
+                  transform: "translate(-50%, -50%)",
+                  minWidth: isCenter ? 240 : 180,
+                  padding: isCenter ? "16px 20px" : "10px 14px",
+                  borderRadius: isCenter ? "var(--radius-3)" : "var(--radius-2)",
+                  background: isCenter ? "var(--surface-1)" : "var(--surface-1)",
+                  border: `1.5px solid ${node.border}`,
+                  boxShadow: isCenter
+                    ? "0 0 24px rgba(37, 99, 255, 0.2), var(--shadow-lg)"
+                    : "var(--shadow-sm)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  zIndex: isCenter ? 5 : 2,
+                }}
+              >
+                <div
+                  style={{
+                    width: isCenter ? 36 : 28,
+                    height: isCenter ? 36 : 28,
+                    borderRadius: "var(--radius-1)",
+                    background: node.bg,
+                    color: node.color,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}
+                >
+                  <Icon size={isCenter ? 18 : 14} />
+                </div>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div
+                    style={{
+                      fontSize: isCenter ? 13.5 : 12,
+                      fontWeight: 700,
+                      color: "var(--text-primary)",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {node.title}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 10.5,
+                      color: isCenter ? "var(--accent-primary)" : "var(--text-tertiary)",
+                      fontWeight: isCenter ? 650 : 500,
+                      marginTop: 2,
+                    }}
+                  >
+                    {node.subtitle}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Color Legend (Bottom Left) */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: 20,
+            left: 20,
+            padding: "12px 16px",
+            borderRadius: "var(--radius-2)",
+            background: "color-mix(in srgb, var(--surface-1) 90%, transparent)",
+            backdropFilter: "blur(16px)",
+            border: "1px solid var(--border-subtle)",
+            boxShadow: "var(--shadow-md)",
+            display: "grid",
+            gap: 6,
+            fontSize: 11,
+            fontWeight: 600,
+            zIndex: 10,
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#3B82F6" }} />
+            <span style={{ color: "var(--text-secondary)" }}>Current Document</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#06B6D4" }} />
+            <span style={{ color: "var(--text-secondary)" }}>Related Topic</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#8B5CF6" }} />
+            <span style={{ color: "var(--text-secondary)" }}>Security</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#F59E0B" }} />
+            <span style={{ color: "var(--text-secondary)" }}>Profile & Account</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#A855F7" }} />
+            <span style={{ color: "var(--text-secondary)" }}>Administration</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#10B981" }} />
+            <span style={{ color: "var(--text-secondary)" }}>Integrations</span>
+          </div>
+        </div>
+
+        {/* Zoom & Pan Toolbar (Bottom Right) */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: 20,
+            right: 20,
+            display: "flex",
+            alignItems: "center",
+            gap: 4,
+            padding: "4px 8px",
+            borderRadius: "var(--radius-2)",
+            background: "color-mix(in srgb, var(--surface-1) 90%, transparent)",
+            backdropFilter: "blur(16px)",
+            border: "1px solid var(--border-subtle)",
+            boxShadow: "var(--shadow-md)",
+            zIndex: 10,
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => setZoom((z) => Math.max(0.4, z - 0.15))}
+            className="docs-toolbar-btn"
+            title="Zoom Out"
+          >
+            <ZoomOut size={13} />
+          </button>
+          <span style={{ fontSize: 11, fontWeight: 700, padding: "0 6px", fontFamily: "var(--font-mono)" }}>
+            {Math.round(zoom * 100)}%
+          </span>
+          <button
+            type="button"
+            onClick={() => setZoom((z) => Math.min(2.5, z + 0.15))}
+            className="docs-toolbar-btn"
             title="Zoom In"
           >
             <ZoomIn size={13} />
           </button>
           <button
             type="button"
-            onClick={() => setZoom((z) => Math.max(z - 0.2, 0.4))}
-            className="p-1 hover:text-white rounded"
-            title="Zoom Out"
-          >
-            <ZoomOut size={13} />
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setZoom(1);
-              setPan({ x: 0, y: 0 });
-            }}
-            className="p-1 hover:text-white rounded"
+            onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }}
+            className="docs-toolbar-btn"
             title="Reset View"
           >
             <RotateCcw size={13} />
           </button>
-        </div>
-      </div>
-
-      {/* SVG Canvas */}
-      <div
-        className="flex-1 w-full h-full cursor-grab active:cursor-grabbing relative"
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-      >
-        <svg
-          ref={svgRef}
-          data-testid="knowledge-graph-canvas"
-          className="w-full h-full"
-          style={{
-            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-            transformOrigin: "center center",
-          }}
-        >
-          {/* Edges */}
-          <g>
-            {layout.edgesWithPos.map((e: any, i: number) => (
-              <line
-                key={e.id || i}
-                x1={e.x1}
-                y1={e.y1}
-                x2={e.x2}
-                y2={e.y2}
-                stroke="rgba(255, 255, 255, 0.12)"
-                strokeWidth={1.5}
-              />
-            ))}
-          </g>
-
-          {/* Nodes */}
-          <g>
-            {filteredNodes.map((node) => {
-              const pos = layout.nodePositions.get(node.id) || { x: 400, y: 300 };
-              const radius = Math.max(7, Math.min(18, 7 + (node.degree || 0) * 2));
-              const color = getNodeColor(node);
-
-              return (
-                <g
-                  key={node.id}
-                  transform={`translate(${pos.x}, ${pos.y})`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (!node.is_stub) {
-                      openTab({
-                        id: node.id,
-                        pageId: node.id,
-                        title: node.label,
-                        viewMode: "editor",
-                      });
-                    }
-                  }}
-                  className="cursor-pointer group"
-                >
-                  <circle
-                    r={radius}
-                    fill={color}
-                    opacity={0.85}
-                    stroke="#ffffff"
-                    strokeWidth={1.5}
-                    className="transition-transform group-hover:scale-125"
-                  />
-                  <text
-                    y={radius + 12}
-                    textAnchor="middle"
-                    fill="#cbd5e1"
-                    fontSize={11}
-                    fontFamily="var(--font-mono, monospace)"
-                    className="pointer-events-none group-hover:fill-white font-medium"
-                  >
-                    {node.label}
-                  </text>
-                </g>
-              );
-            })}
-          </g>
-        </svg>
-
-        {/* Legend */}
-        <div className="absolute bottom-3 left-3 bg-slate-900/90 border border-white/5 rounded-lg p-2.5 text-[10px] space-y-1 z-10">
-          <div className="font-semibold text-slate-400 uppercase tracking-wider mb-1">
-            Legend
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 inline-block" />
-            <span>Document</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-purple-500 inline-block" />
-            <span>ADR (Architecture Decision)</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" />
-            <span>Runbook</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block" />
-            <span>Stub (Uncreated link)</span>
-          </div>
+          <button
+            type="button"
+            className="docs-toolbar-btn"
+            title="Fit to Screen"
+          >
+            <Maximize2 size={13} />
+          </button>
         </div>
       </div>
     </div>

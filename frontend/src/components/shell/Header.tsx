@@ -3,7 +3,19 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, BookOpenText, CheckCheck, FolderKanban, LogOut, Search, Settings, Sparkles, User as UserIcon } from "lucide-react";
+import {
+  Bell,
+  BookOpenText,
+  CheckCheck,
+  FolderKanban,
+  LogOut,
+  Search,
+  Settings,
+  Sparkles,
+  User as UserIcon,
+  Share2,
+  Upload,
+} from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { markAllNotificationsRead } from "@/lib/api/collaboration";
 import { setMyPresence } from "@/lib/api/users";
@@ -11,10 +23,11 @@ import { Avatar, PresenceDot, PRESENCE_LABELS } from "@/components/ds";
 import { UserStatusPickerModal, UserStatusPill } from "@/components/status";
 import { useNotifications } from "@/lib/stores/notifications";
 import { usePresence, useUserStatus } from "@/lib/stores/presence";
-import type { PresenceStatus } from "@/lib/types";
 import { formatNotificationBody, relativeTime } from "@/lib/format";
 import { getRouteMeta } from "./navigation";
 import { HeaderMeetingPill } from "@/components/calendar/HeaderMeetingPill";
+
+import type { PresenceStatus } from "@/lib/types";
 
 const PRESENCE_OPTIONS: PresenceStatus[] = ["online", "busy", "away", "focus"];
 
@@ -89,39 +102,130 @@ export function Header({
         <Link href="/app/teams" aria-current={!docsModule ? "page" : undefined} onClick={() => window.localStorage.setItem("workspace.last-module", "teams")}><FolderKanban size={15}/>Teams</Link>
       </div>
 
-      <div className="pmp-header-route" style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-        <div style={{ fontSize: 11, color: "var(--text-tertiary)", letterSpacing: "0.04em", textTransform: "uppercase" }}>
-          {docsModule ? "Knowledge" : match.crumb}
+      {docsModule ? (
+        <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, minWidth: 0, flex: 1 }}>
+          <span style={{ color: "var(--text-tertiary)" }}>Docs</span>
+          <span style={{ color: "var(--text-tertiary)" }}>›</span>
+          <span style={{ color: "var(--text-secondary)" }}>Getting Started</span>
+          <span style={{ color: "var(--text-tertiary)" }}>›</span>
+          <span style={{ color: "var(--text-primary)", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            Signing In & Profile Management
+          </span>
         </div>
-        <div style={{ fontSize: 16, fontWeight: 700, lineHeight: "20px" }}>{docsModule ? "Internal Docs" : match.title}</div>
-      </div>
+      ) : (
+        <>
+          <div className="pmp-header-route" style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+            <div style={{ fontSize: 11, color: "var(--text-tertiary)", letterSpacing: "0.04em", textTransform: "uppercase" }}>
+              {match.crumb}
+            </div>
+            <div style={{ fontSize: 16, fontWeight: 700, lineHeight: "20px" }}>{match.title}</div>
+          </div>
+          <div style={{ flex: 1 }} />
+        </>
+      )}
 
-      <div style={{ flex: 1 }} />
+      {docsModule ? (
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {/* Docs Search Input */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              height: 34,
+              padding: "0 10px",
+              borderRadius: "var(--radius-2)",
+              border: "1px solid var(--border-subtle)",
+              background: "var(--surface-2)",
+              width: 240,
+            }}
+          >
+            <Search size={14} style={{ color: "var(--text-tertiary)", flexShrink: 0 }} />
+            <span style={{ fontSize: 12, color: "var(--text-tertiary)", flex: 1 }}>Search across docs…</span>
+            <span style={{ fontSize: 9.5, padding: "1px 4px", borderRadius: 4, background: "var(--surface-3)", color: "var(--text-tertiary)", fontFamily: "var(--font-mono)" }}>
+              ⌘K
+            </span>
+          </div>
 
-      {!docsModule && <button
-        type="button"
-        aria-label="Open global search"
-        onClick={onOpenSearch}
-        className="pmp-global-search-trigger pmp-row"
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          height: 38,
-          padding: "0 12px",
-          borderRadius: "var(--radius-2)",
-          border: "1px solid var(--border-subtle)",
-          background: "var(--surface-3)",
-          width: 320,
-          maxWidth: "34vw",
-          cursor: "pointer",
-          color: "var(--text-secondary)",
-        }}
-      >
-        <Search size={15} style={{ color: "var(--text-tertiary)", flexShrink: 0 }} />
-        <span style={{ fontSize: 13.5, flex: 1, minWidth: 0, textAlign: "left" }}>Search projects, tasks, people…</span>
-        <span className="pmp-search-kbd">⌘K</span>
-      </button>}
+          {/* Collaborators Avatar Stack */}
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <div style={{ width: 26, height: 26, borderRadius: "50%", background: "#3B82F6", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, border: "2px solid var(--surface-1)" }}>
+              JD
+            </div>
+            <div style={{ width: 26, height: 26, borderRadius: "50%", background: "#EC4899", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, border: "2px solid var(--surface-1)", marginLeft: -8 }}>
+              MK
+            </div>
+            <div style={{ width: 26, height: 26, borderRadius: "50%", background: "var(--surface-3)", color: "var(--text-secondary)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9.5, fontWeight: 700, border: "2px solid var(--surface-1)", marginLeft: -8 }}>
+              +2
+            </div>
+          </div>
+
+          {/* Share Button */}
+          <button
+            type="button"
+            className="docs-toolbar-btn"
+            style={{
+              gap: 6,
+              padding: "0 10px",
+              height: 32,
+              border: "1px solid var(--border-subtle)",
+              borderRadius: "var(--radius-1)",
+              color: "var(--text-primary)",
+              fontWeight: 650,
+            }}
+          >
+            <Share2 size={13} />
+            <span>Share</span>
+          </button>
+
+          {/* Publish Button */}
+          <button
+            type="button"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "0 12px",
+              height: 32,
+              borderRadius: "var(--radius-1)",
+              background: "var(--accent-primary)",
+              border: "none",
+              color: "#fff",
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: "pointer",
+            }}
+          >
+            <Upload size={13} />
+            <span>Publish</span>
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          aria-label="Open global search"
+          onClick={onOpenSearch}
+          className="pmp-global-search-trigger pmp-row"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            height: 38,
+            padding: "0 12px",
+            borderRadius: "var(--radius-2)",
+            border: "1px solid var(--border-subtle)",
+            background: "var(--surface-3)",
+            width: 320,
+            maxWidth: "34vw",
+            cursor: "pointer",
+            color: "var(--text-secondary)",
+          }}
+        >
+          <Search size={15} style={{ color: "var(--text-tertiary)", flexShrink: 0 }} />
+          <span style={{ fontSize: 13.5, flex: 1, minWidth: 0, textAlign: "left" }}>Search projects, tasks, people…</span>
+          <span className="pmp-search-kbd">⌘K</span>
+        </button>
+      )}
 
       <HeaderMeetingPill />
 

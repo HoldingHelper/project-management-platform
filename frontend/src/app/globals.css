@@ -5120,3 +5120,162 @@ input[type="checkbox"]:disabled, input[type="radio"]:disabled { cursor: not-allo
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
+
+
+/* ==========================================================================
+   Modern Docs & Knowledge Base Design System (NexFellas Style)
+   ========================================================================== */
+
+.docs-dither-grid {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+[data-theme="light"] .docs-dither-grid {
+  background-image: radial-gradient(rgba(11, 31, 77, 0.06) 1px, transparent 1px);
+}
+
+.docs-line-gutter {
+  width: 38px;
+  padding: 16px 0;
+  text-align: right;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 24px;
+  user-select: none;
+  opacity: 0.6;
+}
+
+.docs-callout {
+  border-radius: var(--radius-3);
+  padding: 14px 18px;
+  margin: 16px 0;
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  transition: all var(--duration-fast) var(--ease-spring);
+}
+.docs-callout-info {
+  background: rgba(37, 99, 255, 0.08);
+  border: 1px solid rgba(37, 99, 255, 0.28);
+  color: var(--text-primary);
+}
+.docs-callout-success {
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.28);
+  color: var(--text-primary);
+}
+.docs-callout-settings {
+  background: var(--surface-2);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-2);
+  padding: 12px 16px;
+  margin: 14px 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.docs-step-badge {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(37, 99, 255, 0.28);
+}
+
+.docs-step-large {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(37, 99, 255, 0.15);
+  border: 1px solid rgba(37, 99, 255, 0.35);
+  color: var(--accent-primary);
+  font-size: 14px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.docs-comment-highlight {
+  background: rgba(37, 99, 255, 0.18);
+  border-bottom: 2px solid var(--accent-primary);
+  border-radius: 2px;
+  padding: 1px 3px;
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-spring);
+}
+.docs-comment-highlight:hover {
+  background: rgba(37, 99, 255, 0.3);
+}
+
+.docs-author-pill {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: var(--radius-full);
+  color: #fff;
+  margin-left: 5px;
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+}
+
+.docs-floating-card {
+  background: var(--surface-1);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-2);
+  box-shadow: 0 16px 36px -4px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  padding: 12px;
+  animation: smoothScaleUp var(--duration-fast) var(--ease-spring);
+}
+
+.docs-graph-card {
+  background: var(--surface-1);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-2);
+  box-shadow: var(--shadow-sm);
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-spring);
+}
+.docs-graph-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent-primary);
+  box-shadow: var(--shadow-md);
+}
+
+.docs-toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  min-width: 28px;
+  padding: 0 6px;
+  border-radius: var(--radius-1);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-spring);
+}
+.docs-toolbar-btn:hover {
+  background: var(--surface-3);
+  color: var(--text-primary);
+  border-color: var(--border-subtle);
+}
+.docs-toolbar-btn.is-active {
+  background: var(--accent-primary-soft);
+  color: var(--accent-primary);
+  font-weight: 600;
+}
