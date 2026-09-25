@@ -1,0 +1,39 @@
+{
+  "object_types": {
+    "node": ["view", "create_child", "update", "move", "archive", "manage_members", "manage_confidentiality"],
+    "task": ["view", "create", "update", "update_status", "assign", "move", "delete", "comment", "attach"],
+    "page": ["view", "comment", "edit", "share", "publish_team", "publish_venture", "publish_holding", "publish_external", "manage", "delete"],
+    "objective": ["view", "create", "update", "checkin", "link", "delete"],
+    "request": ["view", "create", "accept", "decline", "update"]
+  },
+  "roles": {
+    "holding_owner": {"*": "*"},
+    "board_member": {"node": ["view"], "page": ["view", "comment"], "objective": ["view"]},
+    "group_exec": {"node": ["view", "create_child", "update"], "task": ["view", "create", "update", "assign", "comment"], "page": ["view", "comment", "edit", "publish_holding"], "objective": ["view", "create", "update", "checkin", "link"]},
+    "group_staff": {"node": ["view"], "task": ["view", "comment"], "page": ["view", "comment"], "objective": ["view"]},
+    "auditor": {"node": ["view"], "task": ["view"], "page": ["view"], "objective": ["view"], "request": ["view"]},
+    "venture_lead": {"node": ["view", "create_child", "update", "move", "archive", "manage_members", "manage_confidentiality"], "task": "*", "page": ["view", "comment", "edit", "share", "publish_venture", "manage"], "objective": "*", "request": "*"},
+    "venture_exec": {"node": ["view", "create_child", "update"], "task": ["view", "create", "update", "assign", "comment"], "page": ["view", "comment", "edit"], "objective": ["view", "create", "update", "checkin", "link"], "request": ["view", "create", "update"]},
+    "venture_member": {"node": ["view"], "task": ["view", "create", "comment", "attach"], "page": ["view", "comment"], "objective": ["view", "checkin"], "request": ["view", "create"]},
+    "venture_viewer": {"node": ["view"], "task": ["view"], "page": ["view"], "objective": ["view"]},
+    "advisor": {"node": ["view"], "page": ["view"], "objective": ["view"]},
+    "investor": {"node": ["view"], "page": ["view"], "objective": ["view"]},
+    "function_lead": {"node": ["view", "create_child", "update", "manage_members"], "task": ["view", "update", "assign", "move"], "page": ["view", "comment", "edit", "share", "publish_holding", "manage"], "request": ["view", "accept", "decline", "update"]},
+    "function_member": {"node": ["view"], "task": ["view", "create", "update_status", "comment"], "page": ["view", "comment"], "request": ["view"]},
+    "program_owner": {"node": ["view", "create_child", "update", "manage_members"], "task": "*", "page": ["view", "comment", "edit", "share"], "objective": ["view", "link"]},
+    "program_member": {"node": ["view"], "task": ["view", "create", "comment"], "page": ["view", "comment"]},
+    "project_owner": {"node": ["view", "create_child", "update", "move", "archive", "manage_members", "manage_confidentiality"], "task": "*", "page": ["view", "comment", "edit", "share", "manage"], "objective": ["view", "link"], "request": ["view", "create"]},
+    "project_manager": {"node": ["view", "create_child", "update", "manage_members"], "task": "*", "page": ["view", "comment", "edit", "share"], "objective": ["view", "link"], "request": ["view", "create"]},
+    "workstream_lead": {"node": ["view", "update"], "task": ["view", "create", "update", "assign", "move", "comment", "attach"], "page": ["view", "comment"]},
+    "contributor": {"node": ["view"], "task": ["view", "create", "update_status", "comment", "attach"], "page": ["view", "comment"]},
+    "reviewer": {"node": ["view"], "task": ["view", "update_status", "comment"], "page": ["view", "comment"]},
+    "viewer": {"node": ["view"], "task": ["view"], "page": ["view"]},
+    "contractor": {"node": ["view"], "task": ["view", "update_status", "comment", "attach"]},
+    "team_lead": {"node": ["view", "update", "manage_members"], "task": ["view", "create", "update", "assign", "comment"]},
+    "team_member": {"node": ["view"], "task": ["view", "create", "comment"]},
+    "space_admin": {"node": ["view", "update", "manage_members"], "page": "*"},
+    "editor": {"node": ["view"], "page": ["view", "comment", "edit"]},
+    "commenter": {"node": ["view"], "page": ["view", "comment"]}
+  },
+  "privileged_roles": ["holding_owner", "board_member", "group_exec"]
+}
