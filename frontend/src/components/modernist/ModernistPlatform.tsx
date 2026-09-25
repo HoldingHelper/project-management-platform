@@ -1010,6 +1010,8 @@ export const ModernistPlatform: React.FC<ModernistPlatformProps> = ({
               minHeight: '64px',
               overflow: 'hidden',
               minWidth: 0,
+              containerType: 'inline-size',
+              containerName: 'hdr',
               borderBottom: '2px solid var(--color-divider)',
               background: 'var(--panel)',
               backdropFilter: 'var(--blur)',
@@ -1104,6 +1106,7 @@ export const ModernistPlatform: React.FC<ModernistPlatformProps> = ({
 
             {/* Global Search trigger */}
             <button
+              data-search-btn="1"
               onClick={() => setPalette(true)}
               aria-label="Search projects, tasks, people…"
               style={{
@@ -1146,6 +1149,7 @@ export const ModernistPlatform: React.FC<ModernistPlatformProps> = ({
 
             {/* Header "+ Create" button */}
             <button
+              data-create-btn="1"
               className="btn btn-primary"
               aria-label="Create task"
               title="Create task"
@@ -1234,6 +1238,8 @@ export const ModernistPlatform: React.FC<ModernistPlatformProps> = ({
               width: '100%',
               maxWidth: '1360px',
               padding: '32px',
+              containerType: 'inline-size',
+              containerName: 'main',
               minWidth: 0,
               display: 'flex',
               flexDirection: 'column',
