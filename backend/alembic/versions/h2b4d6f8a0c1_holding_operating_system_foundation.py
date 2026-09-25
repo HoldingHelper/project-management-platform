@@ -19,7 +19,10 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def _execute_statements(sql: str) -> None:
     """Execute backfill statements individually for asyncpg compatibility."""
-    for statement in sql.split(";"):
+    uncommented_sql = "\n".join(
+        line for line in sql.splitlines() if not line.lstrip().startswith("--")
+    )
+    for statement in uncommented_sql.split(";"):
         if statement.strip():
             op.execute(statement)
 
