@@ -100,7 +100,7 @@ const STEPS: WorkflowStep[] = [
     description:
       "Tag releases with automatic multi-arch ECR builds, S3 asset synchronization, CloudFront cache invalidation, and zero-downtime remote compose deploys.",
     role: "DevOps & Release Engineers",
-    deliverable: "Production Deployments on localhost:3000",
+    deliverable: "Automated Production Deployments",
     accentIcon: Rocket,
     bullets: [
       "Deployment workflows configured by your team",

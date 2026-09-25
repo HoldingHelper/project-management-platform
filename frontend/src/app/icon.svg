@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40">
+  <defs>
+    <linearGradient id="pmp-grad" x1="5" y1="34" x2="34" y2="5" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2563FF" />
+      <stop offset="1" stop-color="#06B6EE" />
+    </linearGradient>
+  </defs>
+  <rect width="40" height="40" rx="8" fill="#080c14" />
+  <path d="M5 23.5 17.5 11 24 17.5 11.5 30H5v-6.5Z" fill="#1e293b" />
+  <path d="M15.5 30 29.5 16H35v8L24.5 34.5 15.5 30Z" fill="url(#pmp-grad)" />
+  <path d="M5 8h9l21 21v6h-8L5 13V8Z" fill="url(#pmp-grad)" />
+</svg>

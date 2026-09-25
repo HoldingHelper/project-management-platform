@@ -142,6 +142,50 @@ class PageRead(BaseModel):
         return []
 
 
+class PublicPageRead(BaseModel):
+    """Sanitized public DTO omitting created_by, updated_by, responsible_user_id, content_json (H-3)."""
+    model_config = ConfigDict(from_attributes=True)
+    id: UUID
+    space_id: UUID
+    parent_page_id: Optional[UUID] = None
+    title: str
+    slug: str
+    excerpt: Optional[str] = None
+    content: str
+    status: str
+    visibility: str
+    position: int = 0
+    youtube_url: Optional[str] = None
+    seo_title: Optional[str] = None
+    seo_description: Optional[str] = None
+    doc_type: str = "document"
+    tags: list[str] = Field(default_factory=list)
+    created_at: datetime
+    updated_at: datetime
+
+    @field_validator("doc_type", mode="before")
+    @classmethod
+    def validate_doc_type(cls, v: Any) -> str:
+        return v or "document"
+
+    @field_validator("tags", mode="before")
+    @classmethod
+    def validate_tags(cls, v: Any) -> list[str]:
+        if not v:
+            return []
+        if isinstance(v, list):
+            res = []
+            for item in v:
+                if isinstance(item, str):
+                    res.append(item)
+                elif hasattr(item, "tag") and hasattr(item.tag, "name"):
+                    res.append(item.tag.name)
+                elif hasattr(item, "name"):
+                    res.append(item.name)
+            return res
+        return []
+
+
 class PageSummary(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: UUID

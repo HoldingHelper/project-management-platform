@@ -72,4 +72,19 @@ async def get_user_pending_work(
     current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> UserPendingWork:
+    from app.core.exceptions import ForbiddenError
+    from app.core.permissions import Permissions
+
+    if not (
+        current_user.user_id == user_id
+        or current_user.is_super_admin()
+        or current_user.has_any_permission(
+            Permissions.TASKS_MANAGE_ALL,
+            Permissions.TASKS_MANAGE_TEAM,
+            Permissions.PROJECTS_MANAGE_ALL,
+            Permissions.MANAGE_USERS,
+        )
+    ):
+        raise ForbiddenError("You may only view your own pending work unless authorized as a manager.")
+
     return await service.get_user_pending_work(db, user_id)

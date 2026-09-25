@@ -28,6 +28,7 @@ from app.modules.docs.schemas import (
     PageUpdate,
     PermissionGrant,
     PermissionRead,
+    PublicPageRead,
     RelationRead,
     RevisionRead,
     SearchResponse,
@@ -55,13 +56,13 @@ async def search(q: str = Query(min_length=2, max_length=120), db: AsyncSession 
     return await service.search_public(db, q)
 
 
-@public_docs_router.get("/pages/{page_id}", response_model=PageRead)
-async def public_page_by_id(page_id: UUID, db: AsyncSession = Depends(get_db)) -> PageRead:
+@public_docs_router.get("/pages/{page_id}", response_model=PublicPageRead)
+async def public_page_by_id(page_id: UUID, db: AsyncSession = Depends(get_db)) -> PublicPageRead:
     return await service.get_public_page_by_id(db, page_id)
 
 
-@public_docs_router.get("/{space_slug}/{page_slug}", response_model=PageRead)
-async def public_page(space_slug: str, page_slug: str, db: AsyncSession = Depends(get_db)) -> PageRead:
+@public_docs_router.get("/{space_slug}/{page_slug}", response_model=PublicPageRead)
+async def public_page(space_slug: str, page_slug: str, db: AsyncSession = Depends(get_db)) -> PublicPageRead:
     return await service.get_public_page(db, space_slug, page_slug)
 
 

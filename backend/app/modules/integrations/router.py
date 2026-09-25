@@ -56,7 +56,9 @@ async def connect_github_callback(
     db: AsyncSession = Depends(get_db),
 ) -> Dict[str, Any]:
     """Exchange GitHub OAuth code for access token and persist user connection."""
-    conn = await user_service.connect_github_oauth(db, current_user.user_id, payload.code)
+    conn = await user_service.connect_github_oauth(
+        db, current_user.user_id, payload.code, payload.state
+    )
     return {
         "status": "connected",
         "github_username": conn.github_username,
@@ -123,7 +125,19 @@ async def telegram_webhook(
     request: Request,
     db: AsyncSession = Depends(get_db),
 ) -> Dict[str, Any]:
-    """Receive and process Telegram bot incoming updates and command handshakes."""
+    """Receive and process Telegram bot incoming updates with secret verification (H-5)."""
+    import hmac
+    from app.core.config import get_settings
+    from app.core.exceptions import ForbiddenError
+
+    settings = get_settings()
+    if settings.telegram_webhook_secret:
+        received = request.headers.get("X-Telegram-Bot-Api-Secret-Token")
+        if not received or not hmac.compare_digest(received, settings.telegram_webhook_secret):
+            raise ForbiddenError("Invalid Telegram webhook secret token.")
+    elif settings.is_production:
+        raise ForbiddenError("Telegram webhook secret is not configured in production.")
+
     body = await request.json()
     return await user_service.handle_telegram_webhook(db, body)
 
@@ -167,7 +181,9 @@ async def connect_drive_callback(
     db: AsyncSession = Depends(get_db),
 ) -> Dict[str, Any]:
     """Exchange Drive OAuth code and persist connection."""
-    conn = await user_service.connect_drive_oauth(db, current_user.user_id, payload.code)
+    conn = await user_service.connect_drive_oauth(
+        db, current_user.user_id, payload.code, payload.state
+    )
     return {"status": "connected", "email": conn.google_email}
 
 

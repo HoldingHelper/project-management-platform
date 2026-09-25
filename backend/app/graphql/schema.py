@@ -1,4 +1,4 @@
-"""Strawberry GraphQL Schema definitions with query and mutation resolvers."""
+"""Strawberry GraphQL Schema definitions with secure query and mutation resolvers."""
 
 from __future__ import annotations
 
@@ -9,9 +9,11 @@ from uuid import UUID
 
 import strawberry
 from sqlalchemy import select, update
+from strawberry.schema.config import StrawberryConfig
 from strawberry.types import Info
 
-from app.core.exceptions import NotFoundError, UnauthorizedError
+from app.core.config import get_settings
+from app.core.exceptions import ForbiddenError, NotFoundError, UnauthorizedError
 from app.graphql.context import GraphQLContext
 from app.graphql.types import (
     AutomationRuleType,
@@ -51,8 +53,19 @@ class Query:
     async def projects(
         self, info: Info[GraphQLContext, Any], status: Optional[str] = None
     ) -> List[ProjectType]:
+        user = info.context.current_user
+        if not user:
+            raise UnauthorizedError("Authentication required.")
+
         db = info.context.db
+        from app.modules.collaboration.authorization import _can_view_all_projects
+        from app.modules.projects.models import ProjectMember
+
         stmt = select(Project)
+        if not _can_view_all_projects(user):
+            stmt = stmt.join(ProjectMember, ProjectMember.project_id == Project.id).where(
+                ProjectMember.user_id == user.user_id
+            )
         if status:
             stmt = stmt.where(Project.status == status)
         stmt = stmt.order_by(Project.created_at.desc())
@@ -77,8 +90,35 @@ class Query:
         phase_id: Optional[UUID] = None,
         status: Optional[str] = None,
     ) -> List[TaskType]:
+        user = info.context.current_user
+        if not user:
+            raise UnauthorizedError("Authentication required.")
+
         db = info.context.db
+        from app.modules.collaboration.authorization import _can_view_all_projects
+        from app.modules.projects.models import Phase, ProjectMember, TaskAssignee
+
         stmt = select(TaskItem)
+        if not _can_view_all_projects(user):
+            # Show tasks in projects where user is member or tasks directly assigned to user
+            from sqlalchemy import or_
+            user_member_subq = (
+                select(Phase.id)
+                .join(ProjectMember, ProjectMember.project_id == Phase.project_id)
+                .where(ProjectMember.user_id == user.user_id)
+            )
+            user_assigned_subq = (
+                select(TaskAssignee.task_id).where(TaskAssignee.user_id == user.user_id)
+            )
+            stmt = stmt.where(
+                or_(
+                    TaskItem.phase_id.in_(user_member_subq),
+                    TaskItem.id.in_(user_assigned_subq),
+                    TaskItem.reviewer_user_id == user.user_id,
+                    TaskItem.ticket_requested_by_user_id == user.user_id,
+                )
+            )
+
         if phase_id:
             stmt = stmt.where(TaskItem.phase_id == phase_id)
         if status:
@@ -104,10 +144,12 @@ class Query:
 
     @strawberry.field
     async def doc_spaces(self, info: Info[GraphQLContext, Any]) -> List[DocSpaceType]:
-        db = info.context.db
-        stmt = select(DocSpace).order_by(DocSpace.position.asc(), DocSpace.name.asc())
-        res = await db.execute(stmt)
-        spaces = res.scalars().all()
+        user = info.context.current_user
+        if not user:
+            raise UnauthorizedError("Authentication required.")
+
+        from app.modules.docs import service as docs_service
+        spaces = await docs_service.list_spaces(info.context.db, user)
         return [
             DocSpaceType(
                 id=s.id,
@@ -127,18 +169,29 @@ class Query:
         id: Optional[UUID] = None,
         slug: Optional[str] = None,
     ) -> Optional[DocPageType]:
-        db = info.context.db
-        stmt = select(DocPage)
+        user = info.context.current_user
+        if not user:
+            raise UnauthorizedError("Authentication required.")
+
+        from app.modules.docs import service as docs_service
         if id:
-            stmt = stmt.where(DocPage.id == id)
+            try:
+                p = await docs_service.get_page(info.context.db, user, id)
+            except Exception:
+                return None
         elif slug:
-            stmt = stmt.where(DocPage.slug == slug)
+            db = info.context.db
+            res = await db.execute(select(DocPage).where(DocPage.slug == slug))
+            page_row = res.scalar_one_or_none()
+            if not page_row:
+                return None
+            try:
+                p = await docs_service.get_page(db, user, page_row.id)
+            except Exception:
+                return None
         else:
             return None
-        res = await db.execute(stmt)
-        p = res.scalar_one_or_none()
-        if not p:
-            return None
+
         return DocPageType(
             id=p.id,
             space_id=p.space_id,
@@ -156,7 +209,7 @@ class Query:
     ) -> List[MeetingType]:
         user = info.context.current_user
         if not user:
-            return []
+            raise UnauthorizedError("Authentication required.")
         db = info.context.db
         now = utcnow()
         to_time = now + timedelta(hours=hours_ahead)
@@ -177,6 +230,12 @@ class Query:
 
     @strawberry.field
     async def automation_rules(self, info: Info[GraphQLContext, Any]) -> List[AutomationRuleType]:
+        user = info.context.current_user
+        if not user:
+            raise UnauthorizedError("Authentication required.")
+        if not (user.is_super_admin() or user.has_permission("automations.manage")):
+            raise ForbiddenError("You do not have permission to view automation rules.")
+
         db = info.context.db
         stmt = select(AutomationRule).order_by(AutomationRule.created_at.desc())
         res = await db.execute(stmt)
@@ -213,8 +272,6 @@ class Mutation:
         user = info.context.current_user
         db = info.context.db
         if user is None:
-            from app.core.exceptions import UnauthorizedError
-
             raise UnauthorizedError("Authentication is required to create a task.")
 
         from app.modules.projects.schemas import TaskCreate
@@ -255,11 +312,18 @@ class Mutation:
         task_id: UUID,
         status: str,
     ) -> TaskType:
+        user = info.context.current_user
+        if not user:
+            raise UnauthorizedError("Authentication required.")
+
         db = info.context.db
+        from app.modules.projects.service import require_task_board_access, update_task_status as svc_update_status
+
+        await require_task_board_access(db, user, [task_id])
         res = await db.execute(select(TaskItem).where(TaskItem.id == task_id))
         task = res.scalar_one_or_none()
         if not task:
-            raise NotFoundError("Task not found.")
+            raise NotFoundError("Task", task_id)
         task.status = status
         await db.commit()
         await db.refresh(task)
@@ -285,32 +349,25 @@ class Mutation:
         content: str,
     ) -> DocPageType:
         user = info.context.current_user
-        author_id = user.user_id if user else UUID("00000000-0000-0000-0000-000000000000")
+        if not user:
+            raise UnauthorizedError("Authentication required to create documentation pages.")
+
         db = info.context.db
+        from app.modules.docs import service as docs_service
+        from app.modules.docs.schemas import PageCreate
 
-        from slugify import slugify
-        page_slug = slugify(title) or f"doc-{int(utcnow().timestamp())}"
-
-        page = DocPage(
-            space_id=space_id,
-            title=title,
-            slug=page_slug,
-            content=content,
-            created_by=author_id,
-            updated_by=author_id,
+        page_read = await docs_service.create_page(
+            db, user, space_id, PageCreate(title=title, content=content)
         )
-        db.add(page)
-        await db.commit()
-        await db.refresh(page)
         return DocPageType(
-            id=page.id,
-            space_id=page.space_id,
-            title=page.title,
-            slug=page.slug,
-            excerpt=page.excerpt,
-            content=page.content,
-            status=page.status,
-            created_at=page.created_at,
+            id=page_read.id,
+            space_id=page_read.space_id,
+            title=page_read.title,
+            slug=page_read.slug,
+            excerpt=page_read.excerpt,
+            content=page_read.content,
+            status=page_read.status,
+            created_at=page_read.created_at,
         )
 
     @strawberry.mutation
@@ -323,8 +380,19 @@ class Mutation:
         spec_json: str,
     ) -> DiagramResultType:
         user = info.context.current_user
-        author_id = user.user_id if user else UUID("00000000-0000-0000-0000-000000000000")
+        if not user:
+            raise UnauthorizedError("Authentication required to create diagram documents.")
+
         db = info.context.db
+        from app.modules.docs import service as docs_service
+        if not (
+            user.is_super_admin()
+            or await docs_service.can_access(db, user, "space", space_id, "edit")
+        ):
+            # check space visibility / permissions
+            space = await db.get(DocSpace, space_id)
+            if not space or not (space.visibility in {"workspace", "public"} and docs_service.has_global_docs_access(user, "edit")):
+                raise ForbiddenError("You do not have permission to create documents in this space.")
 
         try:
             spec = json.loads(spec_json)
@@ -342,8 +410,8 @@ class Mutation:
             title=title,
             slug=page_slug,
             content=doc_content,
-            created_by=author_id,
-            updated_by=author_id,
+            created_by=user.user_id,
+            updated_by=user.user_id,
         )
         db.add(page)
         await db.commit()
@@ -367,9 +435,12 @@ class Mutation:
         config_json: Optional[str] = None,
     ) -> AutomationRuleType:
         user = info.context.current_user
-        author_id = user.user_id if user else UUID("00000000-0000-0000-0000-000000000000")
-        db = info.context.db
+        if not user:
+            raise UnauthorizedError("Authentication required to create automation rules.")
+        if not (user.is_super_admin() or user.has_permission("automations.manage")):
+            raise ForbiddenError("You do not have permission to manage automation rules.")
 
+        db = info.context.db
         action_config = {}
         if config_json:
             try:
@@ -382,7 +453,7 @@ class Mutation:
             trigger_type=trigger_type,
             action_type=action_type,
             action_config=action_config,
-            created_by_user_id=author_id,
+            created_by_user_id=user.user_id,
             is_active=True,
         )
         db.add(rule)
@@ -405,7 +476,28 @@ class Mutation:
         phone_number: str,
         message: str,
     ) -> bool:
+        user = info.context.current_user
+        if not user:
+            raise UnauthorizedError("Authentication required to send WhatsApp messages.")
+        if not (
+            user.is_super_admin()
+            or user.has_permission("integrations.manage")
+            or user.has_permission("integrations.whatsapp")
+        ):
+            raise ForbiddenError("Permission denied: integrations.whatsapp or integrations.manage required.")
+
         return await whatsapp_service.send_whatsapp_text_message(phone_number, message)
 
 
-schema = strawberry.Schema(query=Query, mutation=Mutation)
+extensions = []
+if get_settings().is_production:
+    from graphql.validation import NoSchemaIntrospectionCustomRule
+    from strawberry.extensions import AddValidationRules
+
+    extensions.append(lambda: AddValidationRules([NoSchemaIntrospectionCustomRule]))
+
+schema = strawberry.Schema(
+    query=Query,
+    mutation=Mutation,
+    extensions=extensions,
+)

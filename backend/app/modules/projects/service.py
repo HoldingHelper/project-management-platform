@@ -15,6 +15,11 @@ from app.core.events import event_bus
 from app.core.current_user import CurrentUser
 from app.core.exceptions import BusinessRuleError, ForbiddenError, NotFoundError, ValidationAppError
 from app.core.permissions import Permissions
+from app.modules.collaboration.authorization import (
+    _can_view_all_projects,
+    _require_project_access,
+    _require_task_access,
+)
 from app.modules.projects import repository as repo
 from app.modules.projects.critical_path import (
     CpmEdge,
@@ -516,38 +521,33 @@ async def list_projects_by_product(
 
 
 async def list_all_projects(
-    db: AsyncSession, page: int, page_size: int
+    db: AsyncSession,
+    page: int,
+    page_size: int,
+    current_user: Optional[CurrentUser] = None,
 ) -> tuple[List[ProjectRead], int]:
+    user_id = None
+    if current_user is not None and not _can_view_all_projects(current_user):
+        user_id = current_user.user_id
     projects, total = await repo.list_all_projects(
-        db, (page - 1) * page_size, page_size
+        db, (page - 1) * page_size, page_size, user_id=user_id
     )
     return [ProjectRead.model_validate(p) for p in projects], total
 
 
-async def add_project_member(
-    db: AsyncSession, project_id: UUID, payload: ProjectMemberCreate
+async def require_project_manage_access(
+    db: AsyncSession, project_id: UUID, current_user: CurrentUser
 ) -> None:
-    project = await repo.get_project(db, project_id)
-    if project is None:
-        raise NotFoundError("Project", project_id)
-    existing_role = await repo.get_project_member_role(db, project_id, payload.user_id)
-    if existing_role is not None:
+    """Ensure caller has permission to mutate a project (C-4)."""
+    if current_user.is_super_admin() or current_user.has_permission(
+        Permissions.PROJECTS_MANAGE_ALL
+    ):
         return
-    await repo.add_project_member(
-        db,
-        ProjectMember(
-            project_id=project_id, user_id=payload.user_id, role=payload.role.value
-        ),
-    )
-    project = await repo.get_project(db, project_id)
-    await event_bus.publish(
-        ProjectMemberAdded(
-            project_id=project_id,
-            user_id=payload.user_id,
-            role=payload.role.value,
-            project_name=project.name if project else None,
-        )
-    )
+    if not current_user.has_permission(Permissions.PROJECTS_MANAGE_ASSIGNED):
+        raise ForbiddenError("You do not have permission to manage projects.")
+    role = await repo.get_project_member_role(db, project_id, current_user.user_id)
+    if role not in ("ProjectManager", "TeamLead"):
+        raise ForbiddenError("You are not an assigned manager for this project.")
 
 
 async def require_project_admin(
@@ -628,13 +628,21 @@ async def require_task_edit_access(
 
     Leads, managers and executives edit all task fields. Every assignee can
     edit a task once assigned, independent of their organisation role; before
-    assignment, a user may only add or remove themself from its assignee list.
+    assignment, a user may only add or remove themself from its assignee list
+    if they already have project access.
     """
     task = await repo.get_task(db, task_id)
     if task is None:
         raise NotFoundError("Task", task_id)
     if _can_manage_task_fields(current_user):
         return task
+
+    # Verify project access (C-4, H-11)
+    phase_id = getattr(task, "phase_id", None)
+    if phase_id is not None:
+        phase = await repo.get_phase(db, phase_id)
+        if phase is not None:
+            await _require_project_access(db, current_user, phase.project_id)
 
     current_assignees = {entry.user_id for entry in task.assignees}
     is_assigned = current_user.user_id in current_assignees
@@ -839,11 +847,20 @@ async def create_task(
         phase = await repo.get_phase(db, payload.phase_id)
         if phase is None:
             raise NotFoundError("Phase", payload.phase_id)
-    if (
-        payload.parent_task_id is not None
-        and await repo.get_task(db, payload.parent_task_id) is None
-    ):
-        raise NotFoundError("Task", payload.parent_task_id)
+        if current_user is not None:
+            await _require_project_access(db, current_user, phase.project_id)
+    if payload.parent_task_id is not None:
+        parent = await repo.get_task(db, payload.parent_task_id)
+        if parent is None:
+            raise NotFoundError("Task", payload.parent_task_id)
+        if payload.phase_id is not None and parent.phase_id != payload.phase_id:
+            parent_phase = await repo.get_phase(db, parent.phase_id) if parent.phase_id else None
+            phase = await repo.get_phase(db, payload.phase_id)
+            if parent_phase is None or phase is None or parent_phase.project_id != phase.project_id:
+                raise ValidationAppError(
+                    "Parent task must belong to the same project or sprint.",
+                    errors={"parent_task_id": ["Parent task must belong to the same project."]},
+                )
 
     # Contributors can create work, but ordinary assignment remains protected:
     # without the assignment capability they may only add themselves. Ticket
@@ -1150,9 +1167,21 @@ async def list_tasks(
     unattached: Optional[bool] = None,
     parent_task_id: Optional[UUID] = None,
     search: Optional[str] = None,
+    current_user: Optional[CurrentUser] = None,
     page: int = 1,
     page_size: int = 50,
 ) -> tuple[List[TaskRead], int]:
+    user_id = None
+    if current_user is not None and not (
+        current_user.is_super_admin()
+        or current_user.has_any_permission(
+            Permissions.TASKS_VIEW,
+            Permissions.TASKS_MANAGE_ALL,
+            Permissions.PROJECTS_VIEW_ALL,
+            Permissions.PROJECTS_MANAGE_ALL,
+        )
+    ):
+        user_id = current_user.user_id
     tasks, total = await repo.list_tasks(
         db,
         partition=partition,
@@ -1162,6 +1191,7 @@ async def list_tasks(
         unattached=unattached,
         parent_task_id=parent_task_id,
         search=search,
+        user_id=user_id,
         offset=(page - 1) * page_size,
         limit=page_size,
     )

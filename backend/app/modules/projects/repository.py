@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import List, Optional, Sequence, Tuple
 from uuid import UUID
 
-from sqlalchemy import func, select, update
+from sqlalchemy import func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -181,12 +181,27 @@ async def list_projects_by_product(
 
 
 async def list_all_projects(
-    db: AsyncSession, offset: int, limit: int
+    db: AsyncSession, offset: int, limit: int, user_id: Optional[UUID] = None
 ) -> Tuple[Sequence[Project], int]:
-    count_result = await db.execute(select(Project))
-    total = len(count_result.scalars().all())
+    stmt = select(Project)
+    if user_id is not None:
+        stmt = (
+            select(Project)
+            .outerjoin(Product, Project.product_id == Product.id)
+            .outerjoin(ProjectMember, Project.id == ProjectMember.project_id)
+            .where(
+                or_(
+                    ProjectMember.user_id == user_id,
+                    Product.owner_user_id == user_id,
+                )
+            )
+            .distinct()
+        )
+    total = (
+        await db.execute(select(func.count()).select_from(stmt.subquery()))
+    ).scalar_one()
     stmt = (
-        select(Project).order_by(Project.created_at.desc()).offset(offset).limit(limit)
+        stmt.order_by(Project.created_at.desc()).offset(offset).limit(limit)
     )
     result = await db.execute(stmt)
     return result.scalars().all(), total
@@ -299,11 +314,35 @@ async def list_tasks(
     unattached: Optional[bool] = None,
     parent_task_id: Optional[UUID] = None,
     search: Optional[str] = None,
+    user_id: Optional[UUID] = None,
     offset: int = 0,
     limit: int = 50,
 ) -> Tuple[Sequence[TaskItem], int]:
     """Org-wide task browser powering the standalone-task views."""
     stmt = select(TaskItem)
+    if user_id is not None:
+        user_project_ids = (
+            select(Project.id)
+            .outerjoin(Product, Project.product_id == Product.id)
+            .outerjoin(ProjectMember, Project.id == ProjectMember.project_id)
+            .where(
+                or_(
+                    ProjectMember.user_id == user_id,
+                    Product.owner_user_id == user_id,
+                )
+            )
+        )
+        user_phase_ids = select(Phase.id).where(Phase.project_id.in_(user_project_ids))
+        stmt = stmt.where(
+            or_(
+                TaskItem.phase_id.in_(user_phase_ids),
+                TaskItem.id.in_(
+                    select(TaskAssignee.task_id).where(TaskAssignee.user_id == user_id)
+                ),
+                TaskItem.reviewer_user_id == user_id,
+                TaskItem.ticket_requested_by_user_id == user_id,
+            )
+        )
     if partition:
         stmt = stmt.where(TaskItem.partition == partition)
     if parent_task_id is not None:
@@ -348,10 +387,11 @@ async def list_tasks(
 async def get_or_create_label(
     db: AsyncSession, name: str, color: str = "#6B7684"
 ) -> TaskLabel:
-    result = await db.execute(select(TaskLabel).where(TaskLabel.name == name))
+    clean_name = name.strip()[:50]
+    result = await db.execute(select(TaskLabel).where(TaskLabel.name == clean_name))
     label = result.scalar_one_or_none()
     if label is None:
-        label = TaskLabel(name=name, color=color)
+        label = TaskLabel(name=clean_name, color=color)
         db.add(label)
         await db.flush()
     return label

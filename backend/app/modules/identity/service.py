@@ -24,6 +24,7 @@ from app.core.security import (
     generate_opaque_token,
     hash_opaque_token,
     hash_password,
+    revoke_all_user_tokens,
     verify_password,
 )
 from app.modules.identity import repository as repo
@@ -254,8 +255,13 @@ async def login(
     password: str,
     ip_address: Optional[str] = None,
 ) -> TokenResponse:
+    from app.core.security import dummy_verify_password
+
     user = await repo.get_user_by_identifier(db, identifier.lower())
-    if user is None or not verify_password(password, user.password_hash):
+    if user is None:
+        dummy_verify_password(password)
+        raise UnauthorizedError("Invalid email or password.")
+    if not verify_password(password, user.password_hash):
         raise UnauthorizedError("Invalid email or password.")
     if not user.is_active:
         raise UnauthorizedError("This account has been deactivated.")
@@ -326,6 +332,17 @@ async def forgot_password(
     if user is None:
         # Do not reveal whether the email exists.
         return
+
+    # Invalidate prior unused reset tokens on new request (M-11)
+    await db.execute(
+        update(PasswordResetToken)
+        .where(
+            PasswordResetToken.user_id == user.id,
+            PasswordResetToken.used_at.is_(None),
+        )
+        .values(used_at=utcnow())
+    )
+
     raw_token = generate_opaque_token()
     reset_token = PasswordResetToken(
         user_id=user.id,
@@ -335,10 +352,12 @@ async def forgot_password(
     )
     db.add(reset_token)
     await db.commit()
+
+    reset_link = f"{settings.frontend_base_url}/reset-password?token={raw_token}"
     await sender.send(
         user.email,
         "Reset your Project Management Platform password",
-        f"Use this token to reset your password (valid 1 hour): {raw_token}",
+        f"Click the link below to reset your password (valid 1 hour):\n{reset_link}",
     )
 
 
@@ -359,6 +378,7 @@ async def reset_password(
     user.password_hash = hash_password(new_password)
     reset_token.used_at = utcnow()
     await repo.revoke_all_refresh_tokens_for_user(db, user.id)
+    await revoke_all_user_tokens(user.id)
     await db.commit()
 
 
@@ -444,6 +464,20 @@ async def assign_roles(
     if user is None:
         raise NotFoundError("User", user_id)
 
+    # Prevent stripping SuperAdmin from the last active SuperAdmin (M-15)
+    if "SuperAdmin" in _roles_for(user) and not any(r.strip().lower() == "superadmin" for r in role_names):
+        remaining_super_admins = (
+            await db.execute(
+                select(func.count())
+                .select_from(UserRole)
+                .join(Role, UserRole.role_id == Role.id)
+                .join(User, UserRole.user_id == User.id)
+                .where(Role.name == "SuperAdmin", UserRole.user_id != user_id, User.is_active.is_(True))
+            )
+        ).scalar_one()
+        if remaining_super_admins == 0:
+            raise ConflictError("Cannot remove the SuperAdmin role from the last active SuperAdmin.")
+
     for existing_role in list(user.roles):
         await db.delete(existing_role)
     await db.flush()
@@ -455,6 +489,9 @@ async def assign_roles(
         db.add(UserRole(user_id=user.id, role_id=role.id))
 
     await db.commit()
+    from app.core.security import revoke_all_user_tokens
+    revoke_all_user_tokens(user.id)
+
     user = await repo.get_user_by_id(db, user.id)
     if user is None:  # pragma: no cover - defensive after successful commit
         raise NotFoundError("User", user_id)
@@ -500,11 +537,12 @@ async def delete_user(db: AsyncSession, *, user_id: UUID, acting_user_id: UUID) 
                 select(func.count())
                 .select_from(UserRole)
                 .join(Role, UserRole.role_id == Role.id)
-                .where(Role.name == "SuperAdmin", UserRole.user_id != user_id)
+                .join(User, UserRole.user_id == User.id)
+                .where(Role.name == "SuperAdmin", UserRole.user_id != user_id, User.is_active.is_(True))
             )
         ).scalar_one()
         if remaining_super_admins == 0:
-            raise ConflictError("The last SuperAdmin account cannot be deleted.")
+            raise ConflictError("The last active SuperAdmin account cannot be deleted.")
 
     # Remove the user's active operational assignments. Authored messages,
     # comments, and audit records retain the UUID as historical evidence.
@@ -641,8 +679,12 @@ async def create_invitation(
         f"Accept here (valid 7 days): {link}",
     )
     read = await _invitation_to_read(db, invitation)
-    read.invite_token = raw_token
-    read.invite_url = link
+    if not settings.is_production:
+        read.invite_token = raw_token
+        read.invite_url = link
+    else:
+        read.invite_token = None
+        read.invite_url = None
     return read
 
 
@@ -741,7 +783,12 @@ async def update_profile(db: AsyncSession, user_id: UUID, **fields) -> UserRead:
 
 
 async def change_email(
-    db: AsyncSession, user_id: UUID, *, new_email: str, current_password: str
+    db: AsyncSession,
+    user_id: UUID,
+    *,
+    new_email: str,
+    current_password: str,
+    sender: EmailSender = email_sender,
 ) -> UserRead:
     user = await repo.get_user_by_id(db, user_id)
     if user is None:
@@ -752,9 +799,24 @@ async def change_email(
     existing = await repo.get_user_by_email(db, new_email)
     if existing is not None and existing.id != user_id:
         raise ConflictError(f"A user with email '{new_email}' already exists.")
+    old_email = user.email
     user.email = new_email
+    await repo.revoke_all_refresh_tokens_for_user(db, user_id)
+    await revoke_all_user_tokens(user_id)
     await db.commit()
     await db.refresh(user, attribute_names=["roles"])
+
+    # Notify old address of email change (M-12)
+    try:
+        await sender.send(
+            old_email,
+            "Security Alert: Your email address was changed",
+            f"Your Project Management Platform account email was changed to {new_email}. "
+            "If you did not request this change, please contact your administrator immediately.",
+        )
+    except Exception:
+        pass
+
     return to_user_read(user)
 
 
@@ -768,6 +830,7 @@ async def change_password(
         raise UnauthorizedError("Current password is incorrect.")
     user.password_hash = hash_password(new_password)
     await repo.revoke_all_refresh_tokens_for_user(db, user_id)
+    await revoke_all_user_tokens(user_id)
     await db.commit()
 
 
@@ -998,7 +1061,22 @@ async def admin_update_user(
     if bio is not None:
         user.bio = bio.strip() or None
     if is_active is not None:
+        if is_active is False and "SuperAdmin" in _roles_for(user):
+            remaining_super_admins = (
+                await db.execute(
+                    select(func.count())
+                    .select_from(UserRole)
+                    .join(Role, UserRole.role_id == Role.id)
+                    .join(User, UserRole.user_id == User.id)
+                    .where(Role.name == "SuperAdmin", UserRole.user_id != user_id, User.is_active.is_(True))
+                )
+            ).scalar_one()
+            if remaining_super_admins == 0:
+                raise ConflictError("The last active SuperAdmin account cannot be deactivated.")
         user.is_active = is_active
+        if is_active is False:
+            from app.core.security import revoke_all_user_tokens
+            revoke_all_user_tokens(user.id)
 
     if department_id is not None or team_id is not None or manager_id is not None or job_title is not None:
         from app.modules.organization.models import Employee
@@ -1028,13 +1106,31 @@ async def admin_update_user(
             emp.job_title = job_title
 
     if role_names is not None:
-        roles = []
+        if "SuperAdmin" in _roles_for(user) and not any(r.strip().lower() == "superadmin" for r in role_names):
+            remaining_super_admins = (
+                await db.execute(
+                    select(func.count())
+                    .select_from(UserRole)
+                    .join(Role, UserRole.role_id == Role.id)
+                    .join(User, UserRole.user_id == User.id)
+                    .where(Role.name == "SuperAdmin", UserRole.user_id != user_id, User.is_active.is_(True))
+                )
+            ).scalar_one()
+            if remaining_super_admins == 0:
+                raise ConflictError("Cannot remove the SuperAdmin role from the last active SuperAdmin.")
+
+        for existing_role in list(user.roles):
+            await db.delete(existing_role)
+        await db.flush()
+
         for name in role_names:
             role = await repo.get_role_by_name(db, name)
             if role is None:
                 raise NotFoundError("Role", name)
-            roles.append(role)
-        await repo.set_user_roles(db, user, roles)
+            db.add(UserRole(user_id=user.id, role_id=role.id))
+
+        from app.core.security import revoke_all_user_tokens
+        revoke_all_user_tokens(user.id)
 
     await db.commit()
     user = await repo.get_user_by_id(db, user_id)

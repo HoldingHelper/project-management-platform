@@ -187,7 +187,7 @@ export function WorkspaceMap() {
                       <div className="hero-task-name">{task.title}</div>
                       <div className="hero-task-meta">
                         <span className={`priority-tag ${task.priority.toLowerCase()}`}>{task.priority}</span>
-                        <span className="click-advance-hint">Click $\rightarrow$ In Progress</span>
+                        <span className="click-advance-hint">Click → In Progress</span>
                       </div>
                     </div>
                   ))}
@@ -212,7 +212,7 @@ export function WorkspaceMap() {
                       <div className="hero-task-name">{task.title}</div>
                       <div className="hero-task-meta">
                         <span className={`priority-tag ${task.priority.toLowerCase()}`}>{task.priority}</span>
-                        <span className="click-advance-hint">Click $\rightarrow$ Done</span>
+                        <span className="click-advance-hint">Click → Done</span>
                       </div>
                     </div>
                   ))}
@@ -395,7 +395,7 @@ export function WorkspaceMap() {
         </div>
         <div className="foot-metric">
           <span className="metric-label">Security</span>
-          <span className="metric-val">SOC2 Type II / RBAC</span>
+          <span className="metric-val">Enterprise RBAC & Audit</span>
         </div>
         <div className="foot-interactive-tip">
           <span>✨ Click any tab or task card to interact live</span>

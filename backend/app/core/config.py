@@ -1,7 +1,7 @@
 """Application configuration, loaded from environment variables / .env file."""
 
 from functools import lru_cache
-from typing import List, Self
+from typing import List, Optional, Self
 
 from pydantic import AliasChoices, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -62,10 +62,8 @@ class Settings(BaseSettings):
     # Fernet key for encrypting stored Google refresh tokens at rest.
     # Generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
     music_token_encryption_key: str = ""
-    # Signed stream-URL lifetime. Browsers re-request audio via Range as the
-    # buffer drains, so this must outlive a full listening session — a short
-    # TTL kills playback mid-track on long songs / pause+resume.
-    music_stream_token_ttl_seconds: int = 21600
+    # Signed stream-URL lifetime. Reduced to 10 minutes (600s) for security.
+    music_stream_token_ttl_seconds: int = 600
     # Server-side byte cache for Drive tracks (MinIO). One Drive fetch per
     # track for the whole room instead of one per listener.
     music_cache_enabled: bool = True
@@ -81,11 +79,13 @@ class Settings(BaseSettings):
     # Telegram Bot Integration
     telegram_bot_token: str = ""
     telegram_bot_username: str = "YourConfiguredBot"
+    telegram_webhook_secret: str = ""
 
     # WhatsApp Cloud API & Bot Integration
     whatsapp_api_token: str = ""
     whatsapp_phone_number_id: str = ""
     whatsapp_verify_token: str = ""
+    whatsapp_app_secret: str = ""
 
     # S3 / MinIO
     s3_endpoint_url: str = "http://localhost:9000"
@@ -100,6 +100,13 @@ class Settings(BaseSettings):
 
     # Frontend base URL used in emailed links (invitations, password reset).
     frontend_base_url: str = "http://localhost:3000"
+
+    # Email / SMTP delivery (M-14)
+    smtp_host: Optional[str] = None
+    smtp_port: int = 587
+    smtp_user: Optional[str] = None
+    smtp_password: Optional[str] = None
+    smtp_from: str = "noreply@pmp.example.com"
 
     # Rate limiting (login brute-force mitigation)
     auth_rate_limit_per_minute: int = 10

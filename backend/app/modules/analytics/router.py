@@ -181,10 +181,25 @@ async def global_search(
     from app.modules.projects.service import list_all_projects as _projects
     from app.modules.projects.service import list_tasks as _tasks
 
-    tasks, _total = await _tasks(db, search=q, page=1, page_size=10)
-    projects, _t2 = await _projects(db, page=1, page_size=200)
+    tasks, _total = await _tasks(
+        db, search=q, page=1, page_size=10, current_user=current_user
+    )
+    projects, _t2 = await _projects(
+        db, page=1, page_size=200, current_user=current_user
+    )
     users, _t3 = await list_users_service(db, search=q, page=1, page_size=10)
     ql = q.lower()
+
+    can_see_emails = current_user.is_super_admin() or current_user.has_any_permission(
+        Permissions.MANAGE_USERS, Permissions.USERS_VIEW
+    )
+    users_list = []
+    for u in users:
+        u_data = {"id": str(u.id), "name": u.full_name}
+        if can_see_emails:
+            u_data["email"] = u.email
+        users_list.append(u_data)
+
     return {
         "tasks": [
             {"id": str(t.id), "title": t.title, "status": t.status} for t in tasks
@@ -194,9 +209,7 @@ async def global_search(
             for p in projects
             if ql in p.name.lower()
         ][:10],
-        "users": [
-            {"id": str(u.id), "name": u.full_name, "email": u.email} for u in users
-        ],
+        "users": users_list,
     }
 
 

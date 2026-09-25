@@ -187,9 +187,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 app = FastAPI(
     title=settings.app_name,
     version="1.0.0",
-    docs_url="/docs",
-    redoc_url="/redoc",
-    openapi_url=f"{settings.api_v1_prefix}/openapi.json",
+    docs_url=None if settings.is_production else "/docs",
+    redoc_url=None if settings.is_production else "/redoc",
+    openapi_url=None if settings.is_production else f"{settings.api_v1_prefix}/openapi.json",
     lifespan=lifespan,
 )
 
@@ -206,9 +206,17 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-    expose_headers=["X-Correlation-Id"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=[
+        "Authorization",
+        "Content-Type",
+        "X-Correlation-Id",
+        "X-Hub-Signature-256",
+        "X-Telegram-Bot-Api-Secret-Token",
+        "Range",
+        "Accept",
+    ],
+    expose_headers=["X-Correlation-Id", "Content-Range", "Accept-Ranges"],
 )
 
 
@@ -259,7 +267,7 @@ for module_router in _MODULE_ROUTERS:
 graphql_app = GraphQLRouter(
     schema=graphql_schema,
     context_getter=get_graphql_context,
-    graphql_ide="graphiql",
+    graphql_ide=None if settings.is_production else "graphiql",
 )
 app.include_router(graphql_app, prefix="/graphql", tags=["GraphQL"])
 app.include_router(graphql_app, prefix=f"{settings.api_v1_prefix}/graphql", tags=["GraphQL"])
@@ -271,9 +279,24 @@ async def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+@app.get("/ready", tags=["Infra"], include_in_schema=False)
+async def ready() -> dict[str, Any]:
+    """Readiness probe checking database and cache health (E-11)."""
+    from sqlalchemy import text
+    async with AsyncSessionLocal() as db:
+        await db.execute(text("SELECT 1"))
+    if settings.realtime_backplane_enabled:
+        with contextlib.suppress(Exception):
+            await get_redis().ping()
+    return {"status": "ready"}
+
+
 @app.get("/", tags=["Infra"], include_in_schema=False)
 async def root() -> dict[str, str]:
-    return {"service": settings.app_name, "docs": "/docs"}
+    info = {"service": settings.app_name}
+    if not settings.is_production:
+        info["docs"] = "/docs"
+    return info
 
 
 @app.websocket("/ws")
@@ -285,6 +308,11 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
     Clients may join/leave broadcast groups by sending
     `{"action": "join"|"leave", "group": "<name>"}`.
     """
+    import time
+    from uuid import UUID as _UUID
+    from app.core.security import is_token_revoked
+    from app.core.current_user import CurrentUser
+
     raw_token = websocket.query_params.get("access_token")
     if not raw_token:
         await websocket.close(code=4401)
@@ -293,28 +321,68 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
         payload = decode_token(raw_token)
         if payload.get("type") != TOKEN_TYPE_ACCESS:
             raise ValueError("not an access token")
-        from uuid import UUID
+        exp = payload.get("exp")
+        if exp and time.time() >= exp:
+            await websocket.close(code=4401)
+            return
 
-        user_id = UUID(payload["sub"])
+        jti = payload.get("jti")
+        sub = payload.get("sub", "")
+        iat = payload.get("iat")
+        if await is_token_revoked(jti, sub, iat):
+            await websocket.close(code=4401)
+            return
+
+        user_id = _UUID(sub)
+        current_user = CurrentUser(
+            user_id=user_id,
+            email=payload.get("email", ""),
+            full_name=payload.get("name", ""),
+            roles=payload.get("roles", []),
+            permissions=payload.get("permissions", []),
+            allow_role_bypass=payload.get("allow_role_bypass", True),
+        )
     except Exception:  # noqa: BLE001 - any decode/shape failure => unauthorized
         await websocket.close(code=4401)
         return
 
     await connection_manager.connect(websocket, user_id)
+    joined_groups: set[str] = set()
+    MAX_GROUPS_PER_SOCKET = 50
+
     try:
         while True:
-            message = await websocket.receive_json()
+            # Check token expiration on each frame (H-1)
+            if exp and time.time() >= exp:
+                await websocket.close(code=4401)
+                break
+            if await is_token_revoked(jti, sub, iat):
+                await websocket.close(code=4401)
+                break
+
+            try:
+                message = await websocket.receive_json()
+            except WebSocketDisconnect:
+                break
+            except Exception:
+                # Malformed frame or unexpected error; do not crash
+                continue
+
             action = message.get("action")
-            group = message.get("group")
-            if action == "join" and group:
-                # Chat and music groups are membership-gated; everything else
-                # is broadcast-only UI state (kanban refresh, presence,
-                # music-lobby metadata).
-                if group.startswith(("chat:", "music:")):
-                    from uuid import UUID as _UUID
+            group = str(message.get("group") or "").strip()
+            if not group or len(group) > 128:
+                continue
 
+            if action == "join":
+                if len(joined_groups) >= MAX_GROUPS_PER_SOCKET:
+                    continue
+
+                # Group join authorization check (H-1)
+                is_authorized = False
+                if group == "presence":
+                    is_authorized = True
+                elif group.startswith(("chat:", "music:")):
                     from app.core.database import AsyncSessionLocal
-
                     if group.startswith("chat:"):
                         from app.modules.chat.service import is_member
                     else:
@@ -325,10 +393,40 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
                     except ValueError:
                         continue
                     async with AsyncSessionLocal() as db:
-                        if not await is_member(db, channel_id, user_id):
-                            continue
-                connection_manager.join_group(websocket, group)
+                        if await is_member(db, channel_id, user_id):
+                            is_authorized = True
+                elif group.startswith(("project:", "project-")):
+                    from app.core.database import AsyncSessionLocal
+                    from app.modules.collaboration.authorization import _require_project_access
+                    sep = ":" if ":" in group else "-"
+                    try:
+                        proj_id = _UUID(group.split(sep, 1)[1])
+                        async with AsyncSessionLocal() as db:
+                            await _require_project_access(db, current_user, proj_id)
+                            is_authorized = True
+                    except Exception:
+                        is_authorized = False
+                elif group.startswith(("task:", "task-")):
+                    from app.core.database import AsyncSessionLocal
+                    from app.modules.collaboration.authorization import _require_task_access
+                    sep = ":" if ":" in group else "-"
+                    try:
+                        t_id = _UUID(group.split(sep, 1)[1])
+                        async with AsyncSessionLocal() as db:
+                            await _require_task_access(db, current_user, t_id)
+                            is_authorized = True
+                    except Exception:
+                        is_authorized = False
+
+                if is_authorized:
+                    connection_manager.join_group(websocket, group)
+                    joined_groups.add(group)
+
             elif action == "leave" and group:
                 connection_manager.leave_group(websocket, group)
+                joined_groups.discard(group)
+
     except WebSocketDisconnect:
+        pass
+    finally:
         connection_manager.disconnect(websocket, user_id)

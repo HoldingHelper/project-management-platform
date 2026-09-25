@@ -67,7 +67,12 @@ async def public_navigation(db: AsyncSession) -> Sequence[tuple[DocSpace, DocPag
 
 
 async def public_search(db: AsyncSession, query: str, limit: int = 20) -> Sequence[tuple[DocSpace, DocPage]]:
-    needle = f"%{query.strip()}%"
+    stripped = query.strip()
+    non_wildcard = stripped.replace("%", "").replace("_", "").replace("\\", "").strip()
+    if len(non_wildcard) < 2:
+        return []
+    escaped = stripped.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    needle = f"%{escaped}%"
     result = await db.execute(
         select(DocSpace, DocPage)
         .join(DocPage, DocPage.space_id == DocSpace.id)

@@ -14,13 +14,16 @@ from fastapi.security import OAuth2PasswordBearer
 from app.core.current_user import CurrentUser
 from app.core.exceptions import ForbiddenError, UnauthorizedError
 from app.core.request_context import current_user_id_var
-from app.core.security import TOKEN_TYPE_ACCESS, decode_token
+from app.core.security import TOKEN_TYPE_ACCESS, decode_token, is_token_revoked
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login", auto_error=False)
 
 
 def _extract_token_from_websocket(request: Request) -> str | None:
-    return request.query_params.get("access_token")
+    # Restrict query param access token strictly to WebSocket handshake paths (H-7)
+    if request.url.path.startswith("/ws"):
+        return request.query_params.get("access_token")
+    return None
 
 
 async def get_current_user(
@@ -38,6 +41,13 @@ async def get_current_user(
 
     if payload.get("type") != TOKEN_TYPE_ACCESS:
         raise UnauthorizedError("Token is not an access token.")
+
+    # Check token revocation (H-8)
+    jti = payload.get("jti")
+    sub = payload.get("sub", "")
+    iat = payload.get("iat")
+    if await is_token_revoked(jti, sub, iat):
+        raise UnauthorizedError("Access token has been revoked.")
 
     user = CurrentUser(
         user_id=UUID(payload["sub"]),

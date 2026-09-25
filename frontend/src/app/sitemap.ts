@@ -3,4 +3,49 @@ import { DOC_CATEGORIES, PUBLIC_DOCS } from "@/lib/docs/content";
 import { getPublishedNavigation } from "@/lib/docs/server";
 
 export const dynamic = "force-static";
-export default async function sitemap():Promise<MetadataRoute.Sitemap>{const base=process.env.NEXT_PUBLIC_SITE_URL??"http://localhost:3000";const staticRoutes=["","/product","/features","/docs","/tutorials","/resources","/about","/login"];const published=await getPublishedNavigation();const localKeys=new Set(PUBLIC_DOCS.map(doc=>`${doc.category}/${doc.slug}`));const remotePages=published.flatMap(category=>category.pages.filter(page=>!localKeys.has(`${category.slug}/${page.slug}`)).map(page=>({category:category.slug,slug:page.slug})));const categorySlugs=new Set([...DOC_CATEGORIES.map(item=>item.slug),...published.map(item=>item.slug)]);return [...staticRoutes.map(route=>({url:`${base}${route}`,changeFrequency:"weekly" as const,priority:route===""?1:0.7})),...Array.from(categorySlugs).map(category=>({url:`${base}/docs/${category}`,changeFrequency:"weekly" as const,priority:0.65})),...[...PUBLIC_DOCS,...remotePages].map(doc=>({url:`${base}/docs/${doc.category}/${doc.slug}`,changeFrequency:"monthly" as const,priority:0.6}))]}
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const base =
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    "https://pmp-frontend-706796253833.europe-west1.run.app";
+  const staticRoutes = [
+    "",
+    "/product",
+    "/features",
+    "/docs",
+    "/tutorials",
+    "/resources",
+    "/about",
+    "/login",
+    "/privacy",
+    "/terms",
+  ];
+  const published = await getPublishedNavigation();
+  const localKeys = new Set(PUBLIC_DOCS.map((doc) => `${doc.category}/${doc.slug}`));
+  const remotePages = published.flatMap((category) =>
+    category.pages
+      .filter((page) => !localKeys.has(`${category.slug}/${page.slug}`))
+      .map((page) => ({ category: category.slug, slug: page.slug }))
+  );
+  const categorySlugs = new Set([
+    ...DOC_CATEGORIES.map((item) => item.slug),
+    ...published.map((item) => item.slug),
+  ]);
+  return [
+    ...staticRoutes.map((route) => ({
+      url: `${base}${route}`,
+      changeFrequency: "weekly" as const,
+      priority: route === "" ? 1 : 0.7,
+    })),
+    ...Array.from(categorySlugs).map((category) => ({
+      url: `${base}/docs/${category}`,
+      changeFrequency: "weekly" as const,
+      priority: 0.65,
+    })),
+    ...[...PUBLIC_DOCS, ...remotePages].map((doc) => ({
+      url: `${base}/docs/${doc.category}/${doc.slug}`,
+      changeFrequency: "monthly" as const,
+      priority: 0.6,
+    })),
+  ];
+}

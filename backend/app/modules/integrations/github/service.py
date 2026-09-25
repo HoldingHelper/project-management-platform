@@ -33,12 +33,11 @@ TASK_ID_REGEX = re.compile(
 
 
 def verify_github_signature(payload_bytes: bytes, signature_header: Optional[str]) -> bool:
-    """Verify GitHub HMAC-SHA256 signature."""
+    """Verify GitHub HMAC-SHA256 signature (H-5)."""
     settings = get_settings()
     secret = settings.github_webhook_secret
     if not secret:
-        # If secret not configured on dev server, accept with warning
-        return True
+        return False
 
     if not signature_header or not signature_header.startswith("sha256="):
         return False

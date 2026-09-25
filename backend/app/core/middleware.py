@@ -18,7 +18,16 @@ logger = structlog.get_logger(__name__)
 
 class CorrelationIdMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next) -> Response:
-        correlation_id = request.headers.get("X-Correlation-Id", str(uuid.uuid4()))
+        raw_cid = request.headers.get("X-Correlation-Id")
+        if raw_cid:
+            try:
+                # Sanitize: require valid UUID to prevent log injection / header manipulation (M-8)
+                correlation_id = str(uuid.UUID(raw_cid.strip()))
+            except (ValueError, AttributeError):
+                correlation_id = str(uuid.uuid4())
+        else:
+            correlation_id = str(uuid.uuid4())
+
         request.state.correlation_id = correlation_id
         structlog.contextvars.bind_contextvars(correlation_id=correlation_id)
         correlation_id_var.set(correlation_id)
@@ -40,5 +49,15 @@ class CorrelationIdMiddleware(BaseHTTPMiddleware):
             duration_ms=duration_ms,
         )
         response.headers["X-Correlation-Id"] = correlation_id
+
+        # Security Headers (M-3)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "SAMEORIGIN"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+        from app.core.config import get_settings
+        if get_settings().is_production:
+            response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload"
+
         structlog.contextvars.unbind_contextvars("correlation_id")
         return response

@@ -14,7 +14,7 @@ from app.core.storage import file_storage_service
 from app.modules.docs import repository as repo
 from app.modules.docs.models import DocAttachment, DocComment, DocLink, DocPage, DocPageTag, DocPermission, DocRevision, DocSpace, DocTag
 from app.modules.docs.relations import list_backlinks, resolve_stubs_for_new_page, sync_page_relations, wikilink_suggestions
-from app.modules.docs.schemas import AttachmentCreate, AttachmentRead, CommentCreate, CommentRead, EntityDocLinkRead, LinkCreate, LinkRead, PageCreate, PageMove, PageRead, PageSummary, PageUpdate, PermissionGrant, PermissionRead, RelationRead, RevisionRead, SearchResult, SpaceCreate, SpaceRead, SpaceUpdate, TagRead
+from app.modules.docs.schemas import AttachmentCreate, AttachmentRead, CommentCreate, CommentRead, EntityDocLinkRead, LinkCreate, LinkRead, PageCreate, PageMove, PageRead, PageSummary, PageUpdate, PermissionGrant, PermissionRead, PublicPageRead, RelationRead, RevisionRead, SearchResult, SpaceCreate, SpaceRead, SpaceUpdate, TagRead
 from app.shared.base_model import utcnow
 
 
@@ -46,7 +46,7 @@ async def _unique_page_slug(db: AsyncSession, space_id: UUID, title: str, curren
 
 
 def has_global_docs_access(user: CurrentUser, action: str) -> bool:
-    if user.is_super_admin():
+    if user.is_super_admin() or user.has_permission("*"):
         return True
     code = {
         "view": "docs.view",
@@ -59,7 +59,7 @@ def has_global_docs_access(user: CurrentUser, action: str) -> bool:
 
 
 async def can_access(db: AsyncSession, user: CurrentUser, resource_type: str, resource_id: UUID, action: str) -> bool:
-    if user.is_super_admin() or user.has_permission("docs.manage"):
+    if user.is_super_admin() or user.has_permission("docs.manage") or user.has_permission("*"):
         return True
 
     # Responsible user or creator has full access to the resource
@@ -98,8 +98,10 @@ async def _page_visible(db: AsyncSession, user: CurrentUser, page: DocPage, spac
     if page.created_by == user.user_id or page.responsible_user_id == user.user_id:
         return True
     visibility = space.visibility if page.visibility == "inherit" else page.visibility
-    if visibility in {"public", "workspace"}:
+    if visibility == "public":
         return True
+    if visibility == "workspace":
+        return has_global_docs_access(user, "view")
     if visibility == "private":
         return False
     if visibility == "admins":
@@ -150,7 +152,13 @@ async def update_space(db: AsyncSession, user: CurrentUser, space_id: UUID, payl
 
 async def list_spaces(db: AsyncSession, user: CurrentUser, category: str | None = None) -> list[SpaceRead]:
     spaces = await repo.list_spaces(db, category=category)
-    visible = [s for s in spaces if s.visibility in {"public", "workspace"} or s.responsible_user_id == user.user_id or await can_access(db, user, "space", s.id, "view")]
+    visible = [
+        s for s in spaces
+        if s.visibility == "public"
+        or (s.visibility == "workspace" and has_global_docs_access(user, "view"))
+        or s.responsible_user_id == user.user_id
+        or await can_access(db, user, "space", s.id, "view")
+    ]
     return [SpaceRead.model_validate(s) for s in visible]
 
 
@@ -234,11 +242,16 @@ async def update_page(db: AsyncSession, user: CurrentUser, page_id: UUID, payloa
     changes = payload.model_dump(exclude_unset=True)
     requested_visibility = changes.get("visibility")
     if requested_visibility == "public":
-        if not (page.created_by == user.user_id or has_global_docs_access(user, "publish")):
-            raise ForbiddenError("Only the creator or a documentation publisher can make this page public.")
+        if not (user.is_super_admin() or has_global_docs_access(user, "publish") or await can_access(db, user, "page", page.id, "manage")):
+            raise ForbiddenError("Only a documentation publisher or manager can make this page public.")
         page.status = "published"
     elif requested_visibility is not None and page.status == "published":
         page.status = "internal"
+
+    if "responsible_user_id" in changes and changes["responsible_user_id"] != page.responsible_user_id:
+        if not (user.is_super_admin() or user.has_permission("docs.manage") or await can_access(db, user, "page", page.id, "manage") or (page.responsible_user_id == user.user_id)):
+            raise ForbiddenError("Only the current page owner or documentation manager can reassign page responsibility.")
+
     if "parent_page_id" in changes and changes["parent_page_id"]:
         parent = await repo.get_page(db, changes["parent_page_id"])
         if not parent or parent.space_id != page.space_id or parent.id == page.id:
@@ -459,8 +472,8 @@ async def set_published(db: AsyncSession, user: CurrentUser, page_id: UUID, publ
     page = await repo.get_page(db, page_id)
     if not page:
         raise NotFoundError("Documentation page", page_id)
-    if not (page.created_by == user.user_id or has_global_docs_access(user, "publish")):
-        raise ForbiddenError("Only the creator or a documentation publisher can publish this page.")
+    if not (user.is_super_admin() or has_global_docs_access(user, "publish")):
+        raise ForbiddenError("Only a documentation publisher can publish or unpublish this page.")
     if not await _page_editable(db, user, page):
         raise ForbiddenError("You do not have permission to publish this page.")
     page.status = "published" if published else "internal"
@@ -478,28 +491,39 @@ async def public_navigation(db: AsyncSession) -> list[dict]:
     return list(grouped.values())
 
 
-async def get_public_page(db: AsyncSession, space_slug: str, page_slug: str) -> PageRead:
+async def get_public_page(db: AsyncSession, space_slug: str, page_slug: str) -> PublicPageRead:
     space = await repo.get_space_by_slug(db, space_slug)
     if not space:
         raise NotFoundError("Documentation page", page_slug)
     page = await repo.get_page_by_slug(db, space.id, page_slug)
     if not page or page.status != "published" or (space.visibility != "public" and page.visibility != "public"):
         raise NotFoundError("Documentation page", page_slug)
-    return PageRead.model_validate(page)
+    return PublicPageRead.model_validate(page)
 
 
-async def get_public_page_by_id(db: AsyncSession, page_id: UUID) -> PageRead:
+async def get_public_page_by_id(db: AsyncSession, page_id: UUID) -> PublicPageRead:
     page = await repo.get_page(db, page_id)
     space = await repo.get_space(db, page.space_id) if page else None
     if not page or not space or page.status != "published" or (space.visibility != "public" and page.visibility != "public"):
         raise NotFoundError("Documentation page", page_id)
-    return PageRead.model_validate(page)
+    return PublicPageRead.model_validate(page)
 
 
 async def search_public(db: AsyncSession, query: str) -> list[SearchResult]:
-    if len(query.strip()) < 2:
+    clean = query.strip().replace("%", "").replace("_", "").replace("\\", "").strip()
+    if len(clean) < 2:
         return []
-    return [SearchResult(page_id=p.id, space_slug=s.slug, page_slug=p.slug, title=p.title, excerpt=p.excerpt, matched_in="title" if query.lower() in p.title.lower() else "content") for s, p in await repo.public_search(db, query)]
+    return [
+        SearchResult(
+            page_id=p.id,
+            space_slug=s.slug,
+            page_slug=p.slug,
+            title=p.title,
+            excerpt=p.excerpt,
+            matched_in="title" if clean.lower() in p.title.lower() else "content",
+        )
+        for s, p in await repo.public_search(db, query)
+    ]
 
 
 async def replace_permissions(db: AsyncSession, user: CurrentUser, resource_type: str, resource_id: UUID, grants: list[PermissionGrant]) -> None:

@@ -35,8 +35,9 @@ logger = structlog.get_logger(__name__)
 
 
 def generate_calendar_auth_url(user_id: UUID) -> str:
-    """Return Google OAuth consent URL with state identifying the user."""
-    state = str(user_id)
+    """Return Google OAuth consent URL with random CSRF state (H-10)."""
+    from app.core.security import create_oauth_state_sync
+    state = create_oauth_state_sync(user_id, "calendar")
     return get_calendar_auth_url(state)
 
 
@@ -56,9 +57,15 @@ async def get_calendar_status(
 
 
 async def connect_calendar(
-    db: AsyncSession, user_id: UUID, code: str
+    db: AsyncSession, user_id: UUID, code: str, state: Optional[str] = None
 ) -> CalendarConnectionStatus:
     """Complete OAuth handshake, encrypt refresh token, and run initial sync."""
+    if state is not None:
+        from app.core.exceptions import UnauthorizedError
+        from app.core.security import verify_oauth_state
+        if not await verify_oauth_state(user_id, "calendar", state):
+            raise UnauthorizedError("Invalid or expired OAuth state parameter.")
+
     token_data = await exchange_calendar_code(code)
     refresh_token = token_data["refresh_token"]
     google_email = token_data.get("email")

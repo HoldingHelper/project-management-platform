@@ -47,9 +47,37 @@ async def whatsapp_incoming_webhook(
     request: Request,
     db: AsyncSession = Depends(get_db),
 ) -> Dict[str, str]:
-    """Receive and respond to incoming WhatsApp messages."""
+    """Receive and respond to incoming WhatsApp messages with HMAC-SHA256 signature verification (H-5)."""
+    import hashlib
+    import hmac
+
+    settings = get_settings()
+    raw_body = await request.body()
+    signature_header = request.headers.get("X-Hub-Signature-256")
+
+    if settings.whatsapp_app_secret:
+        if not signature_header or not signature_header.startswith("sha256="):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Missing or invalid WhatsApp signature header.",
+            )
+        expected = hmac.new(
+            settings.whatsapp_app_secret.encode("utf-8"), raw_body, hashlib.sha256
+        ).hexdigest()
+        received = signature_header[len("sha256=") :]
+        if not hmac.compare_digest(expected, received):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Invalid WhatsApp webhook signature.",
+            )
+    elif settings.is_production:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="WhatsApp app secret not configured in production.",
+        )
+
     try:
-        body = await request.json()
+        body = json.loads(raw_body.decode("utf-8"))
     except Exception:
         return {"status": "ignored"}
 

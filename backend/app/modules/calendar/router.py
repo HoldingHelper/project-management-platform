@@ -45,7 +45,7 @@ async def connect_calendar(
 ) -> CalendarConnectionStatus:
     """Exchange authorization code and link Google Calendar."""
     return await service.connect_calendar(
-        db, user_id=current_user.user_id, code=payload.code
+        db, user_id=current_user.user_id, code=payload.code, state=payload.state
     )
 
 

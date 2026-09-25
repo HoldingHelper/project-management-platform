@@ -235,6 +235,9 @@ async def get_presence_snapshot(
     return connection_manager.presence_snapshot()
 
 
+SAFE_DEPARTMENT_ROLES = {"Developer", "QA", "UIUX", "TeamLead", "Guest", "Client"}
+
+
 @users_router.post(
     "/invitations",
     response_model=InvitationRead,
@@ -247,6 +250,20 @@ async def create_invitation(
     ),
     db: AsyncSession = Depends(get_db),
 ) -> InvitationRead:
+    from app.core.exceptions import ForbiddenError
+
+    # Guard SuperAdmin invitations (C-3)
+    if payload.role_name.strip().lower() == "superadmin":
+        if not current_user.is_super_admin():
+            raise ForbiddenError("Only SuperAdmins can invite SuperAdmin users.")
+
+    if not current_user.is_super_admin():
+        from app.core.permissions import permissions_for_roles
+        inviter_perms = set(current_user.permissions)
+        role_perms = set(permissions_for_roles([payload.role_name]))
+        if not role_perms.issubset(inviter_perms):
+            raise ForbiddenError("You cannot invite a user to a role with higher permissions than your own.")
+
     return await service.create_invitation(
         db,
         email=payload.email,
@@ -312,13 +329,26 @@ async def create_user(
     current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> UserRead:
+    from app.core.exceptions import ForbiddenError
+
     is_dept_mgr = False
     if payload.department_id:
         from app.modules.organization.service import is_department_manager
         is_dept_mgr = await is_department_manager(db, current_user.user_id, payload.department_id)
     if not (current_user.is_super_admin() or current_user.has_permission(Permissions.MANAGE_USERS) or is_dept_mgr):
-        from app.core.exceptions import ForbiddenError
         raise ForbiddenError("You do not have permission to create users.")
+
+    # Guard SuperAdmin role assignment (C-3)
+    if any(r.strip().lower() == "superadmin" for r in payload.role_names):
+        if not current_user.is_super_admin():
+            raise ForbiddenError("Only SuperAdmins can assign the SuperAdmin role.")
+
+    # Department Managers can only assign safe roles to members of their department
+    if is_dept_mgr and not (current_user.is_super_admin() or current_user.has_permission(Permissions.MANAGE_USERS)):
+        for r in payload.role_names:
+            if r not in SAFE_DEPARTMENT_ROLES:
+                raise ForbiddenError(f"Department managers may only assign roles from: {', '.join(sorted(SAFE_DEPARTMENT_ROLES))}.")
+
     return await service.create_user(
         db,
         email=payload.email,
@@ -353,14 +383,30 @@ async def admin_update_user(
     current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> UserRead:
+    from app.core.exceptions import ForbiddenError
     from app.modules.organization.service import get_employee_context, is_department_manager
     ctx = await get_employee_context(db, user_id)
     is_dept_mgr = False
     if ctx and ctx.department_id:
         is_dept_mgr = await is_department_manager(db, current_user.user_id, ctx.department_id)
     if not (current_user.is_super_admin() or current_user.has_permission(Permissions.MANAGE_USERS) or is_dept_mgr):
-        from app.core.exceptions import ForbiddenError
         raise ForbiddenError("You do not have permission to update this user.")
+
+    # Guard SuperAdmin target user and role assignments (C-3)
+    target_user = await repo.get_user_by_id(db, user_id)
+    if target_user and "SuperAdmin" in [ur.role.name for ur in target_user.roles]:
+        if not current_user.is_super_admin():
+            raise ForbiddenError("Only SuperAdmins can modify a SuperAdmin account.")
+
+    if payload.role_names is not None:
+        if any(r.strip().lower() == "superadmin" for r in payload.role_names):
+            if not current_user.is_super_admin():
+                raise ForbiddenError("Only SuperAdmins can assign the SuperAdmin role.")
+        if is_dept_mgr and not (current_user.is_super_admin() or current_user.has_permission(Permissions.MANAGE_USERS)):
+            for r in payload.role_names:
+                if r not in SAFE_DEPARTMENT_ROLES:
+                    raise ForbiddenError(f"Department managers may only assign roles from: {', '.join(sorted(SAFE_DEPARTMENT_ROLES))}.")
+
     return await service.admin_update_user(
         db,
         user_id=user_id,
@@ -404,14 +450,30 @@ async def assign_roles(
     current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> UserRead:
+    from app.core.exceptions import ForbiddenError
     from app.modules.organization.service import get_employee_context, is_department_manager
     ctx = await get_employee_context(db, user_id)
     is_dept_mgr = False
     if ctx and ctx.department_id:
         is_dept_mgr = await is_department_manager(db, current_user.user_id, ctx.department_id)
     if not (current_user.is_super_admin() or current_user.has_permission(Permissions.MANAGE_ROLES) or is_dept_mgr):
-        from app.core.exceptions import ForbiddenError
         raise ForbiddenError("You do not have permission to assign roles.")
+
+    # Guard SuperAdmin role assignment (C-3)
+    if any(r.strip().lower() == "superadmin" for r in payload.role_names):
+        if not current_user.is_super_admin():
+            raise ForbiddenError("Only SuperAdmins can assign the SuperAdmin role.")
+
+    target_user = await repo.get_user_by_id(db, user_id)
+    if target_user and "SuperAdmin" in [ur.role.name for ur in target_user.roles]:
+        if not current_user.is_super_admin():
+            raise ForbiddenError("Only SuperAdmins can modify a SuperAdmin account.")
+
+    if is_dept_mgr and not (current_user.is_super_admin() or current_user.has_permission(Permissions.MANAGE_ROLES)):
+        for r in payload.role_names:
+            if r not in SAFE_DEPARTMENT_ROLES:
+                raise ForbiddenError(f"Department managers may only assign roles from: {', '.join(sorted(SAFE_DEPARTMENT_ROLES))}.")
+
     return await service.assign_roles(
         db, user_id=user_id, role_names=payload.role_names
     )
@@ -436,6 +498,10 @@ async def create_role(
     current_user: CurrentUser = Depends(require_permission(Permissions.MANAGE_ROLES)),
     db: AsyncSession = Depends(get_db),
 ) -> RoleRead:
+    from app.core.exceptions import ForbiddenError
+    if payload.name.strip().lower() == "superadmin" or any(p.startswith("system.") for p in payload.permission_codes):
+        if not current_user.is_super_admin():
+            raise ForbiddenError("Only SuperAdmins can create system roles.")
     role = await service.create_role(
         db,
         name=payload.name,
@@ -452,6 +518,11 @@ async def update_role_permissions(
     current_user: CurrentUser = Depends(require_permission(Permissions.MANAGE_ROLES)),
     db: AsyncSession = Depends(get_db),
 ) -> RoleRead:
+    from app.core.exceptions import ForbiddenError
+    target_role = await repo.get_role_by_id(db, role_id)
+    if target_role and (target_role.name == "SuperAdmin" or any(p.startswith("system.") for p in payload.permission_codes)):
+        if not current_user.is_super_admin():
+            raise ForbiddenError("Only SuperAdmins can modify system permissions or the SuperAdmin role.")
     role = await service.update_role_permissions(
         db,
         role_id=role_id,

@@ -98,6 +98,8 @@ export function PublicShell({ children }: { children: ReactNode }) {
             <Link href="/#capabilities">Capabilities</Link>
             <Link href="/docs">Documentation</Link>
             <Link href="/tutorials">Tutorials</Link>
+            <Link href="/privacy">Privacy</Link>
+            <Link href="/terms">Terms</Link>
             <Link href="/login">Log in</Link>
             <a href="https://github.com/ali-Eskandarian/project-management-platform" target="_blank" rel="noreferrer">
               GitHub

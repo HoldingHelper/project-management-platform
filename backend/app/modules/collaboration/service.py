@@ -173,13 +173,23 @@ async def upload_file(
     current_user: CurrentUser,
 ) -> FileAttachmentRead:
     await authorize_entity_access(db, current_user, entity_type, entity_id)
-    storage_key = f"{entity_type.lower()}/{entity_id}/{uuid4()}-{file_name}"
-    file_storage_service.upload(storage_key, content, content_type)
+
+    # Bound uploads (H-6): 25 MB max limit
+    MAX_UPLOAD_SIZE = 25 * 1024 * 1024
+    if size_bytes > MAX_UPLOAD_SIZE:
+        raise ValidationAppError("File exceeds maximum allowed size (25MB)")
+
+    # Sanitize filename (H-6)
+    import os
+    clean_name = re.sub(r"[^\w.\-_]", "_", os.path.basename(file_name))[:128] or "attachment"
+    storage_key = f"{entity_type.lower()}/{entity_id}/{uuid4()}-{clean_name}"
+
+    await file_storage_service.upload_async(storage_key, content, content_type)
 
     attachment = FileAttachment(
         entity_type=entity_type,
         entity_id=entity_id,
-        file_name=file_name,
+        file_name=clean_name,
         content_type=content_type,
         size_bytes=size_bytes,
         storage_key=storage_key,
@@ -209,7 +219,10 @@ async def get_file_download_url(
     await authorize_entity_access(
         db, current_user, attachment.entity_type, attachment.entity_id
     )
-    return file_storage_service.presigned_url(attachment.storage_key)
+    return file_storage_service.presigned_url(
+        attachment.storage_key, filename=attachment.file_name
+    )
+
 
 
 UUID_PATTERN = re.compile(

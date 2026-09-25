@@ -15,6 +15,7 @@ class CalendarAuthUrlResponse(BaseModel):
 
 class CalendarConnectRequest(BaseModel):
     code: str = Field(..., min_length=1)
+    state: Optional[str] = None
 
 
 class CalendarConnectionStatus(BaseModel):

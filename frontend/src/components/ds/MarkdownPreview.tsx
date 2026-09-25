@@ -6,7 +6,15 @@ import { Download, Maximize2, Minimize2 } from "lucide-react";
 function sanitizeSvg(svgStr: string): string {
   // Extract clean svg block
   const match = svgStr.match(/<svg[\s\S]*<\/svg>/i);
-  return match ? match[0] : svgStr;
+  let clean = match ? match[0] : svgStr;
+
+  // H-12: Strip dangerous executable elements and attributes
+  clean = clean.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "");
+  clean = clean.replace(/<foreignObject\b[^<]*(?:(?!<\/foreignObject>)<[^<]*)*<\/foreignObject>/gi, "");
+  clean = clean.replace(/\son[a-z]+\s*=\s*(["'][^"']*["']|[^\s>]+)/gi, "");
+  clean = clean.replace(/href\s*=\s*["']\s*javascript:[^"']*["']/gi, 'href="#"');
+  clean = clean.replace(/xlink:href\s*=\s*["']\s*javascript:[^"']*["']/gi, 'xlink:href="#"');
+  return clean;
 }
 
 function SvgDiagramViewer({ svg }: { svg: string }) {

@@ -136,9 +136,10 @@ async def get_all_integrations_status(
 # ============================================================================
 
 def get_github_oauth_url(user_id: UUID, redirect_uri: Optional[str] = None) -> str:
+    from app.core.security import create_oauth_state_sync
     client_id = settings.github_client_id or "Ov23liSampleClientId"
     scopes = "repo,read:user"
-    state = str(user_id)
+    state = create_oauth_state_sync(user_id, "github")
     r_uri = f"&redirect_uri={redirect_uri}" if redirect_uri else ""
     return (
         f"https://github.com/login/oauth/authorize?"
@@ -147,8 +148,13 @@ def get_github_oauth_url(user_id: UUID, redirect_uri: Optional[str] = None) -> s
 
 
 async def connect_github_oauth(
-    db: AsyncSession, user_id: UUID, code: str
+    db: AsyncSession, user_id: UUID, code: str, state: Optional[str] = None
 ) -> UserGitHubConnection:
+    if state is not None:
+        from app.core.exceptions import UnauthorizedError
+        from app.core.security import verify_oauth_state
+        if not await verify_oauth_state(user_id, "github", state):
+            raise UnauthorizedError("Invalid or expired OAuth state parameter.")
     client_id = settings.github_client_id or "mock_client_id"
     client_secret = settings.github_client_secret or "mock_client_secret"
 
@@ -537,13 +543,21 @@ async def send_telegram_test_notification(
 
 def get_drive_auth_url(user_id: UUID) -> str:
     from app.core.google_drive import get_drive_auth_url as core_drive_url
-    return core_drive_url(state=str(user_id))
+    from app.core.security import create_oauth_state_sync
+    state = create_oauth_state_sync(user_id, "drive")
+    return core_drive_url(state=state)
 
 
 async def connect_drive_oauth(
-    db: AsyncSession, user_id: UUID, code: str
+    db: AsyncSession, user_id: UUID, code: str, state: Optional[str] = None
 ) -> UserDriveConnection:
     from app.core.google_drive import exchange_drive_code
+
+    if state is not None:
+        from app.core.exceptions import UnauthorizedError
+        from app.core.security import verify_oauth_state
+        if not await verify_oauth_state(user_id, "drive", state):
+            raise UnauthorizedError("Invalid or expired OAuth state parameter.")
 
     try:
         data = exchange_drive_code(code)

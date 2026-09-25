@@ -47,15 +47,35 @@ class FileStorageService:
         obj = self._client.get_object(Bucket=self._bucket, Key=key)
         return obj["Body"].read()
 
-    def presigned_url(self, key: str, expires_in: int = 3600) -> str:
+    def presigned_url(
+        self, key: str, expires_in: int = 3600, filename: Optional[str] = None
+    ) -> str:
+        params: dict[str, Any] = {"Bucket": self._bucket, "Key": key}
+        disposition = f'attachment; filename="{filename}"' if filename else "attachment"
+        params["ResponseContentDisposition"] = disposition
         return self._client.generate_presigned_url(
             "get_object",
-            Params={"Bucket": self._bucket, "Key": key},
+            Params=params,
             ExpiresIn=expires_in,
         )
 
     def delete(self, key: str) -> None:
         self._client.delete_object(Bucket=self._bucket, Key=key)
 
+    async def upload_async(self, key: str, content: BinaryIO, content_type: str) -> str:
+        import asyncio
+        return await asyncio.to_thread(self.upload, key, content, content_type)
+
+    async def download_async(self, key: str) -> bytes:
+        import asyncio
+        return await asyncio.to_thread(self.download, key)
+
+    async def presigned_url_async(
+        self, key: str, expires_in: int = 3600, filename: Optional[str] = None
+    ) -> str:
+        import asyncio
+        return await asyncio.to_thread(self.presigned_url, key, expires_in, filename)
+
 
 file_storage_service = FileStorageService()
+

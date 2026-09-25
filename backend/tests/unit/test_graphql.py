@@ -140,3 +140,34 @@ async def test_graphql_ticket_creation_uses_project_service(monkeypatch):
     payload = create_task.await_args.args[1]
     assert payload.ticket_recipient_user_ids == [recipient_id]
     assert create_task.await_args.kwargs["created_by_user_id"] == creator_id
+
+
+@pytest.mark.asyncio
+async def test_graphql_unauthenticated_access_rejected():
+    """Verify C-1 and C-2: unauthenticated GraphQL queries and mutations are rejected."""
+    anon_context = GraphQLContext(request=MagicMock(), current_user=None)
+    anon_context._db = AsyncMock()
+
+    # Query projects without auth
+    q_proj = await schema.execute("{ projects { id name } }", context_value=anon_context)
+    assert q_proj.errors is not None
+    assert "Authentication required" in str(q_proj.errors[0])
+
+    # Query doc_spaces without auth
+    q_docs = await schema.execute("{ docSpaces { id name } }", context_value=anon_context)
+    assert q_docs.errors is not None
+    assert "Authentication required" in str(q_docs.errors[0])
+
+    # Query tasks without auth
+    q_tasks = await schema.execute("{ tasks { id title } }", context_value=anon_context)
+    assert q_tasks.errors is not None
+    assert "Authentication required" in str(q_tasks.errors[0])
+
+    # Mutation send_whatsapp_message without auth
+    m_wa = await schema.execute(
+        'mutation { sendWhatsappMessage(phoneNumber: "+1234567890", message: "spam") }',
+        context_value=anon_context,
+    )
+    assert m_wa.errors is not None
+    assert "Authentication required" in str(m_wa.errors[0])
+

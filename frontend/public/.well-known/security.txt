@@ -1,0 +1,6 @@
+Contact: mailto:security@pmp.example.com
+Expires: 2027-12-31T23:59:59.000Z
+Preferred-Languages: en
+Canonical: https://pmp-frontend-706796253833.europe-west1.run.app/.well-known/security.txt
+Policy: https://pmp-frontend-706796253833.europe-west1.run.app/privacy
+Acknowledgments: https://pmp-frontend-706796253833.europe-west1.run.app/about

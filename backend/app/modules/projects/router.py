@@ -24,6 +24,10 @@ from app.core.deps import get_current_user, require_permission
 from app.core.exceptions import ValidationAppError
 from app.core.pagination import Page, PageParams
 from app.core.permissions import Permissions
+from app.modules.collaboration.authorization import (
+    _require_project_access,
+    _require_task_access,
+)
 from app.modules.projects import service
 from app.modules.projects.ai_generation import (
     confirm_generation,
@@ -347,7 +351,9 @@ async def list_projects(
     current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> Page[ProjectRead]:
-    items, total = await service.list_all_projects(db, params.page, params.page_size)
+    items, total = await service.list_all_projects(
+        db, params.page, params.page_size, current_user=current_user
+    )
     return Page.create(items, total, params)
 
 
@@ -364,6 +370,7 @@ async def confirm_project_generation(
     ),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
+    await service.require_project_manage_access(db, project_id, current_user)
     return await confirm_generation(db, project_id, current_user.user_id)
 
 
@@ -386,6 +393,7 @@ async def regenerate_project_draft(
     ),
     db: AsyncSession = Depends(get_db),
 ) -> GenerationJobResponse:
+    await service.require_project_manage_access(db, project_id, current_user)
     content, filename = await _generation_request_content(prompt_file, extra_context)
     job = await create_generation_job(
         db,
@@ -411,6 +419,7 @@ async def confirm_project_regeneration(
     ),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
+    await service.require_project_manage_access(db, project_id, current_user)
     return await confirm_generation(db, generation_run_id, current_user.user_id)
 
 
@@ -420,6 +429,7 @@ async def get_project(
     current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> ProjectRead:
+    await _require_project_access(db, current_user, project_id)
     return await service.get_project(db, project_id)
 
 
@@ -434,6 +444,7 @@ async def update_project(
     ),
     db: AsyncSession = Depends(get_db),
 ) -> ProjectRead:
+    await service.require_project_manage_access(db, project_id, current_user)
     return await service.update_project(db, project_id, payload)
 
 
@@ -447,6 +458,7 @@ async def archive_project(
     ),
     db: AsyncSession = Depends(get_db),
 ) -> ProjectRead:
+    await service.require_project_manage_access(db, project_id, current_user)
     return await service.archive_project(db, project_id)
 
 
@@ -464,6 +476,7 @@ async def delete_project(
     ),
     db: AsyncSession = Depends(get_db),
 ) -> None:
+    await service.require_project_manage_access(db, project_id, current_user)
     await service.delete_project(db, project_id)
 
 
@@ -473,6 +486,7 @@ async def get_project_overview(
     current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> ProjectOverview:
+    await _require_project_access(db, current_user, project_id)
     return await service.get_project_overview(db, project_id)
 
 
@@ -482,6 +496,7 @@ async def get_project_members(
     current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> list[ProjectMemberRead]:
+    await _require_project_access(db, current_user, project_id)
     return await service.list_project_members(db, project_id)
 
 
@@ -540,6 +555,7 @@ async def list_milestones(
     current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> list[MilestoneRead]:
+    await _require_project_access(db, current_user, project_id)
     return await service.list_milestones(db, project_id)
 
 
@@ -611,6 +627,7 @@ async def get_project_timeline(
     current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> ProjectTimeline:
+    await _require_project_access(db, current_user, project_id)
     return await service.get_project_timeline(db, project_id)
 
 
@@ -621,6 +638,7 @@ async def get_phases_by_project(
     current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> list[PhaseRead]:
+    await _require_project_access(db, current_user, project_id)
     return await service.list_phases_by_project(db, project_id)
 
 
@@ -661,7 +679,9 @@ async def get_phase(
     current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> PhaseRead:
-    return await service.get_phase(db, phase_id)
+    phase = await service.get_phase(db, phase_id)
+    await _require_project_access(db, current_user, phase.project_id)
+    return phase
 
 
 @sprints_router.put("/{phase_id}", response_model=PhaseRead)
@@ -678,6 +698,8 @@ async def update_phase(
     ),
     db: AsyncSession = Depends(get_db),
 ) -> PhaseRead:
+    phase = await service.get_phase(db, phase_id)
+    await service.require_project_manage_access(db, phase.project_id, current_user)
     return await service.update_phase(db, phase_id, payload)
 
 
@@ -688,6 +710,8 @@ async def get_tasks_by_phase(
     current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> list[TaskRead]:
+    phase = await service.get_phase(db, phase_id)
+    await _require_project_access(db, current_user, phase.project_id)
     return await service.list_tasks_by_phase(db, phase_id)
 
 
@@ -698,6 +722,8 @@ async def get_phase_progress(
     current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> ProgressBreakdown:
+    phase = await service.get_phase(db, phase_id)
+    await _require_project_access(db, current_user, phase.project_id)
     return await service.get_phase_progress_breakdown(db, phase_id)
 
 
@@ -734,6 +760,7 @@ async def list_tasks(
         unattached=unattached,
         parent_task_id=parent_task_id,
         search=search,
+        current_user=current_user,
         page=params.page,
         page_size=params.page_size,
     )
@@ -797,6 +824,7 @@ async def get_task(
     current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> TaskRead:
+    await _require_task_access(db, current_user, task_id)
     return await service.get_task(db, task_id)
 
 

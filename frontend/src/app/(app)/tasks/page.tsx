@@ -102,10 +102,10 @@ function TasksPage() {
         unattached: unattachedOnly ? true : undefined,
         search: search || undefined,
         page: 1,
-        page_size: 500,
+        page_size: 100,
       }),
   });
-  const projects = useQuery({ queryKey: ["projects", "task-page"], queryFn: () => listProjects(1, 200) });
+  const projects = useQuery({ queryKey: ["projects", "task-page"], queryFn: () => listProjects(1, 100) });
   const projectPhases = useQuery({
     queryKey: ["project-phases-map", projects.data?.items.map((p) => p.id).join(",")],
     queryFn: async () => {

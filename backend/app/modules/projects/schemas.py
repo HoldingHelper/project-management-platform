@@ -284,27 +284,47 @@ class TaskCreate(BaseModel):
     ticket_recipient_user_ids: List[UUID] = Field(default_factory=list)
     ticket_recipient_team_ids: List[UUID] = Field(default_factory=list)
     label_ids: List[UUID] = Field(default_factory=list)
-    label_names: List[str] = Field(default_factory=list)
+    label_names: List[str] = Field(default_factory=list, max_length=20)
     checklist_items: List[ChecklistItemCreate] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def validate_task_create(self) -> "TaskCreate":
+        if self.start_date and self.due_date and self.start_date > self.due_date:
+            raise ValueError("Task start_date cannot be after due_date.")
+        if self.github_url:
+            url = self.github_url.strip()
+            if not url.startswith("https://"):
+                raise ValueError("github_url must start with https://")
+        return self
 
 
 class TaskUpdate(BaseModel):
-    title: Optional[str] = None
+    title: Optional[str] = Field(default=None, min_length=1, max_length=300)
     description: Optional[str] = None
     task_type: Optional[TaskType] = None
     priority: Optional[Priority] = None
-    story_points: Optional[int] = None
-    estimated_hours: Optional[float] = None
-    actual_hours: Optional[float] = None
+    story_points: Optional[int] = Field(default=None, ge=0)
+    estimated_hours: Optional[float] = Field(default=None, ge=0)
+    actual_hours: Optional[float] = Field(default=None, ge=0)
     reviewer_user_id: Optional[UUID] = None
     github_url: Optional[str] = Field(default=None, max_length=512)
-    partition: Optional[str] = None
+    partition: Optional[str] = Field(default=None, max_length=32)
     start_date: Optional[date] = None
     due_date: Optional[date] = None
     assignee_user_ids: Optional[List[UUID]] = None
     label_ids: Optional[List[UUID]] = None
-    label_names: Optional[List[str]] = None
+    label_names: Optional[List[str]] = Field(default=None, max_length=20)
     checklist_items: Optional[List[ChecklistItemCreate]] = None
+
+    @model_validator(mode="after")
+    def validate_task_update(self) -> "TaskUpdate":
+        if self.start_date and self.due_date and self.start_date > self.due_date:
+            raise ValueError("Task start_date cannot be after due_date.")
+        if self.github_url:
+            url = self.github_url.strip()
+            if not url.startswith("https://"):
+                raise ValueError("github_url must start with https://")
+        return self
 
 
 class UpdateTaskStatusRequest(BaseModel):

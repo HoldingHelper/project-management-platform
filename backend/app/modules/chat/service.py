@@ -186,9 +186,23 @@ async def send_message(
             # Keep threads one level deep (Slack model).
             payload.parent_message_id = parent.parent_message_id
 
-    mentioned = set(payload.mentioned_user_ids) | set(
-        await _resolve_mentions(db, payload.body)
-    )
+    if payload.attachment_id is not None:
+        from app.modules.collaboration.models import FileAttachment
+        attachment = await db.get(FileAttachment, payload.attachment_id)
+        if attachment is None:
+            raise NotFoundError("Attachment", payload.attachment_id)
+        if attachment.uploaded_by_user_id != sender_user_id and (
+            attachment.entity_id != channel_id or attachment.entity_type != "channel"
+        ):
+            raise ForbiddenError("You may only attach files that you uploaded or belong to this channel.")
+
+    channel_members = await repo.list_members(db, channel_id)
+    channel_member_ids = {m.user_id for m in channel_members}
+
+    # Mentions stay in-channel (H-9)
+    mentioned = (
+        set(payload.mentioned_user_ids) | set(await _resolve_mentions(db, payload.body))
+    ) & channel_member_ids
 
     message = Message(
         channel_id=channel_id,

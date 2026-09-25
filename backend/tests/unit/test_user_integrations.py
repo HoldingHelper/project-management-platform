@@ -26,7 +26,8 @@ def test_github_oauth_url_generation():
     uid = uuid4()
     url = user_service.get_github_oauth_url(uid, "http://localhost:3000/github/callback")
     assert "github.com/login/oauth/authorize" in url
-    assert f"state={uid}" in url
+    assert "state=" in url
+    assert f"state={uid}" not in url  # H-10: State must be a random CSRF token, not predictable user_id
     assert "scope=repo%2Cread%3Auser" in url or "scope=repo,read:user" in url
 
 
