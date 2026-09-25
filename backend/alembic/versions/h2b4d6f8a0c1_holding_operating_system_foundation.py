@@ -17,6 +17,13 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
+def _execute_statements(sql: str) -> None:
+    """Execute backfill statements individually for asyncpg compatibility."""
+    for statement in sql.split(";"):
+        if statement.strip():
+            op.execute(statement)
+
+
 def upgrade() -> None:
     uuid = postgresql.UUID(as_uuid=True)
     op.execute("CREATE EXTENSION IF NOT EXISTS ltree")
@@ -196,7 +203,7 @@ def upgrade() -> None:
         sa.UniqueConstraint("object_type", "object_id", "target_type", "target_id", name="uq_doc_share_target"), schema="docs")
 
     # Deterministic, idempotent backfill from the legacy flat model.
-    op.execute("""
+    _execute_statements("""
     INSERT INTO org.nodes (id,type,parent_id,path,name,slug,status,confidentiality,created_by,metadata_json,acl_version,source_type,source_id)
     SELECT '00000000-0000-0000-0000-000000000001'::uuid,'holding',NULL,'holding'::ltree,'Holding','holding','active','standard',u.id,'{}'::jsonb,1,NULL,NULL
     FROM identity.users u ORDER BY u.created_at LIMIT 1 ON CONFLICT DO NOTHING;
