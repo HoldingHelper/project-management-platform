@@ -25,7 +25,9 @@ from app.modules.collaboration import models as collaboration_models  # noqa: F4
 from app.modules.identity import models as identity_models  # noqa: F401,E402
 from app.modules.music import models as music_models  # noqa: F401,E402
 from app.modules.organization import models as organization_models  # noqa: F401,E402
+from app.modules.org import models as org_models  # noqa: F401,E402
 from app.modules.projects import models as projects_models  # noqa: F401,E402
+from app.modules.strategy import models as strategy_models  # noqa: F401,E402
 from app.modules.docs import models as docs_models  # noqa: F401,E402
 
 config = context.config
@@ -47,6 +49,8 @@ MODULE_SCHEMAS = [
     "chat",
     "music",
     "docs",
+    "org",
+    "strategy",
 ]
 
 

@@ -539,6 +539,18 @@ async def require_project_manage_access(
     db: AsyncSession, project_id: UUID, current_user: CurrentUser
 ) -> None:
     """Ensure caller has permission to mutate a project (C-4)."""
+    project = await repo.get_project(db, project_id)
+    if project is None:
+        raise NotFoundError("Project", project_id)
+    if getattr(project, "org_node_id", None) is not None:
+        from app.modules.authz.service import authorize
+        from app.modules.org.models import OrgNode
+
+        node = await db.get(OrgNode, project.org_node_id)
+        if node is None:
+            raise NotFoundError("Organization node", project.org_node_id)
+        await authorize(db, current_user, "update", node)
+        return
     if current_user.is_super_admin() or current_user.has_permission(
         Permissions.PROJECTS_MANAGE_ALL
     ):
@@ -553,6 +565,18 @@ async def require_project_manage_access(
 async def require_project_admin(
     db: AsyncSession, project_id: UUID, current_user: CurrentUser
 ) -> None:
+    project = await repo.get_project(db, project_id)
+    if project is None:
+        raise NotFoundError("Project", project_id)
+    if getattr(project, "org_node_id", None) is not None:
+        from app.modules.authz.service import authorize
+        from app.modules.org.models import OrgNode
+
+        node = await db.get(OrgNode, project.org_node_id)
+        if node is None:
+            raise NotFoundError("Organization node", project.org_node_id)
+        await authorize(db, current_user, "manage_members", node)
+        return
     if current_user.is_super_admin() or current_user.has_permission(
         Permissions.PROJECTS_MANAGE_ALL
     ):

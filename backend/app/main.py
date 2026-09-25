@@ -21,6 +21,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 from collections.abc import AsyncIterator
+from typing import Any
 
 import structlog
 from fastapi import APIRouter, FastAPI, WebSocket, WebSocketDisconnect
@@ -78,6 +79,9 @@ from app.modules.organization.router import (
     skills_router,
     teams_router,
 )
+from app.modules.org.router import router as org_router
+from app.modules.strategy.router import router as strategy_router
+from app.modules.work.router import router as work_router
 from app.modules.projects.router import (
     dependencies_router,
     phases_router,
@@ -231,6 +235,9 @@ _MODULE_ROUTERS: tuple[APIRouter, ...] = (
     teams_router,
     employees_router,
     organization_router,
+    org_router,
+    strategy_router,
+    work_router,
     skills_router,
     products_router,
     projects_router,
@@ -415,6 +422,20 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
                         async with AsyncSessionLocal() as db:
                             await _require_task_access(db, current_user, t_id)
                             is_authorized = True
+                    except Exception:
+                        is_authorized = False
+                elif group.startswith(("scope:", "scope-")):
+                    from app.core.database import AsyncSessionLocal
+                    from app.modules.authz.service import authorize
+                    from app.modules.org.models import OrgNode
+                    sep = ":" if ":" in group else "-"
+                    try:
+                        node_id = _UUID(group.split(sep, 1)[1])
+                        async with AsyncSessionLocal() as db:
+                            node = await db.get(OrgNode, node_id)
+                            if node is not None:
+                                await authorize(db, current_user, "view", node)
+                                is_authorized = True
                     except Exception:
                         is_authorized = False
 

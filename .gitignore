@@ -10,6 +10,9 @@ htmlcov/
 
 # Node / Next.js
 node_modules/
+!backend/app/modules/
+!backend/app/modules/work/
+!backend/app/modules/work/*.py
 .next/
 out/
 build/

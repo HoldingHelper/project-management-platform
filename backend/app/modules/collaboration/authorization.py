@@ -49,6 +49,19 @@ async def _require_project_access(
     if project is None:
         raise NotFoundError("Project", project_id)
 
+    # Migrated projects use the holding graph as the canonical boundary for
+    # REST, MCP, and WebSocket callers. Legacy checks remain only for rows not
+    # yet backfilled, which makes rollout reversible.
+    if getattr(project, "org_node_id", None) is not None:
+        from app.modules.authz.service import authorize
+        from app.modules.org.models import OrgNode
+
+        node = await db.get(OrgNode, project.org_node_id)
+        if node is None:
+            raise NotFoundError("Organization node", project.org_node_id)
+        await authorize(db, user, "view", node)
+        return
+
     if _can_view_all_projects(user):
         return
 

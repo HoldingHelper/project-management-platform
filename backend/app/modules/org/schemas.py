@@ -43,6 +43,8 @@ class NodeRead(BaseModel):
     confidentiality: str
     metadata_json: dict[str, Any]
     acl_version: int
+    source_type: str | None = None
+    source_id: UUID | None = None
     created_at: datetime
     updated_at: datetime
 

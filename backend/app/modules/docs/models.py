@@ -29,6 +29,8 @@ class DocSpace(Base, UUIDPKMixin, TimestampMixin, AuditableMixin):
     visibility: Mapped[str] = mapped_column(String(24), default="workspace", nullable=False, index=True)
     position: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     created_by: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    node_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
+    default_edit_role: Mapped[Optional[str]] = mapped_column(String(40), nullable=True)
 
     pages: Mapped[list["DocPage"]] = relationship(back_populates="space", cascade="all, delete-orphan")
     sources: Mapped[list["DocSource"]] = relationship(back_populates="space")
@@ -55,6 +57,9 @@ class DocPage(Base, UUIDPKMixin, TimestampMixin, AuditableMixin):
     doc_type: Mapped[str] = mapped_column(String(32), default="document", nullable=False)
     created_by: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     updated_by: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    confidentiality: Mapped[str] = mapped_column(String(16), default="inherit", nullable=False)
+    publish_level: Mapped[str] = mapped_column(String(16), default="private", nullable=False)
+    is_template: Mapped[bool] = mapped_column(default=False, nullable=False)
 
     space: Mapped[DocSpace] = relationship(back_populates="pages")
     parent: Mapped[Optional["DocPage"]] = relationship(remote_side="DocPage.id")
@@ -199,6 +204,21 @@ class DocPermission(Base, UUIDPKMixin, TimestampMixin):
     subject_type: Mapped[str] = mapped_column(String(24), nullable=False)
     subject_id: Mapped[str] = mapped_column(String(160), nullable=False)
     permission: Mapped[str] = mapped_column(String(24), nullable=False)
+
+
+class DocShare(Base, UUIDPKMixin, TimestampMixin, AuditableMixin):
+    __tablename__ = "shares"
+    __table_args__ = (
+        UniqueConstraint("object_type", "object_id", "target_type", "target_id", name="uq_doc_share_target"),
+        {"schema": SCHEMA},
+    )
+    object_type: Mapped[str] = mapped_column(String(16), nullable=False)
+    object_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    target_type: Mapped[str] = mapped_column(String(16), nullable=False)
+    target_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    permission: Mapped[str] = mapped_column(String(16), nullable=False)
+    expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    granted_by: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
 
 
 class DocRevision(Base, UUIDPKMixin):

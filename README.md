@@ -1,5 +1,7 @@
 # Project Management Platform
 
+> The holding operating-system foundation, migration sequence, inferred defaults, and remaining rollout gates are documented in [docs/HOLDING_OS_ROLLOUT.md](docs/HOLDING_OS_ROLLOUT.md).
+
 A self-hosted, full-stack workspace for planning projects, coordinating teams, and tracking delivery. It combines portfolio views, task workflows, collaboration, analytics, and optional AI-assisted project generation in one modular application.
 
 ## Features

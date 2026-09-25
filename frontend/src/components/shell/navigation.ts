@@ -8,6 +8,7 @@ import {
   FolderKanban,
   GanttChartSquare,
   Gauge,
+  Landmark,
   Home,
   Network,
   Settings,
@@ -35,6 +36,7 @@ export const NAV_GROUPS: AppNavGroup[] = [
     label: "Workspace",
     items: [
       { href: "/app/teams", label: "Home", icon: Home, match: (path) => path === "/app/teams" },
+      { href: "/h/holding", label: "Holding", icon: Landmark, match: (path) => path.startsWith("/h/") || path.startsWith("/v/") },
       {
         href: "/portfolio",
         label: "Projects",
@@ -76,7 +78,8 @@ export const NAV_GROUPS: AppNavGroup[] = [
   {
     label: "Administration",
     items: [
-      { href: "/admin/users", label: "Administration", icon: ShieldCheck, match: (path) => path.includes("/admin"), anyPermission: ["system.manage_users", "users.invite"] },
+      { href: "/admin/users", label: "People & Roles", icon: ShieldCheck, match: (path) => path.startsWith("/admin/users") || path.startsWith("/admin/invitations"), anyPermission: ["system.manage_users", "users.invite"] },
+      { href: "/admin/org", label: "Org & Access", icon: Network, match: (path) => path.startsWith("/admin/org"), anyPermission: ["system.manage_users", "system.manage_roles"] },
     ],
   },
 ];
@@ -89,6 +92,8 @@ export const PERSONAL_NAV: AppNavItem[] = [
 export const MOBILE_PRIMARY_HREFS = ["/app/teams", "/portfolio", "/tasks", "/notifications"] as const;
 
 const ROUTE_META = [
+  { test: (path: string) => path.startsWith("/h/"), crumb: "Holding", title: "Holding Cockpit" },
+  { test: (path: string) => path.startsWith("/v/"), crumb: "Portfolio / Venture", title: "Venture Home" },
   { test: (path: string) => path === "/app/teams", crumb: "Personal", title: "Home Dashboard" },
   { test: (path: string) => path.includes("/portfolio"), crumb: "Organization", title: "Project Portfolio" },
   { test: (path: string) => path.includes("/projects/ai-generator"), crumb: "Projects", title: "AI Project Generator" },

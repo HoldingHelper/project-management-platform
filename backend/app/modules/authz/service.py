@@ -13,7 +13,7 @@ from app.core.current_user import CurrentUser
 from app.core.exceptions import ForbiddenError, NotFoundError
 from app.modules.authz.policy import role_allows
 from app.modules.authz.schemas import AccessExplanation, GrantTrace
-from app.modules.org.models import Membership, OrgNode
+from app.modules.org.models import Membership, OrgNode, VentureWall
 
 
 @dataclass(frozen=True)
@@ -54,6 +54,24 @@ async def explain(
     explicit = [g for g in grants if g.node.id == node.id]
     owner = next((g for g in grants if g.membership.role == "holding_owner"), None)
     board = next((g for g in grants if g.membership.role == "board_member"), None)
+
+    # A wall blocks sideways visibility from any venture membership into the
+    # paired venture. Holding owners and board members are the only bypasses.
+    if not owner and not board:
+        ventures = list((await db.execute(select(OrgNode).where(OrgNode.type == "venture"))).scalars().all())
+        target_venture = next((v for v in ventures if _is_descendant(node.path, v.path)), None)
+        grant_venture_ids = {v.id for v in ventures if any(_is_descendant(g.node.path, v.path) for g in grants)}
+        walls = list((await db.execute(select(VentureWall).where(VentureWall.person_id == user.user_id))).scalars().all())
+        if target_venture and any(
+            (wall.venture_a_id == target_venture.id and wall.venture_b_id in grant_venture_ids)
+            or (wall.venture_b_id == target_venture.id and wall.venture_a_id in grant_venture_ids)
+            for wall in walls
+        ):
+            return AccessExplanation(
+                allowed=False, action=action, object_type=object_type, node_id=node.id,
+                confidentiality=node.confidentiality, effective_roles=[], grants=[],
+                reason="A venture wall blocks access from another portfolio company.",
+            )
 
     eligible = grants
     reason = "No applicable scoped membership grants this action."
@@ -115,9 +133,42 @@ async def authorize(
 
 async def visible_nodes(db: AsyncSession, user: CurrentUser) -> list[OrgNode]:
     nodes = (await db.execute(select(OrgNode).order_by(OrgNode.path))).scalars().all()
+    today = date.today()
+    rows = (
+        await db.execute(
+            select(Membership, OrgNode)
+            .join(OrgNode, OrgNode.id == Membership.node_id)
+            .where(
+                Membership.person_id == user.user_id,
+                Membership.since <= today,
+                or_(Membership.until.is_(None), Membership.until >= today),
+            )
+        )
+    ).all()
+    all_grants = [_Grant(membership=m, node=n) for m, n in rows]
+    owner = next((g for g in all_grants if g.membership.role == "holding_owner"), None)
+    board = next((g for g in all_grants if g.membership.role == "board_member"), None)
+    ventures = [n for n in nodes if n.type == "venture"]
+    grant_venture_ids = {v.id for v in ventures if any(_is_descendant(g.node.path, v.path) for g in all_grants)}
+    walls = list((await db.execute(select(VentureWall).where(VentureWall.person_id == user.user_id))).scalars().all())
     visible: list[OrgNode] = []
     for node in nodes:
-        result = await explain(db, user, action="view", node=node)
-        if result.allowed:
+        grants = [g for g in all_grants if _is_descendant(node.path, g.node.path)]
+        target_venture = next((v for v in ventures if _is_descendant(node.path, v.path)), None)
+        walled = not owner and not board and target_venture and any(
+            (wall.venture_a_id == target_venture.id and wall.venture_b_id in grant_venture_ids)
+            or (wall.venture_b_id == target_venture.id and wall.venture_a_id in grant_venture_ids)
+            for wall in walls
+        )
+        if walled:
+            continue
+        if node.confidentiality == "restricted":
+            grants = [g for g in grants if g.node.id == node.id]
+            if owner:
+                grants = [owner]
+        elif node.confidentiality == "board":
+            explicit = [g for g in grants if g.node.id == node.id]
+            grants = [g for g in grants if g.membership.role in {"holding_owner", "board_member"}] + explicit
+        if any(role_allows(g.membership.role, "node", "view") for g in grants):
             visible.append(node)
     return visible

@@ -9,6 +9,7 @@ import { RealtimeProvider } from "@/lib/ws/RealtimeProvider";
 import { PresenceProvider } from "@/lib/stores/presence";
 import { NotificationProvider } from "@/lib/stores/notifications";
 import { MusicPlayerProvider } from "@/components/music/MusicPlayerProvider";
+import { ScopeProvider } from "@/lib/scope/ScopeContext";
 
 export default function AppGroupLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -31,7 +32,9 @@ export default function AppGroupLayout({ children }: { children: React.ReactNode
       <PresenceProvider>
         <NotificationProvider>
           <MusicPlayerProvider>
-            <AppShell>{children}</AppShell>
+            <ScopeProvider>
+              <AppShell>{children}</AppShell>
+            </ScopeProvider>
           </MusicPlayerProvider>
         </NotificationProvider>
       </PresenceProvider>

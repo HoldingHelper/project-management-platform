@@ -5,6 +5,92 @@
 
 export type UUID = string;
 
+// ---- Holding operating system ----
+export type OrgNodeType =
+  | "holding" | "function" | "venture" | "venture_function" | "program"
+  | "project" | "shared_initiative" | "milestone" | "workstream" | "sprint"
+  | "task" | "team" | "doc_space";
+export type ConfidentialityTier = "standard" | "restricted" | "board";
+
+export interface OrgNodeRead {
+  id: UUID;
+  type: OrgNodeType;
+  parent_id: UUID | null;
+  path: string;
+  name: string;
+  slug: string;
+  status: "active" | "archived";
+  confidentiality: ConfidentialityTier;
+  metadata_json: Record<string, unknown>;
+  acl_version: number;
+  source_type?: string | null;
+  source_id?: UUID | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface VentureSummary {
+  id: UUID;
+  slug: string;
+  name: string;
+  status: string;
+  confidentiality: ConfidentialityTier;
+  project_count: number;
+  member_count: number;
+  allocation_percent: number;
+  rag: string;
+  top_risk?: string | null;
+  next_milestone?: string | null;
+}
+
+export interface HoldingCockpit {
+  holding: OrgNodeRead;
+  ventures: VentureSummary[];
+  active_ventures: number;
+  at_risk_ventures: number;
+  total_allocated_percent: number;
+  orphan_projects: number;
+}
+
+export interface VisionRead {
+  id: UUID;
+  node_id: UUID;
+  statement: string;
+  horizon?: string | null;
+  narrative_page_id?: UUID | null;
+  updated_by: UUID;
+  updated_at: string;
+}
+
+export interface ObjectiveRead {
+  id: UUID;
+  node_id: UUID;
+  parent_objective_id?: UUID | null;
+  title: string;
+  period: string;
+  owner_user_id: UUID;
+  status: string;
+  confidence: number;
+  weight: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WorkRequestRead {
+  id: UUID;
+  from_node_id: UUID;
+  to_node_id: UUID;
+  title: string;
+  need: string;
+  due_date?: string | null;
+  priority: "P0" | "P1" | "P2" | "P3";
+  status: string;
+  created_by_user_id: UUID;
+  created_task_id?: UUID | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // ---- Enums (string unions) ----
 export type ProductStatus = "Planning" | "Active" | "Maintenance" | "Sunset";
 export type Environment = "Development" | "Staging" | "Production";

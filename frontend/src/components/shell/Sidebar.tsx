@@ -10,6 +10,7 @@ import { useNotifications } from "@/lib/stores/notifications";
 import { usePresence } from "@/lib/stores/presence";
 import { NAV_GROUPS, type AppNavItem } from "./navigation";
 import { PlatformLogo } from "@/components/brand/PlatformLogo";
+import { ScopeSwitcher } from "@/components/scope/ScopeSwitcher";
 
 export function Sidebar({
   mobile = false,
@@ -66,6 +67,10 @@ export function Sidebar({
       >
         <PlatformLogo size={29} />
         <span className="pmp-sidebar-wordmark"><span>Project <b>Platform</b></span><small>Management workspace</small></span>
+      </div>
+
+      <div style={{ padding: "10px 10px 2px" }}>
+        <ScopeSwitcher />
       </div>
 
       {/* Grouped nav */}

@@ -101,6 +101,7 @@ class Product(Base, UUIDPKMixin, TimestampMixin, AuditableMixin):
     priority: Mapped[str] = mapped_column(
         String(10), default=Priority.P2.value, nullable=False
     )
+    org_node_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), nullable=True, unique=True, index=True)
 
     projects: Mapped[List["Project"]] = relationship(
         back_populates="product", cascade="all, delete-orphan"
@@ -169,6 +170,7 @@ class Project(Base, UUIDPKMixin, TimestampMixin, AuditableMixin):
     planning_mode: Mapped[str] = mapped_column(
         String(20), default="sprints", nullable=False
     )
+    org_node_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), nullable=True, unique=True, index=True)
 
     product: Mapped["Product"] = relationship(back_populates="projects")
     phases: Mapped[List["Phase"]] = relationship(
@@ -297,6 +299,11 @@ class TaskItem(Base, UUIDPKMixin, TimestampMixin, AuditableMixin):
     partition: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
     start_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     due_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    workstream_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
+    milestone_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
+    function_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
+    venture_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
+    confidentiality: Mapped[str] = mapped_column(String(16), default="standard", nullable=False)
     completed_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
@@ -424,6 +431,38 @@ class Milestone(Base, UUIDPKMixin, TimestampMixin, AuditableMixin):
     created_by_user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), nullable=False
     )
+    definition_of_done: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    owner_user_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), nullable=True)
+    baseline_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    forecast_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    actual_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    rag_status: Mapped[str] = mapped_column(String(16), default="on-track", nullable=False)
+    org_node_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), nullable=True, unique=True)
+
+
+class Workstream(Base, UUIDPKMixin, TimestampMixin, AuditableMixin):
+    __tablename__ = "workstreams"
+    __table_args__ = (UniqueConstraint("project_id", "function_id", name="uq_project_function_workstream"), {"schema": SCHEMA})
+    project_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey(f"{SCHEMA}.projects.id", ondelete="CASCADE"), nullable=False, index=True)
+    function_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    org_node_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, unique=True)
+    name: Mapped[str] = mapped_column(String(160), nullable=False)
+    lead_user_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), nullable=True)
+    status: Mapped[str] = mapped_column(String(24), default="active", nullable=False)
+
+
+class WorkRequest(Base, UUIDPKMixin, TimestampMixin, AuditableMixin):
+    __tablename__ = "requests"
+    __table_args__ = {"schema": SCHEMA}
+    from_node_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    to_node_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    title: Mapped[str] = mapped_column(String(240), nullable=False)
+    need: Mapped[str] = mapped_column(Text, nullable=False)
+    due_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    priority: Mapped[str] = mapped_column(String(10), default=Priority.P2.value, nullable=False)
+    status: Mapped[str] = mapped_column(String(24), default="requested", nullable=False)
+    created_by_user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    created_task_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), nullable=True)
 
 
 class ProjectDependency(Base, UUIDPKMixin, TimestampMixin):
@@ -503,6 +542,7 @@ class TaskDependency(Base, UUIDPKMixin, TimestampMixin):
         nullable=False,
         index=True,
     )
+    visibility: Mapped[str] = mapped_column(String(12), default="ghost", nullable=False)
     dependency_type: Mapped[str] = mapped_column(
         String(30), default=DependencyType.FINISH_TO_START.value, nullable=False
     )

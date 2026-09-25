@@ -47,6 +47,9 @@ class User(Base, UUIDPKMixin, TimestampMixin, AuditableMixin):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     mfa_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     mfa_secret: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    home_function_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
+    manager_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
+    employment_type: Mapped[str] = mapped_column(String(24), default="employee", nullable=False)
 
     roles: Mapped[List["UserRole"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"

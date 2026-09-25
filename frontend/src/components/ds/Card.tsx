@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from "react";
 
 interface Props {
+  className?: string;
   title?: ReactNode;
   subtitle?: ReactNode;
   right?: ReactNode;
@@ -10,10 +11,10 @@ interface Props {
 }
 
 /** Standard elevated surface panel used across the app. */
-export function Card({ title, subtitle, right, children, padded = true, style }: Props) {
+export function Card({ className, title, subtitle, right, children, padded = true, style }: Props) {
   return (
     <section
-      className="pmp-card pmp-surface-panel"
+      className={`pmp-card pmp-surface-panel${className ? ` ${className}` : ""}`}
       style={{
         background: "var(--surface-2)",
         border: "1px solid var(--border-subtle)",
