@@ -15,6 +15,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const mainRef = useRef<HTMLElement>(null);
   const docsModule = pathname.startsWith("/app/docs");
+  const isModernist = pathname.startsWith("/app");
+
+  if (isModernist) {
+    return <>{children}</>;
+  }
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
