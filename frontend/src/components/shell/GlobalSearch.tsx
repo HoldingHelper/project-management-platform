@@ -3,13 +3,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { Activity, CheckSquare, FolderKanban, Search, ShieldAlert, User, X } from "lucide-react";
+import { Activity, CheckSquare, FolderKanban, Landmark, Search, ShieldAlert, User, X } from "lucide-react";
 import { listBlockers } from "@/lib/api/blockers";
 import { listProjects, listTasks } from "@/lib/api/projects";
 import { listUsers } from "@/lib/api/users";
 
 const PAGES = [
-  { title: "Home Dashboard", href: "/app/teams", kind: "Page", Icon: Activity },
+  { title: "My Work", href: "/", kind: "Page", Icon: Activity },
+  { title: "Holding Cockpit", href: "/h/holding", kind: "Page", Icon: Landmark },
   { title: "Internal Docs", href: "/app/docs", kind: "Page", Icon: FolderKanban },
   { title: "Projects", href: "/portfolio", kind: "Page", Icon: FolderKanban },
   { title: "Tasks", href: "/tasks", kind: "Page", Icon: CheckSquare },

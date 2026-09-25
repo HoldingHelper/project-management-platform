@@ -48,6 +48,11 @@ const nextConfig: NextConfig = {
   ...(isExport
     ? {}
     : {
+        async redirects() {
+          return [
+            { source: "/app/teams", destination: "/h/holding", permanent: false },
+          ];
+        },
         async rewrites() {
           return [
             {

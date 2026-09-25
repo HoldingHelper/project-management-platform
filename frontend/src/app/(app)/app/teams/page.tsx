@@ -1,7 +1,5 @@
-"use client";
-
-import { ModernistPlatform } from "@/components/modernist/ModernistPlatform";
+import { redirect } from "next/navigation";
 
 export default function TeamsHomePage() {
-  return <ModernistPlatform initialMode="teams" initialPage="home" />;
+  redirect("/h/holding");
 }

@@ -94,7 +94,7 @@ function CalendarCallbackInner() {
             <Link href="/settings">
               <Button variant="secondary">Go to Settings</Button>
             </Link>
-            <Link href="/app/teams">
+            <Link href="/h/holding">
               <Button>
                 Open Workspace <ArrowRight size={14} />
               </Button>

@@ -10,7 +10,7 @@ import { AccessShell } from "@/components/ui/AccessShell";
 import Link from "next/link";
 
 function workspaceTarget() {
-  return window.localStorage.getItem("workspace.last-module") === "docs" ? "/app/docs" : "/app/teams";
+  return window.localStorage.getItem("workspace.last-module") === "docs" ? "/app/docs" : "/h/holding";
 }
 
 export default function LoginPage() {

@@ -7,7 +7,7 @@ import {
   Bell,
   BookOpenText,
   CheckCheck,
-  FolderKanban,
+  Landmark,
   LogOut,
   Search,
   Settings,
@@ -99,7 +99,7 @@ export function Header({
     >
       <div className="workspace-module-switcher" aria-label="Workspace modules">
         <Link href="/app/docs" aria-current={docsModule ? "page" : undefined} onClick={() => window.localStorage.setItem("workspace.last-module", "docs")}><BookOpenText size={15}/>Docs</Link>
-        <Link href="/app/teams" aria-current={!docsModule ? "page" : undefined} onClick={() => window.localStorage.setItem("workspace.last-module", "teams")}><FolderKanban size={15}/>Teams</Link>
+        <Link href="/h/holding" aria-current={!docsModule ? "page" : undefined} onClick={() => window.localStorage.setItem("workspace.last-module", "holding")}><Landmark size={15}/>Holding</Link>
       </div>
 
       {docsModule ? (
