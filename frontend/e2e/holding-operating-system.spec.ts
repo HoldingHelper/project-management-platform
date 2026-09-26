@@ -45,7 +45,10 @@ async function installApi(page: Page) {
     if (path === `/work/requests/${REQUEST_ID}/accept`) { requestStatus = "accepted"; return json(route, { id: REQUEST_ID, from_node_id: VENTURE_ID, to_node_id: FUNCTION_ID, title: "Launch campaign", need: "Build the first cross-channel market launch.", due_date: "2026-11-01", priority: "P1", status: requestStatus, created_by_user_id: USER_ID, created_task_id: "50000000-0000-4000-8000-000000000001", created_at: NOW, updated_at: NOW }); }
     if (path.includes("pending-work")) return json(route, { pending_on_me: [], requested_by_me: [] });
     if (path.startsWith("/notifications")) return json(route, []);
+    if (path === "/users/invitations") return json(route, []);
     if (path.startsWith("/users")) return json(route, { items: [user], page: 1, page_size: 200, total_count: 1 });
+    if (path === "/tasks") return json(route, { items: [], page: 1, page_size: 100, total_count: 0 });
+    if (path === "/projects") return json(route, { items: [], page: 1, page_size: 100, total_count: 0 });
     return json(route, []);
   });
 }
@@ -55,8 +58,45 @@ async function login(page: Page) {
   await page.getByLabel("Email or username").fill(user.email);
   await page.getByLabel("Password", { exact: true }).fill("valid-test-password");
   await page.getByRole("button", { name: /sign in/i }).click();
-  await expect(page).toHaveURL(/\/app\/(teams|docs)$/);
+  await expect(page).toHaveURL(/\/h\/holding$/);
 }
+
+test("canonical URLs keep page identity stable", async ({ page }) => {
+  const pageErrors: string[] = [];
+  page.on("pageerror", (error) => pageErrors.push(error.message));
+  await installApi(page);
+  await login(page);
+
+  await page.goto("/app/teams/tasks");
+  await expect(page).toHaveURL(/\/tasks$/);
+  await expect(page.getByRole("heading", { name: "Task Browser" })).toBeVisible();
+  await page.getByRole("tab", { name: "My tasks" }).click();
+  await expect(page).toHaveURL(/\/tasks\?view=my$/);
+  await page.getByRole("tab", { name: "Monthly" }).click();
+  await expect(page).toHaveURL(/\/tasks\?view=my&layout=monthly$/);
+
+  await page.goto("/admin/users");
+  await expect(page).toHaveURL(/\/admin\/users$/);
+  await page.waitForTimeout(250);
+  expect(pageErrors).toEqual([]);
+  await expect(page.getByRole("heading", { name: "People", exact: true })).toBeVisible();
+  await page.getByRole("link", { name: "Departments (0)" }).click();
+  await expect(page).toHaveURL(/\/admin\/departments$/);
+  await expect(page.getByRole("heading", { name: "Departments", exact: true })).toBeVisible();
+
+  await page.goto("/app/docs");
+  await expect(page).toHaveURL(/\/app\/docs$/);
+  await expect(page.getByText("Knowledge Workspace", { exact: true })).toBeVisible();
+  await expect(page.getByText("Executive Dashboard", { exact: true })).toHaveCount(0);
+
+  await page.goto("/automations");
+  await page.getByRole("button", { name: "Execution Audit Logs" }).click();
+  await expect(page).toHaveURL(/\/automations\?view=logs$/);
+
+  await page.goto("/v/not-a-visible-venture");
+  await expect(page.getByRole("heading", { name: "Page Not Found" })).toBeVisible();
+  expect(pageErrors).toEqual([]);
+});
 
 test("holding, venture, and function scopes form one responsive operating flow", async ({ page }) => {
   const pageErrors: string[] = [];

@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, CalendarRange, Flag, Target } from "lucide-react";
 import { getVision, listObjectives, listOrgNodes } from "@/lib/api/org";
-import { Alert, Card } from "@/components/ds";
+import { Card } from "@/components/ds";
 import { PageHeader, PAGE_STYLE, Spinner } from "@/components/ui/States";
 
 export function VentureHome({ slug }: { slug: string }) {
@@ -13,7 +14,7 @@ export function VentureHome({ slug }: { slug: string }) {
   const vision = useQuery({ queryKey: ["strategy", "vision", venture?.id], queryFn: () => getVision(venture!.id), enabled: !!venture });
   const objectives = useQuery({ queryKey: ["strategy", "objectives", venture?.id], queryFn: () => listObjectives(venture!.id), enabled: !!venture });
   if (nodes.isLoading) return <div style={PAGE_STYLE}><Spinner label="Loading venture…" /></div>;
-  if (!venture) return <div style={PAGE_STYLE}><Alert kind="critical" title="Venture not found" description="This venture is unavailable or outside your visible scopes." /></div>;
+  if (!venture) notFound();
   const projects = nodes.data?.filter((node) => node.type === "project" && node.path.startsWith(`${venture.path}.`)) ?? [];
 
   return (

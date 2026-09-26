@@ -91,13 +91,13 @@ const smallAction: React.CSSProperties = {
   borderRadius: "var(--radius-md)", color: "var(--text-secondary)", fontSize: 11.5, cursor: "pointer",
 };
 
-export default function AdminUsersPage() {
+export function AdminManagementPage({ section = "users" }: { section?: AdminTab }) {
   const { user: currentUser, hasPermission, isSuperAdmin } = useAuth();
   const queryClient = useQueryClient();
   const toast = useToast();
   const presence = usePresenceMap();
 
-  const [activeTab, setActiveTab] = useState<AdminTab>("users");
+  const activeTab = section;
   const [search, setSearch] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState<string>("all");
 
@@ -754,8 +754,8 @@ export default function AdminUsersPage() {
   return (
     <div style={{ ...PAGE_STYLE, gap: 18 }}>
       <PageHeader
-        title="Teammates & Organization"
-        subtitle="Manage users, organizational structure, departments, teams, manager hierarchy, and team invite links."
+        title={{ users: "People", departments: "Departments", teams: "Teams", roles: "Roles & Permissions", partitions: "Task Partitions", invitations: "Invitations" }[activeTab]}
+        subtitle={{ users: "Manage teammates, reporting lines, access, and account status.", departments: "Manage functional departments and their accountable leads.", teams: "Manage delivery teams, membership, and team leads.", roles: "Manage role definitions and permission assignments.", partitions: "Manage the controlled task classification vocabulary.", invitations: "Manage pending and historical invitations." }[activeTab]}
         actions={
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <Button
@@ -815,26 +815,26 @@ export default function AdminUsersPage() {
       >
         <TabButton
           active={activeTab === "users"}
-          onClick={() => setActiveTab("users")}
+          href="/admin/users"
           label={`Teammates (${allUsers.length})`}
           icon={<Users size={14} />}
         />
         <TabButton
           active={activeTab === "departments"}
-          onClick={() => setActiveTab("departments")}
+          href="/admin/departments"
           label={`Departments (${departments?.length ?? 0})`}
           icon={<Building2 size={14} />}
         />
         <TabButton
           active={activeTab === "teams"}
-          onClick={() => setActiveTab("teams")}
+          href="/admin/teams"
           label={`Teams (${teams?.length ?? 0})`}
           icon={<Workflow size={14} />}
         />
         {canManageRoles && (
           <TabButton
             active={activeTab === "roles"}
-            onClick={() => setActiveTab("roles")}
+            href="/admin/roles"
             label={`Roles (${roles?.length ?? 0})`}
             icon={<ShieldCheck size={14} />}
           />
@@ -842,14 +842,14 @@ export default function AdminUsersPage() {
         {canManagePartitions && (
           <TabButton
             active={activeTab === "partitions"}
-            onClick={() => setActiveTab("partitions")}
+            href="/admin/partitions"
             label={`Partitions (${partitions?.length ?? 0})`}
             icon={<Layers size={14} />}
           />
         )}
         <TabButton
           active={activeTab === "invitations"}
-          onClick={() => setActiveTab("invitations")}
+          href="/admin/invitations"
           label={`Invitations (${(invitations ?? []).filter((i) => i.status === "pending").length})`}
           icon={<Mail size={14} />}
         />
@@ -1139,19 +1139,19 @@ export default function AdminUsersPage() {
 
 function TabButton({
   active,
-  onClick,
+  href,
   label,
   icon,
 }: {
   active: boolean;
-  onClick: () => void;
+  href: string;
   label: string;
   icon: React.ReactNode;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
+    <Link
+      href={href}
+      aria-current={active ? "page" : undefined}
       style={{
         display: "inline-flex",
         alignItems: "center",
@@ -1169,8 +1169,12 @@ function TabButton({
     >
       {icon}
       <span>{label}</span>
-    </button>
+    </Link>
   );
+}
+
+export default function AdminUsersPage() {
+  return <AdminManagementPage section="users" />;
 }
 
 function PartitionModal({ open, partition, onClose, onDone }: { open: boolean; partition: TaskPartitionRead | null; onClose: () => void; onDone: () => void }) {

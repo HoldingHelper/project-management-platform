@@ -12,7 +12,7 @@ test.describe("authenticated responsive shell", () => {
     await page.getByLabel("Email or username").fill(email!);
     await page.getByLabel("Password", { exact: true }).fill(password!);
     await page.getByRole("button", { name: /sign in/i }).click();
-    await expect(page).toHaveURL(/\/app\/(teams|docs)$/);
+    await expect(page).toHaveURL(/\/(?:h\/holding|app\/docs)$/);
   });
 
   test("shell navigation, search and primary routes remain usable", async ({ page }, testInfo) => {

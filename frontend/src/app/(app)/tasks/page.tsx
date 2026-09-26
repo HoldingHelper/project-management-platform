@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -37,6 +37,10 @@ import { useTaskPartitions, useUserMap } from "@/lib/hooks";
 import { TASK_SORT_OPTIONS, sortTasks, type TaskSortMode } from "@/lib/task-sort";
 import type { TaskRead, UUID } from "@/lib/types";
 import { useViewState } from "@/lib/navigation";
+import { useUrlView } from "@/lib/url-view";
+
+const TASK_VIEWS = ["all", "my", "my-blocked", "my-done", "review", "needs-review", "blocked", "backlog", "due-week"] as const;
+const TASK_LAYOUTS = ["list", "monthly"] as const;
 
 const STATUS_OPTIONS = [
   "NotStarted", "Ready", "InProgress", "Waiting", "Blocked",
@@ -66,8 +70,8 @@ export default function TasksPageWrapper() {
 function TasksPage() {
   const searchParams = useSearchParams();
   const { user, hasPermission, isSuperAdmin } = useAuth();
-  const [view, setView] = useViewState<string>("task-view", searchParams.get("view") ?? "all");
-  const [mode, setMode] = useViewState<string>("task-mode", "list");
+  const [view, setView] = useUrlView("view", TASK_VIEWS, "all");
+  const [mode, setMode] = useUrlView("layout", TASK_LAYOUTS, "list");
   const [filtersOpen, setFiltersOpen] = useViewState("task-filters-open", false);
   const [partition, setPartition] = useViewState<string>("task-partition", "all");
   const [projectFilter, setProjectFilter] = useViewState<string>("task-project", "all");
@@ -83,11 +87,6 @@ function TasksPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const { nameOf, users } = useUserMap();
   const { partitions } = useTaskPartitions();
-
-  useEffect(() => {
-    const nextView = searchParams.get("view");
-    if (nextView) setView(nextView);
-  }, [searchParams]);
 
   const canAttach = isSuperAdmin() || hasPermission("tasks.manage_all", "projects.manage_all");
   const canCreate = Boolean(user);
@@ -409,7 +408,7 @@ function TasksPage() {
         ]}
         active={view}
         onChange={(key) => {
-          setView(key);
+          setView(key as (typeof TASK_VIEWS)[number]);
           setPage(1);
         }}
       />
@@ -419,7 +418,7 @@ function TasksPage() {
           { key: "monthly", label: "Monthly" },
         ]}
         active={mode}
-        onChange={(key) => setMode(key)}
+        onChange={(key) => setMode(key as (typeof TASK_LAYOUTS)[number])}
       />
 
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>

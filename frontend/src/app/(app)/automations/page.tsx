@@ -29,6 +29,9 @@ import {
 import { AppError } from "@/lib/api/client";
 import { Button, Card, Field, Modal, Switch, TextInput, useToast } from "@/components/ds";
 import { PageHeader, PAGE_STYLE } from "@/components/ui/States";
+import { useUrlView } from "@/lib/url-view";
+
+const AUTOMATION_VIEWS = ["rules", "logs"] as const;
 
 const TRIGGER_OPTIONS = [
   { value: "github.pr_merged", label: "GitHub PR Merged", icon: GitPullRequest },
@@ -47,7 +50,7 @@ const ACTION_OPTIONS = [
 export default function AutomationsPage() {
   const toast = useToast();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<"rules" | "logs">("rules");
+  const [activeTab, setActiveTab] = useUrlView("view", AUTOMATION_VIEWS, "rules");
   const [showModal, setShowModal] = useState(false);
 
   // New rule form

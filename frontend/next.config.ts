@@ -51,6 +51,18 @@ const nextConfig: NextConfig = {
         async redirects() {
           return [
             { source: "/app/teams", destination: "/h/holding", permanent: false },
+            { source: "/app/teams/portfolio", destination: "/portfolio", permanent: false },
+            { source: "/app/teams/tasks", destination: "/tasks", permanent: false },
+            { source: "/app/teams/tasks/:path*", destination: "/tasks/:path*", permanent: false },
+            { source: "/app/teams/timeline", destination: "/timeline", permanent: false },
+            { source: "/app/teams/projects/:path*", destination: "/projects/:path*", permanent: false },
+            { source: "/app/teams/notifications", destination: "/notifications", permanent: false },
+            { source: "/app/teams/activity", destination: "/activity", permanent: false },
+            { source: "/app/teams/performance", destination: "/performance", permanent: false },
+            { source: "/app/teams/dashboards/:path*", destination: "/dashboards/:path*", permanent: false },
+            { source: "/app/teams/admin/:path*", destination: "/admin/:path*", permanent: false },
+            { source: "/app/teams/settings", destination: "/settings", permanent: false },
+            { source: "/app/teams/profile/:path*", destination: "/profile/:path*", permanent: false },
           ];
         },
         async rewrites() {
@@ -59,18 +71,6 @@ const nextConfig: NextConfig = {
               source: "/api/v1/:path*",
               destination: `${INTERNAL_API_URL}/api/v1/:path*`,
             },
-            { source: "/app/teams/portfolio", destination: "/portfolio" },
-            { source: "/app/teams/tasks", destination: "/tasks" },
-            { source: "/app/teams/tasks/:path*", destination: "/tasks/:path*" },
-            { source: "/app/teams/timeline", destination: "/timeline" },
-            { source: "/app/teams/projects/:path*", destination: "/projects/:path*" },
-            { source: "/app/teams/notifications", destination: "/notifications" },
-            { source: "/app/teams/activity", destination: "/activity" },
-            { source: "/app/teams/performance", destination: "/performance" },
-            { source: "/app/teams/dashboards/:path*", destination: "/dashboards/:path*" },
-            { source: "/app/teams/admin/:path*", destination: "/admin/:path*" },
-            { source: "/app/teams/settings", destination: "/settings" },
-            { source: "/app/teams/profile/:path*", destination: "/profile/:path*" },
           ];
         },
       }),

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, ArrowRight, Building2, CalendarClock, CircleDot, Network, UsersRound } from "lucide-react";
 import { getHoldingCockpit } from "@/lib/api/org";
@@ -11,11 +12,12 @@ const ragLabel: Record<string, string> = {
   "on-track": "On track", "at-risk": "At risk", delayed: "Delayed", blocked: "Blocked", completed: "Complete",
 };
 
-export function HoldingCockpit() {
+export function HoldingCockpit({ slug }: { slug: string }) {
   const query = useQuery({ queryKey: ["org", "cockpit"], queryFn: getHoldingCockpit });
   if (query.isLoading) return <div style={PAGE_STYLE}><Spinner label="Loading holding cockpit…" /></div>;
   if (query.error || !query.data) return <div style={PAGE_STYLE}><Alert kind="critical" title="Cockpit unavailable" description="The holding graph may not be migrated yet, or your account has no holding membership." /></div>;
   const data = query.data;
+  if (data.holding.slug !== slug) notFound();
 
   return (
     <div className="holding-cockpit" style={{ ...PAGE_STYLE, maxWidth: 1500, gap: 22 }}>

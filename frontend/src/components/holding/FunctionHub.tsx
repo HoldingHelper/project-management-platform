@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, BriefcaseBusiness, Check, Inbox, Layers3 } from "lucide-react";
 import { acceptWorkRequest, listOrgNodes, listWorkRequests } from "@/lib/api/org";
-import { Alert, Button, Card } from "@/components/ds";
+import { Button, Card } from "@/components/ds";
 import { PageHeader, PAGE_STYLE, Spinner } from "@/components/ui/States";
 
 export function FunctionHub({ slug }: { slug: string }) {
@@ -14,7 +15,7 @@ export function FunctionHub({ slug }: { slug: string }) {
   const requests = useQuery({ queryKey: ["work", "requests", fn?.id], queryFn: () => listWorkRequests(fn!.id), enabled: !!fn });
   const accept = useMutation({ mutationFn: acceptWorkRequest, onSuccess: async () => { await queryClient.invalidateQueries({ queryKey: ["work", "requests", fn?.id] }); } });
   if (nodes.isLoading) return <div style={PAGE_STYLE}><Spinner label="Loading function hub…" /></div>;
-  if (!fn) return <div style={PAGE_STYLE}><Alert kind="critical" title="Function not found" description="This function is unavailable or outside your visible scopes." /></div>;
+  if (!fn) notFound();
   const workstreams = nodes.data?.filter((node) => node.type === "workstream" && (node.metadata_json.function_id === fn.id)) ?? [];
 
   return (

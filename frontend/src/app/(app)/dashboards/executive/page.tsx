@@ -46,7 +46,10 @@ import { Alert, Avatar, Button, Card, FocusCard, MetricCard, Select } from "@/co
 import { PageHeader, PAGE_STYLE, Spinner } from "@/components/ui/States";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { useUserMap } from "@/lib/hooks";
+import { useUrlView } from "@/lib/url-view";
 import type { UUID } from "@/lib/types";
+
+const EXECUTIVE_VIEWS = ["overview", "dora", "flow", "predictability"] as const;
 
 // Recharts dynamically loaded
 const Charts = dynamic(() => import("./charts"), {
@@ -96,7 +99,7 @@ export default function ExecutiveDashboardPage() {
   const [projectId, setProjectId] = useState<UUID | "">("");
   const [category, setCategory] = useState<string>("");
   const [rangeDays, setRangeDays] = useState("30");
-  const [activeTab, setActiveTab] = useState<"overview" | "dora" | "flow" | "predictability">("overview");
+  const [activeTab, setActiveTab] = useUrlView("view", EXECUTIVE_VIEWS, "overview");
 
   const canView =
     isSuperAdmin() || hasPermission("analytics.view_org", "reports.view_executive");
@@ -321,7 +324,7 @@ export default function ExecutiveDashboardPage() {
             key={tab.key}
             variant={activeTab === tab.key ? "primary" : "secondary"}
             size="sm"
-            onClick={() => setActiveTab(tab.key as any)}
+            onClick={() => setActiveTab(tab.key as (typeof EXECUTIVE_VIEWS)[number])}
           >
             {tab.icon}
             <span style={{ marginLeft: 4 }}>{tab.label}</span>

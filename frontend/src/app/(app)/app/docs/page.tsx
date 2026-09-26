@@ -1,7 +1,5 @@
-"use client";
-
-import { ModernistPlatform } from "@/components/modernist/ModernistPlatform";
+import { KnowledgeWorkspaceShell } from "@/components/docs/workspace/KnowledgeWorkspaceShell";
 
 export default function DocsHomePage() {
-  return <ModernistPlatform initialMode="docs" initialPage="home" />;
+  return <KnowledgeWorkspaceShell />;
 }
