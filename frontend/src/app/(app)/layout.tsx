@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/AuthProvider";
+import { rememberWorkspaceLocation } from "@/lib/auth/workspace-navigation";
 import { AppShell } from "@/components/shell/AppShell";
 import { Spinner } from "@/components/ui/States";
 import { RealtimeProvider } from "@/lib/ws/RealtimeProvider";
@@ -14,10 +15,18 @@ import { ScopeProvider } from "@/lib/scope/ScopeContext";
 export default function AppGroupLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
-    if (!loading && !user) router.replace("/login");
-  }, [loading, user, router]);
+    if (!loading && !user) {
+      const destination = window.location.pathname + window.location.search;
+      router.replace(`/login?next=${encodeURIComponent(destination)}`);
+    }
+  }, [loading, user, router, pathname]);
+
+  useEffect(() => {
+    if (!loading && user) rememberWorkspaceLocation(user.id, pathname + window.location.search);
+  }, [loading, user, pathname]);
 
   if (loading || !user) {
     return (

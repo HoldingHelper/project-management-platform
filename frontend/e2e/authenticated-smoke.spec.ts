@@ -15,6 +15,19 @@ test.describe("authenticated responsive shell", () => {
     await expect(page).toHaveURL(/\/(?:h\/holding|app\/docs)$/);
   });
 
+  test("My Work stays inside the authenticated workspace", async ({ page }, testInfo) => {
+    await page.goto("/portfolio");
+    const navigation = page.getByRole("navigation", {
+      name: testInfo.project.name === "desktop" ? "Primary navigation" : "Mobile primary navigation",
+      exact: true,
+    });
+    await navigation.getByRole("link", { name: "My Work", exact: true }).click();
+    await expect(page).toHaveURL(/\/my-work$/);
+    await expect(page.getByRole("main").getByRole("heading", { name: /^Good day,/ })).toBeVisible();
+    await expect(navigation.getByRole("link", { name: "My Work", exact: true })).toHaveAttribute("aria-current", "page");
+    await page.reload();
+    await expect(page.getByRole("main").getByRole("heading", { name: /^Good day,/ })).toBeVisible();
+  });
   test("shell navigation, search and primary routes remain usable", async ({ page }, testInfo) => {
     await expect(page.getByRole("main")).toBeVisible();
     await page.keyboard.press(process.platform === "darwin" ? "Meta+K" : "Control+K");

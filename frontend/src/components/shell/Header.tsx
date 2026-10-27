@@ -17,6 +17,7 @@ import {
   Upload,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthProvider";
+import { rememberWorkspaceLocation } from "@/lib/auth/workspace-navigation";
 import { markAllNotificationsRead } from "@/lib/api/collaboration";
 import { setMyPresence } from "@/lib/api/users";
 import { Avatar, PresenceDot, PRESENCE_LABELS } from "@/components/ds";
@@ -98,8 +99,10 @@ export function Header({
       }}
     >
       <div className="workspace-module-switcher" aria-label="Workspace modules">
-        <Link href="/app/docs" aria-current={docsModule ? "page" : undefined} onClick={() => window.localStorage.setItem("workspace.last-module", "docs")}><BookOpenText size={15}/>Docs</Link>
-        <Link href="/h/holding" aria-current={!docsModule ? "page" : undefined} onClick={() => window.localStorage.setItem("workspace.last-module", "holding")}><Landmark size={15}/>Holding</Link>
+        <Link href="/app/docs" aria-current={docsModule ? "page" : undefined} onClick={() => {
+          if (user) rememberWorkspaceLocation(user.id, window.location.pathname + window.location.search);
+        }}><BookOpenText size={15}/>Docs</Link>
+        <Link href="/h/holding" aria-current={!docsModule ? "page" : undefined}><Landmark size={15}/>Holding</Link>
       </div>
 
       {docsModule ? (

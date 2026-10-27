@@ -17,11 +17,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const docsModule = pathname.startsWith("/app/docs");
   const isModernist = pathname.startsWith("/app");
 
-  if (isModernist) {
-    return <>{children}</>;
-  }
-
   useEffect(() => {
+    if (isModernist) return;
     const onKey = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
@@ -30,11 +27,16 @@ export function AppShell({ children }: { children: ReactNode }) {
     };
     window.addEventListener("keydown", onKey, true);
     return () => window.removeEventListener("keydown", onKey, true);
-  }, []);
+  }, [isModernist]);
 
   useEffect(() => {
     mainRef.current?.focus({ preventScroll: true });
   }, [pathname]);
+
+  // Keep hook order stable when switching between Holding and Docs.
+  if (isModernist) {
+    return <>{children}</>;
+  }
 
   return (
     <div

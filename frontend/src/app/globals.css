@@ -1601,12 +1601,19 @@ textarea:focus-visible { border-color: color-mix(in srgb, var(--accent-primary) 
   gap: 8px;
   padding: 0 10px;
   color: var(--text-secondary);
-  background: var(--surface-2);
+  background: color-mix(in srgb, currentColor 5%, transparent);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-2);
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1.5;
 }
 .scope-switcher:focus-within { border-color: var(--accent-primary); box-shadow: 0 0 0 3px var(--accent-primary-soft); }
-.scope-switcher select { width: 100%; min-width: 0; border: 0; outline: 0; appearance: none; color: var(--text-primary); background: transparent; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.scope-switcher select { width: 100%; min-width: 0; border: 0; outline: 0; appearance: none; color: inherit !important; background: transparent !important; box-shadow: none !important; font: inherit; cursor: pointer; }
+.scope-switcher select:disabled { opacity: 1; -webkit-text-fill-color: currentColor; cursor: not-allowed; }
+.scope-switcher > svg { opacity: .85; }
+[data-theme="light"] .pmp-app-shell .pmp-sidebar .scope-switcher { color: #AFC0DC; }
 .scope-badge { font-size: 10px; font-weight: 800; letter-spacing: .12em; color: var(--text-primary); border: 1px solid color-mix(in srgb, var(--accent-primary) 42%, transparent); background: var(--accent-primary-soft); border-radius: var(--radius-full); padding: 4px 10px; }
 .holding-metric-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .holding-metric-grid .pmp-card-body { min-height: 106px; display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 8px; }
@@ -5734,3 +5741,13 @@ a:hover {
     min-height: 32px !important;
   }
 }
+
+/* Persistent module navigation outside the collapsible Docs panels. */
+.knowledge-workspace-navigation { display: flex; align-items: center; gap: 16px; min-height: 56px; flex-shrink: 0; padding: 4px 12px; border-bottom: 1px solid var(--border-subtle); background: var(--surface-1); color: var(--text-secondary); font: 500 13.5px/1.5 var(--font-sans); }
+.knowledge-workspace-return { display: inline-flex; align-items: center; gap: 9px; min-height: 44px; padding: 6px 14px 6px 7px; border: 1px solid var(--border-default); border-radius: 10px; background: var(--surface-2); color: var(--text-primary); font-weight: 600; font-size: 13px; white-space: nowrap; box-shadow: 0 1px 2px rgba(0,0,0,.04); transition: background 150ms ease, border-color 150ms ease, box-shadow 150ms ease; }
+.knowledge-workspace-return:hover { background: var(--accent-primary-soft); border-color: color-mix(in srgb, var(--accent-primary) 45%, var(--border-default)); box-shadow: 0 2px 6px rgba(0,0,0,.06); }
+.knowledge-workspace-return:active { background: var(--surface-3); box-shadow: none; }
+.knowledge-workspace-return-icon { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; flex-shrink: 0; border-radius: 7px; background: var(--accent-primary-soft); color: var(--accent-primary); }
+@media (prefers-reduced-motion: reduce) { .knowledge-workspace-return { transition: none; } }
+.knowledge-workspace-return:focus-visible { outline: 2px solid var(--accent-primary); outline-offset: 2px; }
+.knowledge-workspace-module { display: inline-flex; align-items: center; gap: 8px; padding-left: 16px; border-left: 1px solid var(--border-subtle); }

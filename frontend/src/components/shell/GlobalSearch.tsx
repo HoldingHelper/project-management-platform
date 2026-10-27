@@ -9,7 +9,7 @@ import { listProjects, listTasks } from "@/lib/api/projects";
 import { listUsers } from "@/lib/api/users";
 
 const PAGES = [
-  { title: "My Work", href: "/", kind: "Page", Icon: Activity },
+  { title: "My Work", href: "/my-work", kind: "Page", Icon: Activity },
   { title: "Holding Cockpit", href: "/h/holding", kind: "Page", Icon: Landmark },
   { title: "Internal Docs", href: "/app/docs", kind: "Page", Icon: FolderKanban },
   { title: "Projects", href: "/portfolio", kind: "Page", Icon: FolderKanban },

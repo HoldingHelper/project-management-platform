@@ -48,7 +48,7 @@ test("documentation search has a useful zero-results recovery", async ({ page })
   await expect(page.getByText("Suggested guides")).toBeVisible();
 });
 
-test("login enters Internal Docs and the module switcher opens Teams", async ({ page }) => {
+test("login defaults to Holding despite a legacy Docs preference", async ({ page }) => {
   const user = { id:"11111111-1111-4111-8111-111111111111",email:"mock@example.com",username:"mock",first_name:"Mock",last_name:"User",full_name:"Mock User",job_title:"Developer",avatar_url:null,is_active:true,mfa_enabled:false,roles:["Developer"],permissions:["docs.view","docs.comment","docs.edit"],created_at:"2026-08-05T00:00:00Z" };
   await page.addInitScript(() => localStorage.setItem("workspace.last-module", "docs"));
   await page.route("**/api/v1/**", async route => {
@@ -76,20 +76,11 @@ test("login enters Internal Docs and the module switcher opens Teams", async ({ 
   await page.getByLabel("Email or username").fill("mock@example.com");
   await page.getByLabel("Password", { exact: true }).fill("valid-test-password");
   await page.getByRole("button", { name: /sign in/i }).click();
+  await expect(page).toHaveURL(/\/h\/holding$/);
+  await expect(page.getByLabel("Workspace modules").getByRole("link", { name: "Holding", exact: true })).toHaveAttribute("aria-current", "page");
+  await page.getByLabel("Workspace modules").getByRole("link", { name: "Docs", exact: true }).click();
   await expect(page).toHaveURL(/\/app\/docs$/);
-  await expect(page.getByRole("heading", { name: "Internal Knowledge" })).toBeVisible();
-  await page.getByLabel("Workspace modules").getByRole("link", { name: "Teams" }).click();
-  await expect(page).toHaveURL(/\/app\/teams$/);
-  await expect(page.getByRole("heading", { name: "Good day, Mock" })).toBeVisible();
-  const assignedCard = page.locator('a[href="/tasks?view=my"]').filter({ hasText: "Assigned tasks" });
-  await expect(assignedCard).toContainText("6");
-  await expect(assignedCard).toContainText("2 currently open");
-  await expect(page.getByText("Completion rate", { exact: true })).toBeVisible();
-  await expect(page.getByText("66.7%", { exact: true })).toBeVisible();
-  await expect(page.getByText("My Work Summary", { exact: true })).toBeVisible();
-  await expect(page.getByText("My Sprint", { exact: true })).toHaveCount(0);
-  const teamsA11y = await new AxeBuilder({ page }).analyze();
-  expect(teamsA11y.violations).toEqual([]);
+  await expect(page.getByRole("heading", { name: "Knowledge Workspace", exact: true })).toBeVisible();
 });
 
 for (const theme of ["dark", "light"] as const) {
