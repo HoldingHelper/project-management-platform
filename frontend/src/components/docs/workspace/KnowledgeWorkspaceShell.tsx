@@ -1,7 +1,12 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Link from "next/link";
+import { useAuth } from "@/lib/auth/AuthProvider";
+import { getDocsReturnDestination } from "@/lib/auth/workspace-navigation";
+import { getRouteMeta } from "@/components/shell/navigation";
 import {
+  ArrowLeft,
   PanelLeftClose,
   PanelLeftOpen,
   PanelRightClose,
@@ -131,7 +136,7 @@ function KnowledgeWorkspaceInner({
   const activeTab = tabs.find((t) => t.id === activeTabId);
 
   return (
-    <div className="flex h-[calc(100vh-64px)] w-full overflow-hidden bg-slate-950 select-none">
+    <div className="flex h-full w-full overflow-hidden bg-slate-950 select-none">
       {/* Left Panel: Knowledge Explorer */}
       {!leftPanelCollapsed && (
         <div
@@ -347,9 +352,32 @@ export function KnowledgeWorkspaceShell(props: {
   initialSpaceId?: string;
   initialPageId?: string;
 }) {
+  const { user } = useAuth();
+  const [returnPath, setReturnPath] = useState("/h/holding");
+  useEffect(() => {
+    if (user) setReturnPath(getDocsReturnDestination(user.id));
+  }, [user?.id]);
+  const returnLabel = returnPath.startsWith("/h/")
+    ? "Holding"
+    : getRouteMeta(returnPath.split(/[?#]/)[0]).title;
+
   return (
     <KnowledgeWorkspaceProvider>
-      <KnowledgeWorkspaceInner {...props} />
+      <div className="flex h-dvh w-full flex-col overflow-hidden">
+        <nav className="knowledge-workspace-navigation" aria-label="Workspace navigation">
+          <Link
+            href={returnPath}
+            className="knowledge-workspace-return"
+          >
+            <span className="knowledge-workspace-return-icon"><ArrowLeft size={16} aria-hidden /></span>
+            <span>Back to {returnLabel}</span>
+          </Link>
+          <span className="knowledge-workspace-module"><BookOpen size={16} aria-hidden />Docs</span>
+        </nav>
+        <div className="min-h-0 flex-1">
+          <KnowledgeWorkspaceInner {...props} />
+        </div>
+      </div>
     </KnowledgeWorkspaceProvider>
   );
 }

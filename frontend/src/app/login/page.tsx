@@ -3,15 +3,12 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/AuthProvider";
+import { getWorkspaceDestination } from "@/lib/auth/workspace-navigation";
 import { AppError } from "@/lib/api/client";
 import { Button, Field, TextInput } from "@/components/ds";
 import { Eye, EyeOff, LogIn } from "lucide-react";
 import { AccessShell } from "@/components/ui/AccessShell";
 import Link from "next/link";
-
-function workspaceTarget() {
-  return window.localStorage.getItem("workspace.last-module") === "docs" ? "/app/docs" : "/h/holding";
-}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -23,7 +20,10 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
-    if (!loading && user) router.replace(workspaceTarget());
+    if (!loading && user) {
+      const requested = new URLSearchParams(window.location.search).get("next");
+      router.replace(getWorkspaceDestination(user.id, requested));
+    }
   }, [loading, user, router]);
 
   async function onSubmit(e: React.FormEvent) {
@@ -36,7 +36,6 @@ export default function LoginPage() {
     setSubmitting(true);
     try {
       await login(email, password);
-      router.replace(workspaceTarget());
     } catch (err) {
       if (err instanceof AppError) {
         setError(err.status === 401 ? "Invalid email or password." : err.message);

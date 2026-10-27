@@ -37,7 +37,7 @@ export const NAV_GROUPS: AppNavGroup[] = [
   {
     label: "Workspace",
     items: [
-      { href: "/", label: "My Work", icon: Home, match: (path) => path === "/" },
+      { href: "/my-work", label: "My Work", icon: Home, match: (path) => isRoute(path, "/my-work") },
       { href: "/h/holding", label: "Holding", icon: Landmark, match: (path) => path.startsWith("/h/") || path.startsWith("/v/") },
       {
         href: "/portfolio",
@@ -96,13 +96,13 @@ export const PERSONAL_NAV: AppNavItem[] = [
   { href: "/settings", label: "Settings", icon: Settings, match: (path) => path === "/settings" },
 ];
 
-export const MOBILE_PRIMARY_HREFS = ["/", "/portfolio", "/tasks", "/notifications"] as const;
+export const MOBILE_PRIMARY_HREFS = ["/my-work", "/portfolio", "/tasks", "/notifications"] as const;
 
 const ROUTE_META = [
   { test: (path: string) => /^\/h\/[^/]+\/functions\/[^/]+\/?$/.test(path), crumb: "Holding / Function", title: "Function Hub" },
   { test: (path: string) => /^\/h\/[^/]+\/?$/.test(path), crumb: "Holding", title: "Holding Cockpit" },
   { test: (path: string) => path.startsWith("/v/"), crumb: "Portfolio / Venture", title: "Venture Home" },
-  { test: (path: string) => path === "/", crumb: "Personal", title: "My Work" },
+  { test: (path: string) => isRoute(path, "/my-work"), crumb: "Personal", title: "My Work" },
   { test: (path: string) => isRoute(path, "/portfolio"), crumb: "Organization", title: "Project Portfolio" },
   { test: (path: string) => isRoute(path, "/projects/ai-generator"), crumb: "Projects", title: "AI Project Generator" },
   { test: (path: string) => isRoute(path, "/projects"), crumb: "Projects / Workspace", title: "Project Workspace" },

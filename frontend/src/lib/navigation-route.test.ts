@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { getRouteMeta, NAV_GROUPS, PERSONAL_NAV } from "../components/shell/navigation";
 
 test("route metadata identifies each canonical administration and scope page", () => {
+  assert.equal(getRouteMeta("/my-work").title, "My Work");
   assert.equal(getRouteMeta("/admin/users").title, "People");
   assert.equal(getRouteMeta("/admin/departments").title, "Departments");
   assert.equal(getRouteMeta("/admin/roles").title, "Roles & Permissions");
@@ -14,6 +15,7 @@ test("route metadata identifies each canonical administration and scope page", (
 test("canonical navigation paths activate one matching destination", () => {
   const items = [...NAV_GROUPS.flatMap((group) => group.items), ...PERSONAL_NAV];
   for (const pathname of [
+    "/my-work",
     "/admin/users",
     "/admin/departments",
     "/admin/teams",

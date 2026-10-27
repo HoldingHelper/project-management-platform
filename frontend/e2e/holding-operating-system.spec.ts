@@ -53,12 +53,12 @@ async function installApi(page: Page) {
   });
 }
 
-async function login(page: Page) {
+async function login(page: Page, destination = /\/h\/holding$/) {
   await page.goto("/login");
   await page.getByLabel("Email or username").fill(user.email);
   await page.getByLabel("Password", { exact: true }).fill("valid-test-password");
   await page.getByRole("button", { name: /sign in/i }).click();
-  await expect(page).toHaveURL(/\/h\/holding$/);
+  await expect(page).toHaveURL(destination);
 }
 
 test("canonical URLs keep page identity stable", async ({ page }) => {
@@ -124,4 +124,54 @@ test("holding, venture, and function scopes form one responsive operating flow",
   expect(pageErrors).toEqual([]);
   const accessibility = await new AxeBuilder({ page }).analyze();
   expect(accessibility.violations).toEqual([]);
+});
+
+test("Docs opens on the first click and provides a return link to Holding", async ({ page }) => {
+  const pageErrors: string[] = [];
+  page.on("pageerror", (error) => pageErrors.push(error.message));
+  await installApi(page);
+  await login(page);
+
+  for (let visit = 0; visit < 2; visit += 1) {
+    await page.locator(".workspace-module-switcher").getByRole("link", { name: "Docs", exact: true }).click();
+    await expect(page).toHaveURL(/\/app\/docs$/);
+    await expect(page.getByText("Knowledge Workspace", { exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "This page couldn’t load" })).toHaveCount(0);
+    expect(pageErrors).toEqual([]);
+
+    const returnLink = page.getByRole("link", { name: "Back to Holding", exact: true });
+    await expect(returnLink).toBeVisible();
+    if (visit === 0) {
+      await page.getByRole("button", { name: "Collapse Explorer", exact: true }).click();
+      await expect(returnLink).toBeVisible();
+      await page.getByRole("button", { name: "Expand Explorer", exact: true }).click();
+    }
+    await returnLink.click();
+    await expect(page).toHaveURL(/\/h\/holding$/);
+    await expect(page.locator(".workspace-module-switcher")).toBeVisible();
+    expect(pageErrors).toEqual([]);
+  }
+});
+test("login restores the previous section instead of a stale Docs preference", async ({ page }) => {
+  await installApi(page);
+  await page.addInitScript(() => localStorage.setItem("workspace.last-module", "docs"));
+  await login(page);
+  await page.goto("/portfolio");
+  await expect(page.getByRole("heading", { name: "Project Portfolio", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: /Open profile menu/ }).click();
+  await page.getByRole("button", { name: "Log out", exact: true }).click();
+  await expect(page).toHaveURL(/\/login(?:\?|$)/);
+  await login(page, /\/portfolio$/);
+  await expect(page.getByRole("heading", { name: "Project Portfolio", exact: true })).toBeVisible();
+});
+test("Docs returns to the page it was opened from", async ({ page }) => {
+  await installApi(page);
+  await login(page);
+  await page.goto("/portfolio");
+  await page.locator(".workspace-module-switcher").getByRole("link", { name: "Docs", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Knowledge Workspace", exact: true })).toBeVisible();
+  await page.reload();
+  await page.getByRole("link", { name: "Back to Project Portfolio", exact: true }).click();
+  await expect(page).toHaveURL(/\/portfolio$/);
+  await expect(page.getByRole("heading", { name: "Project Portfolio", exact: true })).toBeVisible();
 });
