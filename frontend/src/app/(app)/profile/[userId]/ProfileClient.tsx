@@ -9,6 +9,7 @@ import {
   Edit3,
   KeyRound,
   Mail,
+  LogOut,
   MapPin,
   MessageSquare,
   Phone,
@@ -49,18 +50,20 @@ import { useStaticExportParams } from "@/lib/static-export-route";
 import { UserStatusPickerModal, UserStatusPill } from "@/components/status";
 import type { UserRead, UUID } from "@/lib/types";
 
-export default function ProfilePage() {
+export default function ProfilePage({ profileId }: { profileId?: string } = {}) {
   const { userId: exportedUserId } = useParams<{ userId: string }>();
-  const [userId] = useStaticExportParams([exportedUserId], ["profile"]);
+  const [routeUserId] = useStaticExportParams([exportedUserId ?? ""], ["profile"]);
+  const userId = profileId ?? routeUserId;
   const router = useRouter();
   const toast = useToast();
   const queryClient = useQueryClient();
-  const { user: me, setUser, hasPermission, isSuperAdmin } = useAuth();
+  const { user: me, setUser, hasPermission, isSuperAdmin, logout } = useAuth();
   const presence = usePresence(userId as UUID);
   const statusInfo = useUserStatus(userId as UUID);
   const isMe = me?.id === userId;
   const canManage = isSuperAdmin() || hasPermission("system.manage_users");
 
+  const [signingOut, setSigningOut] = useState(false);
   const [editing, setEditing] = useState(false);
   const [statusModalOpen, setStatusModalOpen] = useState(false);
   const [adminEditOpen, setAdminEditOpen] = useState(false);
@@ -165,6 +168,14 @@ export default function ProfilePage() {
                   }}
                 >
                   {editing ? "Cancel" : "Edit profile"}
+                </Button>
+                <Button variant="secondary" disabled={signingOut} onClick={async () => {
+                  if (signingOut) return;
+                  setSigningOut(true);
+                  await logout();
+                  router.replace("/login");
+                }}>
+                  <LogOut size={14} aria-hidden /> {signingOut ? "Logging out…" : "Log out"}
                 </Button>
               </>
             ) : (

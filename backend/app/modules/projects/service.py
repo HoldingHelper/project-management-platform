@@ -22,6 +22,7 @@ from app.modules.collaboration.authorization import (
     _require_task_access,
 )
 from app.modules.projects import repository as repo
+from app.modules.projects.product_access import visible_product_ids
 from app.modules.projects.critical_path import (
     CpmEdge,
     CpmTask,
@@ -293,9 +294,10 @@ async def update_product(
 
 
 async def list_products(
-    db: AsyncSession, page: int, page_size: int
+    db: AsyncSession, page: int, page_size: int, actor: CurrentUser | None = None
 ) -> tuple[List[ProductRead], int]:
-    products, total = await repo.list_products(db, (page - 1) * page_size, page_size)
+    ids = await visible_product_ids(db, actor) if actor else None
+    products, total = await repo.list_products(db, (page - 1) * page_size, page_size, product_ids=ids)
     return [ProductRead.model_validate(p) for p in products], total
 
 
@@ -543,7 +545,8 @@ async def list_all_projects(
     if current_user is not None and not _can_view_all_projects(current_user):
         user_id = current_user.user_id
     projects, total = await repo.list_all_projects(
-        db, (page - 1) * page_size, page_size, user_id=user_id
+        db, (page - 1) * page_size, page_size, user_id=user_id,
+        product_ids=await visible_product_ids(db, current_user) if current_user else None
     )
     return [ProjectRead.model_validate(p) for p in projects], total
 
@@ -555,6 +558,9 @@ async def require_project_manage_access(
     project = await repo.get_project(db, project_id)
     if project is None:
         raise NotFoundError("Project", project_id)
+    from app.modules.projects.product_access import require_product_access
+    await require_product_access(db, current_user, project.product_id)
+
     if getattr(project, "org_node_id", None) is not None:
         from app.modules.authz.service import authorize
         from app.modules.org.models import OrgNode
@@ -581,6 +587,9 @@ async def require_project_admin(
     project = await repo.get_project(db, project_id)
     if project is None:
         raise NotFoundError("Project", project_id)
+    from app.modules.projects.product_access import require_product_access
+    await require_product_access(db, current_user, project.product_id)
+
     if getattr(project, "org_node_id", None) is not None:
         from app.modules.authz.service import authorize
         from app.modules.org.models import OrgNode
@@ -1567,9 +1576,9 @@ def _current_phase(phases: List[Phase]) -> Optional[Phase]:
 
 
 async def get_portfolio_gantt(
-    db: AsyncSession, include_archived: bool = False
+    db: AsyncSession, include_archived: bool = False, current_user: CurrentUser | None = None
 ) -> PortfolioGantt:
-    projects, _ = await repo.list_all_projects(db, 0, 500)
+    projects, _ = await repo.list_all_projects(db, 0, 500, product_ids=await visible_product_ids(db, current_user) if current_user else None)
     if not include_archived:
         projects = [p for p in projects if p.status != ProjectStatus.ARCHIVED.value]
     dependencies = await repo.list_project_dependencies(db)

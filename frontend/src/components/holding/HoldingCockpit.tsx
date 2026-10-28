@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { AddProductLine } from "./AddProductLine";
+import { AddProductLine, EditProductLine } from "./AddProductLine";
 import { RemoveProductLine } from "./RemoveProductLine";
 import { notFound } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
@@ -24,22 +24,28 @@ export function HoldingCockpit({ slug }: { slug: string }) {
     <section aria-labelledby="holding-product-lines-title">
         <div className="holding-section-heading">
           <div><span className="pmp-eyebrow">Products</span><h2 id="holding-product-lines-title">Product lines</h2></div>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>{products.data && <span>{products.data.length} product lines</span>}{products.data && <AddProductLine products={products.data} />}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>{products.data && <span>{products.data.length} product lines</span>}{products.data && <AddProductLine products={products.data ?? []} />}</div>
         </div>
         {products.isLoading ? <Spinner label="Loading product lines…" /> : products.error ? (
           <Alert kind="critical" title="Product lines unavailable" description="Could not load product lines. Please try again." />
         ) : products.data?.length ? (
           <div className="venture-card-grid">
             {products.data.map((product) => (
-              <Card key={product.id} title={product.name} right={<div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}><span className="scope-badge">{product.status}</span><RemoveProductLine product={product} /></div>}>
+              <Card key={product.id} title={product.name} right={<div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}><span className="scope-badge">{product.status}</span><EditProductLine product={product} products={products.data ?? []} /><RemoveProductLine product={product} /></div>}>
                 <p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6 }}>
                   {product.description || "No description added yet."}
                 </p>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12, fontSize: 12, color: "var(--text-secondary)" }}>
+                  <span>{product.environment}</span><span>· {product.priority}</span>
+                  {product.technology_stack.length > 0 && <span>· {product.technology_stack.join(", ")}</span>}
+                  {product.repository_url && /^https?:\/\//i.test(product.repository_url) && <a href={product.repository_url} target="_blank" rel="noreferrer">Repository</a>}
+                  {product.documentation_link && /^https?:\/\//i.test(product.documentation_link) && <a href={product.documentation_link} target="_blank" rel="noreferrer">Documentation</a>}
+                </div>
               </Card>
             ))}
           </div>
         ) : (
-          <div className="holding-empty"><strong>No product lines yet</strong><span>Product lines will appear here once they are created.</span></div>
+          <div className="holding-empty"><strong>No product lines available</strong><span>Product lines you own or belong to will appear here.</span></div>
         )}
       </section>
   );

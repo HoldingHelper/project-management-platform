@@ -18,6 +18,7 @@ class Permissions:
     PRODUCTS_MANAGE_ALL = "products.manage_all"
     PRODUCTS_CREATE = "products.create"
     PRODUCTS_DELETE = "products.delete"
+    PRODUCTS_UPDATE = "products.update"
 
     PROJECTS_VIEW_ALL = "projects.view_all"
     PROJECTS_VIEW_ASSIGNED = "projects.view_assigned"
@@ -105,6 +106,7 @@ ROLE_PERMISSIONS: dict[str, list[str]] = {
     ROLE_C_LEVEL: [
         Permissions.PRODUCTS_CREATE,
         Permissions.PRODUCTS_DELETE,
+        Permissions.PRODUCTS_UPDATE,
         # Read-heavy executive role: business dashboards, org-wide analytics,
         # long-term planning, and product-line creation.
         Permissions.PRODUCTS_VIEW_ALL,

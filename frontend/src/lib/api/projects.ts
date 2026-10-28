@@ -301,7 +301,11 @@ export function detachTask(id: UUID) {
 }
 
 // ---- Project / product / phase management (admin) ----
-export function createProduct(input: { name: string; owner_user_id: UUID; description?: string }) {
+export type ProductDetails = Pick<ProductRead, "name" | "description" | "status" | "priority" | "environment" | "technology_stack" | "repository_url" | "documentation_link">;
+export function updateProduct(id: UUID, input: ProductDetails) {
+  return apiFetch<ProductRead>(`/products/${id}`, { method: "PUT", body: input });
+}
+export function createProduct(input: { name: string; owner_user_id: UUID; description?: string } & Partial<ProductDetails>) {
   return apiFetch<ProductRead>("/products", { method: "POST", body: input });
 }
 
