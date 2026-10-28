@@ -7,11 +7,10 @@ import { Archive, Bot, Layers3, Plus, Search, UsersRound, X } from "lucide-react
 import {
   addProjectMember,
   attachTask,
-  createProduct,
   createProject,
   getProjectSprints,
   getPortfolioGantt,
-  listProducts,
+  listAllProducts,
   listProjects,
   listTasks,
 } from "@/lib/api/projects";
@@ -121,7 +120,7 @@ export default function PortfolioPage() {
   const [showArchived, setShowArchived] = useViewState("portfolio-archived", false);
   const { hasPermission, isSuperAdmin } = useAuth();
   const projects = useQuery({ queryKey: ["projects"], queryFn: () => listProjects(1, 200) });
-  const products = useQuery({ queryKey: ["products"], queryFn: () => listProducts(1, 200) });
+  const products = useQuery({ queryKey: ["products"], queryFn: listAllProducts });
   const gantt = useQuery({
     queryKey: ["portfolio-gantt", showArchived],
     queryFn: () => getPortfolioGantt(showArchived),
@@ -141,7 +140,7 @@ export default function PortfolioPage() {
 
   const ownerByProduct = useMemo(() => {
     const m = new Map<UUID, UUID>();
-    for (const p of products.data?.items ?? []) m.set(p.id, p.owner_user_id);
+    for (const p of products.data ?? []) m.set(p.id, p.owner_user_id);
     return m;
   }, [products.data]);
   const items = projects.data?.items ?? [];
@@ -339,7 +338,7 @@ function TimelinePanel({
   );
 }
 
-const PRODUCT_LINES = ["PMP", "GMALL", "Organization"];
+
 const DEFAULT_SPRINTS = ["Sprint 1", "Sprint 2", "Sprint 3", "Sprint 4"];
 
 function addDaysIso(value: string, days: number) {
@@ -368,14 +367,14 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
   const queryClient = useQueryClient();
   const { user, hasPermission, isSuperAdmin } = useAuth();
   const { users, nameOf } = useUserMap();
-  const products = useQuery({ queryKey: ["products"], queryFn: () => listProducts(1, 200), enabled: open });
+  const products = useQuery({ queryKey: ["products"], queryFn: listAllProducts, enabled: open });
   const backlog = useQuery({
     queryKey: ["tasks", "unattached", "project-create"],
     queryFn: () => listTasks({ unattached: true, page_size: 16 }),
     enabled: open,
   });
   const [form, setForm] = useState({
-    product_line: "PMP",
+    product_line: "",
     name: "",
     description: "",
     priority: "P2",
@@ -401,42 +400,19 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
     queryFn: () => docSearch.trim().length >= 2 ? searchDocPages(docSearch.trim()) : listDocPages(),
     enabled: open,
   });
-  const canCreateProducts = isSuperAdmin() || hasPermission("products.manage_all");
-  const availableProductLines = useMemo(() => {
-    const existingNames = (products.data?.items ?? []).map((product) => product.name);
-    return canCreateProducts
-      ? Array.from(new Set([...PRODUCT_LINES, ...existingNames]))
-      : existingNames;
-  }, [canCreateProducts, products.data]);
+  const availableProductLines = useMemo(() => (products.data ?? []).map((product) => product.name), [products.data]);
 
   useEffect(() => {
-    if (!open || canCreateProducts || availableProductLines.length === 0) return;
+    if (!open || availableProductLines.length === 0) return;
     if (!availableProductLines.some((name) => name === form.product_line)) {
       setForm((current) => ({ ...current, product_line: availableProductLines[0] }));
     }
-  }, [availableProductLines, canCreateProducts, form.product_line, open]);
+  }, [availableProductLines, form.product_line, open]);
 
   const create = useMutation({
     mutationFn: async () => {
-      const line = form.product_line || "PMP";
-      const existingProduct = (products.data?.items ?? []).find(
-        (p) => p.name.trim().toLowerCase() === line.trim().toLowerCase(),
-      );
-      let productId = existingProduct?.id;
-      if (!productId) {
-        if (!canCreateProducts) {
-          throw new Error("Choose an existing product line to create this project.");
-        }
-        const createdProduct = await createProduct({
-          name: line,
-          owner_user_id: user!.id,
-          description:
-            line === "Organization"
-              ? "Shared organizational product line for work that spans PMP and GMALL."
-              : `${line} product line`,
-        });
-        productId = createdProduct.id;
-      }
+      const productId = products.data?.find((product) => product.name === form.product_line)?.id;
+      if (!productId) throw new Error("Choose an existing product line to create this project.");
 
       const count = Math.max(1, Math.min(52, Number(form.sprint_count) || 1));
       const sprintNames = form.sprint_names

@@ -39,6 +39,16 @@ export function deleteTaskPartition(id: UUID, replacementPartitionId?: UUID) {
 export function listProducts(page = 1, page_size = 100) {
   return apiFetch<Page<ProductRead>>(`/products?page=${page}&page_size=${page_size}`);
 }
+export async function listAllProducts() {
+  const first = await listProducts();
+  const items = [...first.items];
+  for (let page = 2; items.length < first.total_count; page++) {
+    const next = await listProducts(page);
+    if (next.items.length === 0) break;
+    items.push(...next.items);
+  }
+  return items;
+}
 export function getProduct(id: UUID) {
   return apiFetch<ProductRead>(`/products/${id}`);
 }

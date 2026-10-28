@@ -170,7 +170,7 @@ async def _generation_request_content(
 async def create_product(
     payload: ProductCreate,
     current_user: CurrentUser = Depends(
-        require_permission(Permissions.PRODUCTS_MANAGE_ALL)
+        require_permission(Permissions.PRODUCTS_CREATE, Permissions.PRODUCTS_MANAGE_ALL)
     ),
     db: AsyncSession = Depends(get_db),
 ) -> ProductRead:

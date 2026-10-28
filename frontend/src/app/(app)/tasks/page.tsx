@@ -4,7 +4,7 @@ import { Suspense, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarDays, ExternalLink, GripVertical, Link2, Plus, SlidersHorizontal, Ticket, X } from "lucide-react";
+import { Check, CalendarDays, ExternalLink, GripVertical, Link2, Plus, SlidersHorizontal, Ticket, X } from "lucide-react";
 import {
   attachTask,
   detachTask,
@@ -423,10 +423,10 @@ function TasksPage() {
 
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
         <span style={{ fontSize: 12, color: "var(--text-tertiary)", fontWeight: 700 }}>Saved filters</span>
-        <Button variant="secondary" onClick={() => applySavedFilter("my-blocked")}>My blocked</Button>
-        <Button variant="secondary" onClick={() => applySavedFilter("due-week")}>Due this week</Button>
-        <Button variant="secondary" onClick={() => applySavedFilter("needs-review")}>Needs review</Button>
-        <Button variant="secondary" onClick={() => applySavedFilter("backlog")}>Backlog</Button>
+        <Button variant={view === "my-blocked" ? "primary" : "secondary"} aria-pressed={view === "my-blocked"} onClick={() => applySavedFilter("my-blocked")}>{view === "my-blocked" && <Check size={15} aria-hidden />}My blocked</Button>
+        <Button variant={view === "due-week" ? "primary" : "secondary"} aria-pressed={view === "due-week"} onClick={() => applySavedFilter("due-week")}>{view === "due-week" && <Check size={15} aria-hidden />}Due this week</Button>
+        <Button variant={view === "needs-review" ? "primary" : "secondary"} aria-pressed={view === "needs-review"} onClick={() => applySavedFilter("needs-review")}>{view === "needs-review" && <Check size={15} aria-hidden />}Needs review</Button>
+        <Button variant={view === "backlog" ? "primary" : "secondary"} aria-pressed={view === "backlog"} onClick={() => applySavedFilter("backlog")}>{view === "backlog" && <Check size={15} aria-hidden />}Backlog</Button>
       </div>
 
       <button className="pmp-mobile-filter-trigger" type="button" onClick={() => setFiltersOpen(true)} aria-expanded={filtersOpen}>

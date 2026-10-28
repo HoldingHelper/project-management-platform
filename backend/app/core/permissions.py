@@ -16,6 +16,7 @@ class Permissions:
     PRODUCTS_VIEW_ALL = "products.view_all"
     PRODUCTS_VIEW_ASSIGNED = "products.view_assigned"
     PRODUCTS_MANAGE_ALL = "products.manage_all"
+    PRODUCTS_CREATE = "products.create"
 
     PROJECTS_VIEW_ALL = "projects.view_all"
     PROJECTS_VIEW_ASSIGNED = "projects.view_assigned"
@@ -101,8 +102,9 @@ ALL_ROLES = [
 ROLE_PERMISSIONS: dict[str, list[str]] = {
     ROLE_SUPER_ADMIN: Permissions.all(),
     ROLE_C_LEVEL: [
+        Permissions.PRODUCTS_CREATE,
         # Read-heavy executive role: business dashboards, org-wide analytics,
-        # long-term planning. No day-to-day management permissions.
+        # long-term planning, and product-line creation.
         Permissions.PRODUCTS_VIEW_ALL,
         Permissions.PROJECTS_VIEW_ALL,
         Permissions.PROJECTS_CREATE,
