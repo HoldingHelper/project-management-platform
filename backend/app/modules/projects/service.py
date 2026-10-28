@@ -259,6 +259,18 @@ async def create_product(db: AsyncSession, payload: ProductCreate) -> ProductRea
     return ProductRead.model_validate(product)
 
 
+async def delete_product(db: AsyncSession, product_id: UUID) -> None:
+    # Lock the parent row to prevent a concurrent project insert from racing deletion.
+    product = (await db.execute(select(Product).where(Product.id == product_id).with_for_update())).scalar_one_or_none()
+    if product is None:
+        raise NotFoundError("Product line", product_id)
+    linked_project = (await db.execute(select(Project.id).where(Project.product_id == product_id).limit(1))).scalar_one_or_none()
+    if linked_project is not None:
+        raise BusinessRuleError("This product line has projects. Move or remove its projects before removing the product line.")
+    await db.execute(delete(Product).where(Product.id == product_id))
+    await db.commit()
+
+
 async def get_product(db: AsyncSession, product_id: UUID) -> ProductRead:
     product = await repo.get_product(db, product_id)
     if product is None:

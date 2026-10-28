@@ -122,6 +122,11 @@ export default function PortfolioPage() {
   const { hasPermission, isSuperAdmin } = useAuth();
   const projects = useQuery({ queryKey: ["projects"], queryFn: () => listProjects(1, 200) });
   const products = useQuery({ queryKey: ["products"], queryFn: listAllProducts });
+  useEffect(() => {
+    if (productLine !== "all" && products.data && !products.data.some((product) => product.id === productLine)) {
+      setProductLine("all");
+    }
+  }, [productLine, products.data, setProductLine]);
   const gantt = useQuery({
     queryKey: ["portfolio-gantt", showArchived],
     queryFn: () => getPortfolioGantt(showArchived),

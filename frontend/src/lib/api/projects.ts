@@ -49,6 +49,9 @@ export async function listAllProducts() {
   }
   return items;
 }
+export function deleteProduct(id: UUID) {
+  return apiFetch<void>(`/products/${id}`, { method: "DELETE" });
+}
 export function getProduct(id: UUID) {
   return apiFetch<ProductRead>(`/products/${id}`);
 }

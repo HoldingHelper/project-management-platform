@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { AddProductLine } from "./AddProductLine";
+import { RemoveProductLine } from "./RemoveProductLine";
 import { notFound } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, ArrowRight, Building2, CalendarClock, CircleDot, Network, UsersRound } from "lucide-react";
@@ -30,7 +31,7 @@ export function HoldingCockpit({ slug }: { slug: string }) {
         ) : products.data?.length ? (
           <div className="venture-card-grid">
             {products.data.map((product) => (
-              <Card key={product.id} title={product.name} right={<span className="scope-badge">{product.status}</span>}>
+              <Card key={product.id} title={product.name} right={<div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}><span className="scope-badge">{product.status}</span><RemoveProductLine product={product} /></div>}>
                 <p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6 }}>
                   {product.description || "No description added yet."}
                 </p>

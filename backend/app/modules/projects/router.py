@@ -208,6 +208,18 @@ async def update_product(
     return await service.update_product(db, product_id, payload)
 
 
+@products_router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_product(
+    product_id: UUID,
+    current_user: CurrentUser = Depends(
+        require_permission(Permissions.PRODUCTS_DELETE, Permissions.PRODUCTS_MANAGE_ALL)
+    ),
+    db: AsyncSession = Depends(get_db),
+) -> Response:
+    await service.delete_product(db, product_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
 @products_router.get("/{product_id}/projects", response_model=Page[ProjectRead])
 async def get_projects_by_product(
     product_id: UUID,
