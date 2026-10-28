@@ -407,7 +407,7 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
     end_date: "",
     actual_completion_date: "",
     sprint_count: "4",
-    sprint_names: DEFAULT_SPRINTS.join("\n"),
+    sprint_names: [...DEFAULT_SPRINTS],
     project_manager_id: "",
     lead_ids: [] as UUID[],
     task_ids: [] as UUID[],
@@ -436,11 +436,7 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
       if (!productId) throw new Error("Choose an existing product line to create this project.");
 
       const count = Math.max(1, Math.min(52, Number(form.sprint_count) || 1));
-      const sprintNames = form.sprint_names
-        .split("\n")
-        .map((name) => name.trim())
-        .filter(Boolean);
-      while (sprintNames.length < count) sprintNames.push(`Sprint ${sprintNames.length + 1}`);
+      const sprintNames = form.sprint_names.map((name) => name.trim());
       const sprintStart = form.start_date || new Date().toISOString().slice(0, 10);
 
       const project = await createProject({
@@ -521,12 +517,30 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
       task_ids: f.task_ids.includes(id) ? f.task_ids.filter((x) => x !== id) : [...f.task_ids, id],
     }));
 
+  function resizeSprints(value: string) {
+    if (value === "") {
+      setForm((current) => ({ ...current, sprint_count: "" }));
+      return;
+    }
+    const count = Math.max(1, Math.min(52, Math.trunc(Number(value)) || 1));
+    setForm((current) => {
+      const names = current.sprint_names.slice(0, count);
+      while (names.length < count) {
+        let number = names.length + 1;
+        while (names.includes(`Sprint ${number}`)) number++;
+        names.push(`Sprint ${number}`);
+      }
+      return { ...current, sprint_count: String(count), sprint_names: names };
+    });
+  }
+
   const datesPaired = Boolean(form.start_date) === Boolean(form.end_date);
   const datesOrdered = !form.start_date || !form.end_date || form.end_date >= form.start_date;
   const valid = form.name.trim().length > 0
     && availableProductLines.includes(form.product_line)
     && availableProductLines.length > 0
-    && Boolean(form.sprint_names.trim())
+    && Number(form.sprint_count) === form.sprint_names.length
+    && form.sprint_names.every((name) => name.trim().length > 0)
     && datesPaired
     && datesOrdered
     && (!form.actual_completion_date || Boolean(form.start_date && form.end_date));
@@ -653,23 +667,43 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
           <Card title="Markdown preview" padded>
             <MarkdownPreview value={form.description} />
           </Card>
-          <div style={{ display: "grid", gridTemplateColumns: "100px 1fr", gap: 10 }}>
-            <Field label="Sprints">
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <Field label="Number of sprints" hint="Changing this count updates the sprint list below.">
               <TextInput
                 type="number"
                 min={1}
                 max={52}
+                step={1}
                 value={form.sprint_count}
-                onChange={(e) => setForm((f) => ({ ...f, sprint_count: e.target.value }))}
+                onFocus={(event) => event.currentTarget.select()}
+                onChange={(event) => resizeSprints(event.target.value)}
+                onBlur={() => { if (!form.sprint_count) resizeSprints(String(form.sprint_names.length)); }}
               />
             </Field>
-            <Field label="Sprint names">
-              <TextArea
-                value={form.sprint_names}
-                onChange={(e) => setForm((f) => ({ ...f, sprint_names: e.target.value }))}
-                style={{ minHeight: 88 }}
-              />
-            </Field>
+            <div role="group" aria-label="Sprint names" style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 260, overflowY: "auto", padding: 3 }}>
+              {form.sprint_names.map((name, index) => (
+                <div key={index} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ width: 22, flexShrink: 0, fontSize: 12, color: "var(--text-tertiary)" }}>{index + 1}.</span>
+                  <TextInput
+                    aria-label={`Sprint ${index + 1} name`}
+                    value={name}
+                    maxLength={200}
+                    required
+                    onChange={(event) => setForm((current) => ({ ...current, sprint_names: current.sprint_names.map((item, itemIndex) => itemIndex === index ? event.target.value : item) }))}
+                    style={{ flex: 1, minWidth: 0 }}
+                  />
+                  <Button
+                    variant="ghost"
+                    aria-label={`Remove sprint ${index + 1}`}
+                    title={form.sprint_names.length === 1 ? "At least one sprint is required" : `Remove sprint ${index + 1}`}
+                    disabled={form.sprint_names.length === 1}
+                    onClick={() => setForm((current) => ({ ...current, sprint_names: current.sprint_names.filter((_, itemIndex) => itemIndex !== index), sprint_count: String(current.sprint_names.length - 1) }))}
+                    style={{ padding: "0 10px" }}
+                  ><X size={16} aria-hidden /></Button>
+                </div>
+              ))}
+            </div>
+            <Button variant="tertiary" disabled={form.sprint_names.length >= 52} onClick={() => resizeSprints(String(form.sprint_names.length + 1))}><Plus size={14} aria-hidden />Add sprint</Button>
           </div>
           <div style={{ fontSize: 11.5, color: "var(--text-tertiary)", marginTop: -6 }}>
             Every sprint is scheduled as an exact 14-day window. New projects always include at least one sprint.
