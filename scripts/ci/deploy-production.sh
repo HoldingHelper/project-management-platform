@@ -29,6 +29,7 @@ previous_api=$(active_revision pmp-api)
 previous_web=$(active_revision pmp-frontend)
 echo "Rollback revisions: API=$previous_api frontend=$previous_web"
 
+gcloud builds submit backend --region="$region" --config=scripts/ci/cloudbuild-test.yaml --suppress-logs --quiet
 gcloud builds submit backend --region="$region" --config=scripts/ci/cloudbuild-api.yaml --substitutions="_IMAGE=$api_image" --suppress-logs --quiet
 gcloud builds submit frontend --region="$region" --config=scripts/ci/cloudbuild-web.yaml --substitutions="_IMAGE=$web_image" --suppress-logs --quiet
 api_digest=$(gcloud artifacts docker images describe "$api_image" --format='value(image_summary.digest)')
