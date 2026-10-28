@@ -25,7 +25,7 @@ frontend-check:
 deploy-production:
   stage: deploy
   image: google/cloud-sdk:slim@sha256:b38f2881552c3054d140c8eeb4ad88bdc0eb4deeeb38507c5dac1403adc3ee64
-  tags: [avenour-build]
+  tags: [avenour-deploy]
   timeout: 90m
   resource_group: pmp-production
   interruptible: false
