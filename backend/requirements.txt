@@ -18,8 +18,9 @@ websockets==14.1
 python-slugify==8.0.4
 structlog==24.4.0
 openpyxl==3.1.5
-langchain-core>=1.1.0
-langchain-openai>=1.1.0
+langchain-core==1.6.10
+langchain-openai==1.7.2
+langsmith==0.8.5
 openai>=1.40.0
 tiktoken>=0.10.0
 langgraph==1.0.8
