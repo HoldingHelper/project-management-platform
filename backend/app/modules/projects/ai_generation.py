@@ -913,7 +913,11 @@ async def get_generation_draft(
 
 
 async def _ensure_ai_product(db: AsyncSession, user_id: UUID) -> Product:
-    products, _ = await repo.list_products(db, 0, 1)
+    from app.core.current_user import CurrentUser
+    from app.modules.projects.product_access import visible_product_ids
+    actor = CurrentUser(user_id=user_id, email="", full_name="", allow_role_bypass=False)
+    ids = await visible_product_ids(db, actor)
+    products, _ = await repo.list_products(db, 0, 1, product_ids=ids)
     if products:
         return products[0]
     product = Product(

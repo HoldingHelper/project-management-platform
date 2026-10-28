@@ -133,15 +133,14 @@ async def get_product(db: AsyncSession, product_id: UUID) -> Optional[Product]:
 
 
 async def list_products(
-    db: AsyncSession, offset: int, limit: int
+    db: AsyncSession, offset: int, limit: int, product_ids: list[UUID] | None = None,
 ) -> Tuple[Sequence[Product], int]:
-    result = await db.execute(select(Product))
-    all_products = result.scalars().all()
-    stmt = (
-        select(Product).order_by(Product.created_at.desc()).offset(offset).limit(limit)
-    )
-    page_result = await db.execute(stmt)
-    return page_result.scalars().all(), len(all_products)
+    stmt = select(Product)
+    if product_ids is not None:
+        stmt = stmt.where(Product.id.in_(product_ids))
+    total = (await db.execute(select(func.count()).select_from(stmt.subquery()))).scalar_one()
+    result = await db.execute(stmt.order_by(Product.created_at.desc()).offset(offset).limit(limit))
+    return result.scalars().all(), total
 
 
 # ---------- Projects ----------
@@ -181,7 +180,7 @@ async def list_projects_by_product(
 
 
 async def list_all_projects(
-    db: AsyncSession, offset: int, limit: int, user_id: Optional[UUID] = None
+    db: AsyncSession, offset: int, limit: int, user_id: Optional[UUID] = None, product_ids: list[UUID] | None = None
 ) -> Tuple[Sequence[Project], int]:
     stmt = select(Project)
     if user_id is not None:
@@ -197,6 +196,8 @@ async def list_all_projects(
             )
             .distinct()
         )
+    if product_ids is not None:
+        stmt = stmt.where(Project.product_id.in_(product_ids))
     total = (
         await db.execute(select(func.count()).select_from(stmt.subquery()))
     ).scalar_one()

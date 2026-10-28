@@ -39,6 +39,19 @@ export function deleteTaskPartition(id: UUID, replacementPartitionId?: UUID) {
 export function listProducts(page = 1, page_size = 100) {
   return apiFetch<Page<ProductRead>>(`/products?page=${page}&page_size=${page_size}`);
 }
+export async function listAllProducts() {
+  const first = await listProducts();
+  const items = [...first.items];
+  for (let page = 2; items.length < first.total_count; page++) {
+    const next = await listProducts(page);
+    if (next.items.length === 0) break;
+    items.push(...next.items);
+  }
+  return items;
+}
+export function deleteProduct(id: UUID) {
+  return apiFetch<void>(`/products/${id}`, { method: "DELETE" });
+}
 export function getProduct(id: UUID) {
   return apiFetch<ProductRead>(`/products/${id}`);
 }
@@ -288,7 +301,11 @@ export function detachTask(id: UUID) {
 }
 
 // ---- Project / product / phase management (admin) ----
-export function createProduct(input: { name: string; owner_user_id: UUID; description?: string }) {
+export type ProductDetails = Pick<ProductRead, "name" | "description" | "status" | "priority" | "environment" | "technology_stack" | "repository_url" | "documentation_link">;
+export function updateProduct(id: UUID, input: ProductDetails) {
+  return apiFetch<ProductRead>(`/products/${id}`, { method: "PUT", body: input });
+}
+export function createProduct(input: { name: string; owner_user_id: UUID; description?: string } & Partial<ProductDetails>) {
   return apiFetch<ProductRead>("/products", { method: "POST", body: input });
 }
 

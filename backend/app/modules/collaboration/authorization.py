@@ -49,6 +49,9 @@ async def _require_project_access(
     if project is None:
         raise NotFoundError("Project", project_id)
 
+    from app.modules.projects.product_access import require_product_access
+    await require_product_access(db, user, project.product_id)
+
     # Migrated projects use the holding graph as the canonical boundary for
     # REST, MCP, and WebSocket callers. Legacy checks remain only for rows not
     # yet backfilled, which makes rollout reversible.
@@ -182,29 +185,11 @@ async def authorize_entity_access(
     kind = entity_type.strip().lower()
 
     if kind == "product":
-        product = await db.get(Product, entity_id)
-        if product is None:
+        from app.modules.projects.product_access import require_product_access
+        if await db.get(Product, entity_id) is None:
             raise NotFoundError("Product", entity_id)
-        if (
-            _can_view_all_projects(user)
-            or user.has_any_permission(
-                Permissions.PRODUCTS_VIEW_ALL,
-                Permissions.PRODUCTS_MANAGE_ALL,
-            )
-            or product.owner_user_id == user.user_id
-        ):
-            return
-        result = await db.execute(
-            select(ProjectMember)
-            .join(Project, ProjectMember.project_id == Project.id)
-            .where(
-                Project.product_id == entity_id,
-                ProjectMember.user_id == user.user_id,
-            )
-        )
-        if result.scalar_one_or_none() is not None:
-            return
-        raise ForbiddenError("You do not have access to this product.")
+        await require_product_access(db, user, entity_id)
+        return
 
     if kind == "project":
         await _require_project_access(db, user, entity_id)

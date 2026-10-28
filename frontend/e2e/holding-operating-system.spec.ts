@@ -139,7 +139,7 @@ test("Docs opens on the first click and provides a return link to Holding", asyn
     await expect(page.getByRole("heading", { name: "This page couldn’t load" })).toHaveCount(0);
     expect(pageErrors).toEqual([]);
 
-    const returnLink = page.getByRole("link", { name: "Back to Holding", exact: true });
+    const returnLink = page.getByRole("link", { name: "Holding", exact: true });
     await expect(returnLink).toBeVisible();
     if (visit === 0) {
       await page.getByRole("button", { name: "Collapse Explorer", exact: true }).click();
@@ -171,7 +171,7 @@ test("Docs returns to the page it was opened from", async ({ page }) => {
   await page.locator(".workspace-module-switcher").getByRole("link", { name: "Docs", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Knowledge Workspace", exact: true })).toBeVisible();
   await page.reload();
-  await page.getByRole("link", { name: "Back to Project Portfolio", exact: true }).click();
+  await page.getByRole("link", { name: "Holding", exact: true }).click();
   await expect(page).toHaveURL(/\/portfolio$/);
   await expect(page.getByRole("heading", { name: "Project Portfolio", exact: true })).toBeVisible();
 });

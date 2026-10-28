@@ -1,17 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Archive, Bot, Layers3, Plus, Search, UsersRound, X } from "lucide-react";
 import {
   addProjectMember,
   attachTask,
-  createProduct,
   createProject,
   getProjectSprints,
   getPortfolioGantt,
-  listProducts,
+  listAllProducts,
   listProjects,
   listTasks,
 } from "@/lib/api/projects";
@@ -117,11 +116,17 @@ function ProjectLevelBadge({ level }: { level: ProjectLevel }) {
 export default function PortfolioPage() {
   const [search, setSearch] = useViewState("portfolio-search", "");
   const [createOpen, setCreateOpen] = useState(false);
+  const [productLine, setProductLine] = useViewState<string>("portfolio-product-line", "all");
   const [timelinePartition, setTimelinePartition] = useViewState<string>("portfolio-partition", "all");
   const [showArchived, setShowArchived] = useViewState("portfolio-archived", false);
   const { hasPermission, isSuperAdmin } = useAuth();
   const projects = useQuery({ queryKey: ["projects"], queryFn: () => listProjects(1, 200) });
-  const products = useQuery({ queryKey: ["products"], queryFn: () => listProducts(1, 200) });
+  const products = useQuery({ queryKey: ["products"], queryFn: listAllProducts });
+  useEffect(() => {
+    if (productLine !== "all" && products.data && !products.data.some((product) => product.id === productLine)) {
+      setProductLine("all");
+    }
+  }, [productLine, products.data, setProductLine]);
   const gantt = useQuery({
     queryKey: ["portfolio-gantt", showArchived],
     queryFn: () => getPortfolioGantt(showArchived),
@@ -141,18 +146,20 @@ export default function PortfolioPage() {
 
   const ownerByProduct = useMemo(() => {
     const m = new Map<UUID, UUID>();
-    for (const p of products.data?.items ?? []) m.set(p.id, p.owner_user_id);
+    for (const p of products.data ?? []) m.set(p.id, p.owner_user_id);
     return m;
   }, [products.data]);
   const items = projects.data?.items ?? [];
   const q = search.trim().toLowerCase();
-  const filtered = q
-    ? items.filter((p) => p.name.toLowerCase().includes(q) || p.id.toLowerCase().includes(q))
-    : items;
+  const filtered = items.filter((project) =>
+    (productLine === "all" || project.product_id === productLine) &&
+    (!q || project.name.toLowerCase().includes(q) || project.id.toLowerCase().includes(q))
+  );
   const visibleGantt = useMemo(() => {
     const source = gantt.data ?? { projects: [], links: [] };
     const match = (p: (typeof source.projects)[number]) => {
-      return timelinePartition === "all" || projectPartitionFromTags(p.tags) === timelinePartition;
+      return (productLine === "all" || p.product_id === productLine) &&
+        (timelinePartition === "all" || projectPartitionFromTags(p.tags) === timelinePartition);
     };
     const modeProjects = source.projects.filter(match);
     const ids = new Set(modeProjects.map((p) => p.id));
@@ -160,7 +167,7 @@ export default function PortfolioPage() {
       projects: modeProjects,
       links: source.links.filter((l) => ids.has(l.predecessor_project_id) && ids.has(l.successor_project_id)),
     };
-  }, [gantt.data, timelinePartition]);
+  }, [gantt.data, timelinePartition, productLine]);
 
   return (
     <div style={{ ...PAGE_STYLE, gap: 18 }}>
@@ -186,6 +193,20 @@ export default function PortfolioPage() {
           ) : undefined
         }
       />
+
+      <div style={{ display: "flex", alignItems: "flex-end", gap: 10, flexWrap: "wrap" }}>
+        <Field label="Product line">
+          <Select
+            aria-label="Filter projects by product line"
+            value={productLine}
+            onChange={(event) => setProductLine(event.target.value)}
+            options={[{ value: "all", label: "All product lines" }, ...(products.data ?? []).map((product) => ({ value: product.id, label: product.name }))]}
+            disabled={products.isLoading || !!products.error}
+            style={{ minWidth: 220 }}
+          />
+        </Field>
+        {productLine !== "all" && <Button variant="tertiary" onClick={() => setProductLine("all")}><X size={14} aria-hidden />Clear product line</Button>}
+      </div>
 
       <FocusCard
         title="Portfolio timeline"
@@ -233,7 +254,7 @@ export default function PortfolioPage() {
           <Spinner label="Loading projects…" />
         ) : filtered.length === 0 ? (
           <EmptyState
-            title={items.length === 0 ? "No projects yet" : `No projects match “${search}”`}
+            title={items.length === 0 ? "No projects yet" : "No projects match the current filters"}
             hint={items.length === 0 ? (canCreate ? "Create the first project to group imported tasks." : "An administrator creates projects here.") : undefined}
           />
         ) : (
@@ -283,7 +304,7 @@ export default function PortfolioPage() {
         </div>
       </section>
 
-      <CreateProjectModal open={createOpen} onClose={() => setCreateOpen(false)} partitions={projectPartitions} />
+      {createOpen && <CreateProjectModal open onClose={() => setCreateOpen(false)} partitions={projectPartitions} />}
     </div>
   );
 }
@@ -339,7 +360,7 @@ function TimelinePanel({
   );
 }
 
-const PRODUCT_LINES = ["PMP", "GMALL", "Organization"];
+
 const DEFAULT_SPRINTS = ["Sprint 1", "Sprint 2", "Sprint 3", "Sprint 4"];
 
 function addDaysIso(value: string, days: number) {
@@ -368,14 +389,14 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
   const queryClient = useQueryClient();
   const { user, hasPermission, isSuperAdmin } = useAuth();
   const { users, nameOf } = useUserMap();
-  const products = useQuery({ queryKey: ["products"], queryFn: () => listProducts(1, 200), enabled: open });
+  const products = useQuery({ queryKey: ["products"], queryFn: listAllProducts, enabled: open });
   const backlog = useQuery({
     queryKey: ["tasks", "unattached", "project-create"],
     queryFn: () => listTasks({ unattached: true, page_size: 16 }),
     enabled: open,
   });
   const [form, setForm] = useState({
-    product_line: "PMP",
+    product_line: "",
     name: "",
     description: "",
     priority: "P2",
@@ -386,7 +407,7 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
     end_date: "",
     actual_completion_date: "",
     sprint_count: "4",
-    sprint_names: DEFAULT_SPRINTS.join("\n"),
+    sprint_names: [...DEFAULT_SPRINTS],
     project_manager_id: "",
     lead_ids: [] as UUID[],
     task_ids: [] as UUID[],
@@ -401,49 +422,22 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
     queryFn: () => docSearch.trim().length >= 2 ? searchDocPages(docSearch.trim()) : listDocPages(),
     enabled: open,
   });
-  const canCreateProducts = isSuperAdmin() || hasPermission("products.manage_all");
-  const availableProductLines = useMemo(() => {
-    const existingNames = (products.data?.items ?? []).map((product) => product.name);
-    return canCreateProducts
-      ? Array.from(new Set([...PRODUCT_LINES, ...existingNames]))
-      : existingNames;
-  }, [canCreateProducts, products.data]);
+  const availableProductLines = useMemo(() => (products.data ?? []).map((product) => product.name), [products.data]);
 
   useEffect(() => {
-    if (!open || canCreateProducts || availableProductLines.length === 0) return;
-    if (!availableProductLines.some((name) => name === form.product_line)) {
-      setForm((current) => ({ ...current, product_line: availableProductLines[0] }));
+    if (form.product_line && (!open || (products.data && !availableProductLines.includes(form.product_line)))) {
+      setForm((current) => ({ ...current, product_line: "" }));
     }
-  }, [availableProductLines, canCreateProducts, form.product_line, open]);
+  }, [availableProductLines, form.product_line, open, products.data]);
 
+  const submitting = useRef(false);
   const create = useMutation({
     mutationFn: async () => {
-      const line = form.product_line || "PMP";
-      const existingProduct = (products.data?.items ?? []).find(
-        (p) => p.name.trim().toLowerCase() === line.trim().toLowerCase(),
-      );
-      let productId = existingProduct?.id;
-      if (!productId) {
-        if (!canCreateProducts) {
-          throw new Error("Choose an existing product line to create this project.");
-        }
-        const createdProduct = await createProduct({
-          name: line,
-          owner_user_id: user!.id,
-          description:
-            line === "Organization"
-              ? "Shared organizational product line for work that spans PMP and GMALL."
-              : `${line} product line`,
-        });
-        productId = createdProduct.id;
-      }
+      const productId = products.data?.find((product) => product.name === form.product_line)?.id;
+      if (!productId) throw new Error("Choose an existing product line to create this project.");
 
       const count = Math.max(1, Math.min(52, Number(form.sprint_count) || 1));
-      const sprintNames = form.sprint_names
-        .split("\n")
-        .map((name) => name.trim())
-        .filter(Boolean);
-      while (sprintNames.length < count) sprintNames.push(`Sprint ${sprintNames.length + 1}`);
+      const sprintNames = form.sprint_names.map((name) => name.trim());
       const sprintStart = form.start_date || new Date().toISOString().slice(0, 10);
 
       const project = await createProject({
@@ -470,47 +464,54 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
         }),
       });
 
-      const memberRoles = new Map<UUID, string>();
-      if (user?.id) memberRoles.set(user.id, "ProjectManager");
-      if (form.project_manager_id) memberRoles.set(form.project_manager_id as UUID, "ProjectManager");
-      for (const id of form.lead_ids) memberRoles.set(id, "TeamLead");
-      await Promise.all(
-        [...memberRoles.entries()].map(([memberId, role]) =>
-          addProjectMember(project.id, memberId, role).catch(() => undefined),
-        ),
-      );
-
-      const createdSprints = await getProjectSprints(project.id);
-      const targetSprint = createdSprints[0]?.id;
-      if (targetSprint) {
-        await Promise.all(form.task_ids.map((taskId) => attachTask(taskId, targetSprint).catch(() => undefined)));
+      // The project is saved. Close now; optional setup must never invite a retry of creation.
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      queryClient.invalidateQueries({ queryKey: ["portfolio-gantt"] });
+      onClose();
+      let setupFailures = 0;
+      try {
+        const memberRoles = new Map<UUID, string>();
+        if (form.project_manager_id && form.project_manager_id !== user?.id) memberRoles.set(form.project_manager_id, "ProjectManager");
+        for (const id of form.lead_ids) if (id !== user?.id) memberRoles.set(id, "TeamLead");
+        const memberResults = await Promise.allSettled(
+          [...memberRoles.entries()].map(([memberId, role]) => addProjectMember(project.id, memberId, role)),
+        );
+        setupFailures += memberResults.filter((result) => result.status === "rejected").length;
+        if (form.task_ids.length) {
+          const createdSprints = await getProjectSprints(project.id);
+          const targetSprint = createdSprints[0]?.id;
+          if (targetSprint) {
+            const taskResults = await Promise.allSettled(form.task_ids.map((taskId) => attachTask(taskId, targetSprint)));
+            setupFailures += taskResults.filter((result) => result.status === "rejected").length;
+          } else setupFailures += form.task_ids.length;
+        }
+        const docResults = await Promise.allSettled(
+          selectedDocs.map((doc) => addDocLink(doc.id, { entity_type: "project", entity_id: project.id })),
+        );
+        setupFailures += docResults.filter((result) => result.status === "rejected").length;
+      } catch {
+        setupFailures++;
       }
-
-      const docResults = await Promise.allSettled(
-        selectedDocs.map((doc) => addDocLink(doc.id, { entity_type: "project", entity_id: project.id })),
-      );
-
-      return { project, docLinkFailures: docResults.filter((result) => result.status === "rejected").length };
+      return { setupFailures };
     },
-    onSuccess: ({ docLinkFailures }) => {
+    onSuccess: ({ setupFailures }) => {
       toast.push(
-        docLinkFailures
-          ? `Project created, but ${docLinkFailures} document link(s) could not be added.`
-          : "Project created with two-week sprints, members, tasks, and documents.",
-        docLinkFailures ? "error" : "success",
+        setupFailures
+          ? "Project created. Some members, tasks, or documents could not be linked; finish setup from the project."
+          : "Project created successfully.",
+        setupFailures ? "error" : "success",
       );
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["portfolio-gantt"] });
       queryClient.invalidateQueries({ queryKey: ["chat-channels"] });
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
-      setSelectedDocs([]);
-      setDocSearch("");
-      onClose();
     },
     onError: (error) => {
       toast.push(error instanceof Error ? error.message : "Could not create project.", "error");
     },
+    onSettled: () => { submitting.current = false; },
+    retry: false,
   });
 
   const toggleLead = (id: UUID) =>
@@ -524,12 +525,30 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
       task_ids: f.task_ids.includes(id) ? f.task_ids.filter((x) => x !== id) : [...f.task_ids, id],
     }));
 
+  function resizeSprints(value: string) {
+    if (value === "") {
+      setForm((current) => ({ ...current, sprint_count: "" }));
+      return;
+    }
+    const count = Math.max(1, Math.min(52, Math.trunc(Number(value)) || 1));
+    setForm((current) => {
+      const names = current.sprint_names.slice(0, count);
+      while (names.length < count) {
+        let number = names.length + 1;
+        while (names.includes(`Sprint ${number}`)) number++;
+        names.push(`Sprint ${number}`);
+      }
+      return { ...current, sprint_count: String(count), sprint_names: names };
+    });
+  }
+
   const datesPaired = Boolean(form.start_date) === Boolean(form.end_date);
   const datesOrdered = !form.start_date || !form.end_date || form.end_date >= form.start_date;
   const valid = form.name.trim().length > 0
-    && form.product_line.trim().length > 0
+    && availableProductLines.includes(form.product_line)
     && availableProductLines.length > 0
-    && Boolean(form.sprint_names.trim())
+    && Number(form.sprint_count) === form.sprint_names.length
+    && form.sprint_names.every((name) => name.trim().length > 0)
     && datesPaired
     && datesOrdered
     && (!form.actual_completion_date || Boolean(form.start_date && form.end_date));
@@ -538,7 +557,8 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
   return (
     <Modal
       open={open}
-      onClose={onClose}
+      onClose={() => { if (!submitting.current) onClose(); }}
+      closeOnBackdrop={!create.isPending}
       title="New project"
       width={900}
       footer={
@@ -548,8 +568,12 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
               <Bot size={14} /> Use AI generator
             </Button>
           </Link>
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button disabled={!valid || create.isPending} onClick={() => create.mutate()}>
+          <Button variant="secondary" disabled={create.isPending} onClick={onClose}>Cancel</Button>
+          <Button disabled={!valid || create.isPending} onClick={() => {
+            if (!valid || submitting.current) return;
+            submitting.current = true;
+            create.mutate();
+          }}>
             {create.isPending ? "Creating…" : "Create project"}
           </Button>
         </>
@@ -576,18 +600,22 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
           <Field label="Project name">
             <TextInput value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="e.g. GMall Rebuild" />
           </Field>
-          <Field label="Product line">
+          <Field label="Product line (required)" hint="Choose one product line for this project.">
             <Select
+              aria-label="Product line"
+              required
+              placeholder="Select a product line…"
+              disabled={products.isLoading || !!products.error}
               value={form.product_line}
               onChange={(e) => setForm((f) => ({ ...f, product_line: e.target.value }))}
               options={availableProductLines.map((p) => ({ value: p, label: p }))}
             />
-            {availableProductLines.length === 0 && (
-              <span style={{ fontSize: 11.5, color: "var(--status-delayed)" }}>
-                An administrator must create a product line before the first project can be added.
-              </span>
-            )}
           </Field>
+          {!products.isLoading && availableProductLines.length === 0 && (
+            <span style={{ fontSize: 11.5, color: "var(--status-delayed)" }}>
+              Add a product line in Holding before creating a project.
+            </span>
+          )}
           <Field label="Project level">
             <Select
               value={form.level}
@@ -652,23 +680,43 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
           <Card title="Markdown preview" padded>
             <MarkdownPreview value={form.description} />
           </Card>
-          <div style={{ display: "grid", gridTemplateColumns: "100px 1fr", gap: 10 }}>
-            <Field label="Sprints">
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <Field label="Number of sprints" hint="Changing this count updates the sprint list below.">
               <TextInput
                 type="number"
                 min={1}
                 max={52}
+                step={1}
                 value={form.sprint_count}
-                onChange={(e) => setForm((f) => ({ ...f, sprint_count: e.target.value }))}
+                onFocus={(event) => event.currentTarget.select()}
+                onChange={(event) => resizeSprints(event.target.value)}
+                onBlur={() => { if (!form.sprint_count) resizeSprints(String(form.sprint_names.length)); }}
               />
             </Field>
-            <Field label="Sprint names">
-              <TextArea
-                value={form.sprint_names}
-                onChange={(e) => setForm((f) => ({ ...f, sprint_names: e.target.value }))}
-                style={{ minHeight: 88 }}
-              />
-            </Field>
+            <div role="group" aria-label="Sprint names" style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 260, overflowY: "auto", padding: 3 }}>
+              {form.sprint_names.map((name, index) => (
+                <div key={index} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ width: 22, flexShrink: 0, fontSize: 12, color: "var(--text-tertiary)" }}>{index + 1}.</span>
+                  <TextInput
+                    aria-label={`Sprint ${index + 1} name`}
+                    value={name}
+                    maxLength={200}
+                    required
+                    onChange={(event) => setForm((current) => ({ ...current, sprint_names: current.sprint_names.map((item, itemIndex) => itemIndex === index ? event.target.value : item) }))}
+                    style={{ flex: 1, minWidth: 0 }}
+                  />
+                  <Button
+                    variant="ghost"
+                    aria-label={`Remove sprint ${index + 1}`}
+                    title={form.sprint_names.length === 1 ? "At least one sprint is required" : `Remove sprint ${index + 1}`}
+                    disabled={form.sprint_names.length === 1}
+                    onClick={() => setForm((current) => ({ ...current, sprint_names: current.sprint_names.filter((_, itemIndex) => itemIndex !== index), sprint_count: String(current.sprint_names.length - 1) }))}
+                    style={{ padding: "0 10px" }}
+                  ><X size={16} aria-hidden /></Button>
+                </div>
+              ))}
+            </div>
+            <Button variant="tertiary" disabled={form.sprint_names.length >= 52} onClick={() => resizeSprints(String(form.sprint_names.length + 1))}><Plus size={14} aria-hidden />Add sprint</Button>
           </div>
           <div style={{ fontSize: 11.5, color: "var(--text-tertiary)", marginTop: -6 }}>
             Every sprint is scheduled as an exact 14-day window. New projects always include at least one sprint.

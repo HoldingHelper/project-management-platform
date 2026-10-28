@@ -37,7 +37,7 @@ import {
   getProjectOverview,
   getProjectSprints,
   getProjectTimeline,
-  listProducts,
+  listAllProducts,
   removeProjectMember,
   reorderTasks,
   transferProjectAdmin,
@@ -361,7 +361,7 @@ function EditProjectModal({
   const toast = useToast();
   const qc = useQueryClient();
   const { partitions } = useTaskPartitions();
-  const products = useQuery({ queryKey: ["products"], queryFn: () => listProducts(1, 200), enabled: open });
+  const products = useQuery({ queryKey: ["products"], queryFn: listAllProducts, enabled: open });
   const linkedDocs = useQuery({
     queryKey: ["entity-doc-links", "project", project.id],
     queryFn: () => listEntityDocLinks("project", project.id),
@@ -489,7 +489,7 @@ function EditProjectModal({
             <Select
               value={form.product_id}
               onChange={(e) => setForm((f) => ({ ...f, product_id: e.target.value as UUID }))}
-              options={(products.data?.items ?? []).map((p) => ({ value: p.id, label: p.name }))}
+              options={(products.data ?? []).map((p) => ({ value: p.id, label: p.name }))}
             />
           </Field>
           <Field label="Project level">

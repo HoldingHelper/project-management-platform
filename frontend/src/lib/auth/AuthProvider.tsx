@@ -9,6 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import * as authApi from "@/lib/api/auth";
 import type { TokenResponse, UserRead } from "@/lib/types";
 import {
@@ -35,6 +36,7 @@ interface AuthState {
 const AuthContext = createContext<AuthState | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient();
   const [user, setUser] = useState<UserRead | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -71,16 +73,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (identifier: string, password: string) => {
     const res = await authApi.login(identifier, password);
+    queryClient.clear();
     setSession(res.access_token, res.refresh_token, res.user);
     setAccessToken(res.access_token);
     setUser(res.user);
-  }, []);
+  }, [queryClient]);
 
   const adoptSession = useCallback((session: TokenResponse) => {
+    queryClient.clear();
     setSession(session.access_token, session.refresh_token, session.user);
     setAccessToken(session.access_token);
     setUser(session.user);
-  }, []);
+  }, [queryClient]);
 
   const updateUser = useCallback((next: UserRead) => {
     setUser(next);
@@ -96,9 +100,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         /* best-effort */
       }
     }
+    queryClient.clear();
     clearSession();
     setUser(null);
-  }, []);
+  }, [queryClient]);
 
   const hasPermission = useCallback(
     (...codes: string[]) => {

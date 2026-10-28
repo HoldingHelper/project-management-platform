@@ -29,6 +29,7 @@ from app.modules.collaboration.authorization import (
     _require_task_access,
 )
 from app.modules.projects import service
+from app.modules.projects.product_access import require_product_access
 from app.modules.projects.ai_generation import (
     confirm_generation,
     create_generation_job,
@@ -170,7 +171,7 @@ async def _generation_request_content(
 async def create_product(
     payload: ProductCreate,
     current_user: CurrentUser = Depends(
-        require_permission(Permissions.PRODUCTS_MANAGE_ALL)
+        require_permission(Permissions.PRODUCTS_CREATE, Permissions.PRODUCTS_MANAGE_ALL)
     ),
     db: AsyncSession = Depends(get_db),
 ) -> ProductRead:
@@ -183,7 +184,7 @@ async def list_products(
     current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> Page[ProductRead]:
-    items, total = await service.list_products(db, params.page, params.page_size)
+    items, total = await service.list_products(db, params.page, params.page_size, actor=current_user)
     return Page.create(items, total, params)
 
 
@@ -193,6 +194,7 @@ async def get_product(
     current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> ProductRead:
+    await require_product_access(db, current_user, product_id)
     return await service.get_product(db, product_id)
 
 
@@ -201,11 +203,23 @@ async def update_product(
     product_id: UUID,
     payload: ProductUpdate,
     current_user: CurrentUser = Depends(
-        require_permission(Permissions.PRODUCTS_MANAGE_ALL)
+        require_permission(Permissions.PRODUCTS_UPDATE, Permissions.PRODUCTS_MANAGE_ALL)
     ),
     db: AsyncSession = Depends(get_db),
 ) -> ProductRead:
     return await service.update_product(db, product_id, payload)
+
+
+@products_router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_product(
+    product_id: UUID,
+    current_user: CurrentUser = Depends(
+        require_permission(Permissions.PRODUCTS_DELETE, Permissions.PRODUCTS_MANAGE_ALL)
+    ),
+    db: AsyncSession = Depends(get_db),
+) -> Response:
+    await service.delete_product(db, product_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @products_router.get("/{product_id}/projects", response_model=Page[ProjectRead])
@@ -215,6 +229,7 @@ async def get_projects_by_product(
     current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> Page[ProjectRead]:
+    await require_product_access(db, current_user, product_id)
     items, total = await service.list_projects_by_product(
         db, product_id, params.page, params.page_size
     )
@@ -236,6 +251,7 @@ async def create_project(
     ),
     db: AsyncSession = Depends(get_db),
 ) -> ProjectRead:
+    await require_product_access(db, current_user, payload.product_id)
     return await service.create_project(
         db, payload, created_by_user_id=current_user.user_id
     )
@@ -445,6 +461,8 @@ async def update_project(
     db: AsyncSession = Depends(get_db),
 ) -> ProjectRead:
     await service.require_project_manage_access(db, project_id, current_user)
+    if payload.product_id is not None:
+        await require_product_access(db, current_user, payload.product_id)
     return await service.update_project(db, project_id, payload)
 
 
@@ -734,7 +752,7 @@ async def get_portfolio_gantt(
     current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> PortfolioGantt:
-    return await service.get_portfolio_gantt(db, include_archived=include_archived)
+    return await service.get_portfolio_gantt(db, include_archived=include_archived, current_user=current_user)
 
 
 # ---------- Tasks ----------

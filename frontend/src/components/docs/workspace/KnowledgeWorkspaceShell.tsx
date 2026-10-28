@@ -4,9 +4,8 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { getDocsReturnDestination } from "@/lib/auth/workspace-navigation";
-import { getRouteMeta } from "@/components/shell/navigation";
 import {
-  ArrowLeft,
+  Landmark,
   PanelLeftClose,
   PanelLeftOpen,
   PanelRightClose,
@@ -357,22 +356,17 @@ export function KnowledgeWorkspaceShell(props: {
   useEffect(() => {
     if (user) setReturnPath(getDocsReturnDestination(user.id));
   }, [user?.id]);
-  const returnLabel = returnPath.startsWith("/h/")
-    ? "Holding"
-    : getRouteMeta(returnPath.split(/[?#]/)[0]).title;
 
   return (
     <KnowledgeWorkspaceProvider>
       <div className="flex h-dvh w-full flex-col overflow-hidden">
         <nav className="knowledge-workspace-navigation" aria-label="Workspace navigation">
-          <Link
-            href={returnPath}
-            className="knowledge-workspace-return"
-          >
-            <span className="knowledge-workspace-return-icon"><ArrowLeft size={16} aria-hidden /></span>
-            <span>Back to {returnLabel}</span>
-          </Link>
-          <span className="knowledge-workspace-module"><BookOpen size={16} aria-hidden />Docs</span>
+          <div className="workspace-module-switcher">
+            <Link href="/app/docs" aria-current="page"><BookOpen size={15} aria-hidden />Docs</Link>
+            <Link href={returnPath} className="knowledge-workspace-return">
+              <Landmark size={15} aria-hidden />Holding
+            </Link>
+          </div>
         </nav>
         <div className="min-h-0 flex-1">
           <KnowledgeWorkspaceInner {...props} />

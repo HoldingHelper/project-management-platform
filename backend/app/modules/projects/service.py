@@ -10,6 +10,7 @@ from uuid import UUID
 
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from app.core.events import event_bus
 from app.core.current_user import CurrentUser
@@ -21,6 +22,7 @@ from app.modules.collaboration.authorization import (
     _require_task_access,
 )
 from app.modules.projects import repository as repo
+from app.modules.projects.product_access import visible_product_ids
 from app.modules.projects.critical_path import (
     CpmEdge,
     CpmTask,
@@ -259,6 +261,18 @@ async def create_product(db: AsyncSession, payload: ProductCreate) -> ProductRea
     return ProductRead.model_validate(product)
 
 
+async def delete_product(db: AsyncSession, product_id: UUID) -> None:
+    # Lock the parent row to prevent a concurrent project insert from racing deletion.
+    product = (await db.execute(select(Product).where(Product.id == product_id).with_for_update())).scalar_one_or_none()
+    if product is None:
+        raise NotFoundError("Product line", product_id)
+    linked_project = (await db.execute(select(Project.id).where(Project.product_id == product_id).limit(1))).scalar_one_or_none()
+    if linked_project is not None:
+        raise BusinessRuleError("This product line has projects. Move or remove its projects before removing the product line.")
+    await db.execute(delete(Product).where(Product.id == product_id))
+    await db.commit()
+
+
 async def get_product(db: AsyncSession, product_id: UUID) -> ProductRead:
     product = await repo.get_product(db, product_id)
     if product is None:
@@ -280,9 +294,10 @@ async def update_product(
 
 
 async def list_products(
-    db: AsyncSession, page: int, page_size: int
+    db: AsyncSession, page: int, page_size: int, actor: CurrentUser | None = None
 ) -> tuple[List[ProductRead], int]:
-    products, total = await repo.list_products(db, (page - 1) * page_size, page_size)
+    ids = await visible_product_ids(db, actor) if actor else None
+    products, total = await repo.list_products(db, (page - 1) * page_size, page_size, product_ids=ids)
     return [ProductRead.model_validate(p) for p in products], total
 
 
@@ -530,7 +545,8 @@ async def list_all_projects(
     if current_user is not None and not _can_view_all_projects(current_user):
         user_id = current_user.user_id
     projects, total = await repo.list_all_projects(
-        db, (page - 1) * page_size, page_size, user_id=user_id
+        db, (page - 1) * page_size, page_size, user_id=user_id,
+        product_ids=await visible_product_ids(db, current_user) if current_user else None
     )
     return [ProjectRead.model_validate(p) for p in projects], total
 
@@ -542,6 +558,9 @@ async def require_project_manage_access(
     project = await repo.get_project(db, project_id)
     if project is None:
         raise NotFoundError("Project", project_id)
+    from app.modules.projects.product_access import require_product_access
+    await require_product_access(db, current_user, project.product_id)
+
     if getattr(project, "org_node_id", None) is not None:
         from app.modules.authz.service import authorize
         from app.modules.org.models import OrgNode
@@ -568,6 +587,9 @@ async def require_project_admin(
     project = await repo.get_project(db, project_id)
     if project is None:
         raise NotFoundError("Project", project_id)
+    from app.modules.projects.product_access import require_product_access
+    await require_product_access(db, current_user, project.product_id)
+
     if getattr(project, "org_node_id", None) is not None:
         from app.modules.authz.service import authorize
         from app.modules.org.models import OrgNode
@@ -612,6 +634,30 @@ async def transfer_project_admin(
     new_admin.role = "ProjectManager"
     await db.commit()
     return ProjectMemberRead.model_validate(new_admin)
+
+
+async def add_project_member(
+    db: AsyncSession, project_id: UUID, payload: ProjectMemberCreate
+) -> None:
+    project = await repo.get_project(db, project_id)
+    if project is None:
+        raise NotFoundError("Project", project_id)
+    from app.modules.identity.models import User
+    if await db.get(User, payload.user_id) is None:
+        raise NotFoundError("User", payload.user_id)
+    # Adding an existing member is a no-op, including concurrent/retried requests.
+    inserted = (await db.execute(
+        pg_insert(ProjectMember).values(
+            project_id=project_id, user_id=payload.user_id, role=payload.role.value,
+        ).on_conflict_do_nothing(index_elements=["project_id", "user_id"])
+        .returning(ProjectMember.user_id)
+    )).scalar_one_or_none()
+    await db.commit()
+    if inserted is not None:
+        await event_bus.publish(ProjectMemberAdded(
+            project_id=project_id, user_id=payload.user_id,
+            role=payload.role.value, project_name=project.name,
+        ))
 
 
 async def remove_project_member(
@@ -1530,9 +1576,9 @@ def _current_phase(phases: List[Phase]) -> Optional[Phase]:
 
 
 async def get_portfolio_gantt(
-    db: AsyncSession, include_archived: bool = False
+    db: AsyncSession, include_archived: bool = False, current_user: CurrentUser | None = None
 ) -> PortfolioGantt:
-    projects, _ = await repo.list_all_projects(db, 0, 500)
+    projects, _ = await repo.list_all_projects(db, 0, 500, product_ids=await visible_product_ids(db, current_user) if current_user else None)
     if not include_archived:
         projects = [p for p in projects if p.status != ProjectStatus.ARCHIVED.value]
     dependencies = await repo.list_project_dependencies(db)
