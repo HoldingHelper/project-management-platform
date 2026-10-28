@@ -10,9 +10,12 @@ backend-check:
   image: python:3.12-slim
   tags: [avenour-build]
   timeout: 30m
+  retry: 1
   variables:
     DEBUG: "false"
     PIP_DISABLE_PIP_VERSION_CHECK: "1"
+    PIP_DEFAULT_TIMEOUT: "120"
+    PIP_RETRIES: "8"
   script:
     - cd backend
     - pip install -r requirements-dev.txt
@@ -24,6 +27,7 @@ frontend-check:
   image: node:22-bookworm-slim
   tags: [avenour-build]
   timeout: 30m
+  retry: 1
   variables:
     NEXT_TELEMETRY_DISABLED: "1"
   script:
