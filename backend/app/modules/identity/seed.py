@@ -103,6 +103,9 @@ async def run_seed(db: AsyncSession) -> None:
     permissions_by_code = await seed_permissions(db)
     roles_by_name = await seed_roles(db, permissions_by_code)
     await seed_admin_user(db, roles_by_name)
+    from app.modules.org.bootstrap import bootstrap_holding
+
+    await bootstrap_holding(db)
     await db.commit()
     logger.info(
         "identity_seed_complete",
