@@ -420,11 +420,10 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
   const availableProductLines = useMemo(() => (products.data ?? []).map((product) => product.name), [products.data]);
 
   useEffect(() => {
-    if (!open || availableProductLines.length === 0) return;
-    if (!availableProductLines.some((name) => name === form.product_line)) {
-      setForm((current) => ({ ...current, product_line: availableProductLines[0] }));
+    if (form.product_line && (!open || (products.data && !availableProductLines.includes(form.product_line)))) {
+      setForm((current) => ({ ...current, product_line: "" }));
     }
-  }, [availableProductLines, form.product_line, open]);
+  }, [availableProductLines, form.product_line, open, products.data]);
 
   const create = useMutation({
     mutationFn: async () => {
@@ -520,7 +519,7 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
   const datesPaired = Boolean(form.start_date) === Boolean(form.end_date);
   const datesOrdered = !form.start_date || !form.end_date || form.end_date >= form.start_date;
   const valid = form.name.trim().length > 0
-    && form.product_line.trim().length > 0
+    && availableProductLines.includes(form.product_line)
     && availableProductLines.length > 0
     && Boolean(form.sprint_names.trim())
     && datesPaired
@@ -569,18 +568,22 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
           <Field label="Project name">
             <TextInput value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="e.g. GMall Rebuild" />
           </Field>
-          <Field label="Product line">
+          <Field label="Product line (required)" hint="Choose one product line for this project.">
             <Select
+              aria-label="Product line"
+              required
+              placeholder="Select a product line…"
+              disabled={products.isLoading || !!products.error}
               value={form.product_line}
               onChange={(e) => setForm((f) => ({ ...f, product_line: e.target.value }))}
               options={availableProductLines.map((p) => ({ value: p, label: p }))}
             />
-            {availableProductLines.length === 0 && (
-              <span style={{ fontSize: 11.5, color: "var(--status-delayed)" }}>
-                An administrator must create a product line before the first project can be added.
-              </span>
-            )}
           </Field>
+          {!products.isLoading && availableProductLines.length === 0 && (
+            <span style={{ fontSize: 11.5, color: "var(--status-delayed)" }}>
+              Add a product line in Holding before creating a project.
+            </span>
+          )}
           <Field label="Project level">
             <Select
               value={form.level}
