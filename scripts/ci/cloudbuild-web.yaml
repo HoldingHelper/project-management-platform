@@ -1,0 +1,7 @@
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args: ['build', '--build-arg', 'INTERNAL_API_URL=https://pmp-api-xsnbdxq3la-ew.a.run.app', '--build-arg', 'NEXT_PUBLIC_WS_URL=wss://pmp-api-xsnbdxq3la-ew.a.run.app/ws', '-t', '${_IMAGE}', '.']
+images: ['${_IMAGE}']
+serviceAccount: projects/ava-persian/serviceAccounts/pmp-ci-builder@ava-persian.iam.gserviceaccount.com
+options:
+  logging: CLOUD_LOGGING_ONLY

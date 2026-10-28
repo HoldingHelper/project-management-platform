@@ -1,0 +1,53 @@
+stages: [verify, deploy]
+
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH'
+
+backend-check:
+  stage: verify
+  image: python:3.12-slim
+  tags: [avenour-build]
+  timeout: 30m
+  variables:
+    DEBUG: "false"
+    PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  script:
+    - cd backend
+    - pip install -r requirements-dev.txt
+    - python -m pytest -q tests
+    - ruff check app --select F821
+
+frontend-check:
+  stage: verify
+  image: node:22-bookworm-slim
+  tags: [avenour-build]
+  timeout: 30m
+  variables:
+    NEXT_TELEMETRY_DISABLED: "1"
+  script:
+    - cd frontend
+    - npm ci --no-audit --no-fund
+    - npm run typecheck
+    - npm test
+    - npm run build
+
+deploy-production:
+  stage: deploy
+  image: gcr.io/google.com/cloudsdktool/google-cloud-cli:stable
+  tags: [avenour-build]
+  timeout: 90m
+  resource_group: pmp-production
+  interruptible: false
+  environment:
+    name: production
+    url: https://pmp.avenourgroup.com
+  id_tokens:
+    GCP_ID_TOKEN:
+      aud: https://iam.googleapis.com/projects/706796253833/locations/global/workloadIdentityPools/pmp-gitlab/providers/gitlab
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_COMMIT_REF_PROTECTED == "true" && $CI_PIPELINE_SOURCE =~ /^(push|web|api)$/ '
+    - when: never
+  script:
+    - bash scripts/ci/deploy-production.sh
