@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Archive, Bot, Layers3, Plus, Search, UsersRound, X } from "lucide-react";
@@ -304,7 +304,7 @@ export default function PortfolioPage() {
         </div>
       </section>
 
-      <CreateProjectModal open={createOpen} onClose={() => setCreateOpen(false)} partitions={projectPartitions} />
+      {createOpen && <CreateProjectModal open onClose={() => setCreateOpen(false)} partitions={projectPartitions} />}
     </div>
   );
 }
@@ -430,6 +430,7 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
     }
   }, [availableProductLines, form.product_line, open, products.data]);
 
+  const submitting = useRef(false);
   const create = useMutation({
     mutationFn: async () => {
       const productId = products.data?.find((product) => product.name === form.product_line)?.id;
@@ -463,47 +464,54 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
         }),
       });
 
-      const memberRoles = new Map<UUID, string>();
-      if (user?.id) memberRoles.set(user.id, "ProjectManager");
-      if (form.project_manager_id) memberRoles.set(form.project_manager_id as UUID, "ProjectManager");
-      for (const id of form.lead_ids) memberRoles.set(id, "TeamLead");
-      await Promise.all(
-        [...memberRoles.entries()].map(([memberId, role]) =>
-          addProjectMember(project.id, memberId, role).catch(() => undefined),
-        ),
-      );
-
-      const createdSprints = await getProjectSprints(project.id);
-      const targetSprint = createdSprints[0]?.id;
-      if (targetSprint) {
-        await Promise.all(form.task_ids.map((taskId) => attachTask(taskId, targetSprint).catch(() => undefined)));
+      // The project is saved. Close now; optional setup must never invite a retry of creation.
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      queryClient.invalidateQueries({ queryKey: ["portfolio-gantt"] });
+      onClose();
+      let setupFailures = 0;
+      try {
+        const memberRoles = new Map<UUID, string>();
+        if (form.project_manager_id && form.project_manager_id !== user?.id) memberRoles.set(form.project_manager_id, "ProjectManager");
+        for (const id of form.lead_ids) if (id !== user?.id) memberRoles.set(id, "TeamLead");
+        const memberResults = await Promise.allSettled(
+          [...memberRoles.entries()].map(([memberId, role]) => addProjectMember(project.id, memberId, role)),
+        );
+        setupFailures += memberResults.filter((result) => result.status === "rejected").length;
+        if (form.task_ids.length) {
+          const createdSprints = await getProjectSprints(project.id);
+          const targetSprint = createdSprints[0]?.id;
+          if (targetSprint) {
+            const taskResults = await Promise.allSettled(form.task_ids.map((taskId) => attachTask(taskId, targetSprint)));
+            setupFailures += taskResults.filter((result) => result.status === "rejected").length;
+          } else setupFailures += form.task_ids.length;
+        }
+        const docResults = await Promise.allSettled(
+          selectedDocs.map((doc) => addDocLink(doc.id, { entity_type: "project", entity_id: project.id })),
+        );
+        setupFailures += docResults.filter((result) => result.status === "rejected").length;
+      } catch {
+        setupFailures++;
       }
-
-      const docResults = await Promise.allSettled(
-        selectedDocs.map((doc) => addDocLink(doc.id, { entity_type: "project", entity_id: project.id })),
-      );
-
-      return { project, docLinkFailures: docResults.filter((result) => result.status === "rejected").length };
+      return { setupFailures };
     },
-    onSuccess: ({ docLinkFailures }) => {
+    onSuccess: ({ setupFailures }) => {
       toast.push(
-        docLinkFailures
-          ? `Project created, but ${docLinkFailures} document link(s) could not be added.`
-          : "Project created with two-week sprints, members, tasks, and documents.",
-        docLinkFailures ? "error" : "success",
+        setupFailures
+          ? "Project created. Some members, tasks, or documents could not be linked; finish setup from the project."
+          : "Project created successfully.",
+        setupFailures ? "error" : "success",
       );
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["portfolio-gantt"] });
       queryClient.invalidateQueries({ queryKey: ["chat-channels"] });
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
-      setSelectedDocs([]);
-      setDocSearch("");
-      onClose();
     },
     onError: (error) => {
       toast.push(error instanceof Error ? error.message : "Could not create project.", "error");
     },
+    onSettled: () => { submitting.current = false; },
+    retry: false,
   });
 
   const toggleLead = (id: UUID) =>
@@ -549,7 +557,8 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
   return (
     <Modal
       open={open}
-      onClose={onClose}
+      onClose={() => { if (!submitting.current) onClose(); }}
+      closeOnBackdrop={!create.isPending}
       title="New project"
       width={900}
       footer={
@@ -559,8 +568,12 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
               <Bot size={14} /> Use AI generator
             </Button>
           </Link>
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button disabled={!valid || create.isPending} onClick={() => create.mutate()}>
+          <Button variant="secondary" disabled={create.isPending} onClick={onClose}>Cancel</Button>
+          <Button disabled={!valid || create.isPending} onClick={() => {
+            if (!valid || submitting.current) return;
+            submitting.current = true;
+            create.mutate();
+          }}>
             {create.isPending ? "Creating…" : "Create project"}
           </Button>
         </>

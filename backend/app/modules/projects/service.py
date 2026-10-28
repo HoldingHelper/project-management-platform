@@ -10,6 +10,7 @@ from uuid import UUID
 
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from app.core.events import event_bus
 from app.core.current_user import CurrentUser
@@ -624,6 +625,30 @@ async def transfer_project_admin(
     new_admin.role = "ProjectManager"
     await db.commit()
     return ProjectMemberRead.model_validate(new_admin)
+
+
+async def add_project_member(
+    db: AsyncSession, project_id: UUID, payload: ProjectMemberCreate
+) -> None:
+    project = await repo.get_project(db, project_id)
+    if project is None:
+        raise NotFoundError("Project", project_id)
+    from app.modules.identity.models import User
+    if await db.get(User, payload.user_id) is None:
+        raise NotFoundError("User", payload.user_id)
+    # Adding an existing member is a no-op, including concurrent/retried requests.
+    inserted = (await db.execute(
+        pg_insert(ProjectMember).values(
+            project_id=project_id, user_id=payload.user_id, role=payload.role.value,
+        ).on_conflict_do_nothing(index_elements=["project_id", "user_id"])
+        .returning(ProjectMember.user_id)
+    )).scalar_one_or_none()
+    await db.commit()
+    if inserted is not None:
+        await event_bus.publish(ProjectMemberAdded(
+            project_id=project_id, user_id=payload.user_id,
+            role=payload.role.value, project_name=project.name,
+        ))
 
 
 async def remove_project_member(
