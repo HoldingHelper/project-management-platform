@@ -116,6 +116,7 @@ function ProjectLevelBadge({ level }: { level: ProjectLevel }) {
 export default function PortfolioPage() {
   const [search, setSearch] = useViewState("portfolio-search", "");
   const [createOpen, setCreateOpen] = useState(false);
+  const [productLine, setProductLine] = useViewState<string>("portfolio-product-line", "all");
   const [timelinePartition, setTimelinePartition] = useViewState<string>("portfolio-partition", "all");
   const [showArchived, setShowArchived] = useViewState("portfolio-archived", false);
   const { hasPermission, isSuperAdmin } = useAuth();
@@ -145,13 +146,15 @@ export default function PortfolioPage() {
   }, [products.data]);
   const items = projects.data?.items ?? [];
   const q = search.trim().toLowerCase();
-  const filtered = q
-    ? items.filter((p) => p.name.toLowerCase().includes(q) || p.id.toLowerCase().includes(q))
-    : items;
+  const filtered = items.filter((project) =>
+    (productLine === "all" || project.product_id === productLine) &&
+    (!q || project.name.toLowerCase().includes(q) || project.id.toLowerCase().includes(q))
+  );
   const visibleGantt = useMemo(() => {
     const source = gantt.data ?? { projects: [], links: [] };
     const match = (p: (typeof source.projects)[number]) => {
-      return timelinePartition === "all" || projectPartitionFromTags(p.tags) === timelinePartition;
+      return (productLine === "all" || p.product_id === productLine) &&
+        (timelinePartition === "all" || projectPartitionFromTags(p.tags) === timelinePartition);
     };
     const modeProjects = source.projects.filter(match);
     const ids = new Set(modeProjects.map((p) => p.id));
@@ -159,7 +162,7 @@ export default function PortfolioPage() {
       projects: modeProjects,
       links: source.links.filter((l) => ids.has(l.predecessor_project_id) && ids.has(l.successor_project_id)),
     };
-  }, [gantt.data, timelinePartition]);
+  }, [gantt.data, timelinePartition, productLine]);
 
   return (
     <div style={{ ...PAGE_STYLE, gap: 18 }}>
@@ -185,6 +188,20 @@ export default function PortfolioPage() {
           ) : undefined
         }
       />
+
+      <div style={{ display: "flex", alignItems: "flex-end", gap: 10, flexWrap: "wrap" }}>
+        <Field label="Product line">
+          <Select
+            aria-label="Filter projects by product line"
+            value={productLine}
+            onChange={(event) => setProductLine(event.target.value)}
+            options={[{ value: "all", label: "All product lines" }, ...(products.data ?? []).map((product) => ({ value: product.id, label: product.name }))]}
+            disabled={products.isLoading || !!products.error}
+            style={{ minWidth: 220 }}
+          />
+        </Field>
+        {productLine !== "all" && <Button variant="tertiary" onClick={() => setProductLine("all")}><X size={14} aria-hidden />Clear product line</Button>}
+      </div>
 
       <FocusCard
         title="Portfolio timeline"
@@ -232,7 +249,7 @@ export default function PortfolioPage() {
           <Spinner label="Loading projects…" />
         ) : filtered.length === 0 ? (
           <EmptyState
-            title={items.length === 0 ? "No projects yet" : `No projects match “${search}”`}
+            title={items.length === 0 ? "No projects yet" : "No projects match the current filters"}
             hint={items.length === 0 ? (canCreate ? "Create the first project to group imported tasks." : "An administrator creates projects here.") : undefined}
           />
         ) : (
