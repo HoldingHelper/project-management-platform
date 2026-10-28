@@ -13,7 +13,7 @@ from app.core.database import get_db
 from app.core.deps import get_current_user, require_permission
 from app.core.pagination import Page, PageParams
 from app.core.permissions import Permissions
-from app.modules.identity import service
+from app.modules.identity import repository as repo, service
 from app.modules.identity.repository import list_permissions, list_roles
 from app.modules.identity.schemas import (
     AcceptInvitationRequest,

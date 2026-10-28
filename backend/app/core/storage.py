@@ -3,7 +3,7 @@ module for task/phase/blocker file attachments."""
 
 from __future__ import annotations
 
-from typing import Any, BinaryIO
+from typing import Any, BinaryIO, Optional
 
 import boto3
 from botocore.client import Config as BotoConfig

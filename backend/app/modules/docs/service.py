@@ -6,6 +6,7 @@ from typing import BinaryIO
 from uuid import UUID, uuid4
 
 from slugify import slugify
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.current_user import CurrentUser
