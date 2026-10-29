@@ -3,7 +3,7 @@ from sqlalchemy import or_, select
 from app.core.current_user import CurrentUser
 from app.core.exceptions import ForbiddenError
 from app.core.permissions import Permissions
-from app.modules.projects.models import Product, Project, ProjectMember
+from app.modules.projects.models import Product, ProductMember, Project, ProjectMember
 
 
 def can_view_all_product_lines(actor: CurrentUser) -> bool:
@@ -22,6 +22,7 @@ async def visible_product_ids(db, actor: CurrentUser):
     project_membership = select(Project.product_id).join(ProjectMember, ProjectMember.project_id == Project.id).where(ProjectMember.user_id == actor.user_id)
     predicate = or_(
         Product.owner_user_id == actor.user_id,
+        Product.id.in_(select(ProductMember.product_id).where(ProductMember.user_id == actor.user_id)),
         Product.id.in_(project_membership),
         Product.org_node_id.in_(node_ids),
         Product.id.in_(graph_product_ids),

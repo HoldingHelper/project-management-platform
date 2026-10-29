@@ -330,6 +330,7 @@ export interface OrgTreeResponse {
 
 // ---- Projects domain ----
 export interface ProductRead {
+  member_user_ids?: UUID[];
   id: UUID;
   name: string;
   description?: string | null;

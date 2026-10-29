@@ -2005,5 +2005,14 @@
   "Progress: {percent}%": "پیشرفت: {percent}٪",
   "{count} pending": "{count} در انتظار",
   "## What\n\n## Acceptance criteria\n- \n\n## Notes / links": "## شرح کار\n\n## معیارهای پذیرش\n- \n\n## یادداشت‌ها / پیوندها",
-  "## Goal\n- What changes?\n- Who is involved?\n- Links, risks, decisions...": "## هدف\n- چه چیزی تغییر می‌کند؟\n- چه کسانی درگیر هستند؟\n- پیوندها، ریسک‌ها و تصمیم‌ها…"
+  "## Goal\n- What changes?\n- Who is involved?\n- Links, risks, decisions...": "## هدف\n- چه چیزی تغییر می‌کند؟\n- چه کسانی درگیر هستند؟\n- پیوندها، ریسک‌ها و تصمیم‌ها…",
+  "Product Line members": "اعضای خط محصول",
+  "The owner is always a member. Remove project memberships before removing a person here.": "مالک همیشه عضو است. پیش از حذف فرد از اینجا، عضویت او در پروژه‌ها را حذف کنید.",
+  "Retry loading members": "تلاش دوباره برای بارگیری اعضا",
+  "Search people by name or email": "جست‌وجوی افراد با نام یا ایمیل",
+  "Could not search people. Try again.": "جست‌وجوی افراد انجام نشد. دوباره تلاش کنید.",
+  "Loading members…": "در حال بارگیری اعضا…",
+  "Only project members can be assigned. Choose a project and sprint first.": "فقط اعضای پروژه قابل تخصیص هستند. ابتدا پروژه و اسپرینت را انتخاب کنید.",
+  "Remove assignment": "حذف تخصیص",
+  "Only Product Line members can join this project.": "فقط اعضای خط محصول می‌توانند به این پروژه بپیوندند."
 }

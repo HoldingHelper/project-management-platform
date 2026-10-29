@@ -29,6 +29,7 @@ from app.modules.collaboration.authorization import (
     _require_task_access,
 )
 from app.modules.projects import service
+from app.modules.projects import membership
 from app.modules.projects.product_access import require_product_access
 from app.modules.projects.ai_generation import (
     confirm_generation,
@@ -54,6 +55,7 @@ from app.modules.projects.schemas import (
     ProductCreate,
     ProductRead,
     ProductUpdate,
+    MembershipPersonRead,
     ProgressBreakdown,
     ProjectCreate,
     ProjectAdminTransfer,
@@ -208,6 +210,28 @@ async def update_product(
     db: AsyncSession = Depends(get_db),
 ) -> ProductRead:
     return await service.update_product(db, product_id, payload)
+
+
+@products_router.get("/{product_id}/members", response_model=list[MembershipPersonRead])
+async def get_product_members(product_id: UUID, current_user: CurrentUser = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    await require_product_access(db, current_user, product_id)
+    return await membership.product_people(db, product_id)
+
+
+@projects_router.get("/{project_id}/assignment-candidates", response_model=list[MembershipPersonRead])
+async def get_assignment_candidates(project_id: UUID, current_user: CurrentUser = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    await _require_project_access(db, current_user, project_id)
+    return await membership.project_people(db, project_id)
+
+
+@tasks_router.get("/{task_id}/assignment-candidates", response_model=list[MembershipPersonRead])
+async def get_task_assignment_candidates(task_id: UUID, current_user: CurrentUser = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    await _require_task_access(db, current_user, task_id)
+    task = await service.repo.get_task(db, task_id)
+    if task is None or task.phase_id is None:
+        return []
+    phase = await service.repo.get_phase(db, task.phase_id)
+    return await membership.project_people(db, phase.project_id) if phase else []
 
 
 @products_router.post("/{product_id}/documentation", status_code=status.HTTP_201_CREATED)

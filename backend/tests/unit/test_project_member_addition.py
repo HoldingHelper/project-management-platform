@@ -1,5 +1,6 @@
 """Regression checks for the post-creation member setup endpoint."""
 import asyncio
+import pytest
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
@@ -8,6 +9,14 @@ from app.core.exceptions import NotFoundError
 from app.modules.projects import service
 from app.modules.projects.schemas import ProjectMemberCreate
 
+
+@pytest.fixture(autouse=True)
+def membership_guards(monkeypatch):
+    # These tests isolate insert/event idempotency; real eligibility is covered
+    # by the database-backed product membership regression test.
+    monkeypatch.setattr(service.membership, "lock_project", AsyncMock(return_value=SimpleNamespace(name="Project", product_id=uuid4())))
+    monkeypatch.setattr(service.membership, "active_users", AsyncMock())
+    monkeypatch.setattr(service.membership, "require_product_members", AsyncMock())
 
 def test_add_project_member_publishes_once_after_insert():
     user_id, project_id = uuid4(), uuid4()

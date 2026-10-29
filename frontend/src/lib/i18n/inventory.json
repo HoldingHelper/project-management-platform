@@ -3357,6 +3357,14 @@
     ]
   },
   {
+    "message": "Could not search people. Try again.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/holding/AddProductLine.tsx"
+    ]
+  },
+  {
     "message": "Could not update role permissions.",
     "translated": true,
     "neutral": false,
@@ -7309,6 +7317,15 @@
     ]
   },
   {
+    "message": "Loading members…",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/holding/AddProductLine.tsx",
+      "components/tasks/TaskEditorModal.tsx"
+    ]
+  },
+  {
     "message": "Loading notifications…",
     "translated": true,
     "neutral": false,
@@ -9355,6 +9372,22 @@
     ]
   },
   {
+    "message": "Only Product Line members can join this project.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
+    ]
+  },
+  {
+    "message": "Only project members can be assigned. Choose a project and sprint first.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/tasks/TaskEditorModal.tsx"
+    ]
+  },
+  {
     "message": "Only your personal delivery signals are shown here.",
     "translated": true,
     "neutral": false,
@@ -9772,6 +9805,7 @@
       "app/(app)/my-work/page.tsx",
       "app/(app)/portfolio/page.tsx",
       "components/docs/workspace/ContextInspector.tsx",
+      "components/holding/AddProductLine.tsx",
       "components/modernist/overlays/CreateProjectDialog.tsx",
       "components/modernist/views/DocDetailView.tsx",
       "components/modernist/views/ProjectsView.tsx",
@@ -10714,6 +10748,14 @@
     ]
   },
   {
+    "message": "Product Line members",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/holding/AddProductLine.tsx"
+    ]
+  },
+  {
     "message": "Product line name",
     "translated": true,
     "neutral": false,
@@ -11460,6 +11502,14 @@
     ]
   },
   {
+    "message": "Remove assignment",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/tasks/TaskEditorModal.tsx"
+    ]
+  },
+  {
     "message": "Remove attachment",
     "translated": true,
     "neutral": false,
@@ -11505,7 +11555,8 @@
     "translated": true,
     "neutral": false,
     "files": [
-      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx",
+      "components/holding/AddProductLine.tsx"
     ]
   },
   {
@@ -11818,6 +11869,17 @@
       "app/(app)/tasks/page.tsx",
       "components/docs/DocumentationUpload.tsx",
       "components/holding/AddProductLine.tsx"
+    ]
+  },
+  {
+    "message": "Retry loading members",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx",
+      "app/(app)/tasks/[taskId]/TaskDetailClient.tsx",
+      "components/holding/AddProductLine.tsx",
+      "components/tasks/TaskEditorModal.tsx"
     ]
   },
   {
@@ -12326,6 +12388,14 @@
       "app/(app)/projects/[projectId]/ProjectDetailClient.tsx",
       "components/holding/AddProductLine.tsx",
       "components/tasks/TaskEditorModal.tsx"
+    ]
+  },
+  {
+    "message": "Search people by name or email",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/holding/AddProductLine.tsx"
     ]
   },
   {
@@ -14064,6 +14134,14 @@
     "neutral": false,
     "files": [
       "app/accept-invitation/[token]/AcceptInvitationClient.tsx"
+    ]
+  },
+  {
+    "message": "The owner is always a member. Remove project memberships before removing a person here.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/holding/AddProductLine.tsx"
     ]
   },
   {

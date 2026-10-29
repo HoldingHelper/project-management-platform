@@ -313,7 +313,17 @@ export function detachTask(id: UUID) {
 }
 
 // ---- Project / product / phase management (admin) ----
-export type ProductDetails = Pick<ProductRead, "name" | "description" | "status" | "priority" | "environment" | "technology_stack" | "repository_url" | "documentation_link">;
+export interface MembershipPersonRead { id: UUID; full_name: string; email: string; is_active: boolean }
+export function getProductMembers(id: UUID) {
+  return apiFetch<MembershipPersonRead[]>(`/products/${id}/members`);
+}
+export function getProjectAssignmentCandidates(id: UUID) {
+  return apiFetch<MembershipPersonRead[]>(`/projects/${id}/assignment-candidates`);
+}
+export function getTaskAssignmentCandidates(id: UUID) {
+  return apiFetch<MembershipPersonRead[]>(`/tasks/${id}/assignment-candidates`);
+}
+export type ProductDetails = Pick<ProductRead, "name" | "description" | "status" | "priority" | "environment" | "technology_stack" | "repository_url" | "documentation_link" | "member_user_ids">;
 export function updateProduct(id: UUID, input: ProductDetails) {
   return apiFetch<ProductRead>(`/products/${id}`, { method: "PUT", body: input });
 }

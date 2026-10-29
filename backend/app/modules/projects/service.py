@@ -22,6 +22,7 @@ from app.modules.collaboration.authorization import (
     _require_task_access,
 )
 from app.modules.projects import repository as repo
+from app.modules.projects import membership
 from app.modules.projects.product_access import visible_product_ids
 from app.modules.projects.critical_path import (
     CpmEdge,
@@ -36,6 +37,7 @@ from app.modules.projects.models import (
     Milestone,
     Phase,
     Product,
+    ProductMember,
     Project,
     ProjectDependency,
     ProjectMember,
@@ -256,7 +258,10 @@ def _derived_project_status(project: Project, tasks: list[TaskItem]) -> str:
 
 # ---------- Products ----------
 async def create_product(db: AsyncSession, payload: ProductCreate) -> ProductRead:
-    product = Product(**_dump(payload))
+    ids = set(payload.member_user_ids) | {payload.owner_user_id}
+    await membership.active_users(db, ids)
+    product = Product(**_dump(payload, exclude={"member_user_ids"}))
+    product.members = [ProductMember(user_id=user_id) for user_id in ids]
     product = await repo.create_product(db, product)
     return ProductRead.model_validate(product)
 
@@ -295,13 +300,18 @@ async def get_product(db: AsyncSession, product_id: UUID) -> ProductRead:
 async def update_product(
     db: AsyncSession, product_id: UUID, payload: ProductUpdate
 ) -> ProductRead:
-    product = await repo.get_product(db, product_id)
+    product = await membership.lock_product(db, product_id)
     if product is None:
         raise NotFoundError("Product", product_id)
-    for field, value in _dump(payload, exclude_unset=True).items():
+    if "member_user_ids" in payload.model_fields_set:
+        if payload.member_user_ids is None:
+            raise ValidationAppError("Members must be a list.")
+        await membership.replace_product_members(db, product, payload.member_user_ids)
+    for field, value in _dump(payload, exclude_unset=True, exclude={"member_user_ids"}).items():
         setattr(product, field, value)
     await db.commit()
     await db.refresh(product)
+    await db.refresh(product, ["members"])
     return ProductRead.model_validate(product)
 
 
@@ -322,6 +332,8 @@ async def create_project(
     product = await repo.get_product(db, payload.product_id)
     if product is None:
         raise NotFoundError("Product", payload.product_id)
+    if created_by_user_id is not None:
+        await membership.require_product_members(db, payload.product_id, [created_by_user_id])
     data = _dump(payload, exclude={"sprints"})
     data["checklist_items"] = [item.model_dump(mode="json") for item in payload.checklist_items]
     _validate_project_date_baseline(data.get("start_date"), data.get("end_date"))
@@ -403,6 +415,9 @@ async def update_project(
         product = await repo.get_product(db, payload.product_id)
         if product is None:
             raise NotFoundError("Product", payload.product_id)
+        await membership.lock_project(db, project_id)
+        members = await repo.list_project_members(db, project_id)
+        await membership.require_product_members(db, payload.product_id, [member.user_id for member in members])
     update_data = _dump(payload, exclude_unset=True)
     if "checklist_items" in payload.model_fields_set:
         if payload.checklist_items is None:
@@ -659,12 +674,14 @@ async def transfer_project_admin(
 async def add_project_member(
     db: AsyncSession, project_id: UUID, payload: ProjectMemberCreate
 ) -> None:
-    project = await repo.get_project(db, project_id)
+    project = await membership.lock_project(db, project_id)
     if project is None:
         raise NotFoundError("Project", project_id)
     from app.modules.identity.models import User
     if await db.get(User, payload.user_id) is None:
         raise NotFoundError("User", payload.user_id)
+    await membership.active_users(db, [payload.user_id])
+    await membership.require_product_members(db, project.product_id, [payload.user_id])
     # Adding an existing member is a no-op, including concurrent/retried requests.
     inserted = (await db.execute(
         pg_insert(ProjectMember).values(
@@ -683,6 +700,7 @@ async def add_project_member(
 async def remove_project_member(
     db: AsyncSession, project_id: UUID, user_id: UUID
 ) -> None:
+    await membership.require_no_assignments(db, project_id, user_id)
     members = list(await repo.list_project_members(db, project_id))
     removing = next((member for member in members if member.user_id == user_id), None)
     if removing is not None and removing.role == "ProjectManager":
@@ -971,6 +989,7 @@ async def create_task(
     assignee_user_ids = list(
         dict.fromkeys([*payload.assignee_user_ids, *ticket_assignee_ids])
     )
+    await membership.require_project_assignees(db, payload.phase_id, [*assignee_user_ids, *([payload.reviewer_user_id] if payload.reviewer_user_id else [])])
 
     data = _dump(
         payload,
@@ -1044,6 +1063,11 @@ async def update_task(
     current_user: CurrentUser,
 ) -> TaskRead:
     task = await require_task_edit_access(db, current_user, task_id, payload)
+
+    if payload.assignee_user_ids is not None or "reviewer_user_id" in payload.model_fields_set:
+        assignees = payload.assignee_user_ids if payload.assignee_user_ids is not None else [entry.user_id for entry in task.assignees]
+        reviewer = payload.reviewer_user_id if "reviewer_user_id" in payload.model_fields_set else task.reviewer_user_id
+        await membership.require_project_assignees(db, task.phase_id, [*assignees, *([reviewer] if reviewer else [])])
 
     update_data = _dump(
         payload,
@@ -1301,6 +1325,8 @@ async def attach_task_to_phase(
     if phase is None:
         raise NotFoundError("Phase", phase_id)
 
+    await membership.require_project_assignees(db, phase_id, [*[entry.user_id for entry in task.assignees], *([task.reviewer_user_id] if task.reviewer_user_id else [])])
+
     old_phase_id = task.phase_id
     task.phase_id = phase_id
     await db.commit()
@@ -1316,6 +1342,8 @@ async def detach_task_from_phase(db: AsyncSession, task_id: UUID) -> TaskRead:
     task = await repo.get_task(db, task_id)
     if task is None:
         raise NotFoundError("Task", task_id)
+    if task.assignees or task.reviewer_user_id:
+        raise BusinessRuleError("Unassign this task and its reviewer before moving it to the backlog.")
     old_phase_id = task.phase_id
     task.phase_id = None
     await db.commit()

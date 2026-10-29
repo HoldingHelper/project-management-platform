@@ -50,6 +50,7 @@ import {
   updateProject,
   updateTask,
   updateTaskStatus,
+  getProductMembers,
 } from "@/lib/api/projects";
 import {
   addDocLink,
@@ -1579,11 +1580,12 @@ const docLinkRow: React.CSSProperties = {
 const MEMBER_ROLES = ["ProjectManager", "TeamLead", "Developer", "QA", "UIUX", "BusinessAnalyst", "Client", "Observer"];
 
 function TeamTab({ projectId, canManage }: { projectId: string; canManage: boolean }) {
+  const membershipQueryClient = useQueryClient();
   const { t: translateUI } = useI18n();
 
   const toast = useToast();
   const { user, hasPermission, isSuperAdmin } = useAuth();
-  const { nameOf, users } = useUserMap();
+  const { nameOf } = useUserMap();
   const [addOpen, setAddOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
   const [userId, setUserId] = useState("");
@@ -1602,6 +1604,7 @@ function TeamTab({ projectId, canManage }: { projectId: string; canManage: boole
     onSuccess: () => {
       toast.push("Member added — they now have access to the project channel.", "success");
       setAddOpen(false);
+      membershipQueryClient.invalidateQueries({ queryKey: ["assignment-candidates"] });
       overview.refetch();
     },
   });
@@ -1609,6 +1612,7 @@ function TeamTab({ projectId, canManage }: { projectId: string; canManage: boole
     mutationFn: (uid: UUID) => removeProjectMember(projectId as UUID, uid),
     onSuccess: () => {
       toast.push("Member removed.", "success");
+      membershipQueryClient.invalidateQueries({ queryKey: ["assignment-candidates"] });
       overview.refetch();
     },
     onError: (error) =>
@@ -1625,13 +1629,19 @@ function TeamTab({ projectId, canManage }: { projectId: string; canManage: boole
       toast.push("Project admin transferred.", "success");
       setTransferOpen(false);
       setNewAdminUserId("");
+      membershipQueryClient.invalidateQueries({ queryKey: ["assignment-candidates"] });
       overview.refetch();
     },
     onError: (error) =>
       toast.push(error instanceof AppError ? error.message : "Could not transfer project admin.", "error"),
   });
 
-  const nonMembers = users.filter((u) => !members.some((m) => m.user_id === u.id));
+  const productMembers = useQuery({
+    queryKey: ["product-members", overview.data?.project.product_id],
+    queryFn: () => getProductMembers(overview.data!.project.product_id),
+    enabled: !!overview.data?.project.product_id,
+  });
+  const nonMembers = (productMembers.data ?? []).filter((u) => u.is_active && !members.some((m) => m.user_id === u.id));
   const currentMember = members.find((member) => member.user_id === user?.id);
   const canTransferAdmin =
     isSuperAdmin() ||
@@ -1682,13 +1692,16 @@ function TeamTab({ projectId, canManage }: { projectId: string; canManage: boole
         footer={
           <>
             <Button variant="secondary" onClick={() => setAddOpen(false)}><LocalizedText message={"Cancel"} /></Button>
-            <Button disabled={!userId || add.isPending} onClick={() => add.mutate()}>
+            <Button disabled={!nonMembers.some((person) => person.id === userId) || add.isPending || productMembers.isFetching} onClick={() => add.mutate()}>
               {add.isPending ? <LocalizedText message={"Adding…"} /> : <LocalizedText message={"Add member"} />}
             </Button>
           </>
         }
       >
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <p>{translateUI("Only Product Line members can join this project.")}</p>
+          {productMembers.isError && <Button type="button" variant="secondary" onClick={() => productMembers.refetch()}>{translateUI("Retry loading members")}</Button>}
+          {add.error && <p role="alert">{add.error.message}</p>}
           <Field label={translateUI("User")}>
             <Select
               value={userId}

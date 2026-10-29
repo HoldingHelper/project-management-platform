@@ -26,6 +26,7 @@ from app.modules.projects.enums import (
 
 # ---------- Product ----------
 class ProductCreate(BaseModel):
+    member_user_ids: List[UUID] = Field(default_factory=list, max_length=1000)
     name: str = Field(min_length=1, max_length=200)
     description: Optional[str] = None
     owner_user_id: UUID
@@ -38,6 +39,7 @@ class ProductCreate(BaseModel):
 
 
 class ProductUpdate(BaseModel):
+    member_user_ids: Optional[List[UUID]] = Field(default=None, max_length=1000)
     name: Optional[str] = Field(default=None, min_length=1, max_length=200)
     description: Optional[str] = None
     status: Optional[ProductStatus] = None
@@ -54,6 +56,7 @@ class ProductRead(BaseModel):
     name: str
     description: Optional[str] = None
     owner_user_id: UUID
+    member_user_ids: List[UUID] = Field(default_factory=list)
     status: str
     technology_stack: List[str]
     repository_url: Optional[str] = None
@@ -65,6 +68,14 @@ class ProductRead(BaseModel):
 
 
 # ---------- Project ----------
+class MembershipPersonRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: UUID
+    full_name: str
+    email: str
+    is_active: bool
+
+
 class ProjectSprintCreate(BaseModel):
     """A new delivery sprint. Sprint dates are inclusive and span 14 days."""
 

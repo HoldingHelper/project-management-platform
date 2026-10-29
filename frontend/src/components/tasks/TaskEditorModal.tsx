@@ -14,6 +14,7 @@ import {
   listTasks,
   updateTask,
   updateTaskStatus,
+  getProjectAssignmentCandidates, getTaskAssignmentCandidates,
 } from "@/lib/api/projects";
 import {
   addDocLink,
@@ -118,7 +119,7 @@ export function TaskEditorModal({ open, onClose, task, projectId, phaseId, onCre
   const qc = useQueryClient();
   const { user: currentUser, hasPermission, isSuperAdmin } = useAuth();
   const canAssignAnyone = canManageAssignees ?? (isSuperAdmin() || hasPermission("tasks.assign"));
-  const { users, nameOf } = useUserMap();
+  const { nameOf } = useUserMap();
   const { partitions } = useTaskPartitions();
   const [selectedProjectId, setSelectedProjectId] = useState<UUID | "">(projectId ?? "");
   const [selectedPhaseId, setSelectedPhaseId] = useState<UUID | "">(phaseId ?? "");
@@ -168,6 +169,14 @@ export function TaskEditorModal({ open, onClose, task, projectId, phaseId, onCre
         : emptyForm,
     );
   }, [open, projectId, phaseId, task]);
+
+  const candidates = useQuery({
+    queryKey: ["assignment-candidates", selectedProjectId || task?.id],
+    queryFn: () => selectedProjectId ? getProjectAssignmentCandidates(selectedProjectId) : getTaskAssignmentCandidates(task!.id),
+    enabled: open && (!!selectedProjectId || !!task?.id),
+  });
+  const eligiblePeople = candidates.data ?? [];
+  const legacyAssignees = candidates.data ? form.assignee_user_ids.filter((id) => !eligiblePeople.some((person) => person.id === id)) : [];
 
   const projects = useQuery({
     queryKey: ["projects", "task-editor"],
@@ -228,19 +237,8 @@ export function TaskEditorModal({ open, onClose, task, projectId, phaseId, onCre
 
   const assignmentUsers = useMemo(() => {
     const query = assigneeSearch.trim().toLocaleLowerCase();
-    if (!query) return users;
-    return users.filter((user) => {
-      const searchable = [
-        user.full_name,
-        user.email,
-        user.username ?? "",
-        ...user.roles,
-      ].join(" ").toLocaleLowerCase();
-      return searchable.includes(query)
-        || form.assignee_user_ids.includes(user.id)
-        || form.reviewer_user_id === user.id;
-    });
-  }, [assigneeSearch, form.assignee_user_ids, form.reviewer_user_id, users]);
+    return eligiblePeople.filter((person) => !query || [person.full_name, person.email].join(" ").toLocaleLowerCase().includes(query) || form.assignee_user_ids.includes(person.id));
+  }, [assigneeSearch, form.assignee_user_ids, candidates.data]);
 
   const toggleAssignee = (id: UUID) => {
     if (!canAssignAnyone && id !== currentUser?.id) return;
@@ -475,7 +473,7 @@ export function TaskEditorModal({ open, onClose, task, projectId, phaseId, onCre
                   <SearchSuggestionInput
                     value={ticketRecipientSearch}
                     options={[
-                      ...users
+                      ...eligiblePeople
                         .filter((person) => person.id !== currentUser?.id && !ticketRecipientUserIds.includes(person.id))
                         .map((person) => ({
                           id: `user:${person.id}`,
@@ -574,11 +572,15 @@ export function TaskEditorModal({ open, onClose, task, projectId, phaseId, onCre
               value={form.reviewer_user_id}
               onChange={(e) => setForm((f) => ({ ...f, reviewer_user_id: e.target.value }))}
               placeholder={translateUI("No reviewer")}
-              options={assignmentUsers.map((u) => ({ value: u.id, label: u.full_name }))}
+              options={[...eligiblePeople.map((u) => ({ value: u.id, label: u.full_name })), ...(form.reviewer_user_id && !eligiblePeople.some((u) => u.id === form.reviewer_user_id) ? [{ value: form.reviewer_user_id, label: nameOf(form.reviewer_user_id as UUID) }] : [])]}
             />
           </Field>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <div style={sideLabel}><LocalizedText message={"Assignees"} /></div>
+            <small>{translateUI("Only project members can be assigned. Choose a project and sprint first.")}</small>
+            {candidates.isError && <Button type="button" variant="secondary" onClick={() => candidates.refetch()}>{translateUI("Retry loading members")}</Button>}
+            {candidates.isFetching && <span role="status">{translateUI("Loading members…")}</span>}
+            {legacyAssignees.map((id) => <Button key={id} type="button" variant="tertiary" size="sm" disabled={!canAssignAnyone && id !== currentUser?.id} onClick={() => toggleAssignee(id)}>{nameOf(id)} · {translateUI("Remove assignment")} <X size={12} /></Button>)}
             <TextInput
               icon={<Search size={14} />}
               aria-label={translateUI("Search people to assign")}

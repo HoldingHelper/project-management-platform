@@ -106,6 +106,18 @@ class Product(Base, UUIDPKMixin, TimestampMixin, AuditableMixin):
     projects: Mapped[List["Project"]] = relationship(
         back_populates="product", cascade="all, delete-orphan"
     )
+    members: Mapped[List["ProductMember"]] = relationship(cascade="all, delete-orphan", lazy="selectin")
+
+    @property
+    def member_user_ids(self) -> list[uuid.UUID]:
+        return list(dict.fromkeys([self.owner_user_id, *(member.user_id for member in self.members)]))
+
+
+class ProductMember(Base, TimestampMixin):
+    __tablename__ = "product_members"
+    __table_args__ = ({"schema": SCHEMA},)
+    product_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey(f"{SCHEMA}.products.id", ondelete="CASCADE"), primary_key=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("identity.users.id", ondelete="CASCADE"), primary_key=True)
 
 
 class Project(Base, UUIDPKMixin, TimestampMixin, AuditableMixin):

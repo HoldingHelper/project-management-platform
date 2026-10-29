@@ -45,6 +45,7 @@ import {
   listTasks,
   updateTask,
   updateTaskStatus,
+  getTaskAssignmentCandidates,
 } from "@/lib/api/projects";
 import { addComment, listComments } from "@/lib/api/collaboration";
 import { GitHubMentionPicker } from "@/components/github/GitHubMentionPicker";
@@ -302,6 +303,8 @@ export default function TaskDetailPage({
     }
   };
 
+  const assignmentCandidates = useQuery({ queryKey: ["assignment-candidates", taskId], queryFn: () => getTaskAssignmentCandidates(taskId as UUID) , enabled: !!taskId });
+
   if (!taskId || task.isLoading) return <Spinner label={translateUI("Loading task details...")} />;
 
   if (task.isError || !task.data) {
@@ -321,9 +324,11 @@ export default function TaskDetailPage({
     "tasks.manage_testing",
     "tasks.manage_design",
   );
+  const eligibleAssignees = assignmentCandidates.data ?? [];
+  const assignmentOptions = [...eligibleAssignees, ...(assignmentCandidates.data ? (task.data?.assignee_user_ids ?? []).filter((id) => !eligibleAssignees.some((u) => u.id === id)).map((id) => ({ id, full_name: nameOf(id) })) : [])];
   const canManageAssignees = isSuperAdmin() || hasPermission("tasks.assign");
   const canEdit = canManageTask || isAssignedToCurrentUser;
-  const canSelfAssign = Boolean(currentUser && hasPermission("tasks.edit_assigned"));
+  const canSelfAssign = Boolean(currentUser && hasPermission("tasks.edit_assigned") && eligibleAssignees.some((person) => person.id === currentUser.id));
 
   // Subtask Calculations
   const subtaskList = subtasks.data?.items ?? [];
@@ -511,7 +516,7 @@ export default function TaskDetailPage({
             {assigneeMenuOpen && (
               <div className="quick-popover-menu assignee-menu animate-fade-in">
                 <div className="popover-heading"><LocalizedText message={"Assign Teammate"} /></div>
-                {!isAssignedToCurrentUser && currentUser && (
+                {!isAssignedToCurrentUser && canSelfAssign && currentUser && (
                   <button
                     type="button"
                     onClick={() => {
@@ -524,7 +529,8 @@ export default function TaskDetailPage({
                     <span><LocalizedText message={"Assign to me"} /></span>
                   </button>
                 )}
-                {canManageAssignees && users.map((u) => {
+                {assignmentCandidates.isError && <button type="button" onClick={() => assignmentCandidates.refetch()}>{translateUI("Retry loading members")}</button>}
+                {canManageAssignees && assignmentOptions.map((u) => {
                   const isAssigned = row.assignee_user_ids.includes(u.id as UUID);
                   return (
                     <button
@@ -877,7 +883,7 @@ export default function TaskDetailPage({
           <div className="inspector-card">
             <div className="flex items-center justify-between">
               <span className="inspector-heading"><LocalizedText message={"Ownership"} /></span>
-              {!isAssignedToCurrentUser && currentUser && (
+              {!isAssignedToCurrentUser && canSelfAssign && currentUser && (
                 <button
                   type="button"
                   onClick={() => assignToMe.mutate()}
