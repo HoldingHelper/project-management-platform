@@ -5832,3 +5832,48 @@ a:hover {
   .knowledge-editor-preview { min-width: 0; min-height: 0; padding: 20px 16px !important; }
   .knowledge-editor-preview > div:first-child { margin: -20px -16px 20px !important; padding: 10px 16px !important; top: -20px !important; gap: 10px; flex-wrap: wrap; }
 }
+@media (max-width: 767px) {
+  /* Wrap document actions instead of clipping the controls at the right edge. */
+  .knowledge-editor-topbar { height: auto !important; min-height: 48px; flex-direction: column; align-items: stretch !important; overflow: visible; padding-block: 6px !important; gap: 6px; }
+  .knowledge-editor-topbar > div { width: 100%; min-width: 0; display: flex; flex-wrap: wrap; gap: 6px !important; justify-content: space-between; }
+  .knowledge-editor-topbar button { flex-shrink: 0; min-height: 36px; }
+  .knowledge-editor-topbar .pmp-icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 44px !important; min-width: 44px; height: 44px !important; padding: 0 !important; }
+  .knowledge-editor-topbar svg { flex-shrink: 0; }
+  .knowledge-workspace-toolbar [data-testid="workspace-tab-bar"] { min-width: 0; padding-inline: 4px; gap: 4px; }
+  .knowledge-workspace-toolbar [data-testid="workspace-tab-bar"] > div:first-child { flex: 1; min-width: 0; max-width: none; }
+  .knowledge-workspace-toolbar [data-testid="workspace-tab-bar"] > div:last-child { flex-shrink: 0; gap: 2px; }
+  .knowledge-workspace-toolbar [data-testid="workspace-tab-bar"] > div:last-child button { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 44px; padding: 0; flex-shrink: 0; }
+  .knowledge-workspace-toolbar [data-testid="workspace-tab-bar"] > div:last-child button span { display: none; }
+  .knowledge-workspace-toolbar button[title="Close tab (Ctrl+W)"] { opacity: 1; display: inline-flex; align-items: center; justify-content: center; min-width: 28px; min-height: 36px; }
+  .knowledge-helpful-card { flex-wrap: wrap; gap: 12px; }
+  .knowledge-helpful-card > div:first-child { flex: 1 1 150px; min-width: 0; }
+  .knowledge-helpful-card > div:first-child > svg { flex-shrink: 0; }
+  .knowledge-helpful-card > div:first-child > div { min-width: 0; }
+  .knowledge-helpful-card > div:last-child { flex: 0 0 auto; margin-left: auto; }
+  .knowledge-helpful-card button { width: 44px !important; height: 44px !important; min-width: 44px; padding: 0 !important; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .knowledge-helpful-card button svg { display: block; flex-shrink: 0; }
+}@media (max-width: 767px) {
+  .knowledge-editor-topbar > div:first-child { justify-content: flex-start; }
+  .knowledge-editor-topbar .knowledge-editor-comments,
+  .knowledge-editor-topbar .knowledge-editor-history { display: inline-flex; align-items: center; justify-content: center; width: 44px; min-width: 44px; height: 44px !important; padding: 0 !important; }
+  .knowledge-editor-topbar .knowledge-editor-comments span,
+  .knowledge-editor-topbar .knowledge-editor-history span { display: none; }
+  .knowledge-editor-topbar > div:last-child > div:first-child { position: relative; gap: 0 !important; }
+  .knowledge-editor-topbar > div:last-child > div:first-child span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+}
+/* Desktop Docs: keep actions inside the editor and feedback icons centered. */
+@media (min-width: 768px) {
+  .knowledge-editor-topbar { flex-wrap: wrap; height: auto !important; min-height: 48px; gap: 8px 12px; padding-block: 6px !important; }
+  .knowledge-editor-topbar > div { min-width: 0; flex-wrap: wrap; gap: 6px !important; }
+  .knowledge-editor-topbar > div:last-child { margin-left: auto; }
+  .knowledge-editor-topbar button { flex-shrink: 0; }
+  .knowledge-editor-topbar .pmp-icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 32px !important; min-width: 32px; height: 32px !important; min-height: 32px; padding: 0 !important; flex-shrink: 0; }
+  .knowledge-editor-topbar svg { flex-shrink: 0; }
+  .knowledge-helpful-card { flex-wrap: wrap; gap: 10px; }
+  .knowledge-helpful-card > div:first-child { flex: 1 1 140px; min-width: 0; }
+  .knowledge-helpful-card > div:first-child > svg { flex-shrink: 0; }
+  .knowledge-helpful-card > div:first-child > div { min-width: 0; }
+  .knowledge-helpful-card > div:last-child { flex: 0 0 auto; margin-left: auto; }
+  .knowledge-helpful-card button { display: inline-flex; align-items: center; justify-content: center; width: 32px !important; min-width: 32px; height: 32px !important; min-height: 32px; padding: 0 !important; flex-shrink: 0; }
+  .knowledge-helpful-card button svg { display: block; flex-shrink: 0; }
+}

@@ -208,7 +208,8 @@ export function MarkdownWorkspaceEditor({ pageId }: Props) {
           <button
             type="button"
             onClick={() => setActiveTab("comments")}
-            className={`docs-toolbar-btn ${activeTab === "comments" ? "is-active" : ""}`}
+            aria-label="Document comments" title="Document comments"
+            className={`knowledge-editor-comments docs-toolbar-btn ${activeTab === "comments" ? "is-active" : ""}`}
             style={{ gap: 5, padding: "4px 10px", height: 30 }}
           >
             <MessageSquare size={13} />
@@ -221,7 +222,8 @@ export function MarkdownWorkspaceEditor({ pageId }: Props) {
           <button
             type="button"
             onClick={() => setActiveTab("history")}
-            className={`docs-toolbar-btn ${activeTab === "history" ? "is-active" : ""}`}
+            aria-label="Document history" title="Document history"
+            className={`knowledge-editor-history docs-toolbar-btn ${activeTab === "history" ? "is-active" : ""}`}
             style={{ gap: 5, padding: "4px 10px", height: 30 }}
           >
             <History size={13} />

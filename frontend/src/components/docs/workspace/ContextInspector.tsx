@@ -261,7 +261,7 @@ export function ContextInspector({ activePageId }: Props) {
             </div>
 
             {/* Was this helpful? Card */}
-            <div
+            <div className="knowledge-helpful-card"
               style={{
                 padding: "12px 14px",
                 borderRadius: "var(--radius-2)",
@@ -282,6 +282,8 @@ export function ContextInspector({ activePageId }: Props) {
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <button
                   type="button"
+                  aria-label="This document was helpful"
+                  aria-pressed={helpfulFeedback === true}
                   onClick={() => setHelpfulFeedback(true)}
                   className="pmp-icon-btn"
                   style={{
@@ -297,6 +299,8 @@ export function ContextInspector({ activePageId }: Props) {
                 </button>
                 <button
                   type="button"
+                  aria-label="This document was not helpful"
+                  aria-pressed={helpfulFeedback === false}
                   onClick={() => setHelpfulFeedback(false)}
                   className="pmp-icon-btn"
                   style={{
