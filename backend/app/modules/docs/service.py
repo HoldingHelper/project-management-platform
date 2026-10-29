@@ -422,6 +422,8 @@ async def add_link(db: AsyncSession, user: CurrentUser, page_id: UUID, payload: 
     page = await repo.get_page(db, page_id)
     if not page or not await _page_editable(db, user, page):
         raise ForbiddenError("You do not have permission to link this page.")
+    if payload.entity_type == "product":
+        await _authorize_product_link(db, user, payload.entity_id, manage=True)
     link = DocLink(page_id=page_id, **payload.model_dump())
     db.add(link)
     await db.commit()
@@ -435,8 +437,10 @@ async def list_entity_links(
     entity_type: str,
     entity_id: UUID,
 ) -> list[EntityDocLinkRead]:
-    if entity_type not in {"project", "task", "team", "user"}:
+    if entity_type not in {"product", "project", "task", "team", "user"}:
         raise ValidationAppError("Unsupported linked work type.")
+    if entity_type == "product":
+        await _authorize_product_link(db, user, entity_id)
     visible: list[EntityDocLinkRead] = []
     for link, page in await repo.list_links_by_entity(db, entity_type, entity_id):
         space = await repo.get_space(db, page.space_id)
@@ -465,6 +469,8 @@ async def delete_link(
     page = await repo.get_page(db, page_id)
     if page is None or not await _page_editable(db, user, page):
         raise ForbiddenError("You do not have permission to unlink this page.")
+    if link.entity_type == "product":
+        await _authorize_product_link(db, user, link.entity_id, manage=True)
     await db.delete(link)
     await db.commit()
 
@@ -638,3 +644,9 @@ async def remove_page_tag(
         del_stmt = delete(DocPageTag).where(DocPageTag.page_id == page_id, DocPageTag.tag_id == tag.id)
         await db.execute(del_stmt)
         await db.commit()
+
+async def _authorize_product_link(db: AsyncSession, user: CurrentUser, product_id: UUID, *, manage: bool = False) -> None:
+    from app.modules.projects.product_access import require_product_access
+    await require_product_access(db, user, product_id)
+    if manage and not (user.is_super_admin() or user.has_any_permission("products.update", "products.manage_all")):
+        raise ForbiddenError("You do not have permission to edit product-line documents.")

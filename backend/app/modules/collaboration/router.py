@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, Query, Response, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.current_user import CurrentUser
@@ -80,10 +80,14 @@ async def upload_file(
     entity_type: str = Query(...),
     entity_id: UUID = Query(...),
     file: UploadFile = File(...),
+    documentation: bool = Query(default=False),
     current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> FileAttachmentRead:
-    content = await file.read()
+    content = await file.read(25 * 1024 * 1024 + 1)
+    if documentation:
+        from app.modules.projects.product_documentation import validate_document
+        validate_document(file.filename or "", content)
     import io
 
     if entity_type in _VOICE_ENTITY_TYPES:
@@ -223,3 +227,25 @@ async def list_devices(
     db: AsyncSession = Depends(get_db),
 ) -> list[DeviceRead]:
     return await service.list_user_devices(db, current_user.user_id)
+
+@files_router.get("/{attachment_id}/download")
+async def download_file(
+    attachment_id: UUID,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Response:
+    from urllib.parse import quote
+    from app.core.exceptions import NotFoundError
+    from app.core.storage import file_storage_service
+    from app.modules.collaboration import repository
+    from app.modules.collaboration.authorization import authorize_entity_access
+
+    attachment = await repository.get_file_attachment(db, attachment_id)
+    if attachment is None:
+        raise NotFoundError("FileAttachment", attachment_id)
+    await authorize_entity_access(db, current_user, attachment.entity_type, attachment.entity_id)
+    content = await file_storage_service.download_async(attachment.storage_key)
+    return Response(content, media_type="application/octet-stream", headers={
+        "Content-Disposition": f"attachment; filename*=UTF-8''{quote(attachment.file_name, safe='')}",
+        "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff",
+    })

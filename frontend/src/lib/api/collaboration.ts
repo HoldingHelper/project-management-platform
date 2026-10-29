@@ -1,4 +1,4 @@
-import { apiFetch } from "./client";
+import { apiFetch, apiFetchBlob } from "./client";
 import type { CommentRead, FileAttachmentRead, NotificationRead, UUID } from "@/lib/types";
 
 export function listComments(entity_type: string, entity_id: UUID) {
@@ -58,11 +58,11 @@ export function listFiles(entity_type: string, entity_id: UUID) {
   );
 }
 
-export function uploadFile(entity_type: string, entity_id: UUID, file: Blob, fileName: string) {
+export function uploadFile(entity_type: string, entity_id: UUID, file: Blob, fileName: string, documentation = false) {
   const form = new FormData();
   form.append("file", file, fileName);
   return apiFetch<FileAttachmentRead>(
-    `/files?entity_type=${encodeURIComponent(entity_type)}&entity_id=${entity_id}`,
+    `/files?entity_type=${encodeURIComponent(entity_type)}&entity_id=${entity_id}&documentation=${documentation}`,
     { method: "POST", formData: form },
   );
 }
@@ -70,3 +70,5 @@ export function uploadFile(entity_type: string, entity_id: UUID, file: Blob, fil
 export function getFileDownloadUrl(attachmentId: UUID) {
   return apiFetch<{ url: string }>(`/files/${attachmentId}/download-url`);
 }
+
+export function downloadFile(attachmentId: UUID) { return apiFetchBlob(`/files/${attachmentId}/download`); }

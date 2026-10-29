@@ -146,6 +146,7 @@ class Project(Base, UUIDPKMixin, TimestampMixin, AuditableMixin):
         String(20), default=ProjectStatus.NOT_STARTED.value, nullable=False
     )
     tags: Mapped[List[str]] = mapped_column(ARRAY(String), default=list, nullable=False)
+    checklist_items: Mapped[list[dict]] = mapped_column(JSONB, default=list, server_default="[]", nullable=False)
     progress_percentage: Mapped[float] = mapped_column(
         Numeric(5, 2), default=0, nullable=False
     )

@@ -30,9 +30,11 @@ import { createDocPage, listDocSpaces, type DocSpace } from "@/lib/api/docs";
 function KnowledgeWorkspaceInner({
   initialSpaceId,
   initialPageId,
+  returnPath,
 }: {
   initialSpaceId?: string;
   initialPageId?: string;
+  returnPath: string;
 }) {
   const {
     tabs,
@@ -158,18 +160,19 @@ function KnowledgeWorkspaceInner({
 
       {/* Main Center Area */}
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-slate-950">
+        <WorkspaceNavigation returnPath={returnPath} />
         {/* Workspace Tab Bar */}
-        <div className="flex items-center">
+        <div className="knowledge-workspace-toolbar flex items-center">
           <button
             type="button"
             onClick={toggleLeftPanel}
-            className="px-2.5 py-2 text-slate-400 hover:text-white bg-slate-950 border-b border-white/5"
+            className="knowledge-workspace-panel-toggle text-slate-400 hover:text-white bg-slate-950"
             title={leftPanelCollapsed ? "Expand Explorer" : "Collapse Explorer"}
           >
             {leftPanelCollapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
           </button>
 
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 h-full">
             <WorkspaceTabBar
               onNewPage={() => setNewPageModalOpen(true)}
             />
@@ -178,7 +181,7 @@ function KnowledgeWorkspaceInner({
           <button
             type="button"
             onClick={toggleRightPanel}
-            className="px-2.5 py-2 text-slate-400 hover:text-white bg-slate-950 border-b border-white/5"
+            className="knowledge-workspace-panel-toggle text-slate-400 hover:text-white bg-slate-950"
             title={rightPanelCollapsed ? "Expand Inspector" : "Collapse Inspector"}
           >
             {rightPanelCollapsed ? <PanelRightOpen size={15} /> : <PanelRightClose size={15} />}
@@ -360,6 +363,16 @@ export function KnowledgeWorkspaceShell(props: {
   return (
     <KnowledgeWorkspaceProvider>
       <div className="flex h-dvh w-full flex-col overflow-hidden">
+        <div className="min-h-0 flex-1">
+          <KnowledgeWorkspaceInner {...props} returnPath={returnPath} />
+        </div>
+      </div>
+    </KnowledgeWorkspaceProvider>
+  );
+}
+
+function WorkspaceNavigation({ returnPath }: { returnPath: string }) {
+  return (
         <nav className="knowledge-workspace-navigation" aria-label="Workspace navigation">
           <div className="workspace-module-switcher">
             <Link href="/app/docs" aria-current="page"><BookOpen size={15} aria-hidden />Docs</Link>
@@ -368,10 +381,6 @@ export function KnowledgeWorkspaceShell(props: {
             </Link>
           </div>
         </nav>
-        <div className="min-h-0 flex-1">
-          <KnowledgeWorkspaceInner {...props} />
-        </div>
-      </div>
-    </KnowledgeWorkspaceProvider>
+
   );
 }

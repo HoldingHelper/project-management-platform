@@ -53,6 +53,8 @@ import {
   listEntityDocLinks,
   searchDocPages,
 } from "@/lib/api/docs";
+import { ChecklistEditor, ProjectChecklist, type ChecklistDraft } from "@/components/tasks/TaskChecklist";
+import { DocumentationFiles, DocumentationUpload, uploadDocumentationFiles } from "@/components/docs/DocumentationUpload";
 import { SearchSuggestionInput } from "@/components/docs/SearchSuggestionInput";
 import { getBottlenecks } from "@/lib/api/analytics";
 import { listBlockers } from "@/lib/api/blockers";
@@ -323,7 +325,7 @@ function ProjectWorkspaceInner() {
 
       <Tabs items={TAB_KEYS} active={tab} onChange={setTab} />
 
-      {tab === "overview" && <OverviewTab projectId={projectId} />}
+      {tab === "overview" && <OverviewTab projectId={projectId} canManage={canManage} />}
       {tab === "board" && (
         <BoardTab
           projectId={projectId}
@@ -374,6 +376,8 @@ function EditProjectModal({
     enabled: open,
   });
   const [selectedDocs, setSelectedDocs] = useState<{ id: string; title: string; linkId?: string }[]>([]);
+  const [documentationFiles, setDocumentationFiles] = useState<File[]>([]);
+  const [checklist, setChecklist] = useState<ChecklistDraft[]>(project.checklist_items ?? []);
   const [form, setForm] = useState({
     product_id: project.product_id,
     name: project.name,
@@ -394,6 +398,8 @@ function EditProjectModal({
 
   useEffect(() => {
     if (!open) return;
+    setDocumentationFiles([]);
+    setChecklist(project.checklist_items ?? []);
     setForm({
       product_id: project.product_id,
       name: project.name,
@@ -425,6 +431,7 @@ function EditProjectModal({
   const save = useMutation({
     mutationFn: async () => {
       const updated = await updateProject(project.id, {
+        checklist_items: checklist.map((item, order) => ({ ...(item.id ? { id: item.id } : {}), text: item.text.trim(), is_done: item.is_done ?? false, order })),
         product_id: form.product_id,
         name: form.name,
         description: form.description || null,
@@ -449,6 +456,10 @@ function EditProjectModal({
           .filter((link) => !selectedIds.has(link.page_id))
           .map((link) => deleteDocLink(link.page_id, link.id)),
       ]);
+      const failed = await uploadDocumentationFiles("project", project.id, documentationFiles);
+      setDocumentationFiles(failed);
+      qc.invalidateQueries({ queryKey: ["entity-files", "project", project.id] });
+      if (failed.length) throw new Error("Project saved, but some documents could not be uploaded. Retry Save changes to upload the remaining files.");
       return updated;
     },
     onSuccess: () => {
@@ -460,7 +471,7 @@ function EditProjectModal({
       onSaved();
       onClose();
     },
-    onError: (error) => toast.push(error instanceof AppError ? error.message : "Could not update project.", "error"),
+    onError: (error) => toast.push(error instanceof Error ? error.message : "Could not update project.", "error"),
   });
   const datesPaired = Boolean(form.start_date) === Boolean(form.end_date);
   const datesOrdered = !form.start_date || !form.end_date || form.end_date >= form.start_date;
@@ -474,7 +485,7 @@ function EditProjectModal({
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button disabled={!form.name.trim() || !datesPaired || !datesOrdered || save.isPending} onClick={() => save.mutate()}>
+          <Button disabled={!form.name.trim() || checklist.some((item) => !item.text.trim()) || !datesPaired || !datesOrdered || save.isPending} onClick={() => save.mutate()}>
             {save.isPending ? "Saving..." : "Save changes"}
           </Button>
         </>
@@ -576,6 +587,8 @@ function EditProjectModal({
                 </button>
               ))}
               {selectedDocs.length === 0 && <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>No documents connected.</span>}
+              <DocumentationUpload files={documentationFiles} onChange={setDocumentationFiles} disabled={save.isPending} entityType="project" entityId={project.id} />
+              <div className="card-title">Checklist</div><ChecklistEditor items={checklist} onChange={setChecklist} disabled={save.isPending} entity="project" />
             </div>
           </Card>
         </div>
@@ -585,7 +598,7 @@ function EditProjectModal({
 }
 
 /* ------------------------------ Overview ------------------------------ */
-function OverviewTab({ projectId }: { projectId: string }) {
+function OverviewTab({ projectId, canManage }: { projectId: string; canManage: boolean }) {
   const { nameOf } = useUserMap();
   const { hasPermission, isSuperAdmin } = useAuth();
   const canSeeBottlenecks = isSuperAdmin() || hasPermission("analytics.view_org", "reports.view_executive");
@@ -648,6 +661,8 @@ function OverviewTab({ projectId }: { projectId: string }) {
         <MetricCard label="Open blockers" value={String(o.open_blockers)} tone={o.open_blockers > 0 ? "blocked" : "default"} />
       </div>
 
+      <ProjectChecklist key={projectId} project={p} canEdit={canManage} />
+      <Card title="Uploaded documentation" padded><DocumentationFiles entityType="project" entityId={projectId} /></Card>
       <Card title="Project progress" padded>
         <div style={{ marginBottom: 16 }}><ProgressBar percent={pct} /></div>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>

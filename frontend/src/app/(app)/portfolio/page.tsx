@@ -15,6 +15,8 @@ import {
   listTasks,
 } from "@/lib/api/projects";
 import { addDocLink, listDocPages, searchDocPages } from "@/lib/api/docs";
+import { ChecklistEditor, type ChecklistDraft } from "@/components/tasks/TaskChecklist";
+import { DocumentationUpload, uploadDocumentationFiles } from "@/components/docs/DocumentationUpload";
 import { SearchSuggestionInput } from "@/components/docs/SearchSuggestionInput";
 import { useTaskPartitions, useUserMap } from "@/lib/hooks";
 import {
@@ -417,6 +419,8 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
   });
   const [docSearch, setDocSearch] = useState("");
   const [selectedDocs, setSelectedDocs] = useState<{ id: string; title: string }[]>([]);
+  const [documentationFiles, setDocumentationFiles] = useState<File[]>([]);
+  const [checklist, setChecklist] = useState<ChecklistDraft[]>([]);
   const docs = useQuery({
     queryKey: ["project-create-doc-search", docSearch],
     queryFn: () => docSearch.trim().length >= 2 ? searchDocPages(docSearch.trim()) : listDocPages(),
@@ -442,6 +446,7 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
 
       const project = await createProject({
         product_id: productId as UUID,
+        checklist_items: checklist.map((item, order) => ({ text: item.text.trim(), order })),
         name: form.name,
         description: form.description || undefined,
         priority: form.priority,
@@ -468,7 +473,9 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       queryClient.invalidateQueries({ queryKey: ["portfolio-gantt"] });
       onClose();
-      let setupFailures = 0;
+      const failedFiles = await uploadDocumentationFiles("project", project.id, documentationFiles);
+      queryClient.invalidateQueries({ queryKey: ["entity-files", "project", project.id] });
+      let setupFailures = failedFiles.length;
       try {
         const memberRoles = new Map<UUID, string>();
         if (form.project_manager_id && form.project_manager_id !== user?.id) memberRoles.set(form.project_manager_id, "ProjectManager");
@@ -544,7 +551,7 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
 
   const datesPaired = Boolean(form.start_date) === Boolean(form.end_date);
   const datesOrdered = !form.start_date || !form.end_date || form.end_date >= form.start_date;
-  const valid = form.name.trim().length > 0
+  const valid = checklist.every((item) => item.text.trim()) && form.name.trim().length > 0
     && availableProductLines.includes(form.product_line)
     && availableProductLines.length > 0
     && Number(form.sprint_count) === form.sprint_names.length
@@ -752,6 +759,8 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
               </div>
             )}
           </div>
+          <DocumentationUpload files={documentationFiles} onChange={setDocumentationFiles} disabled={create.isPending} entityType="project" />
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}><div style={sectionLabel}>Checklist</div><ChecklistEditor items={checklist} onChange={setChecklist} disabled={create.isPending} entity="project" /></div>
           <Field label="Project manager">
             <Select
               value={form.project_manager_id}

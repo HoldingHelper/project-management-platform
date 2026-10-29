@@ -20,6 +20,8 @@ import {
   searchDocPages,
 } from "@/lib/api/docs";
 import { listTeams } from "@/lib/api/organization";
+import { ChecklistEditor, type ChecklistDraft } from "@/components/tasks/TaskChecklist";
+import { DocumentationUpload, uploadDocumentationFiles } from "@/components/docs/DocumentationUpload";
 import { SearchSuggestionInput } from "@/components/docs/SearchSuggestionInput";
 import {
   Avatar,
@@ -100,7 +102,7 @@ const emptyForm = {
   parent_task_id: "",
   assignee_user_ids: [] as UUID[],
   labels: "",
-  checklist: "",
+  checklist: [] as ChecklistDraft[],
   is_ticket: false,
 };
 
@@ -120,6 +122,7 @@ export function TaskEditorModal({ open, onClose, task, projectId, phaseId, onCre
   const [ticketRecipientUserIds, setTicketRecipientUserIds] = useState<UUID[]>([]);
   const [ticketRecipientTeamIds, setTicketRecipientTeamIds] = useState<UUID[]>([]);
   const [selectedDocs, setSelectedDocs] = useState<{ id: string; title: string; linkId?: string }[]>([]);
+  const [documentationFiles, setDocumentationFiles] = useState<File[]>([]);
   const isEdit = !!task;
 
   useEffect(() => {
@@ -128,6 +131,7 @@ export function TaskEditorModal({ open, onClose, task, projectId, phaseId, onCre
     setSelectedPhaseId((task?.phase_id ?? phaseId) ?? "");
     setAssigneeSearch("");
     setDocSearch("");
+    setDocumentationFiles([]);
     setTicketRecipientSearch("");
     setTicketRecipientUserIds([]);
     setTicketRecipientTeamIds([]);
@@ -151,7 +155,7 @@ export function TaskEditorModal({ open, onClose, task, projectId, phaseId, onCre
             parent_task_id: task.parent_task_id ?? "",
             assignee_user_ids: task.assignee_user_ids,
             labels: task.labels.join(", "),
-            checklist: task.checklist_items.map((item) => item.text).join("\n"),
+            checklist: task.checklist_items.map((item) => ({ id: item.id, text: item.text, is_done: item.is_done })),
             is_ticket: task.is_ticket,
           }
         : emptyForm,
@@ -266,20 +270,17 @@ export function TaskEditorModal({ open, onClose, task, projectId, phaseId, onCre
           .split(",")
           .map((label) => label.trim())
           .filter(Boolean),
-        checklist_items: form.checklist
-          .split("\n")
-          .map((text) => text.trim())
-          .filter(Boolean)
-          .map((text, order) => ({ text, order })),
+        checklist_items: form.checklist.map((item, order) => ({ text: item.text.trim(), order })),
       });
       const docResults = await Promise.allSettled(
         selectedDocs.map((doc) => addDocLink(doc.id, { entity_type: "task", entity_id: created.id })),
       );
-      return { task: created, docLinkFailures: docResults.filter((result) => result.status === "rejected").length };
+      const failed = await uploadDocumentationFiles("task", created.id, documentationFiles);
+      return { task: created, docLinkFailures: docResults.filter((result) => result.status === "rejected").length + failed.length };
     },
     onSuccess: ({ task, docLinkFailures }) => {
       toast.push(
-        docLinkFailures ? `Task created, but ${docLinkFailures} document link(s) failed.` : "Task created.",
+        docLinkFailures ? `Task created, but ${docLinkFailures} document(s) could not be attached. Retry from Edit task.` : "Task created.",
         docLinkFailures ? "error" : "success",
       );
       qc.invalidateQueries({ queryKey: ["tasks"] });
@@ -287,6 +288,7 @@ export function TaskEditorModal({ open, onClose, task, projectId, phaseId, onCre
       qc.invalidateQueries({ queryKey: ["phase-progress"] });
       qc.invalidateQueries({ queryKey: ["project-overview"] });
       qc.invalidateQueries({ queryKey: ["entity-doc-links", "task", task.id] });
+      qc.invalidateQueries({ queryKey: ["entity-files", "task", task.id] });
       setForm(emptyForm);
       setTicketRecipientUserIds([]);
       setTicketRecipientTeamIds([]);
@@ -313,7 +315,7 @@ export function TaskEditorModal({ open, onClose, task, projectId, phaseId, onCre
         due_date: form.due_date || null,
         assignee_user_ids: form.assignee_user_ids,
         label_names: form.labels.split(",").map((label) => label.trim()).filter(Boolean),
-        checklist_items: form.checklist.split("\n").map((text) => text.trim()).filter(Boolean).map((text, order) => ({ text, order })),
+        checklist_items: form.checklist.map((item, order) => ({ id: item.id ?? null, text: item.text.trim(), order })),
       });
       if (form.status !== task.status) {
         saved = await updateTaskStatus(task.id, form.status as TaskStatus);
@@ -328,6 +330,10 @@ export function TaskEditorModal({ open, onClose, task, projectId, phaseId, onCre
           .filter((link) => !selectedIds.has(link.page_id))
           .map((link) => deleteDocLink(link.page_id, link.id)),
       ]);
+      const failed = await uploadDocumentationFiles("task", saved.id, documentationFiles);
+      setDocumentationFiles(failed);
+      qc.invalidateQueries({ queryKey: ["entity-files", "task", saved.id] });
+      if (failed.length) throw new Error("Task saved, but some documents could not be uploaded. Retry Save changes to upload the remaining files.");
       return saved;
     },
     onSuccess: (saved) => {
@@ -341,7 +347,7 @@ export function TaskEditorModal({ open, onClose, task, projectId, phaseId, onCre
       onSaved?.(saved);
       onClose();
     },
-    onError: () => toast.push("Could not update task.", "error"),
+    onError: (error) => toast.push(error instanceof Error ? error.message : "Could not update task.", "error"),
   });
 
   return (
@@ -356,6 +362,7 @@ export function TaskEditorModal({ open, onClose, task, projectId, phaseId, onCre
           <Button
             disabled={
               !form.title.trim()
+              || form.checklist.some((item) => !item.text.trim())
               || create.isPending
               || save.isPending
               || (!isEdit && form.is_ticket && ticketRecipientUserIds.length === 0 && ticketRecipientTeamIds.length === 0)
@@ -622,15 +629,14 @@ export function TaskEditorModal({ open, onClose, task, projectId, phaseId, onCre
               </button>
             ))}
           </div>
-          <h2 style={sectionHeading}>Advanced</h2>
-          <Field label="Checklist">
-            <TextArea value={form.checklist} onChange={(e) => setForm((f) => ({ ...f, checklist: e.target.value }))} placeholder={"One checklist item per line"} style={{ minHeight: 88 }} />
-          </Field>
+          <DocumentationUpload files={documentationFiles} onChange={setDocumentationFiles} disabled={create.isPending || save.isPending} entityType="task" entityId={task?.id} />
+          <h2 style={sectionHeading}>Checklist</h2>
+          <ChecklistEditor items={form.checklist} onChange={(checklist) => setForm((current) => ({ ...current, checklist }))} disabled={create.isPending || save.isPending} />
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
             <StatusChip status={form.status} label={TASK_STATUS_LABELS[form.status] ?? form.status} />
             <PriorityBadge level={form.priority} compact />
             <span style={metaPill}><GitBranch size={12} /> {form.parent_task_id ? "Subtask" : "Top-level"}</span>
-            {form.checklist.trim() && <span style={metaPill}><ListChecks size={12} /> {form.checklist.split("\n").filter(Boolean).length}</span>}
+            {form.checklist.length > 0 && <span style={metaPill}><ListChecks size={12} /> {form.checklist.length}</span>}
           </div>
           <div style={{ borderTop: "1px solid var(--border-subtle)", paddingTop: 10 }}>
             <div style={sideLabel}>Preview</div>

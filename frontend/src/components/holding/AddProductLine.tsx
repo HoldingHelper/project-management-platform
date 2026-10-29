@@ -1,12 +1,15 @@
 "use client";
 
-import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Pencil, Plus } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { FileText, Link2, Pencil, Plus, Upload, X } from "lucide-react";
 import { Alert, Button, Field, Modal, Select, TextArea, TextInput, useToast } from "@/components/ds";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { createProduct, updateProduct } from "@/lib/api/projects";
+import { createProduct, updateProduct, uploadProductDocumentation } from "@/lib/api/projects";
 import type { ProductRead } from "@/lib/types";
+import { SearchSuggestionInput } from "@/components/docs/SearchSuggestionInput";
+import { addDocLink, deleteDocLink, listDocPages, listEntityDocLinks, searchDocPages } from "@/lib/api/docs";
+import styles from "./ProductDocumentationUpload.module.css";
 
 export function AddProductLine({ products }: { products: ProductRead[] }) {
   return <ProductLineEditor products={products} />;
@@ -25,18 +28,65 @@ function ProductLineEditor({ product, products }: { product?: ProductRead; produ
   });
   const [form, setForm] = useState(initial);
   const [open, setOpen] = useState(false);
-  const duplicate = products.some((item) => item.id !== product?.id && item.name.trim().toLowerCase() === form.name.trim().toLowerCase());
+  const [documentationFile, setDocumentationFile] = useState<File | null>(null);
+  const [fileError, setFileError] = useState("");
+  const [docSearch, setDocSearch] = useState("");
+  const [selectedDocs, setSelectedDocs] = useState<{ id: string; title: string }[]>([]);
+  const linkedDocs = useQuery({
+    queryKey: ["entity-doc-links", "product", product?.id],
+    queryFn: () => listEntityDocLinks("product", product!.id),
+    enabled: open && !!product,
+  });
+  const docs = useQuery({
+    queryKey: ["product-doc-search", docSearch],
+    queryFn: () => docSearch.trim().length >= 2 ? searchDocPages(docSearch.trim()) : listDocPages(),
+    enabled: open && !!product,
+  });
+  useEffect(() => {
+    if (open && linkedDocs.data) setSelectedDocs(linkedDocs.data.map((link) => ({ id: link.page_id, title: link.title })));
+  }, [open, linkedDocs.data]);
+  const createdProduct = useRef<ProductRead | null>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
+  const duplicate = products.some((item) => item.id !== (product?.id ?? createdProduct.current?.id) && item.name.trim().toLowerCase() === form.name.trim().toLowerCase());
   const save = useMutation({
-    mutationFn: () => {
+    mutationFn: async () => {
       const details = {
         name: form.name.trim(), description: form.description.trim(), status: form.status, priority: form.priority,
         environment: form.environment, technology_stack: form.stack.split(",").map((value) => value.trim()).filter(Boolean),
         repository_url: form.repository.trim() || null, documentation_link: form.documentation.trim() || null,
       };
-      return product ? updateProduct(product.id, details) : createProduct({ ...details, owner_user_id: user!.id });
+      const current = product ?? createdProduct.current;
+      const saved = current ? await updateProduct(current.id, details) : await createProduct({ ...details, owner_user_id: user!.id });
+      createdProduct.current = saved;
+      if (product) {
+        try {
+          const existing = await listEntityDocLinks("product", product.id);
+          const selectedIds = new Set(selectedDocs.map((doc) => doc.id));
+          const existingIds = new Set(existing.map((link) => link.page_id));
+          for (const doc of selectedDocs.filter((doc) => !existingIds.has(doc.id))) {
+            await addDocLink(doc.id, { entity_type: "product", entity_id: product.id });
+          }
+          for (const link of existing.filter((link) => !selectedIds.has(link.page_id))) {
+            await deleteDocLink(link.page_id, link.id);
+          }
+        } catch (error) {
+          queryClient.invalidateQueries({ queryKey: ["products"] });
+          throw new Error(`Product line details were saved, but connected documents could not be updated. Retry Save changes. ${error instanceof Error ? error.message : ""}`);
+        }
+      }
+      if (documentationFile) {
+        try { await uploadProductDocumentation(saved.id, documentationFile); }
+        catch (error) {
+          queryClient.invalidateQueries({ queryKey: ["products"] });
+          throw new Error(`Product line details were saved, but the document could not be uploaded. Retry to upload it. ${error instanceof Error ? error.message : ""}`);
+        }
+      }
+      return saved;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["product-documentation"] });
+      queryClient.invalidateQueries({ queryKey: ["entity-doc-links", "product", product?.id] });
       setOpen(false);
       toast.push(product ? "Product line updated." : "Product line added.", "success");
     },
@@ -48,11 +98,11 @@ function ProductLineEditor({ product, products }: { product?: ProductRead; produ
   const action = product ? "Edit product line" : "Add product line";
   return (
     <>
-      <Button variant={product ? "tertiary" : "primary"} size={product ? "sm" : "md"} aria-label={product ? `Edit ${product.name}` : action} onClick={() => { setForm(initial()); save.reset(); setOpen(true); }}>
+      <Button variant={product ? "tertiary" : "primary"} size={product ? "sm" : "md"} aria-label={product ? `Edit ${product.name}` : action} onClick={() => { setForm(initial()); setDocSearch(""); setSelectedDocs([]); createdProduct.current = null; setDocumentationFile(null); setFileError(""); save.reset(); setOpen(true); }}>
         {product ? <Pencil size={14} aria-hidden /> : <Plus size={16} aria-hidden />}{product ? "Edit" : action}
       </Button>
       <Modal open={open} onClose={close} title={action} width={600} closeOnBackdrop={!save.isPending}>
-        <form onSubmit={(event) => { event.preventDefault(); if (form.name.trim() && !duplicate && !save.isPending) save.mutate(); }} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <form onSubmit={(event) => { event.preventDefault(); if (form.name.trim() && !duplicate && !fileError && !save.isPending && (!product || (!linkedDocs.isFetching && !linkedDocs.isError))) save.mutate(); }} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: 13 }}>Product lines group projects. Changes also appear in project dropdowns.</p>
           <Field label="Product line name" hint="For example, PMP or GMALL."><TextInput value={form.name} onChange={(e) => field("name", e.target.value)} maxLength={200} required disabled={save.isPending} /></Field>
           <Field label="Description"><TextArea value={form.description} onChange={(e) => field("description", e.target.value)} disabled={save.isPending} rows={3} /></Field>
@@ -63,12 +113,64 @@ function ProductLineEditor({ product, products }: { product?: ProductRead; produ
           </div>
           <Field label="Technology stack" hint="Separate technologies with commas."><TextInput value={form.stack} onChange={(e) => field("stack", e.target.value)} disabled={save.isPending} placeholder="React, Python, PostgreSQL" /></Field>
           <Field label="Repository URL"><TextInput type="url" value={form.repository} onChange={(e) => field("repository", e.target.value)} disabled={save.isPending} placeholder="https://…" /></Field>
-          <Field label="Documentation URL"><TextInput type="url" value={form.documentation} onChange={(e) => field("documentation", e.target.value)} disabled={save.isPending} placeholder="https://…" /></Field>
+          {product && <div className={styles.field}>
+            <span className={styles.label}>Connected documents</span>
+            {linkedDocs.isError ? <div role="alert"><Alert kind="warning" title="Could not load connected documents" /><Button type="button" variant="tertiary" size="sm" onClick={() => linkedDocs.refetch()}>Retry</Button></div> : <>
+              <SearchSuggestionInput
+                value={docSearch}
+                options={(docs.data ?? []).filter((doc) => !selectedDocs.some((selected) => selected.id === doc.id)).map((doc) => ({ id: doc.id, label: doc.title, detail: doc.excerpt ?? "Internal Docs" }))}
+                placeholder="Search documents…"
+                ariaLabel="Search documents to connect to product line"
+                onChange={setDocSearch}
+                onSelect={(option) => { if (!save.isPending && !linkedDocs.isFetching) { setSelectedDocs((current) => [...current, { id: option.id, title: option.label }]); setDocSearch(""); } }}
+              />
+              {selectedDocs.map((doc) => <div key={doc.id} style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                <Link2 size={14} aria-hidden /><span className={styles.title} style={{ flex: 1 }}>{doc.title}</span>
+                <Button type="button" variant="ghost" size="sm" disabled={save.isPending || linkedDocs.isFetching} aria-label={`Disconnect document ${doc.title}`} onClick={() => setSelectedDocs((current) => current.filter((item) => item.id !== doc.id))}><X size={14} aria-hidden /></Button>
+              </div>)}
+              {linkedDocs.isFetching && <span className={styles.hint}>Loading connected documents…</span>}
+            </>}
+          </div>}
+          <div className={styles.field}>
+            <label htmlFor={`documentation-${product?.id ?? "new"}`} className={styles.label}>Documentation</label>
+            <input
+              ref={fileInput}
+              id={`documentation-${product?.id ?? "new"}`}
+              type="file"
+              hidden
+              accept=".pdf,.doc,.docx,.txt,.md,.markdown,.rtf,.odt"
+              disabled={save.isPending}
+              aria-describedby={`documentation-hint-${product?.id ?? "new"}`}
+              onChange={(event) => {
+                const file = event.target.files?.[0] ?? null;
+                const invalid = file && (file.size === 0 || file.size > 25 * 1024 * 1024 || !/\.(pdf|docx?|txt|md|markdown|rtf|odt)$/i.test(file.name));
+                setFileError(invalid ? "Choose a supported, non-empty document up to 25 MB." : "");
+                setDocumentationFile(invalid ? null : file);
+              }}
+            />
+            <div className={styles.control} data-selected={!!documentationFile}>
+              <span className={styles.icon}>{documentationFile ? <FileText size={20} aria-hidden /> : <Upload size={20} aria-hidden />}</span>
+              <div className={styles.details} aria-live="polite">
+                <span className={styles.title} title={documentationFile?.name}>{documentationFile?.name ?? (form.documentation ? "Documentation attached" : "Upload a document")}</span>
+                <span className={styles.caption}>{documentationFile
+                  ? `${documentationFile.size >= 1024 * 1024 ? `${(documentationFile.size / (1024 * 1024)).toFixed(1)} MB` : `${(documentationFile.size / 1024).toFixed(1)} KB`} · Ready to save`
+                  : form.documentation ? "Choose a new file to replace it" : "Add a guide, specification, or reference"}</span>
+              </div>
+              <div className={styles.actions}>
+                <Button type="button" variant="secondary" size="sm" disabled={save.isPending} onClick={() => fileInput.current?.click()}>
+                  <Upload size={15} aria-hidden />{documentationFile || form.documentation ? "Replace file" : "Choose file"}
+                </Button>
+                {(documentationFile || fileError) && <Button type="button" variant="ghost" size="sm" aria-label="Clear selected document" title="Clear selection" disabled={save.isPending} style={{ padding: 8 }} onClick={() => { setDocumentationFile(null); setFileError(""); if (fileInput.current) fileInput.current.value = ""; }}><X size={16} aria-hidden /></Button>}
+              </div>
+            </div>
+            <span id={`documentation-hint-${product?.id ?? "new"}`} className={styles.hint}>PDF, Word, text, Markdown, RTF, or ODT · Max 25 MB. Uploaded when you save.</span>
+          </div>
+          {fileError && <div role="alert"><Alert kind="warning" title={fileError} /></div>}
           {duplicate && <div role="alert"><Alert kind="warning" title="A product line with this name already exists." /></div>}
           {save.error && <div role="alert"><Alert kind="critical" title="Could not save product line" description={save.error.message} /></div>}
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
             <Button type="button" variant="secondary" disabled={save.isPending} onClick={close}>Cancel</Button>
-            <Button type="submit" disabled={!form.name.trim() || duplicate || save.isPending}>{save.isPending ? "Saving…" : product ? "Save changes" : "Add product line"}</Button>
+            <Button type="submit" disabled={!form.name.trim() || duplicate || !!fileError || save.isPending || (!!product && (linkedDocs.isFetching || linkedDocs.isError))}>{save.isPending ? "Saving…" : product ? "Save changes" : "Add product line"}</Button>
           </div>
         </form>
       </Modal>

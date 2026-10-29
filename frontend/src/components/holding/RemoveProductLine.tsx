@@ -34,7 +34,7 @@ export function RemoveProductLine({ product }: { product: ProductRead }) {
       </Button>
       <Modal open={open} onClose={close} title="Remove product line" closeOnBackdrop={!remove.isPending}>
         <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-          <p style={{ margin: 0, color: "var(--text-primary)", fontSize: 14 }}>Remove <strong>{product.name}</strong>? This permanently removes the product line from Holding and project dropdowns.</p>
+          <p style={{ margin: 0, color: "var(--text-primary)", fontSize: 14 }}>Remove <strong>{product.name}</strong>? This permanently removes the product line and its uploaded documentation from Holding and project dropdowns.</p>
           <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: 13 }}>Product lines with existing projects cannot be removed. Move or remove their projects first.</p>
           {remove.error && <div role="alert"><Alert kind="critical" title="Could not remove product line" description={remove.error instanceof Error ? remove.error.message : "Please try again."} /></div>}
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>

@@ -1,6 +1,7 @@
-import { API_BASE_URL, apiFetch } from "./client";
+import { API_BASE_URL, apiFetch, apiFetchBlob } from "./client";
 import type {
   MilestoneRead,
+  FileAttachmentRead,
   Page,
   PhaseRead,
   PortfolioGantt,
@@ -48,6 +49,17 @@ export async function listAllProducts() {
     items.push(...next.items);
   }
   return items;
+}
+export function uploadProductDocumentation(id: UUID, file: File) {
+  const formData = new FormData();
+  formData.append("file", file);
+  return apiFetch<FileAttachmentRead>(`/products/${id}/documentation`, { method: "POST", formData });
+}
+export function getProductDocumentation(id: UUID) {
+  return apiFetch<FileAttachmentRead>(`/products/${id}/documentation`);
+}
+export function downloadProductDocumentation(id: UUID) {
+  return apiFetchBlob(`/products/${id}/documentation/download`);
 }
 export function deleteProduct(id: UUID) {
   return apiFetch<void>(`/products/${id}`, { method: "DELETE" });
@@ -311,6 +323,7 @@ export function createProduct(input: { name: string; owner_user_id: UUID; descri
 
 export function createProject(input: {
   product_id: UUID;
+  checklist_items?: { text: string; order: number }[];
   name: string;
   description?: string;
   priority?: string;

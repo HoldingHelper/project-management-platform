@@ -342,6 +342,7 @@ export interface ProductRead {
 }
 
 export interface ProjectRead {
+  checklist_items?: { id: UUID; text: string; is_done: boolean; order: number }[];
   id: UUID;
   product_id: UUID;
   name: string;

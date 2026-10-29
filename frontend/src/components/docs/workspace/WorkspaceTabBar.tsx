@@ -49,7 +49,7 @@ export function WorkspaceTabBar({
   return (
     <div
       data-testid="workspace-tab-bar"
-      className="flex items-center justify-between bg-slate-950/80 border-b border-white/5 h-10 px-2 select-none"
+      className="flex items-center justify-between bg-slate-950/80 h-full px-2 select-none"
     >
       {/* Scrollable Tabs Container */}
       <div className="flex items-center gap-1 overflow-x-auto no-scrollbar max-w-[calc(100%-140px)]">

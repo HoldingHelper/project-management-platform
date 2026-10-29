@@ -269,8 +269,20 @@ async def delete_product(db: AsyncSession, product_id: UUID) -> None:
     linked_project = (await db.execute(select(Project.id).where(Project.product_id == product_id).limit(1))).scalar_one_or_none()
     if linked_project is not None:
         raise BusinessRuleError("This product line has projects. Move or remove its projects before removing the product line.")
+    from app.modules.collaboration.models import FileAttachment
+    files = list((await db.execute(select(FileAttachment).where(FileAttachment.entity_type == "product", FileAttachment.entity_id == product_id))).scalars().all())
+    await db.execute(delete(FileAttachment).where(FileAttachment.entity_type == "product", FileAttachment.entity_id == product_id))
     await db.execute(delete(Product).where(Product.id == product_id))
     await db.commit()
+    # Delete stored objects only after the product removal transaction succeeds.
+    import asyncio
+    import logging
+    from app.core.storage import file_storage_service
+    for attachment in files:
+        try:
+            await asyncio.to_thread(file_storage_service.delete, attachment.storage_key)
+        except Exception:
+            logging.getLogger(__name__).exception("Could not remove product attachment from storage")
 
 
 async def get_product(db: AsyncSession, product_id: UUID) -> ProductRead:
@@ -311,6 +323,7 @@ async def create_project(
     if product is None:
         raise NotFoundError("Product", payload.product_id)
     data = _dump(payload, exclude={"sprints"})
+    data["checklist_items"] = [item.model_dump(mode="json") for item in payload.checklist_items]
     _validate_project_date_baseline(data.get("start_date"), data.get("end_date"))
     project = Project(**data, planning_mode="sprints")
     if project.actual_completion_date:
@@ -391,6 +404,13 @@ async def update_project(
         if product is None:
             raise NotFoundError("Product", payload.product_id)
     update_data = _dump(payload, exclude_unset=True)
+    if "checklist_items" in payload.model_fields_set:
+        if payload.checklist_items is None:
+            raise ValidationAppError("Checklist must be a list.")
+        ids = [item.id for item in payload.checklist_items]
+        if len(ids) != len(set(ids)):
+            raise ValidationAppError("Checklist items cannot be repeated.")
+        update_data["checklist_items"] = [item.model_dump(mode="json") for item in payload.checklist_items]
     fields_set = payload.model_fields_set
     planned_dates_locked = project.start_date is not None and project.end_date is not None
     if planned_dates_locked:
@@ -1052,12 +1072,15 @@ async def update_task(
             db,
             task_id,
             [
-                ChecklistItem(text=item.text, order=item.order)
+                ChecklistItem(id=item.id, text=item.text, order=item.order)
                 for item in payload.checklist_items
             ],
+            match_by_id=any("id" in item.model_fields_set for item in payload.checklist_items),
         )
 
     await db.commit()
+    if payload.checklist_items is not None:
+        await db.refresh(task, ["checklist_items"])
 
     newly_assigned = list(set(payload.assignee_user_ids or []) - previous_assignee_ids)
     if newly_assigned:

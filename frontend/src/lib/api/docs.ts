@@ -70,7 +70,7 @@ export type DocPermission = {
 export type DocLink = {
   id: string;
   page_id: string;
-  entity_type: "project" | "task" | "team" | "user";
+  entity_type: "product" | "project" | "task" | "team" | "user";
   entity_id: string;
   created_at: string;
 };
