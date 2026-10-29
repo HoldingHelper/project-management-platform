@@ -644,6 +644,7 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
               placeholder={"## Goal\n- What changes?\n- Who is involved?\n- Links, risks, decisions..."}
             />
           </Field>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}><div style={sectionLabel}>Checklist</div><ChecklistEditor items={checklist} onChange={setChecklist} disabled={create.isPending} entity="project" /></div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 10 }}>
             <Field label="Status">
               <Select value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))} options={PROJECT_STATUSES} />
@@ -760,7 +761,6 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
             )}
           </div>
           <DocumentationUpload files={documentationFiles} onChange={setDocumentationFiles} disabled={create.isPending} entityType="project" />
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}><div style={sectionLabel}>Checklist</div><ChecklistEditor items={checklist} onChange={setChecklist} disabled={create.isPending} entity="project" /></div>
           <Field label="Project manager">
             <Select
               value={form.project_manager_id}

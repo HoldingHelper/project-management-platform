@@ -520,6 +520,7 @@ function EditProjectModal({
           <Field label="Description (Markdown)">
             <TextArea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
           </Field>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}><div className="card-title">Checklist</div><ChecklistEditor items={checklist} onChange={setChecklist} disabled={save.isPending} entity="project" /></div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 10 }}>
             <Field label="Status">
               <Select value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))} options={PROJECT_STATUS_OPTIONS} />
@@ -588,7 +589,6 @@ function EditProjectModal({
               ))}
               {selectedDocs.length === 0 && <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>No documents connected.</span>}
               <DocumentationUpload files={documentationFiles} onChange={setDocumentationFiles} disabled={save.isPending} entityType="project" entityId={project.id} />
-              <div className="card-title">Checklist</div><ChecklistEditor items={checklist} onChange={setChecklist} disabled={save.isPending} entity="project" />
             </div>
           </Card>
         </div>

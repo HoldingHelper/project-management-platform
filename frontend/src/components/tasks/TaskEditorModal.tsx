@@ -388,6 +388,8 @@ export function TaskEditorModal({ open, onClose, task, projectId, phaseId, onCre
               style={{ minHeight: 170 }}
             />
           </Field>
+          <h2 style={sectionHeading}>Checklist</h2>
+          <ChecklistEditor items={form.checklist} onChange={(checklist) => setForm((current) => ({ ...current, checklist }))} disabled={create.isPending || save.isPending} />
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 10 }}>
             <Field label="Status">
               <Select value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))} options={TASK_STATUSES.map((s) => ({ value: s, label: TASK_STATUS_LABELS[s] ?? s }))} />
@@ -630,8 +632,6 @@ export function TaskEditorModal({ open, onClose, task, projectId, phaseId, onCre
             ))}
           </div>
           <DocumentationUpload files={documentationFiles} onChange={setDocumentationFiles} disabled={create.isPending || save.isPending} entityType="task" entityId={task?.id} />
-          <h2 style={sectionHeading}>Checklist</h2>
-          <ChecklistEditor items={form.checklist} onChange={(checklist) => setForm((current) => ({ ...current, checklist }))} disabled={create.isPending || save.isPending} />
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
             <StatusChip status={form.status} label={TASK_STATUS_LABELS[form.status] ?? form.status} />
             <PriorityBadge level={form.priority} compact />
