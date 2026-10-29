@@ -14,6 +14,8 @@ import {
   BookOpen,
   Search,
   Network,
+  Menu,
+  ArrowLeft,
 } from "lucide-react";
 import {
   useKnowledgeWorkspace,
@@ -57,6 +59,16 @@ function KnowledgeWorkspaceInner({
   const [newPageDocType, setNewPageDocType] = useState<string>("document");
   const [spaces, setSpaces] = useState<DocSpace[]>([]);
   const [creatingPage, setCreatingPage] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobilePanel, setMobilePanel] = useState<"explorer" | "inspector" | null>(null);
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 767px)");
+    const update = () => { setIsMobile(media.matches); setMobilePanel(null); };
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+  useEffect(() => { setMobilePanel(null); }, [activeTabId]);
 
   // Left resize dragging
   const [isResizingLeft, setIsResizingLeft] = useState(false);
@@ -137,12 +149,13 @@ function KnowledgeWorkspaceInner({
   const activeTab = tabs.find((t) => t.id === activeTabId);
 
   return (
-    <div className="flex h-full w-full overflow-hidden bg-slate-950 select-none">
+    <div className="knowledge-workspace-shell flex h-full w-full overflow-hidden bg-slate-950 select-none">
+      {isMobile && mobilePanel && <button type="button" className="knowledge-mobile-panel-scrim" aria-label="Close document panel" onClick={() => setMobilePanel(null)} />}
       {/* Left Panel: Knowledge Explorer */}
-      {!leftPanelCollapsed && (
+      {(isMobile ? mobilePanel === "explorer" : !leftPanelCollapsed) && (
         <div
           style={{ width: leftPanelWidth }}
-          className="relative h-full shrink-0 flex flex-col"
+          className="knowledge-explorer-panel relative h-full shrink-0 flex flex-col"
         >
           <KnowledgeExplorer
             onNewPage={(spaceId) => {
@@ -165,11 +178,12 @@ function KnowledgeWorkspaceInner({
         <div className="knowledge-workspace-toolbar flex items-center">
           <button
             type="button"
-            onClick={toggleLeftPanel}
+            onClick={() => isMobile ? setMobilePanel(mobilePanel === "explorer" ? null : "explorer") : toggleLeftPanel()}
             className="knowledge-workspace-panel-toggle text-slate-400 hover:text-white bg-slate-950"
-            title={leftPanelCollapsed ? "Expand Explorer" : "Collapse Explorer"}
+            title={(isMobile ? mobilePanel !== "explorer" : leftPanelCollapsed) ? "Expand Explorer" : "Collapse Explorer"}
+            aria-expanded={isMobile ? mobilePanel === "explorer" : !leftPanelCollapsed}
           >
-            {leftPanelCollapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
+            {(isMobile ? mobilePanel !== "explorer" : leftPanelCollapsed) ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
           </button>
 
           <div className="flex-1 min-w-0 h-full">
@@ -180,11 +194,12 @@ function KnowledgeWorkspaceInner({
 
           <button
             type="button"
-            onClick={toggleRightPanel}
+            onClick={() => isMobile ? setMobilePanel(mobilePanel === "inspector" ? null : "inspector") : toggleRightPanel()}
             className="knowledge-workspace-panel-toggle text-slate-400 hover:text-white bg-slate-950"
-            title={rightPanelCollapsed ? "Expand Inspector" : "Collapse Inspector"}
+            title={(isMobile ? mobilePanel !== "inspector" : rightPanelCollapsed) ? "Expand Inspector" : "Collapse Inspector"}
+            aria-expanded={isMobile ? mobilePanel === "inspector" : !rightPanelCollapsed}
           >
-            {rightPanelCollapsed ? <PanelRightOpen size={15} /> : <PanelRightClose size={15} />}
+            {(isMobile ? mobilePanel !== "inspector" : rightPanelCollapsed) ? <PanelRightOpen size={15} /> : <PanelRightClose size={15} />}
           </button>
         </div>
 
@@ -216,7 +231,7 @@ function KnowledgeWorkspaceInner({
               <p className="text-xs text-slate-400 max-w-sm mb-6 leading-relaxed">
                 Obsidian-style connected notes, Open Notebook research sources, and grounded AI assistant for high-velocity engineering.
               </p>
-              <div className="flex items-center gap-3">
+              <div className="knowledge-workspace-empty-actions flex items-center gap-3">
                 <button
                   type="button"
                   onClick={() => setNewPageModalOpen(true)}
@@ -254,10 +269,10 @@ function KnowledgeWorkspaceInner({
       </div>
 
       {/* Right Panel: Context Inspector */}
-      {!rightPanelCollapsed && (
+      {(isMobile ? mobilePanel === "inspector" : !rightPanelCollapsed) && (
         <div
           style={{ width: rightPanelWidth }}
-          className="relative h-full shrink-0 flex flex-col"
+          className="knowledge-inspector-panel relative h-full shrink-0 flex flex-col"
         >
           {/* Resize Handle */}
           <div
@@ -377,9 +392,10 @@ function WorkspaceNavigation({ returnPath }: { returnPath: string }) {
           <div className="workspace-module-switcher">
             <Link href="/app/docs" aria-current="page"><BookOpen size={15} aria-hidden />Docs</Link>
             <Link href={returnPath} className="knowledge-workspace-return">
-              <Landmark size={15} aria-hidden />Holding
+              <Landmark className="knowledge-desktop-return-icon" size={15} aria-hidden /><ArrowLeft className="knowledge-mobile-return-icon" size={15} aria-hidden />Holding
             </Link>
           </div>
+          <Link href="/my-work" className="knowledge-mobile-main-menu"><Menu size={17} aria-hidden />Main menu</Link>
         </nav>
 
   );

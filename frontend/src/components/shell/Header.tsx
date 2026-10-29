@@ -230,7 +230,7 @@ export function Header({
         </button>
       )}
 
-      <HeaderMeetingPill />
+      <div className="pmp-header-meeting"><HeaderMeetingPill /></div>
 
       <div ref={bellRef} style={{ position: "relative" }}>
         <button
@@ -374,7 +374,7 @@ export function Header({
       </div>
 
       {/* Live Custom Status Pill in Top Right Header */}
-      <UserStatusPill
+      <div className="pmp-header-status"><UserStatusPill
         status={myStatus.status || myPresence}
         emoji={user?.status_emoji || myStatus.status_emoji}
         text={user?.status_text || myStatus.status_text}
@@ -384,6 +384,7 @@ export function Header({
         maxWidth={200}
       />
 
+      </div>
       <div ref={menuRef} style={{ position: "relative" }}>
         <button
           onClick={() => setMenuOpen((o) => !o)}

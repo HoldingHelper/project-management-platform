@@ -163,7 +163,7 @@ export function MarkdownWorkspaceEditor({ pageId }: Props) {
       }}
     >
       {/* Top Bar: Tabs, View Toggle, Status */}
-      <div
+      <div className="knowledge-editor-topbar"
         style={{
           display: "flex",
           alignItems: "center",
@@ -382,10 +382,10 @@ export function MarkdownWorkspaceEditor({ pageId }: Props) {
       )}
 
       {/* Main Workspace Area (Split or Full) */}
-      <div style={{ flex: 1, display: "flex", minHeight: 0, position: "relative" }}>
+      <div className="knowledge-editor-body" style={{ flex: 1, display: "flex", minHeight: 0, position: "relative" }}>
         {/* Editor Column (Monospace Markdown with Line Numbers) */}
         {viewMode !== "rendered" && (
-          <div
+          <div className="knowledge-editor-source"
             style={{
               flex: viewMode === "split" ? "0 0 45%" : "1 0 100%",
               display: "flex",
@@ -429,6 +429,7 @@ export function MarkdownWorkspaceEditor({ pageId }: Props) {
         {/* Live Rendered View Column */}
         {viewMode !== "edit" && (
           <div
+            className="knowledge-editor-preview"
             ref={previewScrollRef}
             onScroll={handleScroll}
             style={{

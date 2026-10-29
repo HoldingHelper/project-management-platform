@@ -10,6 +10,7 @@ import {
   detachTask,
   getProjectSprints,
   listProjects,
+  listAllProducts,
   listTasks,
   reorderTasks,
   updateTask,
@@ -104,9 +105,23 @@ function TasksPage() {
         page_size: 100,
       }),
   });
-  const projects = useQuery({ queryKey: ["projects", "task-page"], queryFn: () => listProjects(1, 100) });
+  const products = useQuery({ queryKey: ["products"], queryFn: listAllProducts });
+  const productNames = useMemo(() => new Map((products.data ?? []).map((product) => [product.id, product.name])), [products.data]);
+  const projects = useQuery({
+    queryKey: ["projects", "task-page"],
+    queryFn: async () => {
+      const first = await listProjects(1, 100);
+      const items = [...first.items];
+      for (let page = 2; items.length < first.total_count; page++) {
+        const next = await listProjects(page, 100);
+        if (!next.items.length) break;
+        items.push(...next.items);
+      }
+      return { ...first, items };
+    },
+  });
   const projectPhases = useQuery({
-    queryKey: ["project-phases-map", projects.data?.items.map((p) => p.id).join(",")],
+    queryKey: ["project-phases-map", projects.data?.items.map((p) => `${p.id}:${p.product_id}:${p.name}`).join(",")],
     queryFn: async () => {
       const rows = await Promise.all(
         (projects.data?.items ?? []).map(async (project) => ({
@@ -114,16 +129,16 @@ function TasksPage() {
           phases: await getProjectSprints(project.id),
         })),
       );
-      const phaseToProject = new Map<UUID, { id: UUID; name: string }>();
+      const phaseToProject = new Map<UUID, { id: UUID; name: string; productId: UUID }>();
       for (const row of rows) {
-        for (const phase of row.phases) phaseToProject.set(phase.id, { id: row.project.id, name: row.project.name });
+        for (const phase of row.phases) phaseToProject.set(phase.id, { id: row.project.id, name: row.project.name, productId: row.project.product_id });
       }
       return phaseToProject;
     },
     enabled: (projects.data?.items.length ?? 0) > 0,
   });
 
-  const phaseToProject = projectPhases.data ?? new Map<UUID, { id: UUID; name: string }>();
+  const phaseToProject = projectPhases.data ?? new Map<UUID, { id: UUID; name: string; productId: UUID }>();
   const allRows = data?.items ?? [];
   const filteredRows = useMemo(() => {
     let rows = allRows;
@@ -234,6 +249,23 @@ function TasksPage() {
           ),
       },
       {
+        key: "product_line",
+        header: "Product line",
+        sortValue: (t) => {
+          const project = t.phase_id ? phaseToProject.get(t.phase_id) : undefined;
+          return project ? productNames.get(project.productId)?.toLocaleLowerCase() ?? "" : "";
+        },
+        render: (t) => {
+          const project = t.phase_id ? phaseToProject.get(t.phase_id) : undefined;
+          const name = project ? productNames.get(project.productId) : undefined;
+          return name ? (
+            <span title={name} style={{ fontSize: 12, fontWeight: 500, color: "var(--text-secondary)" }}>{name}</span>
+          ) : (
+            <span style={{ color: "var(--text-tertiary)" }}>—</span>
+          );
+        },
+      },
+      {
         key: "labels",
         header: "Labels",
         sortValue: (t) => t.labels.join(", ").toLocaleLowerCase(),
@@ -333,7 +365,7 @@ function TasksPage() {
           ) : null,
       },
     ],
-    [nameOf, canAttach, phaseToProject],
+    [nameOf, canAttach, phaseToProject, productNames],
   );
 
   const hasFilters =
