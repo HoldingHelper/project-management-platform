@@ -1,4 +1,6 @@
 "use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -13,6 +15,8 @@ import { InviteModal } from "@/components/organization/InviteModal";
 import type { UserRead } from "@/lib/types";
 
 export default function OrganizationPage() {
+  const { t: translateUI } = useI18n();
+
   const { user, isSuperAdmin, hasPermission } = useAuth();
   const queryClient = useQueryClient();
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -30,13 +34,12 @@ export default function OrganizationPage() {
   return (
     <div style={{ ...PAGE_STYLE, gap: 18 }}>
       <PageHeader
-        title="Organization Structure"
-        subtitle="Interactive company hierarchy, executive reporting lines, departments, and teams."
+        title={translateUI("Organization Structure")}
+        subtitle={translateUI("Interactive company hierarchy, executive reporting lines, departments, and teams.")}
         actions={
           canManage && (
             <Button onClick={() => setInviteOpen(true)}>
-              <UserPlus size={15} style={{ marginRight: 6 }} /> Invite Teammate
-            </Button>
+              <UserPlus size={15} style={{ marginRight: 6 }} />{" "}<LocalizedText message={"Invite Teammate"} />{" "}</Button>
           )
         }
       />
@@ -44,26 +47,26 @@ export default function OrganizationPage() {
       {/* KPI Overview */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 14 }}>
         <MetricCard
-          label="Total Teammates"
+          label={translateUI("Total Teammates")}
           value={data?.total_employees ?? "..."}
           icon={<Users size={16} />}
           trend="active platform members"
         />
         <MetricCard
-          label="Departments"
+          label={translateUI("Departments")}
           value={data?.total_departments ?? "..."}
           icon={<Building2 size={16} />}
           tone="in-progress"
           trend="core functional units"
         />
         <MetricCard
-          label="Teams"
+          label={translateUI("Teams")}
           value={data?.total_teams ?? "..."}
           icon={<Workflow size={16} />}
           trend="squads & delivery units"
         />
         <MetricCard
-          label="Reporting Lines"
+          label={translateUI("Reporting Lines")}
           value={data?.roots?.length ?? "..."}
           icon={<Network size={16} />}
           tone="completed"
@@ -73,12 +76,10 @@ export default function OrganizationPage() {
 
       {isLoading ? (
         <div style={{ padding: "80px 0", display: "flex", justifyContent: "center" }}>
-          <Spinner label="Loading organization tree…" />
+          <Spinner label={translateUI("Loading organization tree…")} />
         </div>
       ) : error || !data ? (
-        <div style={{ padding: "40px 0", textAlign: "center", color: "var(--text-tertiary)" }}>
-          Could not load organization structure.
-        </div>
+        <div style={{ padding: "40px 0", textAlign: "center", color: "var(--text-tertiary)" }}>{" "}<LocalizedText message={"Could not load organization structure."} />{" "}</div>
       ) : (
         <OrgChartTree
           data={data}

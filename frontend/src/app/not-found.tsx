@@ -1,3 +1,4 @@
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 import Link from "next/link";
 import { ArrowLeft, Compass } from "lucide-react";
 
@@ -63,9 +64,7 @@ export default function NotFound() {
             margin: "0 0 12px 0",
             color: "var(--text-primary, #f8fafc)",
           }}
-        >
-          Page Not Found
-        </h2>
+        >{" "}<LocalizedText message={"Page Not Found"} />{" "}</h2>
         <p
           style={{
             fontSize: "14px",
@@ -73,10 +72,7 @@ export default function NotFound() {
             color: "var(--text-secondary, #94a3b8)",
             margin: "0 0 32px 0",
           }}
-        >
-          The page or resource you requested could not be located on this server.
-          Please check the URL or return to the workspace.
-        </p>
+        >{" "}<LocalizedText message={"The page or resource you requested could not be located on this server. Please check the URL or return to the workspace."} />{" "}</p>
         <Link
           href="/"
           style={{
@@ -93,9 +89,7 @@ export default function NotFound() {
             transition: "opacity 0.15s ease",
           }}
         >
-          <ArrowLeft size={16} />
-          Back to Overview
-        </Link>
+          <ArrowLeft size={16} />{" "}<LocalizedText message={"Back to Overview"} />{" "}</Link>
       </div>
     </div>
   );

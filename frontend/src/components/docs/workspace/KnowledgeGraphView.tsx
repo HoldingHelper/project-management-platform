@@ -1,4 +1,6 @@
 "use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 import { useMemo, useRef, useState } from "react";
 import {
@@ -157,6 +159,8 @@ const NODES: GraphNodeItem[] = [
 ];
 
 export function KnowledgeGraphView({ pageId, isGlobal = false }: { pageId?: string; isGlobal?: boolean }) {
+  const { t: translateUI } = useI18n();
+
   const { openTab } = useKnowledgeWorkspace();
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -227,7 +231,7 @@ export function KnowledgeGraphView({ pageId, isGlobal = false }: { pageId?: stri
               style={{ padding: "4px 12px", height: 26, fontSize: 12, borderRadius: "var(--radius-1)", gap: 5 }}
             >
               <FileText size={12} />
-              <span>Document</span>
+              <span><LocalizedText message={"Document"} /></span>
             </button>
             <button
               type="button"
@@ -235,7 +239,7 @@ export function KnowledgeGraphView({ pageId, isGlobal = false }: { pageId?: stri
               style={{ padding: "4px 12px", height: 26, fontSize: 12, borderRadius: "var(--radius-1)", gap: 5 }}
             >
               <Network size={12} />
-              <span>Knowledge Graph</span>
+              <span><LocalizedText message={"Knowledge Graph"} /></span>
             </button>
             <button
               type="button"
@@ -243,7 +247,7 @@ export function KnowledgeGraphView({ pageId, isGlobal = false }: { pageId?: stri
               style={{ padding: "4px 12px", height: 26, fontSize: 12, borderRadius: "var(--radius-1)", gap: 5 }}
             >
               <Sparkles size={12} />
-              <span>Suggestions</span>
+              <span><LocalizedText message={"Suggestions"} /></span>
             </button>
           </div>
         </div>
@@ -265,7 +269,7 @@ export function KnowledgeGraphView({ pageId, isGlobal = false }: { pageId?: stri
             }}
           >
             <Network size={13} style={{ color: "var(--accent-primary)" }} />
-            <span>Knowledge Graph</span>
+            <span><LocalizedText message={"Knowledge Graph"} /></span>
             <ChevronDown size={13} style={{ color: "var(--text-tertiary)" }} />
           </div>
 
@@ -468,27 +472,27 @@ export function KnowledgeGraphView({ pageId, isGlobal = false }: { pageId?: stri
         >
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#3B82F6" }} />
-            <span style={{ color: "var(--text-secondary)" }}>Current Document</span>
+            <span style={{ color: "var(--text-secondary)" }}><LocalizedText message={"Current Document"} /></span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#06B6D4" }} />
-            <span style={{ color: "var(--text-secondary)" }}>Related Topic</span>
+            <span style={{ color: "var(--text-secondary)" }}><LocalizedText message={"Related Topic"} /></span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#8B5CF6" }} />
-            <span style={{ color: "var(--text-secondary)" }}>Security</span>
+            <span style={{ color: "var(--text-secondary)" }}><LocalizedText message={"Security"} /></span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#F59E0B" }} />
-            <span style={{ color: "var(--text-secondary)" }}>Profile & Account</span>
+            <span style={{ color: "var(--text-secondary)" }}><LocalizedText message={"Profile & Account"} /></span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#A855F7" }} />
-            <span style={{ color: "var(--text-secondary)" }}>Administration</span>
+            <span style={{ color: "var(--text-secondary)" }}><LocalizedText message={"Administration"} /></span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#10B981" }} />
-            <span style={{ color: "var(--text-secondary)" }}>Integrations</span>
+            <span style={{ color: "var(--text-secondary)" }}><LocalizedText message={"Integrations"} /></span>
           </div>
         </div>
 
@@ -514,7 +518,7 @@ export function KnowledgeGraphView({ pageId, isGlobal = false }: { pageId?: stri
             type="button"
             onClick={() => setZoom((z) => Math.max(0.4, z - 0.15))}
             className="docs-toolbar-btn"
-            title="Zoom Out"
+            title={translateUI("Zoom Out")}
           >
             <ZoomOut size={13} />
           </button>
@@ -525,7 +529,7 @@ export function KnowledgeGraphView({ pageId, isGlobal = false }: { pageId?: stri
             type="button"
             onClick={() => setZoom((z) => Math.min(2.5, z + 0.15))}
             className="docs-toolbar-btn"
-            title="Zoom In"
+            title={translateUI("Zoom In")}
           >
             <ZoomIn size={13} />
           </button>
@@ -533,14 +537,14 @@ export function KnowledgeGraphView({ pageId, isGlobal = false }: { pageId?: stri
             type="button"
             onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }}
             className="docs-toolbar-btn"
-            title="Reset View"
+            title={translateUI("Reset View")}
           >
             <RotateCcw size={13} />
           </button>
           <button
             type="button"
             className="docs-toolbar-btn"
-            title="Fit to Screen"
+            title={translateUI("Fit to Screen")}
           >
             <Maximize2 size={13} />
           </button>

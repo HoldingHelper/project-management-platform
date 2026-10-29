@@ -1,5 +1,8 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
+
 import { useEffect, useRef, useState } from "react";
 import { toSemantic, semanticColor } from "@/lib/format";
 
@@ -82,6 +85,10 @@ export function GanttChart({
   onSchedule,
   interactionLocked = false,
 }: Props) {
+  const { t: localizeAttribute } = useI18n();
+
+  const { t: translateUI, date: displayDate } = useI18n();
+
   // Zoom (dayWidth) + label column width are interactive. Props seed the initial
   // value; once the user zooms/pans/resizes we own it and ignore prop changes
   // (the parent recomputes dayWidth on container resize to fit — we opt out of
@@ -244,7 +251,7 @@ export function GanttChart({
     if (!chartStart) return String(i + 1);
     const d = new Date(chartStart);
     d.setDate(d.getDate() + i);
-    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    return displayDate(d, { year: undefined, month: "short", day: "numeric" });
   };
   const tickSet = new Set<number>();
   for (let i = 0; i < days; i += 10) tickSet.add(i);
@@ -260,9 +267,9 @@ export function GanttChart({
     <div
       ref={scrollRef}
       onWheel={onWheel}
-      className="pmp-gantt-scroll"
+      className="pmp-gantt-scroll pmp-chart-time-axis"
       data-locked={interactionLocked ? "true" : "false"}
-      aria-label={interactionLocked ? "Timeline locked. Scroll to view." : "Timeline unlocked. Wheel to zoom and drag to edit."}
+      aria-label={interactionLocked ? localizeAttribute("Timeline locked. Scroll to view.") : localizeAttribute("Timeline unlocked. Wheel to zoom and drag to edit.")}
       style={{ overflowX: "auto" }}
     >
       <div style={{ minWidth: labelWidth + gridWidth, userSelect: busy ? "none" : undefined }}>
@@ -320,7 +327,7 @@ export function GanttChart({
               e.preventDefault();
               setLabelResize({ startX: e.clientX, startWidth: labelWidth });
             }}
-            title={interactionLocked ? "Unlock timeline to resize the names column" : "Drag to resize names column"}
+            title={interactionLocked ? localizeAttribute("Unlock timeline to resize the names column") : localizeAttribute("Drag to resize names column")}
             style={{
               position: "absolute",
               top: 0,
@@ -345,9 +352,7 @@ export function GanttChart({
           />
 
           {tasks.length === 0 && (
-            <div style={{ padding: 24, color: "var(--text-tertiary)", fontSize: 13 }}>
-              No scheduled tasks for this project.
-            </div>
+            <div style={{ padding: 24, color: "var(--text-tertiary)", fontSize: 13 }}>{" "}<LocalizedText message={"No scheduled tasks for this project."} />{" "}</div>
           )}
 
           {tasks.map((t, idx) => {
@@ -388,7 +393,7 @@ export function GanttChart({
                   }}
                 >
                   <span
-                    title={t.critical ? "On critical path" : undefined}
+                    title={t.critical ? localizeAttribute("On critical path") : undefined}
                     style={{
                       width: 6,
                       height: 6,
@@ -439,7 +444,7 @@ export function GanttChart({
                     <input
                       type="date"
                       value={t.dueDate ?? ""}
-                      title="Set deadline"
+                      title={translateUI("Set deadline")}
                       onChange={(e) => e.target.value && onUpdateDue(t.id as string, e.target.value)}
                       style={{
                         flexShrink: 0,
@@ -544,13 +549,13 @@ export function GanttChart({
                         {/* left edge → drag start_date */}
                         <div
                           onMouseDown={(e) => beginDrag(e, t, "start")}
-                          title="Drag start date"
+                          title={translateUI("Drag start date")}
                           style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 7, cursor: "ew-resize" }}
                         />
                         {/* right edge → drag due_date */}
                         <div
                           onMouseDown={(e) => beginDrag(e, t, "end")}
-                          title="Drag deadline"
+                          title={translateUI("Drag deadline")}
                           style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 7, cursor: "ew-resize" }}
                         />
                       </>

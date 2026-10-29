@@ -1,3 +1,4 @@
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, BookOpenText, CalendarDays, CheckCircle2, FolderKanban, Search, ShieldCheck, UsersRound, Zap } from "lucide-react";
@@ -30,17 +31,17 @@ export default function LandingPage() {
         <div className="pp-orbit" aria-hidden="true"><i /><i /><i /></div>
         <div className="public-container pp-hero-grid">
           <div className="pp-hero-copy">
-            <p className="pp-kicker">Tasks · Docs · Projects</p>
-            <h1>Engineering that carries <span>weight, memory</span> and momentum.</h1>
-            <p className="pp-hero-lead">Project Management Platform gives modern teams one clear place to turn plans and knowledge into measurable progress.</p>
+            <p className="pp-kicker"><LocalizedText message={"Tasks · Docs · Projects"} /></p>
+            <h1><LocalizedText message={"Engineering that carries"} />{" "}<span><LocalizedText message={"weight, memory"} /></span>{" "}<LocalizedText message={"and momentum."} /></h1>
+            <p className="pp-hero-lead"><LocalizedText message={"Project Management Platform gives modern teams one clear place to turn plans and knowledge into measurable progress."} /></p>
             <div className="pp-hero-actions">
-              <Link href="/app" className="pp-button pp-button-primary">Open your workspace <ArrowRight size={17} /></Link>
-              <Link href="/docs" className="pp-button pp-button-secondary">Explore documentation</Link>
+              <Link href="/app" className="pp-button pp-button-primary"><LocalizedText message={"Open your workspace"} />{" "}<ArrowRight size={17} /></Link>
+              <Link href="/docs" className="pp-button pp-button-secondary"><LocalizedText message={"Explore documentation"} /></Link>
             </div>
           </div>
           <aside className="pp-hero-note" aria-label="Platform promise">
-            <span>A more productive tomorrow, together.</span>
-            <p>People<br />Ideas<br />Work<br /><b>A clearer way forward</b></p>
+            <span><LocalizedText message={"A more productive tomorrow, together."} /></span>
+            <p><LocalizedText message={"People"} /><br /><LocalizedText message={"Ideas"} /><br /><LocalizedText message={"Work"} /><br /><b><LocalizedText message={"A clearer way forward"} /></b></p>
           </aside>
         </div>
 
@@ -51,21 +52,21 @@ export default function LandingPage() {
         </div>
 
         <div className="public-container pp-workspace-frame">
-          <div className="pp-frame-label"><span>Live workspace</span><small>Knowledge and execution, connected</small></div>
+          <div className="pp-frame-label"><span><LocalizedText message={"Live workspace"} /></span><small><LocalizedText message={"Knowledge and execution, connected"} /></small></div>
           <WorkspaceMap />
         </div>
       </header>
 
       <section id="method" className="pp-statement">
         <div className="public-container pp-statement-grid">
-          <p className="pp-kicker">One operating system</p>
-          <h2>Work keeps its context.<br /><span>Teams keep their momentum.</span></h2>
-          <p>Project tools usually show what is happening. Knowledge tools explain why. Project Platform keeps both sides close enough to strengthen every decision.</p>
+          <p className="pp-kicker"><LocalizedText message={"One operating system"} /></p>
+          <h2><LocalizedText message={"Work keeps its context."} /><br /><span><LocalizedText message={"Teams keep their momentum."} /></span></h2>
+          <p><LocalizedText message={"Project tools usually show what is happening. Knowledge tools explain why. Project Platform keeps both sides close enough to strengthen every decision."} /></p>
         </div>
       </section>
 
       <section id="workspaces" className="pp-capabilities public-container">
-        <header className="pp-section-heading"><p className="pp-kicker">Core workspaces</p><h2>Everything your team needs.<br /><span>Nothing disconnected.</span></h2></header>
+        <header className="pp-section-heading"><p className="pp-kicker"><LocalizedText message={"Core workspaces"} /></p><h2><LocalizedText message={"Everything your team needs."} /><br /><span><LocalizedText message={"Nothing disconnected."} /></span></h2></header>
         <div className="pp-capability-list">
           {capabilities.map(({ icon: Icon, eyebrow, title, copy, href }, index) => (
             <article key={title}>
@@ -80,14 +81,14 @@ export default function LandingPage() {
 
       <section id="capabilities" className="pp-feature-band">
         <div className="public-container pp-feature-grid">
-          <div><Search size={22} /><strong>One search surface</strong><span>Find tasks, docs, projects, and people without remembering where they live.</span></div>
-          <div><CalendarDays size={22} /><strong>Shared operating rhythm</strong><span>Keep meetings, milestones, and delivery windows in the same working context.</span></div>
-          <div><ShieldCheck size={22} /><strong>Authority by design</strong><span>Server-enforced access protects every resource, action, and confidential space.</span></div>
+          <div><Search size={22} /><strong><LocalizedText message={"One search surface"} /></strong><span><LocalizedText message={"Find tasks, docs, projects, and people without remembering where they live."} /></span></div>
+          <div><CalendarDays size={22} /><strong><LocalizedText message={"Shared operating rhythm"} /></strong><span><LocalizedText message={"Keep meetings, milestones, and delivery windows in the same working context."} /></span></div>
+          <div><ShieldCheck size={22} /><strong><LocalizedText message={"Authority by design"} /></strong><span><LocalizedText message={"Server-enforced access protects every resource, action, and confidential space."} /></span></div>
         </div>
       </section>
 
       <section className="pp-final-cta">
-        <div className="public-container"><p className="pp-kicker">Built for what is next</p><h2>Make progress,<br /><span>together.</span></h2><p>Bring your plans, your knowledge, and your team into one focused workspace.</p><Link href="/app" className="pp-button pp-button-primary">Start in the workspace <ArrowRight size={17} /></Link></div>
+        <div className="public-container"><p className="pp-kicker"><LocalizedText message={"Built for what is next"} /></p><h2><LocalizedText message={"Make progress,"} /><br /><span><LocalizedText message={"together."} /></span></h2><p><LocalizedText message={"Bring your plans, your knowledge, and your team into one focused workspace."} /></p><Link href="/app" className="pp-button pp-button-primary"><LocalizedText message={"Start in the workspace"} />{" "}<ArrowRight size={17} /></Link></div>
       </section>
     </PublicShell>
   );

@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 /* MediaRecorder-based voice message recorder. Produces a webm/opus Blob. */
 
@@ -12,6 +13,8 @@ interface Props {
 }
 
 export function VoiceRecorder({ onRecorded, onClear, disabled }: Props) {
+  const { t: translateUI } = useI18n();
+
   const [recording, setRecording] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
@@ -80,8 +83,8 @@ export function VoiceRecorder({ onRecorded, onClear, disabled }: Props) {
           type="button"
           onClick={start}
           disabled={disabled}
-          title="Record a voice message"
-          aria-label="Record a voice message"
+          title={translateUI("Record a voice message")}
+          aria-label={translateUI("Record a voice message")}
           className="pmp-icon-btn"
           style={iconBtn}
         >
@@ -90,7 +93,7 @@ export function VoiceRecorder({ onRecorded, onClear, disabled }: Props) {
       )}
       {recording && (
         <>
-          <button type="button" onClick={stop} title="Stop recording" aria-label="Stop recording" style={{ ...iconBtn, color: "var(--status-delayed)", borderColor: "var(--status-delayed)" }}>
+          <button type="button" onClick={stop} title={translateUI("Stop recording")} aria-label={translateUI("Stop recording")} style={{ ...iconBtn, color: "var(--status-delayed)", borderColor: "var(--status-delayed)" }}>
             <Square size={13} />
           </button>
           <span className="pmp-pulse" style={{ fontSize: 12, color: "var(--status-delayed)", fontFamily: "var(--font-mono)" }}>
@@ -101,7 +104,7 @@ export function VoiceRecorder({ onRecorded, onClear, disabled }: Props) {
       {blobUrl && !recording && (
         <>
           <audio controls src={blobUrl} style={{ height: 32, maxWidth: 220 }} />
-          <button type="button" onClick={clear} title="Discard recording" aria-label="Discard recording" style={iconBtn}>
+          <button type="button" onClick={clear} title={translateUI("Discard recording")} aria-label={translateUI("Discard recording")} style={iconBtn}>
             <Trash2 size={14} />
           </button>
         </>

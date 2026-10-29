@@ -1,4 +1,8 @@
 "use client";
+import { LocalizedRelativeTime } from "@/lib/i18n/I18nProvider";
+
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -88,6 +92,8 @@ function changedFields(log: AuditLogRead): string[] {
 }
 
 export default function ActivityPage() {
+  const { t: translateUI } = useI18n();
+
   const { hasPermission, isSuperAdmin } = useAuth();
   const { nameOf } = useUserMap();
   const [entityFilter, setEntityFilter] = useState("");
@@ -112,11 +118,11 @@ export default function ActivityPage() {
   if (!canView) {
     return (
       <div style={PAGE_STYLE}>
-        <PageHeader title="Activity Feed" subtitle="Organization-wide change history." />
+        <PageHeader title={translateUI("Activity Feed")} subtitle={translateUI("Organization-wide change history.")} />
         <Alert
           kind="warning"
-          title="No access"
-          description="The activity feed requires audit-log access (managers and administrators)."
+          title={translateUI("No access")}
+          description={translateUI("The activity feed requires audit-log access (managers and administrators).")}
         />
       </div>
     );
@@ -125,22 +131,22 @@ export default function ActivityPage() {
   return (
     <div style={PAGE_STYLE}>
       <PageHeader
-        title="Activity Feed"
-        subtitle="Every create, update and delete across the platform — captured automatically."
+        title={translateUI("Activity Feed")}
+        subtitle={translateUI("Every create, update and delete across the platform — captured automatically.")}
         actions={
           <Select
             value={entityFilter}
             onChange={(e) => setEntityFilter(e.target.value)}
-            placeholder="All entities"
-            aria-label="Filter activity by entity type"
+            placeholder={translateUI("All entities")}
+            aria-label={translateUI("Filter activity by entity type")}
             options={entityTypes.map((t) => ({ value: t, label: humanize(t.split(".").pop() ?? t) }))}
           />
         }
       />
 
-      {isLoading && <Spinner label="Loading activity…" />}
+      {isLoading && <Spinner label={translateUI("Loading activity…")} />}
       {!isLoading && filtered.length === 0 && (
-        <EmptyState title="No activity yet" hint="Changes appear here as your team works." />
+        <EmptyState title={translateUI("No activity yet")} hint={translateUI("Changes appear here as your team works.")} />
       )}
 
       <div style={{ position: "relative", paddingLeft: 22 }}>
@@ -191,11 +197,11 @@ export default function ActivityPage() {
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                   <Avatar name={log.user_id ? nameOf(log.user_id) : "System"} size={20} />
                   <span style={{ fontSize: 13, fontWeight: 600 }}>
-                    {log.user_id ? nameOf(log.user_id) : "System"}
+                    {log.user_id ? nameOf(log.user_id) : <LocalizedText message={"System"} />}
                   </span>
                   <span style={{ fontSize: 12.5, color: "var(--text-secondary)" }}>{describe(log)}</span>
                   <span style={{ fontSize: 11.5, color: "var(--text-tertiary)", marginLeft: "auto" }}>
-                    {relativeTime(log.occurred_at)}
+                    {<LocalizedRelativeTime value={log.occurred_at} />}
                   </span>
                 </div>
                 {fields.length > 0 && log.action_type === "Update" && (

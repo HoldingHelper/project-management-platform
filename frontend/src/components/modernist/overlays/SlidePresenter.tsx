@@ -1,3 +1,6 @@
+"use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 import React, { useEffect } from 'react';
 import { DocFile } from '../types';
 import { slideView } from '../plugins/SlidesBlock';
@@ -16,6 +19,8 @@ export function SlidePresenter({
   onUpdateIdx,
   onClose,
 }: SlidePresenterProps) {
+  const { t: translateUI } = useI18n();
+
   const slides = doc.data?.slides || [];
   const n = slides.length;
   const idx = Math.min(Math.max(0, slideIdx), n - 1);
@@ -150,7 +155,7 @@ export function SlidePresenter({
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#fff' }}>
         <button
           type="button"
-          aria-label="Previous slide"
+          aria-label={translateUI("Previous slide")}
           onClick={() => onUpdateIdx(Math.max(0, idx - 1))}
           style={{
             width: 40,
@@ -171,7 +176,7 @@ export function SlidePresenter({
         </span>
         <button
           type="button"
-          aria-label="Next slide"
+          aria-label={translateUI("Next slide")}
           onClick={() => onUpdateIdx(Math.min(n - 1, idx + 1))}
           style={{
             width: 40,
@@ -201,9 +206,7 @@ export function SlidePresenter({
             fontWeight: 600,
             borderRadius: 'var(--r-sm)',
           }}
-        >
-          Exit · Esc
-        </button>
+        >{" "}<LocalizedText message={"Exit · Esc"} />{" "}</button>
       </div>
     </div>
   );

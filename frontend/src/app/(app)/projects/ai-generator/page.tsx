@@ -1,5 +1,8 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
+
 import Link from "next/link";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Bot, Download, FileText, Plus, Sparkles, Trash2, Upload } from "lucide-react";
@@ -26,6 +29,10 @@ const taskTypeOptions = ["Feature", "Bug", "Enhancement", "Research", "Documenta
 const fallbackPartitionOptions = ["tech", "operations", "business", "marketing", "sales"].map((value) => ({ value, label: value }));
 
 export default function AiProjectGeneratorPage() {
+  const { t: localizeAttribute } = useI18n();
+
+  const { t: translateUI } = useI18n();
+
   const toast = useToast();
   const { partitions } = useTaskPartitions();
   const partitionOptions = partitions.length ? partitions.map((item) => ({ value: item.slug, label: item.name })) : fallbackPartitionOptions;
@@ -156,35 +163,35 @@ export default function AiProjectGeneratorPage() {
   return (
     <div style={PAGE_STYLE}>
       <PageHeader
-        title="AI Project Generator"
-        subtitle="Paste a shared Google Sheet URL, add notes, or upload a brief. Review and edit the generated plan before anything is committed."
-        badge={<span style={badge}><Bot size={14} /> LangGraph</span>}
+        title={translateUI("AI Project Generator")}
+        subtitle={translateUI("Paste a shared Google Sheet URL, add notes, or upload a brief. Review and edit the generated plan before anything is committed.")}
+        badge={<span style={badge}><Bot size={14} />{" "}<LocalizedText message={"LangGraph"} /></span>}
         actions={
           <Button variant="secondary" disabled={template.isPending} onClick={() => template.mutate()}>
-            <Download size={14} /> {template.isPending ? "Downloading..." : "Template"}
+            <Download size={14} /> {template.isPending ? <LocalizedText message={"Downloading..."} /> : <LocalizedText message={"Template"} />}
           </Button>
         }
       />
 
       <section style={guideBand}>
         <div style={guideColumn}>
-          <h2 style={sectionTitle}>Brief guide</h2>
-          <p style={bodyText}>Paste a shared Google Sheet URL directly, upload a brief, or combine both.</p>
+          <h2 style={sectionTitle}><LocalizedText message={"Brief guide"} /></h2>
+          <p style={bodyText}><LocalizedText message={"Paste a shared Google Sheet URL directly, upload a brief, or combine both."} /></p>
           <div style={guideGrid}>
-            <GuideItem title="Helpful fields" text="Name, goal, stakeholders, timeline, team members, constraints can come from the brief or Sheet." />
-            <GuideItem title="Voice friendly" text="You can dictate into GPT or Claude, paste the transcript into the template, then upload." />
-            <GuideItem title="Sheets context" text="Paste shared Google Sheets URLs in the brief; private sheets are rejected for review." />
-            <GuideItem title="Assignees" text="Use real names or emails from the workspace. Unknown people are left unresolved for manual review." />
+            <GuideItem title={translateUI("Helpful fields")} text="Name, goal, stakeholders, timeline, team members, constraints can come from the brief or Sheet." />
+            <GuideItem title={translateUI("Voice friendly")} text="You can dictate into GPT or Claude, paste the transcript into the template, then upload." />
+            <GuideItem title={translateUI("Sheets context")} text="Paste shared Google Sheets URLs in the brief; private sheets are rejected for review." />
+            <GuideItem title={translateUI("Assignees")} text="Use real names or emails from the workspace. Unknown people are left unresolved for manual review." />
           </div>
         </div>
       </section>
 
       <section style={uploadBand}>
         <div style={{ display: "flex", flexDirection: "column", gap: 10, minWidth: 0 }}>
-          <h2 style={sectionTitle}>Optional brief file</h2>
+          <h2 style={sectionTitle}><LocalizedText message={"Optional brief file"} /></h2>
           <label style={fileBox}>
             <Upload size={18} />
-            <span style={{ fontWeight: 700 }}>{file ? file.name : "Choose .md or .txt"}</span>
+            <span style={{ fontWeight: 700 }}>{file ? file.name : <LocalizedText message={"Choose .md or .txt"} />}</span>
             <input
               type="file"
               accept=".md,.txt,text/markdown,text/plain"
@@ -194,45 +201,45 @@ export default function AiProjectGeneratorPage() {
           </label>
         </div>
         <div style={{ flex: "1 1 360px", minWidth: 280 }}>
-          <Field label="Google Sheet URL / notes">
+          <Field label={translateUI("Google Sheet URL / notes")}>
             <TextArea
               value={extraContext}
               onChange={(event) => setExtraContext(event.target.value)}
-              placeholder="Paste a shared Google Sheets URL here, plus any project notes..."
+              placeholder={translateUI("Paste a shared Google Sheets URL here, plus any project notes...")}
               style={{ minHeight: 96 }}
             />
           </Field>
         </div>
         <Button disabled={!hasInput || generate.isPending || job?.status === "queued" || job?.status === "running"} onClick={() => generate.mutate()}>
-          <Sparkles size={14} /> {generate.isPending ? "Queuing..." : "Generate draft"}
+          <Sparkles size={14} /> {generate.isPending ? <LocalizedText message={"Queuing..."} /> : <LocalizedText message={"Generate draft"} />}
         </Button>
       </section>
 
       {committedProjectId ? (
         <Alert
           kind="success"
-          title="Generated project committed"
-          description="Draft review cleared and the creator was notified."
+          title={translateUI("Generated project committed")}
+          description={translateUI("Draft review cleared and the creator was notified.")}
         />
       ) : null}
-      {committedProjectId ? <Link href={`/projects/${committedProjectId}`} style={primaryLink}>Open committed project</Link> : null}
+      {committedProjectId ? <Link href={`/projects/${committedProjectId}`} style={primaryLink}><LocalizedText message={"Open committed project"} /></Link> : null}
 
       {job && !draft && job.status !== "failed" ? (
         <Alert
           kind="info"
-          title={job.status === "queued" ? "Generation queued" : "Generation running"}
+          title={job.status === "queued" ? localizeAttribute("Generation queued") : localizeAttribute("Generation running")}
           description={`Project ${job.project_id} is ready as a placeholder. Draft review will appear here when generation finishes.`}
         />
       ) : null}
 
       {job?.status === "failed" ? (
-        <Alert kind="critical" title="Generation failed" description={job.error || "Unexpected background execution failure."} />
+        <Alert kind="critical" title={translateUI("Generation failed")} description={job.error || "Unexpected background execution failure."} />
       ) : null}
 
       {draft?.validation_errors.length ? (
         <Alert
           kind="critical"
-          title="Brief needs fixes"
+          title={translateUI("Brief needs fixes")}
           description={draft.validation_errors.map((e) => `${e.field}: ${e.message}`).join(" ")}
         />
       ) : null}
@@ -241,132 +248,129 @@ export default function AiProjectGeneratorPage() {
         <section style={draftBand}>
           <div style={draftHeader}>
             <div>
-              <h2 style={{ ...sectionTitle, fontSize: 18, color: "var(--text-primary)" }}>Editable draft</h2>
+              <h2 style={{ ...sectionTitle, fontSize: 18, color: "var(--text-primary)" }}><LocalizedText message={"Editable draft"} /></h2>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
                 <StatusChip status={project.priority} label={project.priority} />
-                <span style={badge}>{project.tasks.length} tasks</span>
-                {project.timeline_end ? <span style={badge}>Due {project.timeline_end}</span> : null}
+                <span style={badge}>{project.tasks.length}{" "}<LocalizedText message={"tasks"} /></span>
+                {project.timeline_end ? <span style={badge}><LocalizedText message={"Due"} />{" "}{project.timeline_end}</span> : null}
               </div>
             </div>
             <Button disabled={confirm.isPending || !project.tasks.length} onClick={() => confirm.mutate()}>
-              <FileText size={14} /> {confirm.isPending ? "Committing..." : "Commit edited project"}
+              <FileText size={14} /> {confirm.isPending ? <LocalizedText message={"Committing..."} /> : <LocalizedText message={"Commit edited project"} />}
             </Button>
           </div>
 
           <div style={formGrid}>
-            <Field label="Project name">
+            <Field label={translateUI("Project name")}>
               <TextInput value={project.name} onChange={(event) => updateProject({ name: event.target.value })} />
             </Field>
-            <Field label="Priority">
+            <Field label={translateUI("Priority")}>
               <Select value={project.priority} options={priorityOptions} onChange={(event) => updateProject({ priority: event.target.value })} />
             </Field>
-            <Field label="Risk">
+            <Field label={translateUI("Risk")}>
               <Select value={project.risk_level} options={riskOptions} onChange={(event) => updateProject({ risk_level: event.target.value })} />
             </Field>
-            <Field label="Start date">
+            <Field label={translateUI("Start date")}>
               <TextInput type="date" value={project.timeline_start ?? ""} onChange={(event) => updateProject({ timeline_start: event.target.value || null })} />
             </Field>
-            <Field label="End date">
+            <Field label={translateUI("End date")}>
               <TextInput type="date" value={project.timeline_end ?? ""} onChange={(event) => updateProject({ timeline_end: event.target.value || null })} />
             </Field>
-            <Field label="Tags">
+            <Field label={translateUI("Tags")}>
               <TextInput value={toListText(project.tags)} onChange={(event) => updateProject({ tags: toList(event.target.value) })} />
             </Field>
           </div>
 
-          <Field label="Description">
+          <Field label={translateUI("Description")}>
             <TextArea value={project.description} onChange={(event) => updateProject({ description: event.target.value })} />
           </Field>
-          <Field label="Goal">
+          <Field label={translateUI("Goal")}>
             <TextArea value={project.goal} onChange={(event) => updateProject({ goal: event.target.value })} style={{ minHeight: 76 }} />
           </Field>
           <div style={formGrid}>
-            <Field label="Stakeholders">
+            <Field label={translateUI("Stakeholders")}>
               <TextInput value={toListText(project.stakeholders)} onChange={(event) => updateProject({ stakeholders: toList(event.target.value) })} />
             </Field>
-            <Field label="Constraints">
+            <Field label={translateUI("Constraints")}>
               <TextInput value={project.constraints ?? ""} onChange={(event) => updateProject({ constraints: event.target.value || null })} />
             </Field>
           </div>
 
           {project.unresolved_fields.length > 0 ? (
-            <Alert kind="warning" title="Manual review needed" description={project.unresolved_fields.join(" ")} />
+            <Alert kind="warning" title={translateUI("Manual review needed")} description={project.unresolved_fields.join(" ")} />
           ) : null}
 
           <div style={sectionHeader}>
-            <h3 style={sectionTitle}>Milestones</h3>
+            <h3 style={sectionTitle}><LocalizedText message={"Milestones"} /></h3>
             <Button
               variant="secondary"
               onClick={() => updateProject({ milestones: [...(project.milestones ?? []), { name: "New milestone", description: null, due_date: null }] })}
             >
-              <Plus size={14} /> Add milestone
-            </Button>
+              <Plus size={14} />{" "}<LocalizedText message={"Add milestone"} />{" "}</Button>
           </div>
           {(project.milestones ?? []).map((milestone, index) => (
             <div key={`${milestone.name}-${index}`} style={detailRow}>
               <div style={formGrid}>
-                <Field label="Name">
+                <Field label={translateUI("Name")}>
                   <TextInput value={milestone.name} onChange={(event) => updateMilestone(index, { name: event.target.value })} />
                 </Field>
-                <Field label="Due date">
+                <Field label={translateUI("Due date")}>
                   <TextInput type="date" value={milestone.due_date ?? ""} onChange={(event) => updateMilestone(index, { due_date: event.target.value || null })} />
                 </Field>
               </div>
-              <Field label="Description">
+              <Field label={translateUI("Description")}>
                 <TextArea value={milestone.description ?? ""} onChange={(event) => updateMilestone(index, { description: event.target.value || null })} style={{ minHeight: 70 }} />
               </Field>
               <Button variant="ghost" onClick={() => updateProject({ milestones: (project.milestones ?? []).filter((_, milestoneIndex) => milestoneIndex !== index) })}>
-                <Trash2 size={14} /> Remove milestone
-              </Button>
+                <Trash2 size={14} />{" "}<LocalizedText message={"Remove milestone"} />{" "}</Button>
             </div>
           ))}
 
           <div style={sectionHeader}>
-            <h3 style={sectionTitle}>Tasks</h3>
-            <Button variant="secondary" onClick={addTask}><Plus size={14} /> Add task</Button>
+            <h3 style={sectionTitle}><LocalizedText message={"Tasks"} /></h3>
+            <Button variant="secondary" onClick={addTask}><Plus size={14} />{" "}<LocalizedText message={"Add task"} /></Button>
           </div>
           <div style={taskList}>
             {project.tasks.map((task, index) => (
               <div key={`${task.title}-${index}`} style={taskRow}>
                 <div style={taskRowHeader}>
-                  <strong style={{ color: "var(--text-primary)" }}>Task {index + 1}</strong>
+                  <strong style={{ color: "var(--text-primary)" }}><LocalizedText message={"Task"} />{" "}{index + 1}</strong>
                   <Button variant="ghost" disabled={project.tasks.length <= 1} onClick={() => removeTask(index)}>
-                    <Trash2 size={14} /> Remove
-                  </Button>
+                    <Trash2 size={14} />{" "}<LocalizedText message={"Remove"} />{" "}</Button>
                 </div>
                 <div style={formGrid}>
-                  <Field label="Title">
+                  <Field label={translateUI("Title")}>
                     <TextInput value={task.title} onChange={(event) => updateTask(index, { title: event.target.value })} />
                   </Field>
-                  <Field label="Assignee">
+                  <Field label={translateUI("Assignee")}>
                     <TextInput value={task.assignee ?? ""} onChange={(event) => updateTask(index, { assignee: event.target.value || null })} />
                   </Field>
-                  <Field label="Priority">
+                  <Field label={translateUI("Priority")}>
                     <Select value={task.priority} options={priorityOptions} onChange={(event) => updateTask(index, { priority: event.target.value })} />
                   </Field>
-                  <Field label="Status">
+                  <Field label={translateUI("Status")}>
                     <Select value={task.status} options={statusOptions} onChange={(event) => updateTask(index, { status: event.target.value })} />
                   </Field>
-                  <Field label="Type">
+                  <Field label={translateUI("Type")}>
                     <Select value={task.task_type} options={taskTypeOptions} onChange={(event) => updateTask(index, { task_type: event.target.value })} />
                   </Field>
-                  <Field label="Partition">
+                  <Field label={translateUI("Partition")}>
                     <Select value={task.partition} options={partitionOptions} onChange={(event) => updateTask(index, { partition: event.target.value })} />
                   </Field>
-                  <Field label="Hours">
+                  <Field label={translateUI("Hours")}>
                     <TextInput type="number" min={0} value={task.estimated_hours ?? ""} onChange={(event) => updateTask(index, { estimated_hours: event.target.value === "" ? null : Number(event.target.value) })} />
                   </Field>
-                  <Field label="Due date">
+                  <Field label={translateUI("Due date")}>
                     <TextInput type="date" value={task.due_date ?? ""} onChange={(event) => updateTask(index, { due_date: event.target.value || null })} />
                   </Field>
-                  <Field label="Tags">
+                  <Field label={translateUI("Tags")}>
                     <TextInput value={toListText(task.tags)} onChange={(event) => updateTask(index, { tags: toList(event.target.value) })} />
                   </Field>
-                  <Field label="Dependencies">
+                  <Field label={translateUI("Dependencies")}>
                     <TextInput value={toListText(task.dependencies)} onChange={(event) => updateTask(index, { dependencies: toList(event.target.value) })} />
                   </Field>
                 </div>
-                <Field label="Description">
+                <Field label={translateUI("Description")}>
                   <TextArea value={task.description} onChange={(event) => updateTask(index, { description: event.target.value })} style={{ minHeight: 76 }} />
                 </Field>
               </div>
@@ -375,7 +379,7 @@ export default function AiProjectGeneratorPage() {
         </section>
       ) : null}
 
-      <Link href="/portfolio" style={backLink}>Back to projects</Link>
+      <Link href="/portfolio" style={backLink}><LocalizedText message={"Back to projects"} /></Link>
     </div>
   );
 }

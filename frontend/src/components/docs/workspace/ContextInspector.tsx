@@ -1,4 +1,6 @@
 "use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 import { useState } from "react";
 import {
@@ -39,6 +41,8 @@ interface Props {
 type TabType = "outline" | "comments" | "backlinks" | "ai";
 
 export function ContextInspector({ activePageId }: Props) {
+  const { t: translateUI } = useI18n();
+
   const [activeTab, setActiveTab] = useState<TabType>("outline");
   const [helpfulFeedback, setHelpfulFeedback] = useState<boolean | null>(null);
   const [commentFilter, setCommentFilter] = useState<"all" | "unresolved" | "resolved">("all");
@@ -96,9 +100,7 @@ export function ContextInspector({ activePageId }: Props) {
             cursor: "pointer",
             transition: "all var(--duration-fast) var(--ease-spring)",
           }}
-        >
-          Outline
-        </button>
+        >{" "}<LocalizedText message={"Outline"} />{" "}</button>
 
         <button
           type="button"
@@ -115,8 +117,7 @@ export function ContextInspector({ activePageId }: Props) {
             cursor: "pointer",
             transition: "all var(--duration-fast) var(--ease-spring)",
           }}
-        >
-          Comments <span style={{ fontSize: 10, padding: "1px 5px", borderRadius: 8, background: "var(--accent-primary-soft)", color: "var(--accent-primary)", fontWeight: 700 }}>3</span>
+        >{" "}<LocalizedText message={"Comments"} />{" "}<span style={{ fontSize: 10, padding: "1px 5px", borderRadius: 8, background: "var(--accent-primary-soft)", color: "var(--accent-primary)", fontWeight: 700 }}>3</span>
         </button>
 
         <button
@@ -134,9 +135,7 @@ export function ContextInspector({ activePageId }: Props) {
             cursor: "pointer",
             transition: "all var(--duration-fast) var(--ease-spring)",
           }}
-        >
-          Backlinks
-        </button>
+        >{" "}<LocalizedText message={"Backlinks"} />{" "}</button>
 
         <button
           type="button"
@@ -155,8 +154,7 @@ export function ContextInspector({ activePageId }: Props) {
           }}
         >
           <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-            <Sparkles size={12} /> AI
-          </span>
+            <Sparkles size={12} />{" "}<LocalizedText message={"AI"} />{" "}</span>
         </button>
       </div>
 
@@ -167,9 +165,7 @@ export function ContextInspector({ activePageId }: Props) {
           <>
             {/* Table of Contents */}
             <div>
-              <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-tertiary)", marginBottom: 12 }}>
-                Table of Contents
-              </div>
+              <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-tertiary)", marginBottom: 12 }}>{" "}<LocalizedText message={"Table of Contents"} />{" "}</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 3, borderLeft: "2px solid var(--border-subtle)", paddingLeft: 10 }}>
                 <a
                   href="#signing-in"
@@ -180,25 +176,13 @@ export function ContextInspector({ activePageId }: Props) {
                     textDecoration: "none",
                     padding: "4px 0",
                   }}
-                >
-                  Signing In & Profile Management
-                </a>
+                >{" "}<LocalizedText message={"Signing In & Profile Management"} />{" "}</a>
                 <div style={{ paddingLeft: 10, display: "flex", flexDirection: "column", gap: 4 }}>
-                  <a href="#authentication" style={{ fontSize: 12, color: "var(--text-secondary)", textDecoration: "none" }}>
-                    Authentication & Security
-                  </a>
-                  <a href="#sign-in" style={{ fontSize: 12, color: "var(--text-tertiary)", textDecoration: "none", paddingLeft: 8 }}>
-                    Sign in to NexFellas
-                  </a>
-                  <a href="#theme-preferences" style={{ fontSize: 12, color: "var(--text-secondary)", textDecoration: "none" }}>
-                    Theme Preferences
-                  </a>
-                  <a href="#password-management" style={{ fontSize: 12, color: "var(--text-secondary)", textDecoration: "none" }}>
-                    Password Management
-                  </a>
-                  <a href="#admin-password-reset" style={{ fontSize: 12, color: "var(--text-secondary)", textDecoration: "none" }}>
-                    Admin Password Reset
-                  </a>
+                  <a href="#authentication" style={{ fontSize: 12, color: "var(--text-secondary)", textDecoration: "none" }}>{" "}<LocalizedText message={"Authentication & Security"} />{" "}</a>
+                  <a href="#sign-in" style={{ fontSize: 12, color: "var(--text-tertiary)", textDecoration: "none", paddingLeft: 8 }}>{" "}<LocalizedText message={"Sign in to NexFellas"} />{" "}</a>
+                  <a href="#theme-preferences" style={{ fontSize: 12, color: "var(--text-secondary)", textDecoration: "none" }}>{" "}<LocalizedText message={"Theme Preferences"} />{" "}</a>
+                  <a href="#password-management" style={{ fontSize: 12, color: "var(--text-secondary)", textDecoration: "none" }}>{" "}<LocalizedText message={"Password Management"} />{" "}</a>
+                  <a href="#admin-password-reset" style={{ fontSize: 12, color: "var(--text-secondary)", textDecoration: "none" }}>{" "}<LocalizedText message={"Admin Password Reset"} />{" "}</a>
                 </div>
               </div>
             </div>
@@ -216,18 +200,18 @@ export function ContextInspector({ activePageId }: Props) {
             >
               <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>
                 <Keyboard size={14} style={{ color: "var(--accent-primary)" }} />
-                <span>Keyboard shortcuts</span>
+                <span><LocalizedText message={"Keyboard shortcuts"} /></span>
               </div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <span style={{ fontSize: 11.5, color: "var(--text-secondary)" }}>Next section</span>
-                <kbd style={{ padding: "2px 6px", borderRadius: 4, background: "var(--surface-3)", border: "1px solid var(--border-subtle)", fontSize: 10, fontFamily: "var(--font-mono)" }}>J</kbd>
+                <span style={{ fontSize: 11.5, color: "var(--text-secondary)" }}><LocalizedText message={"Next section"} /></span>
+                <kbd style={{ padding: "2px 6px", borderRadius: 4, background: "var(--surface-3)", border: "1px solid var(--border-subtle)", fontSize: 10, fontFamily: "var(--font-mono)" }}><LocalizedText message={"J"} /></kbd>
               </div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <span style={{ fontSize: 11.5, color: "var(--text-secondary)" }}>Previous section</span>
-                <kbd style={{ padding: "2px 6px", borderRadius: 4, background: "var(--surface-3)", border: "1px solid var(--border-subtle)", fontSize: 10, fontFamily: "var(--font-mono)" }}>K</kbd>
+                <span style={{ fontSize: 11.5, color: "var(--text-secondary)" }}><LocalizedText message={"Previous section"} /></span>
+                <kbd style={{ padding: "2px 6px", borderRadius: 4, background: "var(--surface-3)", border: "1px solid var(--border-subtle)", fontSize: 10, fontFamily: "var(--font-mono)" }}><LocalizedText message={"K"} /></kbd>
               </div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <span style={{ fontSize: 11.5, color: "var(--text-secondary)" }}>Search docs</span>
+                <span style={{ fontSize: 11.5, color: "var(--text-secondary)" }}><LocalizedText message={"Search docs"} /></span>
                 <kbd style={{ padding: "2px 6px", borderRadius: 4, background: "var(--surface-3)", border: "1px solid var(--border-subtle)", fontSize: 10, fontFamily: "var(--font-mono)" }}>/</kbd>
               </div>
             </div>
@@ -245,7 +229,7 @@ export function ContextInspector({ activePageId }: Props) {
             >
               <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>
                 <BookOpen size={14} style={{ color: "var(--accent-primary)" }} />
-                <span>Related Articles</span>
+                <span><LocalizedText message={"Related Articles"} /></span>
               </div>
               {[
                 "Account Security Best Practices",
@@ -275,14 +259,14 @@ export function ContextInspector({ activePageId }: Props) {
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <Lightbulb size={16} style={{ color: "#F59E0B" }} />
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>Was this helpful?</div>
-                  <div style={{ fontSize: 10.5, color: "var(--text-tertiary)" }}>Help us improve this doc.</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}><LocalizedText message={"Was this helpful?"} /></div>
+                  <div style={{ fontSize: 10.5, color: "var(--text-tertiary)" }}><LocalizedText message={"Help us improve this doc."} /></div>
                 </div>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <button
                   type="button"
-                  aria-label="This document was helpful"
+                  aria-label={translateUI("This document was helpful")}
                   aria-pressed={helpfulFeedback === true}
                   onClick={() => setHelpfulFeedback(true)}
                   className="pmp-icon-btn"
@@ -299,7 +283,7 @@ export function ContextInspector({ activePageId }: Props) {
                 </button>
                 <button
                   type="button"
-                  aria-label="This document was not helpful"
+                  aria-label={translateUI("This document was not helpful")}
                   aria-pressed={helpfulFeedback === false}
                   onClick={() => setHelpfulFeedback(false)}
                   className="pmp-icon-btn"
@@ -334,16 +318,14 @@ export function ContextInspector({ activePageId }: Props) {
               }}
             >
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>Review Status</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}><LocalizedText message={"Review Status"} /></div>
                 <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "2px 8px", borderRadius: 10, background: "rgba(245, 158, 11, 0.12)", color: "#F59E0B", fontSize: 11, fontWeight: 700 }}>
                   <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#F59E0B" }} />
-                  <span>In Review</span>
+                  <span><LocalizedText message={"In Review"} /></span>
                 </div>
               </div>
 
-              <div style={{ fontSize: 11, color: "var(--text-tertiary)" }}>
-                2 of 4 approvals • Due Apr 25, 2026
-              </div>
+              <div style={{ fontSize: 11, color: "var(--text-tertiary)" }}>{" "}<LocalizedText message={"2 of 4 approvals • Due Apr 25, 2026"} />{" "}</div>
 
               {/* Reviewers List */}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6, textAlign: "center" }}>
@@ -393,9 +375,7 @@ export function ContextInspector({ activePageId }: Props) {
                     fontWeight: 650,
                     cursor: "pointer",
                   }}
-                >
-                  Request approval
-                </button>
+                >{" "}<LocalizedText message={"Request approval"} />{" "}</button>
                 <button
                   type="button"
                   style={{
@@ -414,23 +394,22 @@ export function ContextInspector({ activePageId }: Props) {
                     cursor: "pointer",
                   }}
                 >
-                  <UserPlus size={12} /> Add reviewers
-                </button>
+                  <UserPlus size={12} />{" "}<LocalizedText message={"Add reviewers"} />{" "}</button>
               </div>
             </div>
 
             {/* Comment Threads */}
             <div style={{ display: "grid", gap: 10 }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>Comments</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}><LocalizedText message={"Comments"} /></span>
                 <select
                   value={commentFilter}
                   onChange={(e) => setCommentFilter(e.target.value as any)}
                   style={{ padding: "2px 6px", borderRadius: 4, background: "var(--surface-2)", border: "1px solid var(--border-subtle)", fontSize: 11, color: "var(--text-secondary)" }}
                 >
-                  <option value="all">All comments</option>
-                  <option value="unresolved">Unresolved (2)</option>
-                  <option value="resolved">Resolved (1)</option>
+                  <option value="all"><LocalizedText message={"All comments"} /></option>
+                  <option value="unresolved"><LocalizedText message={"Unresolved (2)"} /></option>
+                  <option value="resolved"><LocalizedText message={"Resolved (1)"} /></option>
                 </select>
               </div>
 
@@ -483,7 +462,7 @@ export function ContextInspector({ activePageId }: Props) {
                         color: c.status === "resolved" ? "var(--status-completed)" : "var(--accent-primary)",
                       }}
                     >
-                      ● {c.status === "resolved" ? "Resolved" : "Unresolved"}
+                      ● {c.status === "resolved" ? <LocalizedText message={"Resolved"} /> : <LocalizedText message={"Unresolved"} />}
                     </span>
                   </div>
                   <p style={{ margin: 0, fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.45 }}>{c.text}</p>
@@ -504,14 +483,12 @@ export function ContextInspector({ activePageId }: Props) {
               }}
             >
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>Suggested edits</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}><LocalizedText message={"Suggested edits"} /></span>
                 <span style={{ fontSize: 10, padding: "1px 5px", borderRadius: 8, background: "var(--accent-primary-soft)", color: "var(--accent-primary)", fontWeight: 700 }}>2</span>
               </div>
 
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-                <span style={{ fontSize: 11.5, color: "var(--text-secondary)" }}>
-                  Replace &quot;company&apos;s&quot; with &quot;organization&apos;s&quot;
-                </span>
+                <span style={{ fontSize: 11.5, color: "var(--text-secondary)" }}>{" "}<LocalizedText message={"Replace \"company's\" with \"organization's\""} />{" "}</span>
                 <button
                   type="button"
                   style={{
@@ -524,15 +501,11 @@ export function ContextInspector({ activePageId }: Props) {
                     fontWeight: 700,
                     cursor: "pointer",
                   }}
-                >
-                  Apply
-                </button>
+                >{" "}<LocalizedText message={"Apply"} />{" "}</button>
               </div>
 
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-                <span style={{ fontSize: 11.5, color: "var(--text-secondary)" }}>
-                  Add link to theme guide
-                </span>
+                <span style={{ fontSize: 11.5, color: "var(--text-secondary)" }}>{" "}<LocalizedText message={"Add link to theme guide"} />{" "}</span>
                 <button
                   type="button"
                   style={{
@@ -545,9 +518,7 @@ export function ContextInspector({ activePageId }: Props) {
                     fontWeight: 700,
                     cursor: "pointer",
                   }}
-                >
-                  Apply
-                </button>
+                >{" "}<LocalizedText message={"Apply"} />{" "}</button>
               </div>
             </div>
           </>
@@ -558,12 +529,8 @@ export function ContextInspector({ activePageId }: Props) {
           <>
             {/* Linked From */}
             <div style={{ display: "grid", gap: 8 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>
-                Linked from (12)
-              </div>
-              <div style={{ fontSize: 11, color: "var(--text-tertiary)" }}>
-                Documents that reference this page.
-              </div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{" "}<LocalizedText message={"Linked from (12)"} />{" "}</div>
+              <div style={{ fontSize: 11, color: "var(--text-tertiary)" }}>{" "}<LocalizedText message={"Documents that reference this page."} />{" "}</div>
 
               {[
                 { title: "Authentication & Security", space: "Security & Compliance" },
@@ -592,9 +559,7 @@ export function ContextInspector({ activePageId }: Props) {
 
             {/* Related Concepts (8) Tags */}
             <div style={{ display: "grid", gap: 8 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>
-                Related Concepts (8)
-              </div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{" "}<LocalizedText message={"Related Concepts (8)"} />{" "}</div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                 {[
                   "Authentication",
@@ -634,28 +599,26 @@ export function ContextInspector({ activePageId }: Props) {
                 gap: 8,
               }}
             >
-              <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>
-                Document Metadata
+              <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{" "}<LocalizedText message={"Document Metadata"} />{" "}</div>
+              <div style={{ display: "flex", justifyContent: "space-between", color: "var(--text-secondary)" }}>
+                <span style={{ color: "var(--text-tertiary)" }}><LocalizedText message={"Type"} /></span>
+                <b><LocalizedText message={"Guide"} /></b>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", color: "var(--text-secondary)" }}>
-                <span style={{ color: "var(--text-tertiary)" }}>Type</span>
-                <b>Guide</b>
+                <span style={{ color: "var(--text-tertiary)" }}><LocalizedText message={"Last updated"} /></span>
+                <span><LocalizedText message={"2 days ago"} /></span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", color: "var(--text-secondary)" }}>
-                <span style={{ color: "var(--text-tertiary)" }}>Last updated</span>
-                <span>2 days ago</span>
+                <span style={{ color: "var(--text-tertiary)" }}><LocalizedText message={"Owner"} /></span>
+                <span><LocalizedText message={"NexFellas Team"} /></span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", color: "var(--text-secondary)" }}>
-                <span style={{ color: "var(--text-tertiary)" }}>Owner</span>
-                <span>NexFellas Team</span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", color: "var(--text-secondary)" }}>
-                <span style={{ color: "var(--text-tertiary)" }}>Total views</span>
+                <span style={{ color: "var(--text-tertiary)" }}><LocalizedText message={"Total views"} /></span>
                 <span>1,284</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", color: "var(--text-secondary)" }}>
-                <span style={{ color: "var(--text-tertiary)" }}>Language</span>
-                <span>English</span>
+                <span style={{ color: "var(--text-tertiary)" }}><LocalizedText message={"Language"} /></span>
+                <span><LocalizedText message={"English"} /></span>
               </div>
             </div>
           </>
@@ -668,11 +631,9 @@ export function ContextInspector({ activePageId }: Props) {
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                 <Sparkles size={16} style={{ color: "var(--accent-primary)" }} />
-                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>NexFellas AI</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}><LocalizedText message={"NexFellas AI"} /></div>
               </div>
-              <div style={{ fontSize: 11.5, color: "var(--text-tertiary)", lineHeight: 1.4 }}>
-                Your AI writing partner for better documentation.
-              </div>
+              <div style={{ fontSize: 11.5, color: "var(--text-tertiary)", lineHeight: 1.4 }}>{" "}<LocalizedText message={"Your AI writing partner for better documentation."} />{" "}</div>
             </div>
 
             {/* Quick Actions 2x3 Grid */}
@@ -713,9 +674,7 @@ export function ContextInspector({ activePageId }: Props) {
 
             {/* Chat Input */}
             <div>
-              <div style={{ fontSize: 11.5, fontWeight: 700, color: "var(--text-primary)", marginBottom: 6 }}>
-                Ask about this document
-              </div>
+              <div style={{ fontSize: 11.5, fontWeight: 700, color: "var(--text-primary)", marginBottom: 6 }}>{" "}<LocalizedText message={"Ask about this document"} />{" "}</div>
               <div
                 style={{
                   display: "flex",
@@ -731,7 +690,7 @@ export function ContextInspector({ activePageId }: Props) {
                   type="text"
                   value={aiPrompt}
                   onChange={(e) => setAiPrompt(e.target.value)}
-                  placeholder="Ask a question about this document…"
+                  placeholder={translateUI("Ask a question about this document…")}
                   style={{
                     flex: 1,
                     background: "transparent",
@@ -796,9 +755,7 @@ export function ContextInspector({ activePageId }: Props) {
               ))}
             </div>
 
-            <div style={{ fontSize: 10, color: "var(--text-tertiary)", textAlign: "center", marginTop: "auto" }}>
-              AI can make mistakes. Always review important information.
-            </div>
+            <div style={{ fontSize: 10, color: "var(--text-tertiary)", textAlign: "center", marginTop: "auto" }}>{" "}<LocalizedText message={"AI can make mistakes. Always review important information."} />{" "}</div>
           </>
         )}
       </div>

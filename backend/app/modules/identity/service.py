@@ -105,6 +105,9 @@ def to_user_read(user: User, employee_ctx: Optional[object] = None) -> UserRead:
     expired = _is_status_expired(user)
     return UserRead(
         id=user.id,
+        locale=getattr(user, "locale", None),
+        calendar=getattr(user, "calendar", None) or "gregory",
+        numbering_system=getattr(user, "numbering_system", None) or "latn",
         email=user.email,
         username=user.username,
         first_name=user.first_name,

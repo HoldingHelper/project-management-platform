@@ -1,5 +1,8 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
+
 import { useEffect, useMemo, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Copy, Mail } from "lucide-react";
@@ -27,6 +30,10 @@ export function InviteModal({
   users = [],
   onInvited,
 }: Props) {
+  const { t: localizeAttribute } = useI18n();
+
+  const { t: translateUI } = useI18n();
+
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("Developer");
   const [departmentId, setDepartmentId] = useState("");
@@ -79,20 +86,18 @@ export function InviteModal({
     <Modal
       open={open}
       onClose={onClose}
-      title={createdInvite ? "Invitation Link Ready" : "Generate Teammate Invite Link"}
+      title={createdInvite ? localizeAttribute("Invitation Link Ready") : localizeAttribute("Generate Teammate Invite Link")}
       footer={
         createdInvite ? (
-          <Button onClick={onClose}>Done</Button>
+          <Button onClick={onClose}><LocalizedText message={"Done"} /></Button>
         ) : (
           <>
-            <Button variant="secondary" onClick={onClose}>
-              Cancel
-            </Button>
+            <Button variant="secondary" onClick={onClose}>{" "}<LocalizedText message={"Cancel"} />{" "}</Button>
             <Button
               disabled={!email.trim() || mutation.isPending}
               onClick={() => mutation.mutate()}
             >
-              {mutation.isPending ? "Generating…" : "Generate Invite Link"}
+              {mutation.isPending ? <LocalizedText message={"Generating…"} /> : <LocalizedText message={"Generate Invite Link"} />}
             </Button>
           </>
         )
@@ -101,12 +106,9 @@ export function InviteModal({
       {createdInvite ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div style={{ padding: 14, borderRadius: "var(--radius-md)", background: "var(--surface-3)", border: "1px solid var(--border-default)" }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", marginBottom: 4 }}>
-              Invite Link Generated for {createdInvite.email}
+            <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", marginBottom: 4 }}>{" "}<LocalizedText message={"Invite Link Generated for"} />{" "}{createdInvite.email}
             </div>
-            <div style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 12 }}>
-              Share this link directly with the coworker. When they open it, they will join the designated department & team and choose their own password.
-            </div>
+            <div style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 12 }}>{" "}<LocalizedText message={"Share this link directly with the coworker. When they open it, they will join the designated department & team and choose their own password."} />{" "}</div>
             <TextInput
               readOnly
               value={createdInvite.url}
@@ -117,9 +119,9 @@ export function InviteModal({
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <Field label="Email address">
+          <Field label={translateUI("Email address")}>
             <TextInput
-              placeholder="person@company.com"
+              placeholder={translateUI("person@company.com")}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               type="email"
@@ -128,40 +130,40 @@ export function InviteModal({
           </Field>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            <Field label="Role">
+            <Field label={translateUI("Role")}>
               <Select
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
                 options={roleNames.map((r) => ({ value: r, label: r }))}
               />
             </Field>
-            <Field label="Department">
+            <Field label={translateUI("Department")}>
               <Select
                 value={departmentId}
                 onChange={(e) => {
                   setDepartmentId(e.target.value);
                   setTeamId("");
                 }}
-                placeholder="Choose department…"
+                placeholder={translateUI("Choose department…")}
                 options={departments.map((d) => ({ value: d.id, label: d.name }))}
               />
             </Field>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            <Field label="Team (optional)">
+            <Field label={translateUI("Team (optional)")}>
               <Select
                 value={teamId}
                 onChange={(e) => setTeamId(e.target.value)}
-                placeholder="Choose team…"
+                placeholder={translateUI("Choose team…")}
                 options={filteredTeams.map((t) => ({ value: t.id, label: t.name }))}
               />
             </Field>
-            <Field label="Manager (optional)">
+            <Field label={translateUI("Manager (optional)")}>
               <Select
                 value={managerId}
                 onChange={(e) => setManagerId(e.target.value)}
-                placeholder="Choose manager…"
+                placeholder={translateUI("Choose manager…")}
                 options={users.map((u) => ({ value: u.id, label: u.full_name }))}
               />
             </Field>

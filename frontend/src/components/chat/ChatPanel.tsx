@@ -1,5 +1,10 @@
 "use client";
 
+import { LocalizedRelativeTime } from "@/lib/i18n/I18nProvider";
+
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
+
 /* Slack-style right-side communication panel:
    - collapsed rail with a total-unread badge
    - expanded 380px drawer: channel list (projects + DMs + music rooms) or the
@@ -45,6 +50,10 @@ import type {
 } from "@/lib/types";
 
 export function ChatPanel() {
+  const { t: localizeAttribute } = useI18n();
+
+  const { t: translateUI } = useI18n();
+
   const { user, hasPermission, isSuperAdmin } = useAuth();
   const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
@@ -133,7 +142,7 @@ export function ChatPanel() {
       {!open && (
         <aside
           className="pmp-chat-rail no-print"
-          aria-label="Team chat"
+          aria-label={translateUI("Team chat")}
           style={{
             width: 72,
             minWidth: 72,
@@ -147,7 +156,7 @@ export function ChatPanel() {
             padding: "12px 8px",
           }}
         >
-          <button onClick={() => setOpen(true)} title="Open team chat" aria-label="Open team chat" style={railButton}>
+          <button onClick={() => setOpen(true)} title={translateUI("Open team chat")} aria-label={translateUI("Open team chat")} style={railButton}>
             <MessageSquare size={18} />
             {totalUnread > 0 && <UnreadBadge count={totalUnread} />}
           </button>
@@ -197,7 +206,7 @@ export function ChatPanel() {
               );
             })}
             {directMessages.length === 0 && (
-              <button onClick={() => setNewDmOpen(true)} title="Start a direct message" aria-label="Start a direct message" style={railButton}>
+              <button onClick={() => setNewDmOpen(true)} title={translateUI("Start a direct message")} aria-label={translateUI("Start a direct message")} style={railButton}>
                 <PenSquare size={17} />
               </button>
             )}
@@ -205,7 +214,7 @@ export function ChatPanel() {
         </aside>
       )}
 
-      <Drawer open={open} width={420} className="pmp-chat-drawer" ariaLabel="Team communication">
+      <Drawer open={open} width={420} className="pmp-chat-drawer" ariaLabel={localizeAttribute("Team communication")}>
         <div className="pmp-chat-header"
           style={{
             display: "flex",
@@ -219,7 +228,7 @@ export function ChatPanel() {
         >
           {musicViewOpen && player.active ? (
             <>
-              <button onClick={() => setMusicViewOpen(false)} style={iconBtn} title="Back to channels (keeps playing)" aria-label="Back to channels">
+              <button onClick={() => setMusicViewOpen(false)} style={iconBtn} title={translateUI("Back to channels (keeps playing)")} aria-label={translateUI("Back to channels")}>
                 <ChevronLeft size={16} />
               </button>
               <Music size={16} style={{ color: musicAccent(player.active.channel.color) }} />
@@ -232,15 +241,15 @@ export function ChatPanel() {
                   setMusicViewOpen(false);
                 }}
                 style={iconBtn}
-                title="Stop listening"
-                aria-label="Stop listening"
+                title={translateUI("Stop listening")}
+                aria-label={translateUI("Stop listening")}
               >
                 <Square size={14} />
               </button>
             </>
           ) : active ? (
             <>
-              <button onClick={() => setActiveChannel(null)} style={iconBtn} title="Back to channels" aria-label="Back to channels">
+              <button onClick={() => setActiveChannel(null)} style={iconBtn} title={translateUI("Back to channels")} aria-label={translateUI("Back to channels")}>
                 <ChevronLeft size={16} />
               </button>
               {active.channel.type === "dm" ? (
@@ -307,13 +316,13 @@ export function ChatPanel() {
           ) : (
             <>
               <MessageSquare size={16} style={{ color: "var(--accent-secondary)" }} />
-              <span style={{ fontWeight: 800, fontSize: 14, flex: 1 }}>Team Chat</span>
-              <button onClick={() => setNewDmOpen(true)} style={iconBtn} title="New direct message" aria-label="New direct message">
+              <span style={{ fontWeight: 800, fontSize: 14, flex: 1 }}><LocalizedText message={"Team Chat"} /></span>
+              <button onClick={() => setNewDmOpen(true)} style={iconBtn} title={translateUI("New direct message")} aria-label={translateUI("New direct message")}>
                 <PenSquare size={15} />
               </button>
             </>
           )}
-          <button onClick={() => setOpen(false)} style={iconBtn} title="Close" aria-label="Close team chat">
+          <button onClick={() => setOpen(false)} style={iconBtn} title={translateUI("Close")} aria-label={translateUI("Close team chat")}>
             <X size={16} />
           </button>
         </div>
@@ -399,6 +408,8 @@ function ChannelList({
   onNewMusic: () => void;
   nowPlayingId: UUID | null;
 }) {
+  const { t: translateUI } = useI18n();
+
   // One collapsible "Music" section, collapsed by default.
   const [musicExpanded, setMusicExpanded] = useState(false);
   const projects = channels.filter((c) => c.channel.type === "project");
@@ -480,7 +491,7 @@ function ChannelList({
             </span>
             {item.last_message_at && (
               <span style={{ fontSize: 10.5, color: "var(--text-tertiary)", flexShrink: 0 }}>
-                {relativeTime(item.last_message_at)}
+                {<LocalizedRelativeTime value={item.last_message_at} />}
               </span>
             )}
           </span>
@@ -514,7 +525,7 @@ function ChannelList({
                 marginTop: 2,
               }}
             >
-              <span style={{ color: "var(--text-tertiary)" }}>Status:</span>
+              <span style={{ color: "var(--text-tertiary)" }}><LocalizedText message={"Status:"} /></span>
               <span style={{ fontStyle: "italic", overflow: "hidden", textOverflow: "ellipsis" }}>{statusText}</span>
             </span>
           ) : meta?.job_title ? (
@@ -589,12 +600,11 @@ function ChannelList({
           >
             {musicExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
             <Music size={11} />
-            <span style={{ flex: 1, textAlign: "left" }}>
-              Music · {musicChannels.length}
+            <span style={{ flex: 1, textAlign: "left" }}>{" "}<LocalizedText message={"Music ·"} />{" "}{musicChannels.length}
             </span>
             {!musicExpanded && anyPlaying && (
               <span
-                title="A room is playing"
+                title={translateUI("A room is playing")}
                 style={{
                   width: 7,
                   height: 7,
@@ -632,8 +642,7 @@ function ChannelList({
                   cursor: "pointer",
                 }}
               >
-                <Plus size={13} /> New music channel
-              </button>
+                <Plus size={13} />{" "}<LocalizedText message={"New music channel"} />{" "}</button>
             </div>
           )}
         </>
@@ -652,6 +661,8 @@ function MusicChannelRow({
   listening: boolean;
   onOpen: () => void;
 }) {
+  const { t: translateUI } = useI18n();
+
   const accent = musicAccent(item.channel.color);
   return (
     <button
@@ -693,7 +704,7 @@ function MusicChannelRow({
             {item.channel.name}
           </span>
           {listening && (
-            <span style={{ fontSize: 9.5, fontWeight: 800, color: accent, flexShrink: 0 }}>LIVE</span>
+            <span style={{ fontSize: 9.5, fontWeight: 800, color: accent, flexShrink: 0 }}><LocalizedText message={"LIVE"} /></span>
           )}
         </span>
         <span style={{ display: "block", fontSize: 11, color: item.is_playing ? accent : "var(--text-tertiary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -703,7 +714,7 @@ function MusicChannelRow({
         </span>
       </span>
       {item.is_playing && (
-        <span style={{ display: "inline-flex", alignItems: "flex-end", gap: 2, height: 12, flexShrink: 0 }} aria-label="Playing">
+        <span style={{ display: "inline-flex", alignItems: "flex-end", gap: 2, height: 12, flexShrink: 0 }} aria-label={translateUI("Playing")}>
           <style>{`@keyframes pmp-eq-row { from { height: 25%; } to { height: 100%; } }`}</style>
           {["0s", "0.25s", "0.5s"].map((delay, i) => (
             <span
@@ -732,6 +743,8 @@ function NewMusicChannelModal({
   onClose: () => void;
   onCreated: (item: MusicChannelListItem) => void;
 }) {
+  const { t: translateUI } = useI18n();
+
   const [name, setName] = useState("");
   const [color, setColor] = useState("violet");
   const [folderUrl, setFolderUrl] = useState("");
@@ -767,32 +780,32 @@ function NewMusicChannelModal({
     <Modal
       open={open}
       onClose={onClose}
-      title="New music channel"
+      title={translateUI("New music channel")}
       footer={
         <>
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button variant="secondary" onClick={onClose}><LocalizedText message={"Cancel"} /></Button>
           <Button disabled={!name.trim() || creating} onClick={create}>
-            {creating ? "Creating…" : "Create channel"}
+            {creating ? <LocalizedText message={"Creating…"} /> : <LocalizedText message={"Create channel"} />}
           </Button>
         </>
       }
     >
-      <Field label="Channel name">
+      <Field label={translateUI("Channel name")}>
         <TextInput
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="e.g. Focus beats"
+          placeholder={translateUI("e.g. Focus beats")}
           maxLength={200}
         />
       </Field>
-      <Field label="Public Drive folder link">
+      <Field label={translateUI("Public Drive folder link")}>
         <TextInput
           value={folderUrl}
           onChange={(e) => setFolderUrl(e.target.value)}
-          placeholder="Optional Google Drive folder URL"
+          placeholder={translateUI("Optional Google Drive folder URL")}
         />
       </Field>
-      <Field label="Color">
+      <Field label={translateUI("Color")}>
         <div style={{ display: "flex", gap: 8 }}>
           {Object.keys(MUSIC_COLORS).map((key) => (
             <button
@@ -868,6 +881,8 @@ function NewDmModal({
   presence: Record<string, UserPresenceInfo>;
   onCreated: (channelId: UUID) => void;
 }) {
+  const { t: translateUI } = useI18n();
+
   const [search, setSearch] = useState("");
   const [creating, setCreating] = useState(false);
 
@@ -899,18 +914,16 @@ function NewDmModal({
     <Modal
       open={open}
       onClose={onClose}
-      title="New Direct Message"
+      title={translateUI("New Direct Message")}
       footer={
-        <Button variant="secondary" onClick={onClose}>
-          Close
-        </Button>
+        <Button variant="secondary" onClick={onClose}>{" "}<LocalizedText message={"Close"} />{" "}</Button>
       }
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <div style={{ position: "relative" }}>
           <Search size={15} style={{ position: "absolute", left: 12, top: 11, color: "var(--text-tertiary)" }} />
           <TextInput
-            placeholder="Search teammates by name, role, status…"
+            placeholder={translateUI("Search teammates by name, role, status…")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             style={{ paddingLeft: 34 }}
@@ -920,9 +933,7 @@ function NewDmModal({
 
         <div style={{ maxHeight: 320, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4 }}>
           {filtered.length === 0 ? (
-            <div style={{ padding: "20px 0", textAlign: "center", color: "var(--text-tertiary)", fontSize: 13 }}>
-              No teammates found matching &ldquo;{search}&rdquo;
-            </div>
+            <div style={{ padding: "20px 0", textAlign: "center", color: "var(--text-tertiary)", fontSize: 13 }}>{" "}<LocalizedText message={"No teammates found matching &ldquo;"} />{search}<LocalizedText message={"&rdquo;"} />{" "}</div>
           ) : (
             filtered.map((u) => {
               const live = presence[u.id];

@@ -1,3 +1,4 @@
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 import React, { useState } from 'react';
 import { NotificationItem } from '../types';
 import { Icon } from '../icons';
@@ -156,10 +157,8 @@ export function NotificationsView({
 
       {visible.length === 0 && (
         <div style={{ padding: '32px 4px' }}>
-          <h4 style={{ margin: '0 0 4px' }}>You’re all caught up</h4>
-          <p className="text-muted" style={{ margin: 0, fontSize: 14 }}>
-            New mentions, assignments and alerts appear here.
-          </p>
+          <h4 style={{ margin: '0 0 4px' }}><LocalizedText message={"You’re all caught up"} /></h4>
+          <p className="text-muted" style={{ margin: 0, fontSize: 14 }}>{" "}<LocalizedText message={"New mentions, assignments and alerts appear here."} />{" "}</p>
         </div>
       )}
     </div>

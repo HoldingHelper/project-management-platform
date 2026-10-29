@@ -1,4 +1,5 @@
 "use client";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 import { Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
@@ -50,7 +51,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         color: "var(--text-primary)",
       }}
     >
-      <a className="pmp-skip-link" href="#main-content">Skip to main content</a>
+      <a className="pmp-skip-link" href="#main-content"><LocalizedText message={"Skip to main content"} /></a>
       <div className="pmp-desktop-sidebar">
         {docsModule ? <DocsSidebar /> : <Sidebar />}
       </div>

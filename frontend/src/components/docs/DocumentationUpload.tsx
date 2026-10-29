@@ -1,4 +1,5 @@
 "use client";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 import { useId, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -28,7 +29,7 @@ export function DocumentationUpload({ files, onChange, disabled = false, entityT
   const id = useId();
   const [error, setError] = useState("");
   return <div className={styles.field}>
-    <label htmlFor={id} className={styles.label}>Upload documentation</label>
+    <label htmlFor={id} className={styles.label}><LocalizedText message={"Upload documentation"} /></label>
     <input hidden id={id} ref={input} type="file" multiple disabled={disabled} accept=".pdf,.doc,.docx,.txt,.md,.markdown,.rtf,.odt" aria-describedby={`${id}-hint`} onChange={(event) => {
       const chosen = Array.from(event.target.files ?? []);
       const invalid = chosen.filter((file) => !formats.test(file.name) || !file.size || file.size > 25 * 1024 * 1024);
@@ -42,14 +43,14 @@ export function DocumentationUpload({ files, onChange, disabled = false, entityT
     }} />
     <div className={styles.control}>
       <span className={styles.icon}><Upload size={20} aria-hidden /></span>
-      <div className={styles.details}><span className={styles.title}>Add documentation</span><span className={styles.caption}>Guides, specifications, or references</span></div>
-      <div className={styles.actions}><Button type="button" variant="secondary" size="sm" disabled={disabled} onClick={() => input.current?.click()}><Upload size={15} aria-hidden />Choose files</Button></div>
+      <div className={styles.details}><span className={styles.title}><LocalizedText message={"Add documentation"} /></span><span className={styles.caption}><LocalizedText message={"Guides, specifications, or references"} /></span></div>
+      <div className={styles.actions}><Button type="button" variant="secondary" size="sm" disabled={disabled} onClick={() => input.current?.click()}><Upload size={15} aria-hidden /><LocalizedText message={"Choose files"} /></Button></div>
     </div>
-    <span id={`${id}-hint`} className={styles.hint}>PDF, Word, text, Markdown, RTF, or ODT · Max 25 MB per file. Uploaded when you save.</span>
+    <span id={`${id}-hint`} className={styles.hint}><LocalizedText message={"PDF, Word, text, Markdown, RTF, or ODT · Max 25 MB per file. Uploaded when you save."} /></span>
     {error && <span role="alert" style={{ fontSize: 12, color: "var(--status-blocked)" }}>{error}</span>}
     {files.map((file, index) => <div key={`${file.name}-${index}`} style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
       <FileText size={16} aria-hidden style={{ flexShrink: 0, color: "var(--accent-primary)" }} />
-      <span className={styles.details}><span className={styles.title} title={file.name}>{file.name}</span><span className={styles.caption}>{size(file.size)} · Ready to save</span></span>
+      <span className={styles.details}><span className={styles.title} title={file.name}>{file.name}</span><span className={styles.caption}>{size(file.size)}{" "}<LocalizedText message={"· Ready to save"} /></span></span>
       <Button type="button" variant="ghost" size="sm" disabled={disabled} aria-label={`Remove selected file ${file.name}`} onClick={() => onChange(files.filter((_, i) => i !== index))}><X size={15} aria-hidden /></Button>
     </div>)}
     {entityId && <DocumentationFiles entityType={entityType} entityId={entityId} />}
@@ -71,13 +72,13 @@ export function DocumentationFiles({ entityType, entityId }: { entityType: "task
     finally { setDownloading(null); }
   }
   return <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-    {documents.isLoading && <span className={styles.caption}>Loading documents…</span>}
-    {documents.data?.length === 0 && <span className={styles.caption}>No uploaded documents yet.</span>}
-    {documents.isError && <span role="alert" className={styles.caption}>Could not load uploaded documents. <button type="button" onClick={() => documents.refetch()}>Retry</button></span>}
+    {documents.isLoading && <span className={styles.caption}><LocalizedText message={"Loading documents…"} /></span>}
+    {documents.data?.length === 0 && <span className={styles.caption}><LocalizedText message={"No uploaded documents yet."} /></span>}
+    {documents.isError && <span role="alert" className={styles.caption}><LocalizedText message={"Could not load uploaded documents."} />{" "}<button type="button" onClick={() => documents.refetch()}><LocalizedText message={"Retry"} /></button></span>}
     {(documents.data ?? []).map((file) => <div key={file.id} style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
       <FileText size={16} aria-hidden style={{ flexShrink: 0, color: "var(--accent-primary)" }} />
       <span className={styles.details}><span className={styles.title} title={file.file_name}>{file.file_name}</span><span className={styles.caption}>{size(file.size_bytes)}</span></span>
-      <Button type="button" variant="tertiary" size="sm" disabled={!!downloading} aria-label={`Download ${file.file_name}`} onClick={() => download(file.id, file.file_name)}><Download size={14} aria-hidden />{downloading === file.id ? "Downloading…" : "Download"}</Button>
+      <Button type="button" variant="tertiary" size="sm" disabled={!!downloading} aria-label={`Download ${file.file_name}`} onClick={() => download(file.id, file.file_name)}><Download size={14} aria-hidden />{downloading === file.id ? <LocalizedText message={"Downloading…"} /> : <LocalizedText message={"Download"} />}</Button>
       <DeleteDocumentButton attachmentId={file.id} fileName={file.file_name} />
     </div>)}
   </div>;

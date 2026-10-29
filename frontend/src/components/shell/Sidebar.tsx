@@ -1,5 +1,9 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n/I18nProvider";
+
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
@@ -19,6 +23,10 @@ export function Sidebar({
   mobile?: boolean;
   onNavigate?: () => void;
 }) {
+  const { t: localizeAttribute } = useI18n();
+
+  const { t: translateUI } = useI18n();
+
   const pathname = usePathname();
   const { user, hasPermission, isSuperAdmin } = useAuth();
   const { unreadCount } = useNotifications();
@@ -41,7 +49,7 @@ export function Sidebar({
   return (
     <aside
       className={mobile ? "pmp-sidebar pmp-sidebar-mobile" : "pmp-sidebar"}
-      aria-label={mobile ? "Mobile primary navigation" : "Primary navigation"}
+      aria-label={mobile ? localizeAttribute("Mobile primary navigation") : localizeAttribute("Primary navigation")}
       style={{
         width: mobile ? "100%" : "var(--pmp-sidebar-width)",
         flexShrink: 0,
@@ -66,7 +74,7 @@ export function Sidebar({
         }}
       >
         <PlatformLogo size={29} />
-        <span className="pmp-sidebar-wordmark"><span>Project <b>Platform</b></span><small>Management workspace</small></span>
+        <span className="pmp-sidebar-wordmark"><span><LocalizedText message={"Project Platform"} /></span><small><LocalizedText message={"Management workspace"} /></small></span>
       </div>
 
       <div style={{ padding: "10px 10px 2px" }}>
@@ -75,7 +83,7 @@ export function Sidebar({
 
       {/* Grouped nav */}
       <nav
-        aria-label="Primary navigation"
+        aria-label={translateUI("Primary navigation")}
         style={{ display: "flex", flexDirection: "column", gap: 4, padding: "12px 10px", flex: 1, overflowY: "auto" }}
       >
         {visibleGroups.map((group) => (
@@ -84,7 +92,7 @@ export function Sidebar({
               className="pmp-eyebrow"
               style={{ padding: "6px 10px 4px" }}
             >
-              {group.label}
+              {<LocalizedText message={group.label} />}
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
               {group.items.map((item) => {
@@ -103,7 +111,7 @@ export function Sidebar({
                     className="pmp-nav-btn"
                     onClick={onNavigate}
                     aria-current={active ? "page" : undefined}
-                    title={item.label}
+                    title={translateUI(item.label)}
                     style={{
                       position: "relative",
                       display: "flex",
@@ -133,7 +141,7 @@ export function Sidebar({
                     )}
                     <Icon size={18} style={{ flexShrink: 0, opacity: active ? 1 : 0.85 }} />
                     <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {item.label}
+                      {<LocalizedText message={item.label} />}
                     </span>
                     {badge > 0 && (
                       <span

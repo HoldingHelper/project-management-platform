@@ -1,3 +1,7 @@
+"use client";
+
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 import React, { useState } from 'react';
 import { PluginType } from '../types';
 import { Icon } from '../icons';
@@ -33,6 +37,8 @@ export function CreateDocDialog({
   onClose,
   onCreateDoc,
 }: CreateDocDialogProps) {
+  const { t: translateUI } = useI18n();
+
   const [type, setType] = useState<PluginType>(initialType);
   const [name, setName] = useState('');
   const [folder, setFolder] = useState(
@@ -146,15 +152,13 @@ export function CreateDocDialog({
           }}
         >
           <div>
-            <h6 style={{ color: 'var(--color-accent)', marginBottom: 6 }}>
-              Knowledge vault
-            </h6>
-            <h3 style={{ margin: 0 }}>Create a file</h3>
+            <h6 style={{ color: 'var(--color-accent)', marginBottom: 6 }}>{" "}<LocalizedText message={"Knowledge vault"} />{" "}</h6>
+            <h3 style={{ margin: 0 }}><LocalizedText message={"Create a file"} /></h3>
           </div>
           <button
             type="button"
             className="btn btn-icon"
-            aria-label="Close"
+            aria-label={translateUI("Close")}
             onClick={onClose}
           >
             <Icon name="x" size={16} />
@@ -164,7 +168,7 @@ export function CreateDocDialog({
         <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 18 }}>
           {/* File type selection grid */}
           <div className="field">
-            <label>File type</label>
+            <label><LocalizedText message={"File type"} /></label>
             <div
               style={{
                 display: 'grid',
@@ -204,7 +208,7 @@ export function CreateDocDialog({
                         borderRadius: 'var(--r-xs)',
                       }}
                     >
-                      <Icon name={k === 'canvas' ? 'rect' : k === 'audio' ? 'music' : k} size={15} />
+                      <Icon name={k === 'canvas' ? "rect" : k === 'audio' ? 'music' : k} size={15} />
                     </span>
                     <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                       <span style={{ fontSize: 14, fontWeight: 700 }}>{p.l}</span>
@@ -221,8 +225,7 @@ export function CreateDocDialog({
           {/* Name & Folder */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
             <div className="field">
-              <label htmlFor="nd-name">
-                Name <span style={{ color: 'var(--danger)' }}>*</span>
+              <label htmlFor="nd-name">{" "}<LocalizedText message={"Name"} />{" "}<span style={{ color: 'var(--danger)' }}>*</span>
               </label>
               <input
                 id="nd-name"
@@ -238,7 +241,7 @@ export function CreateDocDialog({
               />
             </div>
             <div className="field">
-              <label htmlFor="nd-folder">Folder</label>
+              <label htmlFor="nd-folder"><LocalizedText message={"Folder"} /></label>
               <select
                 id="nd-folder"
                 className="input"
@@ -257,7 +260,7 @@ export function CreateDocDialog({
 
           {/* Templates */}
           <div className="field">
-            <label>Start from</label>
+            <label><LocalizedText message={"Start from"} /></label>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {TPLS[type]?.map(([l, dd]) => {
                 const on = tpl === l;
@@ -306,23 +309,23 @@ export function CreateDocDialog({
                 borderRadius: 'var(--r-md)',
               }}
             >
-              <Icon name={uploaded ? 'check' : 'upload'} size={24} />
+              <Icon name={uploaded ? "check" : "upload"} size={24} />
               <span style={{ fontSize: 14, fontWeight: 700 }}>
-                {uploaded ? `${uploaded} is ready` : 'Drop a file here, or click to browse'}
+                {uploaded ? `${uploaded} is ready` : <LocalizedText message={"Drop a file here, or click to browse"} />}
               </span>
               <span className="text-muted" style={{ fontSize: 12 }}>
                 {type === 'pdf'
-                  ? 'PDF up to 50 MB'
+                  ? <LocalizedText message={"PDF up to 50 MB"} />
                   : type === 'audio'
-                  ? 'MP3, M4A or WAV up to 200 MB. A transcript is generated.'
-                  : 'PNG, JPG or SVG up to 20 MB'}
+                  ? <LocalizedText message={"MP3, M4A or WAV up to 200 MB. A transcript is generated."} />
+                  : <LocalizedText message={"PNG, JPG or SVG up to 20 MB"} />}
               </span>
             </button>
           )}
 
           {/* Tags */}
           <div className="field">
-            <label htmlFor="nd-tag">Tags</label>
+            <label htmlFor="nd-tag"><LocalizedText message={"Tags"} /></label>
             <div
               style={{
                 display: 'flex',
@@ -353,7 +356,7 @@ export function CreateDocDialog({
                   #{tg}
                   <button
                     type="button"
-                    aria-label="Remove tag"
+                    aria-label={translateUI("Remove tag")}
                     onClick={() => setTags(tags.filter((x) => x !== tg))}
                     style={{ border: 0, background: 'transparent', cursor: 'pointer', padding: 2, display: 'grid' }}
                   >
@@ -366,7 +369,7 @@ export function CreateDocDialog({
                 value={tagDraft}
                 onChange={(e) => setTagDraft(e.target.value)}
                 onKeyDown={handleTagKeyDown}
-                placeholder="Type a tag, press Enter"
+                placeholder={translateUI("Type a tag, press Enter")}
                 style={{
                   flex: 1,
                   minWidth: 140,
@@ -411,19 +414,16 @@ export function CreateDocDialog({
         >
           <span className="text-muted" style={{ fontSize: 12, marginRight: 'auto' }}>
             {type === 'note'
-              ? 'Opens in editing mode so you can start writing.'
-              : 'Opens the file. Embed it in any note with Add block.'}
+              ? <LocalizedText message={"Opens in editing mode so you can start writing."} />
+              : <LocalizedText message={"Opens the file. Embed it in any note with Add block."} />}
           </span>
-          <button type="button" className="btn btn-ghost" onClick={onClose}>
-            Cancel
-          </button>
+          <button type="button" className="btn btn-ghost" onClick={onClose}>{" "}<LocalizedText message={"Cancel"} />{" "}</button>
           <button
             type="submit"
             className="btn btn-primary"
             style={{ minHeight: 40, minWidth: 150 }}
           >
-            <Icon name="plus" size={16} />
-            Create {pl.l.toLowerCase()}
+            <Icon name="plus" size={16} />{" "}<LocalizedText message={"Create"} />{" "}{pl.l.toLowerCase()}
           </button>
         </div>
       </form>

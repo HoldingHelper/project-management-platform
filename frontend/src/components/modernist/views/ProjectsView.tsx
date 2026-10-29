@@ -1,3 +1,6 @@
+"use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 import React, { useState } from 'react';
 import { Project, Person, Task } from '../types';
 import { Icon } from '../icons';
@@ -40,6 +43,8 @@ export function ProjectsView({
   onSearchChange: propOnSearchChange,
   onOpenProject,
 }: ProjectsViewProps) {
+  const { t: translateUI } = useI18n();
+
   const [localPartition, setLocalPartition] = useState('All');
   const [localShowArchives, setLocalShowArchives] = useState(false);
   const [localSearchQuery, setLocalSearchQuery] = useState('');
@@ -112,7 +117,7 @@ export function ProjectsView({
                   color: on ? 'var(--color-text)' : 'color-mix(in srgb, var(--color-text) 60%, transparent)',
                 }}
               >
-                {p === 'All' ? 'All partitions' : p}{' '}
+                {p === 'All' ? <LocalizedText message={"All partitions"} /> : p}{' '}
                 <span style={{ opacity: 0.55, fontWeight: 400 }}>{count}</span>
               </button>
             );
@@ -125,7 +130,7 @@ export function ProjectsView({
           style={{ marginBottom: 8, borderRadius: 'var(--r-sm)' }}
         >
           <Icon name="archive" size={15} />
-          {showArchives ? 'Hide archives' : 'Show archives'}
+          {showArchives ? <LocalizedText message={"Hide archives"} /> : <LocalizedText message={"Show archives"} />}
         </button>
       </div>
 
@@ -140,7 +145,7 @@ export function ProjectsView({
             flexWrap: 'wrap',
           }}
         >
-          <h4 style={{ margin: 0 }}>Portfolio timeline</h4>
+          <h4 style={{ margin: 0 }}><LocalizedText message={"Portfolio timeline"} /></h4>
           <div
             className="text-muted"
             style={{
@@ -160,14 +165,10 @@ export function ProjectsView({
                   transform: 'rotate(45deg)',
                   borderRadius: 'var(--r-av)',
                 }}
-              />
-              milestone
-            </span>
-            <span>“depends on” = dependency</span>
+              />{" "}<LocalizedText message={"milestone"} />{" "}</span>
+            <span><LocalizedText message={"“depends on” = dependency"} /></span>
             <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ width: 2, height: 14, background: 'var(--color-accent)' }} />
-              today
-            </span>
+              <span style={{ width: 2, height: 14, background: 'var(--color-accent)' }} />{" "}<LocalizedText message={"today"} />{" "}</span>
             {[
               { l: 'On track', c: TN.green.solid },
               { l: 'At risk', c: TN.amber.solid },
@@ -206,9 +207,7 @@ export function ProjectsView({
                   textTransform: 'uppercase',
                   padding: 8,
                 }}
-              >
-                Project
-              </span>
+              >{" "}<LocalizedText message={"Project"} />{" "}</span>
               <div style={{ position: 'relative', height: 32 }}>
                 <span
                   style={{
@@ -222,9 +221,7 @@ export function ProjectsView({
                     letterSpacing: '.08em',
                     borderLeft: '1px solid var(--color-divider)',
                   }}
-                >
-                  SEP 2026
-                </span>
+                >{" "}<LocalizedText message={"SEP 2026"} />{" "}</span>
                 <span
                   style={{
                     position: 'absolute',
@@ -237,9 +234,7 @@ export function ProjectsView({
                     letterSpacing: '.08em',
                     borderLeft: '1px solid var(--color-divider)',
                   }}
-                >
-                  OCT
-                </span>
+                >{" "}<LocalizedText message={"OCT"} />{" "}</span>
                 <span
                   style={{
                     position: 'absolute',
@@ -252,9 +247,7 @@ export function ProjectsView({
                     letterSpacing: '.08em',
                     borderLeft: '1px solid var(--color-divider)',
                   }}
-                >
-                  NOV
-                </span>
+                >{" "}<LocalizedText message={"NOV"} />{" "}</span>
               </div>
             </div>
 
@@ -393,10 +386,8 @@ export function ProjectsView({
 
         {visible.length === 0 && (
           <div style={{ padding: '32px 8px' }}>
-            <h4 style={{ margin: '0 0 4px' }}>No projects to chart</h4>
-            <p className="text-muted" style={{ margin: 0, fontSize: 14 }}>
-              This view has no scheduled projects. Try another partition or level.
-            </p>
+            <h4 style={{ margin: '0 0 4px' }}><LocalizedText message={"No projects to chart"} /></h4>
+            <p className="text-muted" style={{ margin: 0, fontSize: 14 }}>{" "}<LocalizedText message={"This view has no scheduled projects. Try another partition or level."} />{" "}</p>
           </div>
         )}
       </section>
@@ -412,7 +403,7 @@ export function ProjectsView({
             flexWrap: 'wrap',
           }}
         >
-          <h4 style={{ margin: 0 }}>All projects</h4>
+          <h4 style={{ margin: 0 }}><LocalizedText message={"All projects"} /></h4>
           <div style={{ position: 'relative', flex: '0 1 360px' }}>
             <Icon
               name="search"
@@ -427,10 +418,10 @@ export function ProjectsView({
             <input
               className="input"
               style={{ minHeight: 40, paddingLeft: 36 }}
-              placeholder="Filter by name or ID…"
+              placeholder={translateUI("Filter by name or ID…")}
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
-              aria-label="Filter projects"
+              aria-label={translateUI("Filter projects")}
             />
           </div>
         </div>
@@ -451,14 +442,14 @@ export function ProjectsView({
                 color: 'color-mix(in srgb, var(--color-text) 60%, transparent)',
               }}
             >
-              <span>Project</span>
-              <span>Owner</span>
-              <span>Partition</span>
-              <span>Level</span>
-              <span>Progress &amp; team</span>
-              <span>Status</span>
-              <span>Priority</span>
-              <span>Updated</span>
+              <span><LocalizedText message={"Project"} /></span>
+              <span><LocalizedText message={"Owner"} /></span>
+              <span><LocalizedText message={"Partition"} /></span>
+              <span><LocalizedText message={"Level"} /></span>
+              <span><LocalizedText message={"Progress & team"} /></span>
+              <span><LocalizedText message={"Status"} /></span>
+              <span><LocalizedText message={"Priority"} /></span>
+              <span><LocalizedText message={"Updated"} /></span>
             </div>
 
             {visible.map((x) => {

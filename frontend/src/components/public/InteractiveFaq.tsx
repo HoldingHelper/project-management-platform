@@ -1,4 +1,5 @@
 "use client";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 import { useState } from "react";
 import { ChevronDown, HelpCircle, MessageSquare } from "lucide-react";
@@ -60,12 +61,10 @@ export function InteractiveFaq() {
       <div className="public-container">
         <div className="public-section-heading text-center">
           <div>
-            <span className="public-kicker">Frequently Asked Questions</span>
-            <h2 id="faq-heading">Everything you need to know about the platform.</h2>
+            <span className="public-kicker"><LocalizedText message={"Frequently Asked Questions"} /></span>
+            <h2 id="faq-heading"><LocalizedText message={"Everything you need to know about the platform."} /></h2>
           </div>
-          <p>
-            Have additional technical questions? Check our comprehensive documentation or reach out to our engineering team.
-          </p>
+          <p>{" "}<LocalizedText message={"Have additional technical questions? Check our comprehensive documentation or reach out to our engineering team."} />{" "}</p>
         </div>
 
         {/* Category Filter Chips */}
@@ -118,13 +117,11 @@ export function InteractiveFaq() {
           <div>
             <HelpCircle size={20} className="callout-icon" />
             <div>
-              <b>Looking for developer guides or API references?</b>
-              <p>Explore our deep architectural documentation and tutorials.</p>
+              <b><LocalizedText message={"Looking for developer guides or API references?"} /></b>
+              <p><LocalizedText message={"Explore our deep architectural documentation and tutorials."} /></p>
             </div>
           </div>
-          <Link href="/docs" className="public-secondary">
-            Read Documentation
-          </Link>
+          <Link href="/docs" className="public-secondary">{" "}<LocalizedText message={"Read Documentation"} />{" "}</Link>
         </div>
       </div>
     </section>

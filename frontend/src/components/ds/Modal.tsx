@@ -1,5 +1,8 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
+
 import { useEffect, useId, useRef, type CSSProperties, type ReactNode } from "react";
 import { X } from "lucide-react";
 import { createPortal } from "react-dom";
@@ -17,6 +20,10 @@ interface Props {
 
 /** Centered dialog with backdrop; closes on Escape / backdrop click. */
 export function Modal({ open, onClose, title, children, footer, width = 480, closeOnBackdrop = true, fullScreenMobile = false }: Props) {
+  const { t: localizeAttribute } = useI18n();
+
+  const { t: translateUI } = useI18n();
+
   const titleId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
@@ -66,7 +73,7 @@ export function Modal({ open, onClose, title, children, footer, width = 480, clo
         role="dialog"
         aria-modal="true"
         aria-labelledby={title ? titleId : undefined}
-        aria-label={title ? undefined : "Dialog"}
+        aria-label={title ? undefined : localizeAttribute("Dialog")}
         tabIndex={-1}
         className={`pmp-modal-panel ${fullScreenMobile ? "pmp-modal-full-mobile" : ""}`}
         style={{ "--pmp-modal-width": `${width}px` } as CSSProperties}
@@ -76,7 +83,7 @@ export function Modal({ open, onClose, title, children, footer, width = 480, clo
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close dialog"
+            aria-label={translateUI("Close dialog")}
             className="pmp-icon-btn pmp-touch-target pmp-modal-close"
           >
             <X size={18} />

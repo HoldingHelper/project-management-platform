@@ -1,4 +1,5 @@
 "use client";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 /* Recharts chart panel for the executive dashboard. Kept in its own chunk
    (next/dynamic) so the chart library loads lazily. Colors come from the
@@ -204,8 +205,7 @@ export function DORAMetricsCardGroup({ dora }: { dora: DORAMetricsReport }) {
               {m.value}
             </div>
 
-            <div style={{ fontSize: 11, color: "var(--text-tertiary)", marginTop: "auto" }}>
-              Benchmark: {m.benchmark}
+            <div style={{ fontSize: 11, color: "var(--text-tertiary)", marginTop: "auto" }}>{" "}<LocalizedText message={"Benchmark:"} />{" "}{m.benchmark}
             </div>
           </div>
         ))}
@@ -214,27 +214,23 @@ export function DORAMetricsCardGroup({ dora }: { dora: DORAMetricsReport }) {
       {/* Lead Time Breakdown */}
       {dora.lead_time_breakdown_hours && (
         <div style={{ padding: "12px 16px", borderRadius: "var(--radius-2)", background: "var(--surface-2)", border: "1px solid var(--border-subtle)" }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-secondary)", marginBottom: 10 }}>
-            CYCLE TIME COMPOSITION (MEDIAN {dora.lead_time_for_changes.display_value})
+          <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-secondary)", marginBottom: 10 }}>{" "}<LocalizedText message={"CYCLE TIME COMPOSITION (MEDIAN"} />{" "}{dora.lead_time_for_changes.display_value})
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, textAlign: "center" }}>
             <div style={{ padding: "8px 12px", borderRadius: 6, background: "rgba(56, 189, 248, 0.08)", border: "1px solid rgba(56, 189, 248, 0.2)" }}>
-              <div style={{ fontSize: 11, color: "#38bdf8", fontWeight: 600 }}>Coding & Commit</div>
+              <div style={{ fontSize: 11, color: "#38bdf8", fontWeight: 600 }}><LocalizedText message={"Coding & Commit"} /></div>
               <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)", marginTop: 4 }}>
-                {dora.lead_time_breakdown_hours.coding ?? 12}h
-              </div>
+                {dora.lead_time_breakdown_hours.coding ?? 12}<LocalizedText message={"h"} />{" "}</div>
             </div>
             <div style={{ padding: "8px 12px", borderRadius: 6, background: "rgba(168, 85, 247, 0.08)", border: "1px solid rgba(168, 85, 247, 0.2)" }}>
-              <div style={{ fontSize: 11, color: "#a855f7", fontWeight: 600 }}>PR & Code Review</div>
+              <div style={{ fontSize: 11, color: "#a855f7", fontWeight: 600 }}><LocalizedText message={"PR & Code Review"} /></div>
               <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)", marginTop: 4 }}>
-                {dora.lead_time_breakdown_hours.review ?? 8}h
-              </div>
+                {dora.lead_time_breakdown_hours.review ?? 8}<LocalizedText message={"h"} />{" "}</div>
             </div>
             <div style={{ padding: "8px 12px", borderRadius: 6, background: "rgba(0, 226, 97, 0.08)", border: "1px solid rgba(0, 226, 97, 0.2)" }}>
-              <div style={{ fontSize: 11, color: "#00E261", fontWeight: 600 }}>CI/CD & Verify</div>
+              <div style={{ fontSize: 11, color: "#00E261", fontWeight: 600 }}><LocalizedText message={"CI/CD & Verify"} /></div>
               <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)", marginTop: 4 }}>
-                {dora.lead_time_breakdown_hours.deploy_verify ?? 6}h
-              </div>
+                {dora.lead_time_breakdown_hours.deploy_verify ?? 6}<LocalizedText message={"h"} />{" "}</div>
             </div>
           </div>
         </div>
@@ -258,15 +254,13 @@ export function FlowInvestmentChart({ flow }: { flow: FlowMetricsReport }) {
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
       {/* Category Allocation */}
       <div style={{ padding: 16, borderRadius: "var(--radius-2)", background: "var(--surface-2)", border: "1px solid var(--border-subtle)" }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", marginBottom: 12 }}>
-          Department & Category Allocation
-        </div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", marginBottom: 12 }}>{" "}<LocalizedText message={"Department & Category Allocation"} />{" "}</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {flow.category_distribution.map((cat) => (
             <div key={cat.category} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
                 <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>{cat.category}</span>
-                <span style={{ color: "var(--text-secondary)" }}>{cat.percentage}% ({cat.points} pts)</span>
+                <span style={{ color: "var(--text-secondary)" }}>{cat.percentage}% ({cat.points}{" "}<LocalizedText message={"pts)"} /></span>
               </div>
               <div style={{ height: 6, borderRadius: 3, background: "var(--surface-3)", overflow: "hidden" }}>
                 <div
@@ -285,9 +279,7 @@ export function FlowInvestmentChart({ flow }: { flow: FlowMetricsReport }) {
 
       {/* Work Item Type Distribution */}
       <div style={{ padding: 16, borderRadius: "var(--radius-2)", background: "var(--surface-2)", border: "1px solid var(--border-subtle)", display: "flex", flexDirection: "column" }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", marginBottom: 12 }}>
-          Flow Item Distribution (Work Types)
-        </div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", marginBottom: 12 }}>{" "}<LocalizedText message={"Flow Item Distribution (Work Types)"} />{" "}</div>
         <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <ResponsiveContainer width="100%" height={180}>
             <PieChart>
@@ -344,8 +336,8 @@ export default function ExecutiveCharts({
       <FocusCard
         title={
           <div>
-            <div style={{ fontSize: 13.5, fontWeight: 700 }}>Sprint Burndown</div>
-            <div style={{ fontSize: 11.5, color: "var(--text-tertiary)", fontWeight: 400 }}>Remaining open tasks over time</div>
+            <div style={{ fontSize: 13.5, fontWeight: 700 }}><LocalizedText message={"Sprint Burndown"} /></div>
+            <div style={{ fontSize: 11.5, color: "var(--text-tertiary)", fontWeight: 400 }}><LocalizedText message={"Remaining open tasks over time"} /></div>
           </div>
         }
       >
@@ -363,8 +355,8 @@ export default function ExecutiveCharts({
       <FocusCard
         title={
           <div>
-            <div style={{ fontSize: 13.5, fontWeight: 700 }}>Weekly Velocity</div>
-            <div style={{ fontSize: 11.5, color: "var(--text-tertiary)", fontWeight: 400 }}>Story points and delivered tasks</div>
+            <div style={{ fontSize: 13.5, fontWeight: 700 }}><LocalizedText message={"Weekly Velocity"} /></div>
+            <div style={{ fontSize: 11.5, color: "var(--text-tertiary)", fontWeight: 400 }}><LocalizedText message={"Story points and delivered tasks"} /></div>
           </div>
         }
       >

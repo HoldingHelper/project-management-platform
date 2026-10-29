@@ -1,4 +1,6 @@
 "use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 import { useEffect, useRef, useState } from "react";
 import {
@@ -34,6 +36,8 @@ export function KnowledgeAIPanel({
   activePageId?: string;
   activePageTitle?: string;
 }) {
+  const { t: translateUI } = useI18n();
+
   const {
     selectedContextPageIds,
     selectedContextSourceIds,
@@ -135,17 +139,13 @@ export function KnowledgeAIPanel({
       <div className="p-3 border-b border-white/5 bg-slate-900/40">
         <div className="flex items-center justify-between mb-2">
           <span className="font-semibold text-white flex items-center gap-1.5">
-            <Sparkles size={13} className="text-indigo-400" />
-            Grounded Context Budget
-          </span>
+            <Sparkles size={13} className="text-indigo-400" />{" "}<LocalizedText message={"Grounded Context Budget"} />{" "}</span>
           {(selectedContextPageIds.length > 0 || selectedContextSourceIds.length > 0) && (
             <button
               type="button"
               onClick={clearContextSelection}
               className="text-[10px] text-slate-500 hover:text-slate-300"
-            >
-              Clear
-            </button>
+            >{" "}<LocalizedText message={"Clear"} />{" "}</button>
           )}
         </div>
 
@@ -158,7 +158,7 @@ export function KnowledgeAIPanel({
               className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-white/5"
             >
               <FileText size={10} className="text-indigo-400" />
-              <span>+ Current Page ({activePageTitle || "Doc"})</span>
+              <span><LocalizedText message={"+ Current Page ("} />{activePageTitle || "Doc"})</span>
             </button>
           )}
 
@@ -168,7 +168,7 @@ export function KnowledgeAIPanel({
               className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-medium"
             >
               <FileText size={10} />
-              <span>Doc</span>
+              <span><LocalizedText message={"Doc"} /></span>
               <button
                 type="button"
                 onClick={() => toggleContextPage(pid)}
@@ -185,7 +185,7 @@ export function KnowledgeAIPanel({
               className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-medium"
             >
               <BookOpen size={10} />
-              <span>Source</span>
+              <span><LocalizedText message={"Source"} /></span>
               <button
                 type="button"
                 onClick={() => toggleContextSource(sid)}
@@ -205,33 +205,25 @@ export function KnowledgeAIPanel({
           onClick={() => handleSend("Summarize key concepts, constraints, and architecture decisions.", "summarize")}
           disabled={isStreaming}
           className="px-2 py-1 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 border border-white/5 whitespace-nowrap hover:text-white transition-colors"
-        >
-          ⚡ Summarize
-        </button>
+        >{" "}<LocalizedText message={"⚡ Summarize"} />{" "}</button>
         <button
           type="button"
           onClick={() => handleSend("Extract formal Architecture Decision Record (ADR) including Context, Decision, and Consequences.", "adr")}
           disabled={isStreaming}
           className="px-2 py-1 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 border border-white/5 whitespace-nowrap hover:text-white transition-colors"
-        >
-          📋 Extract ADR
-        </button>
+        >{" "}<LocalizedText message={"📋 Extract ADR"} />{" "}</button>
         <button
           type="button"
           onClick={() => handleSend("Generate a step-by-step production runbook with prerequisites and rollback steps.", "runbook")}
           disabled={isStreaming}
           className="px-2 py-1 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 border border-white/5 whitespace-nowrap hover:text-white transition-colors"
-        >
-          🛠️ Runbook
-        </button>
+        >{" "}<LocalizedText message={"🛠️ Runbook"} />{" "}</button>
         <button
           type="button"
           onClick={() => handleSend("Identify any contradictions, security risks, or missing edge cases in this specification.", "contradictions")}
           disabled={isStreaming}
           className="px-2 py-1 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 border border-white/5 whitespace-nowrap hover:text-white transition-colors"
-        >
-          🔍 Contradictions
-        </button>
+        >{" "}<LocalizedText message={"🔍 Contradictions"} />{" "}</button>
       </div>
 
       {/* Messages Scroll Area */}
@@ -239,10 +231,8 @@ export function KnowledgeAIPanel({
         {messages.length === 0 && (
           <div className="py-12 text-center text-slate-500">
             <Sparkles size={24} className="mx-auto text-indigo-400/50 mb-2" />
-            <p className="font-medium text-slate-400">Knowledge Workspace AI</p>
-            <p className="text-[11px] mt-1 max-w-xs mx-auto text-slate-500">
-              Ask questions strictly grounded in your active documents and sources. Every claim will be verified with citations.
-            </p>
+            <p className="font-medium text-slate-400"><LocalizedText message={"Knowledge Workspace AI"} /></p>
+            <p className="text-[11px] mt-1 max-w-xs mx-auto text-slate-500">{" "}<LocalizedText message={"Ask questions strictly grounded in your active documents and sources. Every claim will be verified with citations."} />{" "}</p>
           </div>
         )}
 
@@ -267,9 +257,7 @@ export function KnowledgeAIPanel({
                   {/* Citations Footer */}
                   {m.citations && m.citations.length > 0 && (
                     <div className="mt-3 pt-2 border-t border-white/5 space-y-1">
-                      <span className="text-[10px] font-semibold uppercase text-slate-500 block">
-                        Referenced Sources:
-                      </span>
+                      <span className="text-[10px] font-semibold uppercase text-slate-500 block">{" "}<LocalizedText message={"Referenced Sources:"} />{" "}</span>
                       <div className="flex flex-wrap gap-1.5">
                         {m.citations.map((c) => (
                           <button
@@ -302,7 +290,7 @@ export function KnowledgeAIPanel({
                       type="button"
                       onClick={() => copyMessage(m.id, m.content)}
                       className="text-slate-500 hover:text-slate-300 p-1"
-                      title="Copy response"
+                      title={translateUI("Copy response")}
                     >
                       {copiedId === m.id ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />}
                     </button>
@@ -328,7 +316,7 @@ export function KnowledgeAIPanel({
             type="text"
             value={inputPrompt}
             onChange={(e) => setInputPrompt(e.target.value)}
-            placeholder="Ask AI based on grounded workspace docs..."
+            placeholder={translateUI("Ask AI based on grounded workspace docs...")}
             disabled={isStreaming}
             className="flex-1 px-3 py-2 bg-slate-950 border border-white/10 rounded-lg text-xs text-white placeholder-slate-500 outline-none focus:border-indigo-500"
           />

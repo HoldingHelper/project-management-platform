@@ -1,5 +1,9 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n/I18nProvider";
+
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
+
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { semanticColor, toSemantic } from "@/lib/format";
@@ -32,6 +36,10 @@ export function StatusChip({
   options = DEFAULT_STATUS_OPTIONS,
   size = "md",
 }: StatusChipProps) {
+  const { t: localizeAttribute } = useI18n();
+
+  const { t: translateUI } = useI18n();
+
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const semantic = toSemantic(status);
@@ -81,7 +89,7 @@ export function StatusChip({
           setOpen((prev) => !prev);
         }
       }}
-      title={onChange && !disabled ? "Click to change status" : undefined}
+      title={onChange && !disabled ? localizeAttribute("Click to change status") : undefined}
     >
       <span
         className="pmp-status-dot"
@@ -93,7 +101,7 @@ export function StatusChip({
           flexShrink: 0,
         }}
       />
-      <span>{label ?? defLabel}</span>
+      <span>{<LocalizedText message={label ?? defLabel} />}</span>
       {onChange && !disabled && (
         <ChevronDown size={11} style={{ opacity: 0.7, marginLeft: -1, transition: "transform var(--duration-fast) var(--ease-spring)", transform: open ? "rotate(180deg)" : "rotate(0)" }} />
       )}
@@ -115,7 +123,7 @@ export function StatusChip({
       {open && (
         <div
           role="menu"
-          aria-label="Select status"
+          aria-label={translateUI("Select status")}
           style={{
             position: "absolute",
             top: "calc(100% + 4px)",
@@ -178,7 +186,7 @@ export function StatusChip({
                     flexShrink: 0,
                   }}
                 />
-                <span style={{ flex: 1 }}>{opt.label}</span>
+                <span style={{ flex: 1 }}>{<LocalizedText message={opt.label} />}</span>
                 {isSelected && (
                   <span style={{ color: "var(--accent-primary)", fontSize: 11, fontWeight: 800 }}>
                     ✓

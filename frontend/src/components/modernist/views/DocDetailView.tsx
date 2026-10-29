@@ -1,4 +1,6 @@
-'use client';
+"use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 import React, { useState } from 'react';
 import { DocFile, DocBlock, Team } from '../types';
@@ -37,6 +39,8 @@ export const DocDetailView: React.FC<DocDetailViewProps> = ({
   onPresent,
   onToast,
 }) => {
+  const { t: translateUI } = useI18n();
+
   const [editing, setEditing] = useState(false);
   const [insertOpen, setInsertOpen] = useState(false);
 
@@ -154,8 +158,7 @@ export const DocDetailView: React.FC<DocDetailViewProps> = ({
             </span>
             {pl.l}
           </span>
-          <span className="text-muted" style={{ fontSize: '13px' }}>
-            Vault / {folderName}
+          <span className="text-muted" style={{ fontSize: '13px' }}>{" "}<LocalizedText message={"Vault /"} />{" "}{folderName}
           </span>
           <span style={{ flex: 1 }} />
 
@@ -196,12 +199,12 @@ export const DocDetailView: React.FC<DocDetailViewProps> = ({
                 strokeWidth: 2,
               }}
             />
-            {isStarred ? 'Starred' : 'Star'}
+            {isStarred ? <LocalizedText message={"Starred"} /> : <LocalizedText message={"Star"} />}
           </button>
           <button
             className="btn btn-secondary btn-icon"
-            aria-label="Copy link"
-            title="Copy link"
+            aria-label={translateUI("Copy link")}
+            title={translateUI("Copy link")}
             onClick={copyLink}
             style={{ width: '36px', height: '36px' }}
           >
@@ -221,39 +224,27 @@ export const DocDetailView: React.FC<DocDetailViewProps> = ({
           }}
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', padding: '8px 0' }}>
-            <span className="text-muted" style={{ fontSize: '11px', letterSpacing: '.06em', textTransform: 'uppercase' }}>
-              Type
-            </span>
+            <span className="text-muted" style={{ fontSize: '11px', letterSpacing: '.06em', textTransform: 'uppercase' }}>{" "}<LocalizedText message={"Type"} />{" "}</span>
             <span style={{ fontSize: '14px', fontWeight: 600 }}>{pl.l}</span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', padding: '8px 0' }}>
-            <span className="text-muted" style={{ fontSize: '11px', letterSpacing: '.06em', textTransform: 'uppercase' }}>
-              Folder
-            </span>
+            <span className="text-muted" style={{ fontSize: '11px', letterSpacing: '.06em', textTransform: 'uppercase' }}>{" "}<LocalizedText message={"Folder"} />{" "}</span>
             <span style={{ fontSize: '14px', fontWeight: 600 }}>{folderName}</span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', padding: '8px 0' }}>
-            <span className="text-muted" style={{ fontSize: '11px', letterSpacing: '.06em', textTransform: 'uppercase' }}>
-              Owner
-            </span>
+            <span className="text-muted" style={{ fontSize: '11px', letterSpacing: '.06em', textTransform: 'uppercase' }}>{" "}<LocalizedText message={"Owner"} />{" "}</span>
             <span style={{ fontSize: '14px', fontWeight: 600 }}>{doc.owner}</span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', padding: '8px 0' }}>
-            <span className="text-muted" style={{ fontSize: '11px', letterSpacing: '.06em', textTransform: 'uppercase' }}>
-              Team
-            </span>
+            <span className="text-muted" style={{ fontSize: '11px', letterSpacing: '.06em', textTransform: 'uppercase' }}>{" "}<LocalizedText message={"Team"} />{" "}</span>
             <span style={{ fontSize: '14px', fontWeight: 600 }}>{teamObj ? teamObj.name : '—'}</span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', padding: '8px 0' }}>
-            <span className="text-muted" style={{ fontSize: '11px', letterSpacing: '.06em', textTransform: 'uppercase' }}>
-              Updated
-            </span>
+            <span className="text-muted" style={{ fontSize: '11px', letterSpacing: '.06em', textTransform: 'uppercase' }}>{" "}<LocalizedText message={"Updated"} />{" "}</span>
             <span style={{ fontSize: '14px', fontWeight: 600 }}>{doc.updated}, 2026</span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '8px 0' }}>
-            <span className="text-muted" style={{ fontSize: '11px', letterSpacing: '.06em', textTransform: 'uppercase' }}>
-              Status
-            </span>
+            <span className="text-muted" style={{ fontSize: '11px', letterSpacing: '.06em', textTransform: 'uppercase' }}>{" "}<LocalizedText message={"Status"} />{" "}</span>
             <span>
               <span
                 className="tag"
@@ -275,9 +266,7 @@ export const DocDetailView: React.FC<DocDetailViewProps> = ({
             </span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '8px 0' }}>
-            <span className="text-muted" style={{ fontSize: '11px', letterSpacing: '.06em', textTransform: 'uppercase' }}>
-              Tags
-            </span>
+            <span className="text-muted" style={{ fontSize: '11px', letterSpacing: '.06em', textTransform: 'uppercase' }}>{" "}<LocalizedText message={"Tags"} />{" "}</span>
             <span style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
               {doc.tags.map((tg, idx) => (
                 <span
@@ -300,7 +289,7 @@ export const DocDetailView: React.FC<DocDetailViewProps> = ({
         {/* Title input when editing */}
         {editing && (
           <input
-            aria-label="Title"
+            aria-label={translateUI("Title")}
             value={doc.title}
             onChange={e => {
               const val = e.target.value;
@@ -349,7 +338,7 @@ export const DocDetailView: React.FC<DocDetailViewProps> = ({
                 {editing && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', paddingTop: '4px' }}>
                     <button
-                      aria-label="Move up"
+                      aria-label={translateUI("Move up")}
                       onClick={() => {
                         if (i > 0) {
                           setBlocks(bs => {
@@ -374,7 +363,7 @@ export const DocDetailView: React.FC<DocDetailViewProps> = ({
                       <Icon d={IC.up} size={13} />
                     </button>
                     <button
-                      aria-label="Move down"
+                      aria-label={translateUI("Move down")}
                       onClick={() => {
                         if (i < blocks.length - 1) {
                           setBlocks(bs => {
@@ -399,7 +388,7 @@ export const DocDetailView: React.FC<DocDetailViewProps> = ({
                       <Icon d={IC.chevron} size={13} />
                     </button>
                     <button
-                      aria-label="Delete block"
+                      aria-label={translateUI("Delete block")}
                       onClick={() => setBlocks(bs => bs.filter((_, idx) => idx !== i))}
                       style={{
                         width: '24px',
@@ -426,8 +415,8 @@ export const DocDetailView: React.FC<DocDetailViewProps> = ({
                         <h3 style={{ margin: '10px 0 0' }}>{b.t}</h3>
                       ) : (
                         <input
-                          aria-label="Heading"
-                          placeholder="Heading"
+                          aria-label={translateUI("Heading")}
+                          placeholder={translateUI("Heading")}
                           value={b.t || ''}
                           onChange={e => {
                             const val = e.target.value;
@@ -461,8 +450,8 @@ export const DocDetailView: React.FC<DocDetailViewProps> = ({
                       ) : (
                         <textarea
                           className="input"
-                          aria-label="Text"
-                          placeholder="Write something…"
+                          aria-label={translateUI("Text")}
+                          placeholder={translateUI("Write something…")}
                           value={b.t || ''}
                           onChange={e => {
                             const val = e.target.value;
@@ -486,17 +475,15 @@ export const DocDetailView: React.FC<DocDetailViewProps> = ({
                         borderRadius: 'var(--r-md)',
                       }}
                     >
-                      <span className="text-muted" style={{ fontSize: '11px', letterSpacing: '.06em', textTransform: 'uppercase', padding: '4px 0' }}>
-                        Checklist · {(b.items || []).filter(q => q[1]).length} of {(b.items || []).length} done
-                      </span>
+                      <span className="text-muted" style={{ fontSize: '11px', letterSpacing: '.06em', textTransform: 'uppercase', padding: '4px 0' }}>{" "}<LocalizedText message={"Checklist ·"} />{" "}{(b.items || []).filter(q => q[1]).length}{" "}<LocalizedText message={"of"} />{" "}{(b.items || []).length}{" "}<LocalizedText message={"done"} />{" "}</span>
                       {(b.items || []).map((it, itemIdx) => {
                         const done = it[1];
                         return (
                           <div key={itemIdx} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '5px 0' }}>
                             <button
                               role="checkbox"
-                              aria-checked={done ? 'true' : 'false'}
-                              aria-label="Toggle item"
+                              aria-checked={done ? "true" : "false"}
+                              aria-label={translateUI("Toggle item")}
                               onClick={() => {
                                 setBlocks(bs =>
                                   bs.map((q, idx) =>
@@ -546,8 +533,8 @@ export const DocDetailView: React.FC<DocDetailViewProps> = ({
                             ) : (
                               <>
                                 <input
-                                  aria-label="Item"
-                                  placeholder="To-do"
+                                  aria-label={translateUI("Item")}
+                                  placeholder={translateUI("To-do")}
                                   value={it[0]}
                                   onChange={e => {
                                     const val = e.target.value;
@@ -578,7 +565,7 @@ export const DocDetailView: React.FC<DocDetailViewProps> = ({
                                   }}
                                 />
                                 <button
-                                  aria-label="Remove item"
+                                  aria-label={translateUI("Remove item")}
                                   onClick={() => {
                                     setBlocks(bs =>
                                       bs.map((q, idx) =>
@@ -633,9 +620,7 @@ export const DocDetailView: React.FC<DocDetailViewProps> = ({
                             color: 'var(--color-accent-700)',
                           }}
                         >
-                          <Icon d={IC.plus} size={13} />
-                          Add item
-                        </button>
+                          <Icon d={IC.plus} size={13} />{" "}<LocalizedText message={"Add item"} />{" "}</button>
                       )}
                     </div>
                   )}
@@ -667,14 +652,14 @@ export const DocDetailView: React.FC<DocDetailViewProps> = ({
                                 color: calloutTn.fg,
                               }}
                             >
-                              {b.tone === 'warn' ? 'Warning' : 'Note'}
+                              {b.tone === 'warn' ? <LocalizedText message={"Warning"} /> : <LocalizedText message={"Note"} />}
                             </span>
                             {!editing ? (
                               <span style={{ fontSize: '15px', lineHeight: 1.55 }}>{b.t}</span>
                             ) : (
                               <textarea
                                 className="input"
-                                aria-label="Callout text"
+                                aria-label={translateUI("Callout text")}
                                 value={b.t || ''}
                                 onChange={e => {
                                   const val = e.target.value;
@@ -745,9 +730,7 @@ export const DocDetailView: React.FC<DocDetailViewProps> = ({
                             className="btn btn-ghost"
                             onClick={() => onOpenDoc(embeddedFile.id)}
                             style={{ minHeight: '30px', padding: '4px 8px' }}
-                          >
-                            Open
-                            <Icon d={IC.right} size={14} />
+                          >{" "}<LocalizedText message={"Open"} />{" "}<Icon d={IC.right} size={14} />
                           </button>
                         )}
                       </div>
@@ -844,11 +827,7 @@ export const DocDetailView: React.FC<DocDetailViewProps> = ({
                 borderRadius: 'var(--r-md)',
               }}
             >
-              <Icon d={IC.plus} size={16} />
-              Add block
-              <span className="text-muted" style={{ fontWeight: 400, fontSize: '13px' }}>
-                Text, checklist, callout or any plugin
-              </span>
+              <Icon d={IC.plus} size={16} />{" "}<LocalizedText message={"Add block"} />{" "}<span className="text-muted" style={{ fontWeight: 400, fontSize: '13px' }}>{" "}<LocalizedText message={"Text, checklist, callout or any plugin"} />{" "}</span>
             </button>
 
             {insertOpen && (
@@ -875,9 +854,7 @@ export const DocDetailView: React.FC<DocDetailViewProps> = ({
               >
                 {/* Basic blocks */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <h6 className="text-muted" style={{ margin: '0 4px' }}>
-                    Basic blocks
-                  </h6>
+                  <h6 className="text-muted" style={{ margin: '0 4px' }}>{" "}<LocalizedText message={"Basic blocks"} />{" "}</h6>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: '4px' }}>
                     <button
                       onClick={() => addBlock({ k: 'p', t: '' })}
@@ -897,10 +874,8 @@ export const DocDetailView: React.FC<DocDetailViewProps> = ({
                         <Icon d={IC.docs} size={16} />
                       </span>
                       <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                        <span style={{ fontSize: '14px', fontWeight: 600 }}>Text</span>
-                        <span className="text-muted" style={{ fontSize: '12px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          A paragraph
-                        </span>
+                        <span style={{ fontSize: '14px', fontWeight: 600 }}><LocalizedText message={"Text"} /></span>
+                        <span className="text-muted" style={{ fontSize: '12px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{" "}<LocalizedText message={"A paragraph"} />{" "}</span>
                       </span>
                     </button>
 
@@ -922,10 +897,8 @@ export const DocDetailView: React.FC<DocDetailViewProps> = ({
                         <Icon d={IC.heading} size={16} />
                       </span>
                       <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                        <span style={{ fontSize: '14px', fontWeight: 600 }}>Heading</span>
-                        <span className="text-muted" style={{ fontSize: '12px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          Section title, shows in outline
-                        </span>
+                        <span style={{ fontSize: '14px', fontWeight: 600 }}><LocalizedText message={"Heading"} /></span>
+                        <span className="text-muted" style={{ fontSize: '12px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{" "}<LocalizedText message={"Section title, shows in outline"} />{" "}</span>
                       </span>
                     </button>
 
@@ -947,10 +920,8 @@ export const DocDetailView: React.FC<DocDetailViewProps> = ({
                         <Icon d={IC.checklist} size={16} />
                       </span>
                       <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                        <span style={{ fontSize: '14px', fontWeight: 600 }}>Checklist</span>
-                        <span className="text-muted" style={{ fontSize: '12px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          Tickable to-dos
-                        </span>
+                        <span style={{ fontSize: '14px', fontWeight: 600 }}><LocalizedText message={"Checklist"} /></span>
+                        <span className="text-muted" style={{ fontSize: '12px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{" "}<LocalizedText message={"Tickable to-dos"} />{" "}</span>
                       </span>
                     </button>
 
@@ -972,10 +943,8 @@ export const DocDetailView: React.FC<DocDetailViewProps> = ({
                         <Icon d={IC.info} size={16} />
                       </span>
                       <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                        <span style={{ fontSize: '14px', fontWeight: 600 }}>Callout</span>
-                        <span className="text-muted" style={{ fontSize: '12px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          Highlighted note or warning
-                        </span>
+                        <span style={{ fontSize: '14px', fontWeight: 600 }}><LocalizedText message={"Callout"} /></span>
+                        <span className="text-muted" style={{ fontSize: '12px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{" "}<LocalizedText message={"Highlighted note or warning"} />{" "}</span>
                       </span>
                     </button>
                   </div>
@@ -983,9 +952,7 @@ export const DocDetailView: React.FC<DocDetailViewProps> = ({
 
                 {/* Plugins */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <h6 className="text-muted" style={{ margin: '0 4px' }}>
-                    Plugins · creates a new file in Attachments
-                  </h6>
+                  <h6 className="text-muted" style={{ margin: '0 4px' }}>{" "}<LocalizedText message={"Plugins · creates a new file in Attachments"} />{" "}</h6>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: '4px' }}>
                     {Object.entries(PLUG)
                       .filter(([k]) => k !== 'note')
@@ -1045,9 +1012,7 @@ export const DocDetailView: React.FC<DocDetailViewProps> = ({
                 {/* Embed an existing file */}
                 {docs.filter(x => x.id !== doc.id && x.type !== 'note' && !embedded.has(x.id)).length > 0 && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <h6 className="text-muted" style={{ margin: '0 4px' }}>
-                      Embed an existing file
-                    </h6>
+                    <h6 className="text-muted" style={{ margin: '0 4px' }}>{" "}<LocalizedText message={"Embed an existing file"} />{" "}</h6>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: '4px' }}>
                       {docs
                         .filter(x => x.id !== doc.id && x.type !== 'note' && !embedded.has(x.id))
@@ -1119,9 +1084,7 @@ export const DocDetailView: React.FC<DocDetailViewProps> = ({
       >
         {outlineHeadings.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <h6 className="text-muted" style={{ marginBottom: '6px' }}>
-              Outline
-            </h6>
+            <h6 className="text-muted" style={{ marginBottom: '6px' }}>{" "}<LocalizedText message={"Outline"} />{" "}</h6>
             {outlineHeadings.map((ol, idx) => (
               <button
                 key={idx}
@@ -1143,9 +1106,7 @@ export const DocDetailView: React.FC<DocDetailViewProps> = ({
         )}
 
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <h6 className="text-muted" style={{ marginBottom: '6px' }}>
-            Backlinks
-          </h6>
+          <h6 className="text-muted" style={{ marginBottom: '6px' }}>{" "}<LocalizedText message={"Backlinks"} />{" "}</h6>
           {backlinks.map(l => {
             const lpl = PLUG[l.type] || PLUG.note;
             const ltn = tone(lpl.c);
@@ -1175,16 +1136,12 @@ export const DocDetailView: React.FC<DocDetailViewProps> = ({
             );
           })}
           {backlinks.length === 0 && (
-            <p className="text-muted" style={{ margin: 0, fontSize: '13px', padding: '0 8px' }}>
-              No other file links here yet.
-            </p>
+            <p className="text-muted" style={{ margin: 0, fontSize: '13px', padding: '0 8px' }}>{" "}<LocalizedText message={"No other file links here yet."} />{" "}</p>
           )}
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <h6 className="text-muted" style={{ marginBottom: '6px' }}>
-            Links from this file
-          </h6>
+          <h6 className="text-muted" style={{ marginBottom: '6px' }}>{" "}<LocalizedText message={"Links from this file"} />{" "}</h6>
           {outlinks.map(l => {
             const lpl = PLUG[l.type] || PLUG.note;
             const ltn = tone(lpl.c);
@@ -1214,9 +1171,7 @@ export const DocDetailView: React.FC<DocDetailViewProps> = ({
             );
           })}
           {outlinks.length === 0 && (
-            <p className="text-muted" style={{ margin: 0, fontSize: '13px', padding: '0 8px' }}>
-              This file doesn’t link anywhere yet.
-            </p>
+            <p className="text-muted" style={{ margin: 0, fontSize: '13px', padding: '0 8px' }}>{" "}<LocalizedText message={"This file doesn’t link anywhere yet."} />{" "}</p>
           )}
         </div>
       </aside>

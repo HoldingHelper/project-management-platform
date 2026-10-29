@@ -1,4 +1,6 @@
 "use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -23,6 +25,8 @@ const PAGES = [
 ];
 
 export function GlobalSearch({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { t: translateUI } = useI18n();
+
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
@@ -118,7 +122,7 @@ export function GlobalSearch({ open, onClose }: { open: boolean; onClose: () => 
   if (!open) return null;
 
   return (
-    <div className="pmp-command-backdrop" role="dialog" aria-modal="true" aria-label="Global search">
+    <div className="pmp-command-backdrop" role="dialog" aria-modal="true" aria-label={translateUI("Global search")}>
       <div className="pmp-command-panel">
         <div className="pmp-command-search">
           <Search size={18} />
@@ -126,18 +130,16 @@ export function GlobalSearch({ open, onClose }: { open: boolean; onClose: () => 
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search tasks, projects, users, blockers, and pages..."
-            aria-label="Search tasks, projects, users, blockers, and pages"
+            placeholder={translateUI("Search tasks, projects, users, blockers, and pages...")}
+            aria-label={translateUI("Search tasks, projects, users, blockers, and pages")}
           />
-          <button type="button" aria-label="Close global search" onClick={onClose} className="pmp-command-close">
+          <button type="button" aria-label={translateUI("Close global search")} onClick={onClose} className="pmp-command-close">
             <X size={17} />
           </button>
         </div>
         <div className="pmp-command-results">
           {results.length === 0 && (
-            <div style={{ padding: 24, textAlign: "center", color: "var(--text-tertiary)", fontSize: 13 }}>
-              No matching results.
-            </div>
+            <div style={{ padding: 24, textAlign: "center", color: "var(--text-tertiary)", fontSize: 13 }}>{" "}<LocalizedText message={"No matching results."} />{" "}</div>
           )}
           {results.map((r, index) => (
             <button

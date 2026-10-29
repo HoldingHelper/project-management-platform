@@ -1,3 +1,7 @@
+"use client";
+
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 import React, { useState } from 'react';
 import { ProjectLevel } from '../types';
 import { Icon } from '../icons';
@@ -25,6 +29,8 @@ export function AiGeneratorView({
   onCreateProjectFromAi,
   onCreateProject,
 }: AiGeneratorViewProps) {
+  const { t: translateUI } = useI18n();
+
   const activePartitions = partitions || partsList;
   const [prompt, setPrompt] = useState('');
   const [partition, setPartition] = useState(activePartitions[0] || 'Tech');
@@ -110,12 +116,12 @@ export function AiGeneratorView({
         }}
       >
         <div className="field">
-          <label htmlFor="ai-prompt">What should this project achieve?</label>
+          <label htmlFor="ai-prompt"><LocalizedText message={"What should this project achieve?"} /></label>
           <textarea
             id="ai-prompt"
             className="input"
             style={{ minHeight: 140, fontSize: 15 }}
-            placeholder="e.g. Launch a customer feedback portal for enterprise clients by December"
+            placeholder={translateUI("e.g. Launch a customer feedback portal for enterprise clients by December")}
             value={prompt}
             onChange={(e) => {
               setPrompt(e.target.value);
@@ -125,9 +131,7 @@ export function AiGeneratorView({
         </div>
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-          <span className="text-muted" style={{ fontSize: 12, width: '100%' }}>
-            Examples
-          </span>
+          <span className="text-muted" style={{ fontSize: 12, width: '100%' }}>{" "}<LocalizedText message={"Examples"} />{" "}</span>
           {examples.map((ex) => (
             <button
               key={ex}
@@ -152,7 +156,7 @@ export function AiGeneratorView({
         </div>
 
         <div className="field">
-          <label htmlFor="ai-part">Partition</label>
+          <label htmlFor="ai-part"><LocalizedText message={"Partition"} /></label>
           <select
             id="ai-part"
             className="input"
@@ -169,7 +173,7 @@ export function AiGeneratorView({
         </div>
 
         <div className="field">
-          <label>Project level</label>
+          <label><LocalizedText message={"Project level"} /></label>
           <div className="seg">
             {LEVELS.map(([lvlKey], i) => (
               <button
@@ -192,7 +196,7 @@ export function AiGeneratorView({
         </div>
 
         <div className="field">
-          <label>Duration</label>
+          <label><LocalizedText message={"Duration"} /></label>
           <div className="seg">
             {['4 weeks', '8 weeks', '12 weeks'].map((durKey, i) => (
               <button
@@ -236,7 +240,7 @@ export function AiGeneratorView({
           style={{ minHeight: 48, fontSize: 15, borderRadius: 'var(--r-sm)' }}
         >
           <Icon name="sparkles" size={17} />
-          {loading ? 'Drafting…' : result ? 'Generate again' : 'Generate draft plan'}
+          {loading ? <LocalizedText message={"Drafting…"} /> : result ? <LocalizedText message={"Generate again"} /> : <LocalizedText message={"Generate draft plan"} />}
         </button>
       </form>
 
@@ -251,16 +255,14 @@ export function AiGeneratorView({
       >
         {!loading && !result && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '24px 0' }}>
-            <h4 style={{ margin: 0 }}>No draft yet</h4>
-            <p className="text-muted" style={{ margin: 0, fontSize: 14, maxWidth: 420 }}>
-              The draft plan appears here with phases, tasks and dates. Untick anything you don’t want before creating the project.
-            </p>
+            <h4 style={{ margin: 0 }}><LocalizedText message={"No draft yet"} /></h4>
+            <p className="text-muted" style={{ margin: 0, fontSize: 14, maxWidth: 420 }}>{" "}<LocalizedText message={"The draft plan appears here with phases, tasks and dates. Untick anything you don’t want before creating the project."} />{" "}</p>
           </div>
         )}
 
         {loading && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '24px 0' }}>
-            <h6 style={{ color: 'var(--color-accent)' }}>Drafting phases…</h6>
+            <h6 style={{ color: 'var(--color-accent)' }}><LocalizedText message={"Drafting phases…"} /></h6>
             <div style={{ height: 14, width: '60%', background: 'var(--color-neutral-200)' }} />
             <div style={{ height: 14, width: '85%', background: 'var(--color-neutral-200)' }} />
             <div style={{ height: 14, width: '70%', background: 'var(--color-neutral-200)' }} />
@@ -270,11 +272,10 @@ export function AiGeneratorView({
         {!loading && result && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             <div>
-              <h6 style={{ color: 'var(--color-accent)', marginBottom: 8 }}>Draft plan</h6>
+              <h6 style={{ color: 'var(--color-accent)', marginBottom: 8 }}><LocalizedText message={"Draft plan"} /></h6>
               <h3 style={{ margin: '0 0 6px' }}>{result.name}</h3>
               <p className="text-muted" style={{ margin: 0, fontSize: 14 }}>
-                {result.partition} · {result.level} · {result.duration} · starts Sep 28
-              </p>
+                {result.partition} · {result.level} · {result.duration}{" "}<LocalizedText message={"· starts Sep 28"} />{" "}</p>
             </div>
 
             {AI_PH.map(([phaseName, phaseTasks], i) => (
@@ -420,17 +421,13 @@ export function AiGeneratorView({
                     onCreateProject(newProj, newTasks, true);
                   }
                 }}
-              >
-                Create project with {totalTasksCount} tasks
-              </button>
+              >{" "}<LocalizedText message={"Create project with"} />{" "}{totalTasksCount}{" "}<LocalizedText message={"tasks"} />{" "}</button>
               <button
                 type="button"
                 className="btn btn-secondary"
                 style={{ minHeight: 40, borderRadius: 'var(--r-sm)' }}
                 onClick={() => handleGenerate()}
-              >
-                Regenerate
-              </button>
+              >{" "}<LocalizedText message={"Regenerate"} />{" "}</button>
             </div>
           </div>
         )}

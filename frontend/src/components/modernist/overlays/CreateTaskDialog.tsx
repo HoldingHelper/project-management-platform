@@ -1,3 +1,7 @@
+"use client";
+
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 import React, { useState } from 'react';
 import { Project, Task, TaskPriority, TaskStatus, TaskType } from '../types';
 import { Icon } from '../icons';
@@ -24,6 +28,10 @@ export function CreateTaskDialog({
   onClose,
   onCreateTask,
 }: CreateTaskDialogProps) {
+  const { t: localizeAttribute } = useI18n();
+
+  const { t: translateUI } = useI18n();
+
   const [project, setProject] = useState(initialProject);
   const [partition, setPartition] = useState(
     projects.find((p) => p.id === initialProject)?.partition || 'Tech'
@@ -163,14 +171,14 @@ export function CreateTaskDialog({
         >
           <div>
             <h6 style={{ color: 'var(--color-accent)', marginBottom: 6 }}>
-              {currentProject ? `${currentProject.id} · ${currentProject.name}` : 'Backlog'}
+              {currentProject ? `${currentProject.id} · ${currentProject.name}` : <LocalizedText message={"Backlog"} />}
             </h6>
-            <h3 style={{ margin: 0 }}>Create task</h3>
+            <h3 style={{ margin: 0 }}><LocalizedText message={"Create task"} /></h3>
           </div>
           <button
             type="button"
             className="btn btn-icon"
-            aria-label="Close"
+            aria-label={translateUI("Close")}
             onClick={onClose}
           >
             <Icon name="x" size={16} />
@@ -180,7 +188,7 @@ export function CreateTaskDialog({
         <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 18 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
             <div className="field">
-              <label htmlFor="ct-proj">Project</label>
+              <label htmlFor="ct-proj"><LocalizedText message={"Project"} /></label>
               <select
                 id="ct-proj"
                 className="input"
@@ -192,7 +200,7 @@ export function CreateTaskDialog({
                   if (p2) setPartition(p2.partition);
                 }}
               >
-                <option value="">No project (backlog)</option>
+                <option value=""><LocalizedText message={"No project (backlog)"} /></option>
                 {projects
                   .filter((p) => p.status !== 'Done')
                   .map((p) => (
@@ -203,7 +211,7 @@ export function CreateTaskDialog({
               </select>
             </div>
             <div className="field">
-              <label htmlFor="ct-part">Partition</label>
+              <label htmlFor="ct-part"><LocalizedText message={"Partition"} /></label>
               <select
                 id="ct-part"
                 className="input"
@@ -222,7 +230,7 @@ export function CreateTaskDialog({
 
           {/* Type */}
           <div className="field">
-            <label>Type</label>
+            <label><LocalizedText message={"Type"} /></label>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {(['Feature', 'Bug', 'Chore', 'Research'] as TaskType[]).map((tKey) => {
                 const ty = TYPE[tKey];
@@ -260,7 +268,7 @@ export function CreateTaskDialog({
                       }}
                     >
                       <Icon
-                        name={tKey === 'Feature' ? 'check' : tKey === 'Bug' ? 'target' : 'sparkles'}
+                        name={tKey === 'Feature' ? "check" : tKey === 'Bug' ? 'target' : 'sparkles'}
                         size={10}
                         strokeWidth={3}
                       />
@@ -274,8 +282,7 @@ export function CreateTaskDialog({
 
           {/* Title */}
           <div className="field">
-            <label htmlFor="ct-sum">
-              Summary <span style={{ color: 'var(--color-accent)' }}>*</span>
+            <label htmlFor="ct-sum">{" "}<LocalizedText message={"Summary"} />{" "}<span style={{ color: 'var(--color-accent)' }}>*</span>
             </label>
             <input
               id="ct-sum"
@@ -285,7 +292,7 @@ export function CreateTaskDialog({
                 fontSize: 15,
                 borderColor: error && !title.trim() ? 'var(--danger)' : undefined,
               }}
-              placeholder="What needs to be done?"
+              placeholder={translateUI("What needs to be done?")}
               value={title}
               onChange={(e) => {
                 setTitle(e.target.value);
@@ -297,12 +304,12 @@ export function CreateTaskDialog({
 
           {/* Description */}
           <div className="field">
-            <label htmlFor="ct-desc">Description</label>
+            <label htmlFor="ct-desc"><LocalizedText message={"Description"} /></label>
             <textarea
               id="ct-desc"
               className="input"
               style={{ minHeight: 96 }}
-              placeholder="Context, acceptance criteria or links"
+              placeholder={translateUI("Context, acceptance criteria or links")}
               value={desc}
               onChange={(e) => setDesc(e.target.value)}
             />
@@ -311,7 +318,7 @@ export function CreateTaskDialog({
           {/* Status & Priority */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16 }}>
             <div className="field">
-              <label>Status</label>
+              <label><LocalizedText message={"Status"} /></label>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {STATUSES.map((stKey) => {
                   const sObj = st(stKey);
@@ -344,7 +351,7 @@ export function CreateTaskDialog({
             </div>
 
             <div className="field">
-              <label>Priority</label>
+              <label><LocalizedText message={"Priority"} /></label>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                 {(['Critical', 'High', 'Medium', 'Low'] as TaskPriority[]).map((priKey) => {
                   const on = priority === priKey;
@@ -378,7 +385,7 @@ export function CreateTaskDialog({
 
           {/* Assignees */}
           <div className="field">
-            <label htmlFor="ct-who">Assignees</label>
+            <label htmlFor="ct-who"><LocalizedText message={"Assignees"} /></label>
             <div
               style={{
                 display: 'flex',
@@ -451,7 +458,7 @@ export function CreateTaskDialog({
                     addAssignee(suggestions[0].name);
                   }
                 }}
-                placeholder={assignees.length ? 'Add another person…' : 'Search people…'}
+                placeholder={assignees.length ? localizeAttribute("Add another person…") : localizeAttribute("Search people…")}
                 style={{
                   flex: 1,
                   minWidth: 140,
@@ -469,11 +476,11 @@ export function CreateTaskDialog({
               <span className="text-muted" style={{ fontSize: 12, width: '100%' }}>
                 {cleanPq
                   ? suggestions.length
-                    ? 'Matches'
-                    : 'Nobody matches'
+                    ? <LocalizedText message={"Matches"} />
+                    : <LocalizedText message={"Nobody matches"} />
                   : currentProject
-                  ? 'Suggested from project team'
-                  : 'Suggested: you and team leads'}
+                  ? <LocalizedText message={"Suggested from project team"} />
+                  : <LocalizedText message={"Suggested: you and team leads"} />}
               </span>
               {suggestions.slice(0, 8).map((u) => (
                 <button
@@ -517,7 +524,7 @@ export function CreateTaskDialog({
 
           {/* Labels */}
           <div className="field">
-            <label htmlFor="ct-lab">Labels</label>
+            <label htmlFor="ct-lab"><LocalizedText message={"Labels"} /></label>
             <div
               style={{
                 display: 'flex',
@@ -547,7 +554,7 @@ export function CreateTaskDialog({
                   {l}
                   <button
                     type="button"
-                    aria-label="Remove label"
+                    aria-label={translateUI("Remove label")}
                     onClick={() => setLabels(labels.filter((x) => x !== l))}
                     style={{
                       border: 0,
@@ -567,7 +574,7 @@ export function CreateTaskDialog({
                 value={labelDraft}
                 onChange={(e) => setLabelDraft(e.target.value)}
                 onKeyDown={handleLabelKeyDown}
-                placeholder="Type a label, press Enter"
+                placeholder={translateUI("Type a label, press Enter")}
                 style={{
                   flex: 1,
                   minWidth: 140,
@@ -586,7 +593,7 @@ export function CreateTaskDialog({
           {/* Dates */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
             <div className="field">
-              <label htmlFor="ct-start">Start date</label>
+              <label htmlFor="ct-start"><LocalizedText message={"Start date"} /></label>
               <input
                 id="ct-start"
                 type="date"
@@ -597,7 +604,7 @@ export function CreateTaskDialog({
               />
             </div>
             <div className="field">
-              <label htmlFor="ct-due">Due date</label>
+              <label htmlFor="ct-due"><LocalizedText message={"Due date"} /></label>
               <input
                 id="ct-due"
                 type="date"
@@ -658,19 +665,13 @@ export function CreateTaskDialog({
                 height: 16,
                 margin: 0,
               }}
-            />
-            Create another
-          </label>
-          <button type="button" className="btn btn-ghost" onClick={onClose}>
-            Cancel
-          </button>
+            />{" "}<LocalizedText message={"Create another"} />{" "}</label>
+          <button type="button" className="btn btn-ghost" onClick={onClose}>{" "}<LocalizedText message={"Cancel"} />{" "}</button>
           <button
             type="submit"
             className="btn btn-primary"
             style={{ minHeight: 40, minWidth: 140, borderRadius: 'var(--r-sm)' }}
-          >
-            Create task
-          </button>
+          >{" "}<LocalizedText message={"Create task"} />{" "}</button>
         </div>
       </form>
     </div>

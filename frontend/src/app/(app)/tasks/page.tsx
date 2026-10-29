@@ -1,5 +1,10 @@
 "use client";
 
+import { LocalizedDate } from "@/lib/i18n/I18nProvider";
+
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
+
 import { Suspense, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -61,14 +66,20 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 export default function TasksPageWrapper() {
+  const { t: translateUI, date: displayDate, number: displayNumber } = useI18n();
+
   return (
-    <Suspense fallback={<Spinner label="Loading tasks…" />}>
+    <Suspense fallback={<Spinner label={translateUI("Loading tasks…")} />}>
       <TasksPage />
     </Suspense>
   );
 }
 
 function TasksPage() {
+  const { t: localizeAttribute } = useI18n();
+
+  const { t: translateUI, date: displayDate, number: displayNumber } = useI18n();
+
   const searchParams = useSearchParams();
   const { user, hasPermission, isSuperAdmin } = useAuth();
   const [view, setView] = useUrlView("view", TASK_VIEWS, "all");
@@ -211,15 +222,13 @@ function TasksPage() {
             {t.parent_task_id && (
               <Link
                 href={`/tasks/${t.parent_task_id}`}
-                title="Subtask — open parent task"
+                title={translateUI("Subtask — open parent task")}
                 onClick={(e) => e.stopPropagation()}
                 style={subtaskBadge}
-              >
-                Subtask
-              </Link>
+              >{" "}<LocalizedText message={"Subtask"} />{" "}</Link>
             )}
             {t.github_url && (
-              <a href={t.github_url} target="_blank" rel="noreferrer" title="Open GitHub issue" onClick={(e) => e.stopPropagation()}>
+              <a href={t.github_url} target="_blank" rel="noreferrer" title={translateUI("Open GitHub issue")} onClick={(e) => e.stopPropagation()}>
                 <ExternalLink size={13} style={{ color: "var(--text-tertiary)" }} />
               </a>
             )}
@@ -301,8 +310,8 @@ function TasksPage() {
         sortValue: (t) => String(t.task_type),
         render: (t) => (
           <span style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
-            <span style={smallPill}>{t.task_type}</span>
-            {t.is_ticket && <span style={{ ...smallPill, color: "var(--primary)" }}><Ticket size={11} /> Ticket</span>}
+            <span style={smallPill}><LocalizedText message={String(t.task_type)} /></span>
+            {t.is_ticket && <span style={{ ...smallPill, color: "var(--primary)" }}><Ticket size={11} />{" "}<LocalizedText message={"Ticket"} /></span>}
           </span>
         ),
       },
@@ -324,7 +333,7 @@ function TasksPage() {
               </span>
             ))}
             {t.assignee_user_ids.length === 0 && (
-              <span style={{ color: "var(--text-tertiary)", fontSize: 12 }}>Unassigned</span>
+              <span style={{ color: "var(--text-tertiary)", fontSize: 12 }}><LocalizedText message={"Unassigned"} /></span>
             )}
           </span>
         ),
@@ -335,8 +344,8 @@ function TasksPage() {
         sortValue: (t) => t.due_date ?? t.created_at,
         render: (t) => (
           <span style={{ display: "flex", flexDirection: "column", gap: 2, fontSize: 11.5, color: "var(--text-tertiary)" }}>
-            <span>Created {t.created_at.slice(0, 10)}</span>
-            {t.due_date && <span>Due {t.due_date}</span>}
+            <span><LocalizedText message={"Created"} />{" "}{<LocalizedDate value={t.created_at} />}</span>
+            {t.due_date && <span><LocalizedText message={"Due"} />{" "}{<LocalizedDate value={t.due_date} />}</span>}
           </span>
         ),
       },
@@ -347,10 +356,10 @@ function TasksPage() {
         render: (t) =>
           t.phase_id ? (
             <span style={{ color: "var(--status-completed)", fontSize: 12 }}>
-              {phaseToProject.get(t.phase_id)?.name ?? "Attached"}
+              {phaseToProject.get(t.phase_id)?.name ?? translateUI("Attached")}
             </span>
           ) : (
-            <span style={{ color: "var(--text-tertiary)", fontSize: 12 }}>Backlog</span>
+            <span style={{ color: "var(--text-tertiary)", fontSize: 12 }}><LocalizedText message={"Backlog"} /></span>
           ),
       },
       {
@@ -360,12 +369,12 @@ function TasksPage() {
         render: (t) =>
           canAttach ? (
             <Button variant="tertiary" aria-label={`${t.phase_id ? "Move" : "Attach"} task ${t.title}`} onClick={() => setAttachTarget(t)}>
-              <Link2 size={13} /> {t.phase_id ? "Move" : "Attach"}
+              <Link2 size={13} /> {t.phase_id ? <LocalizedText message={"Move"} /> : <LocalizedText message={"Attach"} />}
             </Button>
           ) : null,
       },
     ],
-    [nameOf, canAttach, phaseToProject, productNames],
+    [nameOf, canAttach, phaseToProject, productNames, translateUI],
   );
 
   const hasFilters =
@@ -418,13 +427,12 @@ function TasksPage() {
   return (
     <div style={PAGE_STYLE}>
       <PageHeader
-        title="Task Browser"
-        subtitle={`${filteredRows.length} visible · ${data?.total_count ?? 0} loaded · imported from GitHub issues and created in-app.`}
+        title={translateUI("Task Browser")}
+        subtitle={translateUI("{visible} visible · {loaded} loaded · imported from GitHub issues and created in-app.", { visible: filteredRows.length, loaded: data?.total_count ?? 0 })}
         actions={
           canCreate ? (
             <Button onClick={() => setCreateOpen(true)}>
-              <Plus size={14} /> New task
-            </Button>
+              <Plus size={14} />{" "}<LocalizedText message={"New task"} />{" "}</Button>
           ) : undefined
         }
       />
@@ -454,27 +462,26 @@ function TasksPage() {
       />
 
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-        <span style={{ fontSize: 12, color: "var(--text-tertiary)", fontWeight: 700 }}>Saved filters</span>
-        <Button variant={view === "my-blocked" ? "primary" : "secondary"} aria-pressed={view === "my-blocked"} onClick={() => applySavedFilter("my-blocked")}>{view === "my-blocked" && <Check size={15} aria-hidden />}My blocked</Button>
-        <Button variant={view === "due-week" ? "primary" : "secondary"} aria-pressed={view === "due-week"} onClick={() => applySavedFilter("due-week")}>{view === "due-week" && <Check size={15} aria-hidden />}Due this week</Button>
-        <Button variant={view === "needs-review" ? "primary" : "secondary"} aria-pressed={view === "needs-review"} onClick={() => applySavedFilter("needs-review")}>{view === "needs-review" && <Check size={15} aria-hidden />}Needs review</Button>
-        <Button variant={view === "backlog" ? "primary" : "secondary"} aria-pressed={view === "backlog"} onClick={() => applySavedFilter("backlog")}>{view === "backlog" && <Check size={15} aria-hidden />}Backlog</Button>
+        <span style={{ fontSize: 12, color: "var(--text-tertiary)", fontWeight: 700 }}><LocalizedText message={"Saved filters"} /></span>
+        <Button variant={view === "my-blocked" ? "primary" : "secondary"} aria-pressed={view === "my-blocked"} onClick={() => applySavedFilter("my-blocked")}>{view === "my-blocked" && <Check size={15} aria-hidden />}<LocalizedText message={"My blocked"} /></Button>
+        <Button variant={view === "due-week" ? "primary" : "secondary"} aria-pressed={view === "due-week"} onClick={() => applySavedFilter("due-week")}>{view === "due-week" && <Check size={15} aria-hidden />}<LocalizedText message={"Due this week"} /></Button>
+        <Button variant={view === "needs-review" ? "primary" : "secondary"} aria-pressed={view === "needs-review"} onClick={() => applySavedFilter("needs-review")}>{view === "needs-review" && <Check size={15} aria-hidden />}<LocalizedText message={"Needs review"} /></Button>
+        <Button variant={view === "backlog" ? "primary" : "secondary"} aria-pressed={view === "backlog"} onClick={() => applySavedFilter("backlog")}>{view === "backlog" && <Check size={15} aria-hidden />}<LocalizedText message={"Backlog"} /></Button>
       </div>
 
       <button className="pmp-mobile-filter-trigger" type="button" onClick={() => setFiltersOpen(true)} aria-expanded={filtersOpen}>
-        <SlidersHorizontal size={17} /> Filters
-        {activeFilters.length > 0 && <span className="pmp-nav-badge">{activeFilters.length}</span>}
+        <SlidersHorizontal size={17} />{" "}<LocalizedText message={"Filters"} />{" "}{activeFilters.length > 0 && <span className="pmp-nav-badge">{activeFilters.length}</span>}
       </button>
-      {filtersOpen && <button className="pmp-task-filter-scrim" aria-label="Close filters" onClick={() => setFiltersOpen(false)} />}
-      <section className={`pmp-task-filter-panel ${filtersOpen ? "is-open" : ""}`} aria-label="Task filters">
+      {filtersOpen && <button className="pmp-task-filter-scrim" aria-label={translateUI("Close filters")} onClick={() => setFiltersOpen(false)} />}
+      <section className={`pmp-task-filter-panel ${filtersOpen ? "is-open" : ""}`} aria-label={translateUI("Task filters")}>
         <div className="pmp-task-filter-header">
-          <div><strong>Filter tasks</strong><small>Narrow the current queue</small></div>
-          <button className="pmp-icon-btn" type="button" onClick={() => setFiltersOpen(false)} aria-label="Close filters"><X size={18} /></button>
+          <div><strong><LocalizedText message={"Filter tasks"} /></strong><small><LocalizedText message={"Narrow the current queue"} /></small></div>
+          <button className="pmp-icon-btn" type="button" onClick={() => setFiltersOpen(false)} aria-label={translateUI("Close filters")}><X size={18} /></button>
         </div>
       <div className="pmp-task-filter-controls" style={{ display: "flex", gap: 10, margin: "14px 0", flexWrap: "wrap", alignItems: "center" }}>
         <TextInput
-          aria-label="Search tasks by title"
-          placeholder="Search title…"
+          aria-label={translateUI("Search tasks by title")}
+          placeholder={translateUI("Search title…")}
           value={search}
           onChange={(e) => {
             setSearch(e.target.value);
@@ -484,78 +491,78 @@ function TasksPage() {
         />
         <Select
           value={partition}
-          aria-label="Filter tasks by partition"
+          aria-label={translateUI("Filter tasks by partition")}
           onChange={(e) => {
             setPartition(e.target.value);
             setPage(1);
           }}
           options={[
-            { value: "all", label: "All partitions" },
+            { translateLabel: true, value: "all", label: "All partitions" },
             ...partitions.map((item) => ({ value: item.slug, label: item.name })),
           ]}
         />
         <Select
           value={projectFilter}
-          aria-label="Filter tasks by project"
+          aria-label={translateUI("Filter tasks by project")}
           onChange={(e) => {
             setProjectFilter(e.target.value);
             setPage(1);
           }}
           options={[
-            { value: "all", label: "All projects" },
+            { translateLabel: true, value: "all", label: "All projects" },
             ...(projects.data?.items ?? []).map((p) => ({ value: p.id, label: p.name })),
           ]}
         />
         <Select
           value={assigneeFilter}
-          aria-label="Filter tasks by assignee"
+          aria-label={translateUI("Filter tasks by assignee")}
           onChange={(e) => {
             setAssigneeFilter(e.target.value);
             setPage(1);
           }}
           options={[
-            { value: "all", label: "All assignees" },
-            { value: "unassigned", label: "Unassigned" },
+            { translateLabel: true, value: "all", label: "All assignees" },
+            { translateLabel: true, value: "unassigned", label: "Unassigned" },
             ...(users ?? []).map((u) => ({ value: u.id, label: u.full_name })),
           ]}
         />
-        <Select
+        <Select translateOptions
           value={label}
-          aria-label="Filter tasks by label"
+          aria-label={translateUI("Filter tasks by label")}
           onChange={(e) => setLabel(e.target.value)}
-          placeholder="All labels"
+          placeholder={translateUI("All labels")}
           options={[
             { value: "Backend", label: "Backend" },
             { value: "Frontend", label: "Frontend" },
           ]}
         />
-        <Select
+        <Select translateOptions
           value={status}
-          aria-label="Filter tasks by status"
+          aria-label={translateUI("Filter tasks by status")}
           onChange={(e) => setStatus(e.target.value)}
-          placeholder="All statuses"
+          placeholder={translateUI("All statuses")}
           options={STATUS_OPTIONS.map((s) => ({ value: s, label: STATUS_LABELS[s] ?? s }))}
         />
         <TextInput
           type="month"
-          aria-label="Filter tasks by created month"
+          aria-label={translateUI("Filter tasks by created month")}
           value={createdMonth}
           onChange={(e) => {
             setCreatedMonth(e.target.value);
             setPage(1);
           }}
-          title="Created month"
+          title={translateUI("Created month")}
           style={{ width: 150 }}
         />
         <TextInput
           type="month"
-          aria-label="Filter tasks by due month"
+          aria-label={translateUI("Filter tasks by due month")}
           value={dueMonth}
           onChange={(e) => {
             setDueMonth(e.target.value);
             setPage(1);
           }}
-          title="Due/end month"
+          title={translateUI("Due/end month")}
           style={{ width: 150 }}
         />
         <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "var(--text-secondary)", cursor: "pointer" }}>
@@ -563,27 +570,25 @@ function TasksPage() {
             type="checkbox"
             checked={unattachedOnly}
             onChange={(e) => setUnattachedOnly(e.target.checked)}
-          />
-          Backlog only (no project)
-        </label>
+          />{" "}<LocalizedText message={"Backlog only (no project)"} />{" "}</label>
       </div>
         <div className="pmp-task-filter-actions">
-          <Button variant="tertiary" onClick={clearFilters}>Clear all</Button>
-          <Button onClick={() => setFiltersOpen(false)}>Show {filteredRows.length} tasks</Button>
+          <Button variant="tertiary" onClick={clearFilters}><LocalizedText message={"Clear all"} /></Button>
+          <Button onClick={() => setFiltersOpen(false)}><LocalizedText message={"Show"} />{" "}{filteredRows.length}{" "}<LocalizedText message={"tasks"} /></Button>
         </div>
       </section>
 
       {activeFilters.length > 0 && (
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }} aria-label="Active task filters">
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }} aria-label={translateUI("Active task filters")}>
           {activeFilters.map((f) => (
             <span key={f} style={filterChip}>{f}</span>
           ))}
-          <Button variant="tertiary" onClick={clearFilters}>Clear filters</Button>
+          <Button variant="tertiary" onClick={clearFilters}><LocalizedText message={"Clear filters"} /></Button>
         </div>
       )}
 
       {isLoading ? (
-        <Spinner label="Loading tasks…" />
+        <Spinner label={translateUI("Loading tasks…")} />
       ) : isError ? (
         <TaskLoadError error={error} isFetching={isFetching} onRetry={() => refetch()} />
       ) : mode === "monthly" ? (
@@ -591,22 +596,17 @@ function TasksPage() {
       ) : (
         <>
           <div style={{ background: "var(--surface-2)", border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-3)", overflow: "hidden" }}>
-            <DataTable columns={columns} rows={pageRows} rowKey={(t) => t.id} emptyText={hasFilters ? "No tasks match these filters. Clear filters to see more work." : "No tasks yet."} />
+            <DataTable columns={columns} rows={pageRows} rowKey={(t) => t.id} emptyText={hasFilters ? localizeAttribute("No tasks match these filters. Clear filters to see more work.") : localizeAttribute("No tasks yet.")} />
           </div>
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 12, alignItems: "center" }}>
-            <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>
-              Page {page} of {totalPages}
+            <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>{" "}<LocalizedText message={"Page"} />{" "}{displayNumber(page)}{" "}<LocalizedText message={"of"} />{" "}{displayNumber(totalPages)}
             </span>
-            <Button variant="secondary" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-              Previous
-            </Button>
+            <Button variant="secondary" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>{" "}<LocalizedText message={"Previous"} />{" "}</Button>
             <Button
               variant="secondary"
               disabled={page >= totalPages}
               onClick={() => setPage((p) => p + 1)}
-            >
-              Next
-            </Button>
+            >{" "}<LocalizedText message={"Next"} />{" "}</Button>
           </div>
         </>
       )}
@@ -641,6 +641,8 @@ function MonthlyTaskPlanner({
   nameOf: (id?: string | null) => string;
   canAttach: boolean;
 }) {
+  const { t: translateUI, date: displayDate, number: displayNumber } = useI18n();
+
   const queryClient = useQueryClient();
   const toast = useToast();
   const [dragId, setDragId] = useState<UUID | null>(null);
@@ -708,11 +710,10 @@ function MonthlyTaskPlanner({
     <section style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
         <div style={{ display: "inline-flex", alignItems: "center", gap: 8, color: "var(--text-secondary)", fontSize: 13, fontWeight: 700 }}>
-          <CalendarDays size={16} /> Monthly delivery plan
-        </div>
+          <CalendarDays size={16} />{" "}<LocalizedText message={"Monthly delivery plan"} />{" "}</div>
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-          <Select
-            aria-label="Sort tasks in monthly planner"
+          <Select translateOptions
+            aria-label={translateUI("Sort tasks in monthly planner")}
             value={sortMode}
             onChange={(event) => setSortMode(event.target.value as TaskSortMode)}
             options={TASK_SORT_OPTIONS}
@@ -720,21 +721,15 @@ function MonthlyTaskPlanner({
           <Button
             variant="secondary"
             onClick={() => setAnchor((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1))}
-          >
-            Previous
-          </Button>
+          >{" "}<LocalizedText message={"Previous"} />{" "}</Button>
           <Button
             variant="secondary"
             onClick={() => setAnchor(new Date(new Date().getFullYear(), new Date().getMonth(), 1))}
-          >
-            Today
-          </Button>
+          >{" "}<LocalizedText message={"Today"} />{" "}</Button>
           <Button
             variant="secondary"
             onClick={() => setAnchor((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1))}
-          >
-            Next
-          </Button>
+          >{" "}<LocalizedText message={"Next"} />{" "}</Button>
         </div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "minmax(240px, 0.9fr) repeat(6, minmax(240px, 1fr))", gap: 12, overflowX: "auto", paddingBottom: 6 }}>
@@ -754,7 +749,7 @@ function MonthlyTaskPlanner({
               }}
             >
               <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8, marginBottom: 10 }}>
-                <div style={{ fontSize: 13, fontWeight: 800 }}>{monthLabel(bucket)}</div>
+                <div style={{ fontSize: 13, fontWeight: 800 }}>{bucket === "unscheduled" ? translateUI("No month") : displayDate(`${bucket}-01`, { day: undefined, month: "short", year: "numeric" })}</div>
                 <div style={{ fontSize: 12, fontFamily: "var(--font-mono)", color: "var(--text-tertiary)" }}>{tasks.length}</div>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
@@ -781,7 +776,7 @@ function MonthlyTaskPlanner({
                     }}
                   >
                     {canAttach && (
-                      <span title="Drag to reorder or move" aria-hidden="true" style={{ float: "right", color: "var(--text-tertiary)", cursor: "grab" }}>
+                      <span title={translateUI("Drag to reorder or move")} aria-hidden="true" style={{ float: "right", color: "var(--text-tertiary)", cursor: "grab" }}>
                         <GripVertical size={15} />
                       </span>
                     )}
@@ -793,21 +788,19 @@ function MonthlyTaskPlanner({
                     </Link>
                     <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                       <StatusChip status={String(task.status)} label={STATUS_LABELS[String(task.status)] ?? String(task.status)} />
-                      {task.is_ticket && <span style={{ ...smallPill, color: "var(--primary)" }}><Ticket size={11} /> Ticket</span>}
+                      {task.is_ticket && <span style={{ ...smallPill, color: "var(--primary)" }}><Ticket size={11} />{" "}<LocalizedText message={"Ticket"} /></span>}
                       <span style={smallPill}>{task.partition ?? "No partition"}</span>
                     </div>
                     <div style={{ marginTop: 8, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
                       <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>
-                        {task.assignee_user_ids.length ? task.assignee_user_ids.map((id) => nameOf(id)).join(", ") : "Unassigned"}
+                        {task.assignee_user_ids.length ? task.assignee_user_ids.map((id) => nameOf(id)).join(", ") : <LocalizedText message={"Unassigned"} />}
                       </span>
                       <PriorityBadge level={task.priority} compact />
                     </div>
                   </div>
                 ))}
                 {tasks.length === 0 && (
-                  <div style={{ padding: "18px 8px", color: "var(--text-tertiary)", fontSize: 12.5, textAlign: "center" }}>
-                    Drop tasks here
-                  </div>
+                  <div style={{ padding: "18px 8px", color: "var(--text-tertiary)", fontSize: 12.5, textAlign: "center" }}>{" "}<LocalizedText message={"Drop tasks here"} />{" "}</div>
                 )}
               </div>
             </div>
@@ -846,16 +839,14 @@ function TaskLoadError({
       }}
     >
       <div style={{ minWidth: 0 }}>
-        <div style={{ fontSize: 14, fontWeight: 800 }}>Tasks could not be loaded.</div>
-        <div style={{ marginTop: 4, fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.5 }}>
-          The task browser received an API error, so this is not being shown as an empty task list.
-        </div>
+        <div style={{ fontSize: 14, fontWeight: 800 }}><LocalizedText message={"Tasks could not be loaded."} /></div>
+        <div style={{ marginTop: 4, fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.5 }}>{" "}<LocalizedText message={"The task browser received an API error, so this is not being shown as an empty task list."} />{" "}</div>
         <div style={{ marginTop: 8, fontSize: 12, color: "var(--text-tertiary)", fontFamily: "var(--font-mono)" }}>
           {details}
         </div>
       </div>
       <Button variant="secondary" disabled={isFetching} onClick={onRetry}>
-        {isFetching ? "Retrying..." : "Retry"}
+        {isFetching ? <LocalizedText message={"Retrying..."} /> : <LocalizedText message={"Retry"} />}
       </Button>
     </section>
   );
@@ -877,6 +868,10 @@ function viewLabel(view: string) {
 }
 
 function AttachModal({ task, onClose }: { task: TaskRead | null; onClose: () => void }) {
+  const { t: localizeAttribute } = useI18n();
+
+  const { t: translateUI, date: displayDate, number: displayNumber } = useI18n();
+
   const queryClient = useQueryClient();
   const toast = useToast();
   const [projectId, setProjectId] = useState<UUID | "">("");
@@ -918,36 +913,32 @@ function AttachModal({ task, onClose }: { task: TaskRead | null; onClose: () => 
       footer={
         <>
           {task?.phase_id && (
-            <Button variant="secondary" onClick={() => detach.mutate()} disabled={detach.isPending}>
-              Detach to backlog
-            </Button>
+            <Button variant="secondary" onClick={() => detach.mutate()} disabled={detach.isPending}>{" "}<LocalizedText message={"Detach to backlog"} />{" "}</Button>
           )}
-          <Button variant="secondary" onClick={onClose}>
-            Cancel
-          </Button>
+          <Button variant="secondary" onClick={onClose}>{" "}<LocalizedText message={"Cancel"} />{" "}</Button>
           <Button disabled={!phaseId || attach.isPending} onClick={() => attach.mutate()}>
-            {attach.isPending ? "Attaching…" : "Attach"}
+            {attach.isPending ? <LocalizedText message={"Attaching…"} /> : <LocalizedText message={"Attach"} />}
           </Button>
         </>
       }
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <Field label="Project">
+        <Field label={translateUI("Project")}>
           <Select
             value={projectId}
             onChange={(e) => {
               setProjectId(e.target.value as UUID);
               setPhaseId("");
             }}
-            placeholder="Choose a project…"
+            placeholder={translateUI("Choose a project…")}
             options={(projects?.items ?? []).map((p) => ({ value: p.id, label: p.name }))}
           />
         </Field>
-        <Field label="Sprint">
+        <Field label={translateUI("Sprint")}>
           <Select
             value={phaseId}
             onChange={(e) => setPhaseId(e.target.value as UUID)}
-            placeholder={projectId ? "Choose a sprint…" : "Pick a project first"}
+            placeholder={projectId ? localizeAttribute("Choose a sprint…") : localizeAttribute("Pick a project first")}
             options={(phases ?? []).map((ph) => ({ value: ph.id, label: ph.name }))}
           />
         </Field>

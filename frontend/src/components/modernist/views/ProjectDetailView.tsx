@@ -1,3 +1,6 @@
+"use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 import React from 'react';
 import { Project, Task, Person, TaskStatus } from '../types';
 import { Icon } from '../icons';
@@ -52,6 +55,8 @@ export function ProjectDetailView({
   onUpdateTask,
   onOpenCreateTask,
 }: ProjectDetailViewProps) {
+  const { t: translateUI } = useI18n();
+
   const [localActiveTab, setLocalActiveTab] = React.useState<'Board' | 'List' | 'Overview'>('Board');
   const [localSearchQuery, setLocalSearchQuery] = React.useState('');
   const [localFilterAssignee, setLocalFilterAssignee] = React.useState<string | null>(null);
@@ -162,10 +167,10 @@ export function ProjectDetailView({
             <input
               className="input"
               style={{ minHeight: 36, paddingLeft: 32 }}
-              placeholder="Search this project"
+              placeholder={translateUI("Search this project")}
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
-              aria-label="Search this project"
+              aria-label={translateUI("Search this project")}
             />
           </div>
 
@@ -201,9 +206,7 @@ export function ProjectDetailView({
           </div>
 
           {(searchQuery || filterAssignee) && (
-            <button type="button" className="btn btn-ghost" onClick={onClearFilters}>
-              Clear filters
-            </button>
+            <button type="button" className="btn btn-ghost" onClick={onClearFilters}>{" "}<LocalizedText message={"Clear filters"} />{" "}</button>
           )}
         </div>
       </div>
@@ -269,7 +272,7 @@ export function ProjectDetailView({
                       }}
                     >
                       <Icon
-                        name={t.type === 'Feature' ? 'check' : t.type === 'Bug' ? 'target' : 'sparkles'}
+                        name={t.type === 'Feature' ? "check" : t.type === 'Bug' ? 'target' : 'sparkles'}
                         size={10}
                         strokeWidth={3}
                       />
@@ -313,7 +316,7 @@ export function ProjectDetailView({
                         borderRadius: 'var(--r-xs)',
                       }}
                     >
-                      {t.e == null ? 'No date' : dayStr(t.e)}
+                      {t.e == null ? <LocalizedText message={"No date"} /> : dayStr(t.e)}
                     </span>
                   </span>
                   <span>
@@ -340,9 +343,7 @@ export function ProjectDetailView({
             })}
           </div>
           {filteredTasks.length === 0 && (
-            <p className="text-muted" style={{ padding: '20px 4px', margin: 0 }}>
-              No tasks match. Clear the filters or create one.
-            </p>
+            <p className="text-muted" style={{ padding: '20px 4px', margin: 0 }}>{" "}<LocalizedText message={"No tasks match. Clear the filters or create one."} />{" "}</p>
           )}
         </section>
       )}
@@ -360,9 +361,7 @@ export function ProjectDetailView({
             }}
           >
             <div>
-              <h6 className="text-muted" style={{ marginBottom: 10 }}>
-                Work by status
-              </h6>
+              <h6 className="text-muted" style={{ marginBottom: 10 }}>{" "}<LocalizedText message={"Work by status"} />{" "}</h6>
               <div
                 style={{
                   display: 'flex',
@@ -413,17 +412,13 @@ export function ProjectDetailView({
                     textTransform: 'uppercase',
                     color: riskTone.fg,
                   }}
-                >
-                  Risk
-                </span>
+                >{" "}<LocalizedText message={"Risk"} />{" "}</span>
                 <span style={{ fontSize: 14 }}>{project.risk}</span>
               </div>
             )}
 
             <div>
-              <h6 className="text-muted" style={{ marginBottom: 8 }}>
-                Team
-              </h6>
+              <h6 className="text-muted" style={{ marginBottom: 8 }}>{" "}<LocalizedText message={"Team"} />{" "}</h6>
               <div
                 style={{
                   display: 'grid',

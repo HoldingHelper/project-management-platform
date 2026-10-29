@@ -1,4 +1,6 @@
 "use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 import { useMemo, useState } from "react";
 import {
@@ -17,6 +19,8 @@ export function WorkspaceTabBar({
 }: {
   onNewPage?: () => void;
 }) {
+  const { t: translateUI } = useI18n();
+
   const {
     tabs,
     activeTabId,
@@ -75,7 +79,7 @@ export function WorkspaceTabBar({
               {tab.isDirty && (
                 <span
                   className="w-2 h-2 rounded-full bg-amber-400"
-                  title="Unsaved changes"
+                  title={translateUI("Unsaved changes")}
                 />
               )}
 
@@ -93,7 +97,7 @@ export function WorkspaceTabBar({
                     closeTab(tab.id);
                   }}
                   className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-white/10 text-slate-400 hover:text-white transition-opacity"
-                  title="Close tab (Ctrl+W)"
+                  title={translateUI("Close tab (Ctrl+W)")}
                 >
                   <X size={12} />
                 </button>
@@ -103,9 +107,7 @@ export function WorkspaceTabBar({
         })}
 
         {tabs.length === 0 && (
-          <div className="text-xs text-slate-500 italic px-2">
-            No documents open. Press Cmd+P or pick a doc from the explorer.
-          </div>
+          <div className="text-xs text-slate-500 italic px-2">{" "}<LocalizedText message={"No documents open. Press Cmd+P or pick a doc from the explorer."} />{" "}</div>
         )}
       </div>
 
@@ -115,10 +117,10 @@ export function WorkspaceTabBar({
           type="button"
           onClick={() => setQuickSwitcherOpen(true)}
           className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-slate-400 hover:text-white bg-slate-900/60 hover:bg-slate-800 rounded border border-white/5 transition-colors"
-          title="Quick Switcher (Cmd+P)"
+          title={translateUI("Quick Switcher (Cmd+P)")}
         >
           <Search size={12} />
-          <span className="font-mono text-[10px] text-slate-500">⌘P</span>
+          <span className="font-mono text-[10px] text-slate-500"><LocalizedText message={"⌘P"} /></span>
         </button>
 
         <button
@@ -131,7 +133,7 @@ export function WorkspaceTabBar({
             });
           }}
           className="p-1.5 text-slate-400 hover:text-indigo-400 hover:bg-slate-800/80 rounded transition-colors"
-          title="Open Knowledge Graph"
+          title={translateUI("Open Knowledge Graph")}
         >
           <Network size={14} />
         </button>
@@ -141,7 +143,7 @@ export function WorkspaceTabBar({
             type="button"
             onClick={onNewPage}
             className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800/80 rounded transition-colors"
-            title="New Document"
+            title={translateUI("New Document")}
           >
             <Plus size={14} />
           </button>
@@ -160,32 +162,24 @@ export function WorkspaceTabBar({
             type="button"
             className="w-full text-left px-3 py-1.5 hover:bg-slate-800 hover:text-white"
             onClick={() => closeTab(contextMenu.tabId)}
-          >
-            Close Tab
-          </button>
+          >{" "}<LocalizedText message={"Close Tab"} />{" "}</button>
           <button
             type="button"
             className="w-full text-left px-3 py-1.5 hover:bg-slate-800 hover:text-white"
             onClick={() => closeOtherTabs(contextMenu.tabId)}
-          >
-            Close Other Tabs
-          </button>
+          >{" "}<LocalizedText message={"Close Other Tabs"} />{" "}</button>
           <button
             type="button"
             className="w-full text-left px-3 py-1.5 hover:bg-slate-800 hover:text-white"
             onClick={() => closeAllTabs()}
-          >
-            Close All Tabs
-          </button>
+          >{" "}<LocalizedText message={"Close All Tabs"} />{" "}</button>
           <div className="my-1 border-t border-white/5" />
           <button
             type="button"
             className="w-full text-left px-3 py-1.5 hover:bg-slate-800 hover:text-white flex items-center gap-2"
             onClick={() => pinTab(contextMenu.tabId)}
           >
-            <Pin size={11} />
-            Toggle Pin
-          </button>
+            <Pin size={11} />{" "}<LocalizedText message={"Toggle Pin"} />{" "}</button>
         </div>
       )}
     </div>

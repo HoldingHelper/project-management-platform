@@ -1,4 +1,6 @@
 "use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -47,6 +49,8 @@ interface Props {
 }
 
 export function MarkdownWorkspaceEditor({ pageId }: Props) {
+  const { t: translateUI } = useI18n();
+
   const client = useQueryClient();
   const { openTab, tabs, closeTab } = useKnowledgeWorkspace();
 
@@ -192,28 +196,24 @@ export function MarkdownWorkspaceEditor({ pageId }: Props) {
               onClick={() => { setActiveTab("edit"); setViewMode("split"); }}
               className={`docs-toolbar-btn ${activeTab === "edit" ? "is-active" : ""}`}
               style={{ padding: "4px 12px", height: 26, fontSize: 12, borderRadius: "var(--radius-1)" }}
-            >
-              Edit
-            </button>
+            >{" "}<LocalizedText message={"Edit"} />{" "}</button>
             <button
               type="button"
               onClick={() => { setActiveTab("preview"); setViewMode("rendered"); }}
               className={`docs-toolbar-btn ${activeTab === "preview" ? "is-active" : ""}`}
               style={{ padding: "4px 12px", height: 26, fontSize: 12, borderRadius: "var(--radius-1)" }}
-            >
-              Preview
-            </button>
+            >{" "}<LocalizedText message={"Preview"} />{" "}</button>
           </div>
 
           <button
             type="button"
             onClick={() => setActiveTab("comments")}
-            aria-label="Document comments" title="Document comments"
+            aria-label={translateUI("Document comments")} title={translateUI("Document comments")}
             className={`knowledge-editor-comments docs-toolbar-btn ${activeTab === "comments" ? "is-active" : ""}`}
             style={{ gap: 5, padding: "4px 10px", height: 30 }}
           >
             <MessageSquare size={13} />
-            <span>Comments</span>
+            <span><LocalizedText message={"Comments"} /></span>
             <span style={{ fontSize: 10, padding: "1px 5px", borderRadius: "10px", background: "var(--accent-primary-soft)", color: "var(--accent-primary)", fontWeight: 700 }}>
               {comments.length || 3}
             </span>
@@ -222,12 +222,12 @@ export function MarkdownWorkspaceEditor({ pageId }: Props) {
           <button
             type="button"
             onClick={() => setActiveTab("history")}
-            aria-label="Document history" title="Document history"
+            aria-label={translateUI("Document history")} title={translateUI("Document history")}
             className={`knowledge-editor-history docs-toolbar-btn ${activeTab === "history" ? "is-active" : ""}`}
             style={{ gap: 5, padding: "4px 10px", height: 30 }}
           >
             <History size={13} />
-            <span>History</span>
+            <span><LocalizedText message={"History"} /></span>
           </button>
         </div>
 
@@ -237,17 +237,17 @@ export function MarkdownWorkspaceEditor({ pageId }: Props) {
             {saveStatus === "saved" && (
               <>
                 <Check size={13} style={{ color: "var(--status-completed)" }} />
-                <span>Saved 2m ago</span>
+                <span><LocalizedText message={"Saved 2m ago"} /></span>
               </>
             )}
             {saveStatus === "saving" && (
               <>
                 <Loader2 size={13} className="animate-spin" style={{ color: "var(--accent-primary)" }} />
-                <span>Saving…</span>
+                <span><LocalizedText message={"Saving…"} /></span>
               </>
             )}
             {saveStatus === "unsaved" && (
-              <span style={{ color: "var(--status-delayed)" }}>Unsaved changes</span>
+              <span style={{ color: "var(--status-delayed)" }}><LocalizedText message={"Unsaved changes"} /></span>
             )}
           </div>
 
@@ -266,17 +266,13 @@ export function MarkdownWorkspaceEditor({ pageId }: Props) {
               onClick={() => setViewMode("rendered")}
               className={`docs-toolbar-btn ${viewMode === "rendered" ? "is-active" : ""}`}
               style={{ padding: "4px 10px", height: 26, fontSize: 11.5 }}
-            >
-              Rendered
-            </button>
+            >{" "}<LocalizedText message={"Rendered"} />{" "}</button>
             <button
               type="button"
               onClick={() => setViewMode("split")}
               className={`docs-toolbar-btn ${viewMode === "split" ? "is-active" : ""}`}
               style={{ padding: "4px 10px", height: 26, fontSize: 11.5 }}
-            >
-              Split
-            </button>
+            >{" "}<LocalizedText message={"Split"} />{" "}</button>
           </div>
 
           {page && <DeleteDocumentButton pageId={page.id} fileName={page.title} onDeleted={() => tabs.filter((tab) => tab.pageId === page.id).forEach((tab) => closeTab(tab.id))} />}
@@ -284,7 +280,7 @@ export function MarkdownWorkspaceEditor({ pageId }: Props) {
             type="button"
             onClick={() => setViewMode(viewMode === "rendered" ? "split" : "rendered")}
             className="pmp-icon-btn"
-            title="Toggle fullscreen / split"
+            title={translateUI("Toggle fullscreen / split")}
             style={{ width: 30, height: 30, borderRadius: "var(--radius-1)", border: "1px solid var(--border-subtle)", background: "var(--surface-2)" }}
           >
             <Maximize2 size={13} />
@@ -329,42 +325,42 @@ export function MarkdownWorkspaceEditor({ pageId }: Props) {
                 cursor: "pointer",
               }}
             >
-              <option value="p">Paragraph</option>
-              <option value="h1">Heading 1</option>
-              <option value="h2">Heading 2</option>
-              <option value="h3">Heading 3</option>
-              <option value="code">Code Block</option>
-              <option value="quote">Quote</option>
+              <option value="p"><LocalizedText message={"Paragraph"} /></option>
+              <option value="h1"><LocalizedText message={"Heading 1"} /></option>
+              <option value="h2"><LocalizedText message={"Heading 2"} /></option>
+              <option value="h3"><LocalizedText message={"Heading 3"} /></option>
+              <option value="code"><LocalizedText message={"Code Block"} /></option>
+              <option value="quote"><LocalizedText message={"Quote"} /></option>
             </select>
           </div>
 
           <div style={{ width: 1, height: 16, background: "var(--border-subtle)", margin: "0 4px" }} />
 
-          <button type="button" onClick={() => insertFormat("**", "**")} className="docs-toolbar-btn" title="Bold (⌘B)">
+          <button type="button" onClick={() => insertFormat("**", "**")} className="docs-toolbar-btn" title={translateUI("Bold (⌘B)")}>
             <Bold size={13} />
           </button>
-          <button type="button" onClick={() => insertFormat("*", "*")} className="docs-toolbar-btn" title="Italic (⌘I)">
+          <button type="button" onClick={() => insertFormat("*", "*")} className="docs-toolbar-btn" title={translateUI("Italic (⌘I)")}>
             <Italic size={13} />
           </button>
-          <button type="button" onClick={() => insertFormat("~~", "~~")} className="docs-toolbar-btn" title="Strikethrough">
+          <button type="button" onClick={() => insertFormat("~~", "~~")} className="docs-toolbar-btn" title={translateUI("Strikethrough")}>
             <Strikethrough size={13} />
           </button>
-          <button type="button" onClick={() => insertFormat("[", "](https://)")} className="docs-toolbar-btn" title="Insert Link">
+          <button type="button" onClick={() => insertFormat("[", "](https://)")} className="docs-toolbar-btn" title={translateUI("Insert Link")}>
             <LinkIcon size={13} />
           </button>
 
           <div style={{ width: 1, height: 16, background: "var(--border-subtle)", margin: "0 4px" }} />
 
-          <button type="button" onClick={() => insertFormat("- ")} className="docs-toolbar-btn" title="Bullet List">
+          <button type="button" onClick={() => insertFormat("- ")} className="docs-toolbar-btn" title={translateUI("Bullet List")}>
             <List size={13} />
           </button>
-          <button type="button" onClick={() => insertFormat("1. ")} className="docs-toolbar-btn" title="Numbered List">
+          <button type="button" onClick={() => insertFormat("1. ")} className="docs-toolbar-btn" title={translateUI("Numbered List")}>
             <ListOrdered size={13} />
           </button>
-          <button type="button" onClick={() => insertFormat("`", "`")} className="docs-toolbar-btn" title="Inline Code">
+          <button type="button" onClick={() => insertFormat("`", "`")} className="docs-toolbar-btn" title={translateUI("Inline Code")}>
             <Code size={13} />
           </button>
-          <button type="button" onClick={() => insertFormat("> ")} className="docs-toolbar-btn" title="Quote Block">
+          <button type="button" onClick={() => insertFormat("> ")} className="docs-toolbar-btn" title={translateUI("Quote Block")}>
             <Quote size={13} />
           </button>
 
@@ -378,7 +374,7 @@ export function MarkdownWorkspaceEditor({ pageId }: Props) {
             style={{ gap: 5, padding: "0 10px", marginLeft: "auto", background: "rgba(37, 99, 255, 0.12)", color: "var(--accent-primary)" }}
           >
             <Sparkles size={13} />
-            <span style={{ fontWeight: 700 }}>AI</span>
+            <span style={{ fontWeight: 700 }}><LocalizedText message={"AI"} /></span>
           </button>
         </div>
       )}
@@ -405,10 +401,11 @@ export function MarkdownWorkspaceEditor({ pageId }: Props) {
 
             {/* Textarea */}
             <textarea
+              dir="auto"
               ref={editorRef}
               value={content}
               onChange={(e) => handleContentChange(e.target.value)}
-              placeholder="Write markdown here... Use # for headings, - for lists, > for callouts..."
+              placeholder={translateUI("Write markdown here... Use # for headings, - for lists, > for callouts...")}
               style={{
                 flex: 1,
                 padding: "16px 18px",
@@ -458,8 +455,7 @@ export function MarkdownWorkspaceEditor({ pageId }: Props) {
                 justifyContent: "space-between",
               }}
             >
-              <span style={{ fontSize: 11.5, color: "var(--text-tertiary)", fontWeight: 600 }}>
-                Reading progress <b style={{ color: "var(--text-primary)" }}>{readingProgress}%</b>
+              <span style={{ fontSize: 11.5, color: "var(--text-tertiary)", fontWeight: 600 }}>{" "}<LocalizedText message={"Reading progress"} />{" "}<b style={{ color: "var(--text-primary)" }}>{readingProgress}%</b>
               </span>
               <div style={{ width: 140, height: 4, borderRadius: 2, background: "var(--surface-3)", overflow: "hidden" }}>
                 <div
@@ -486,13 +482,11 @@ export function MarkdownWorkspaceEditor({ pageId }: Props) {
                     fontWeight: 700,
                     letterSpacing: "0.02em",
                   }}
-                >
-                  Getting Started
-                </span>
+                >{" "}<LocalizedText message={"Getting Started"} />{" "}</span>
                 <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>•</span>
-                <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>5 min read</span>
+                <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}><LocalizedText message={"5 min read"} /></span>
                 <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>•</span>
-                <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>Last updated 2m ago</span>
+                <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}><LocalizedText message={"Last updated 2m ago"} /></span>
               </div>
 
               <h1
@@ -508,9 +502,7 @@ export function MarkdownWorkspaceEditor({ pageId }: Props) {
                 {title || "Signing In & Profile Management"}
               </h1>
 
-              <p style={{ fontSize: 15, color: "var(--text-secondary)", lineHeight: 1.6, margin: 0 }}>
-                Learn how to sign in to NexFellas using your corporate email, configure your profile, and manage your account settings.
-              </p>
+              <p style={{ fontSize: 15, color: "var(--text-secondary)", lineHeight: 1.6, margin: 0 }}>{" "}<LocalizedText message={"Learn how to sign in to NexFellas using your corporate email, configure your profile, and manage your account settings."} />{" "}</p>
             </div>
 
             {/* Blue Info Callout */}
@@ -532,12 +524,8 @@ export function MarkdownWorkspaceEditor({ pageId }: Props) {
                 <Info size={16} />
               </div>
               <div style={{ minWidth: 0, flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", marginBottom: 4 }}>
-                  Use your corporate email
-                </div>
-                <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.5 }}>
-                  NexFellas uses your company’s identity provider (SSO) to keep your account secure and simplify access across all tools.
-                </div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", marginBottom: 4 }}>{" "}<LocalizedText message={"Use your corporate email"} />{" "}</div>
+                <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.5 }}>{" "}<LocalizedText message={"NexFellas uses your company’s identity provider (SSO) to keep your account secure and simplify access across all tools."} />{" "}</div>
               </div>
             </div>
 
@@ -545,23 +533,14 @@ export function MarkdownWorkspaceEditor({ pageId }: Props) {
             <div style={{ marginTop: 36, marginBottom: 28 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
                 <span className="docs-step-large">1</span>
-                <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
-                  Authentication & Security
-                </h2>
+                <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>{" "}<LocalizedText message={"Authentication & Security"} />{" "}</h2>
               </div>
-              <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.6 }}>
-                NexFellas uses your company’s{" "}
+              <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.6 }}>{" "}<LocalizedText message={"NexFellas uses your company’s"} />{" "}
                 <span
                   className="docs-comment-highlight"
                   onClick={() => setSelectedHighlightComment("c1")}
-                >
-                  identity provider (SSO) to keep your account secure
-                  <span className="docs-author-pill" style={{ background: "#3B82F6" }}>
-                    Mike Chen
-                  </span>
-                </span>{" "}
-                and simplify access across all tools.
-              </p>
+                >{" "}<LocalizedText message={"identity provider (SSO) to keep your account secure"} />{" "}<span className="docs-author-pill" style={{ background: "#3B82F6" }}>{" "}<LocalizedText message={"Mike Chen"} />{" "}</span>
+                </span>{" "}{" "}<LocalizedText message={"and simplify access across all tools."} />{" "}</p>
 
               {/* In-line AI Suggestion Popover (Image 5 style) */}
               {showAiSuggestion && (
@@ -582,8 +561,7 @@ export function MarkdownWorkspaceEditor({ pageId }: Props) {
                   <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
                     <Sparkles size={16} style={{ color: "var(--accent-primary)", flexShrink: 0 }} />
                     <span style={{ fontSize: 12.5, color: "var(--text-primary)" }}>
-                      <b>Suggested improvement:</b> Use more specific language for clarity.
-                    </span>
+                      <b><LocalizedText message={"Suggested improvement:"} /></b>{" "}<LocalizedText message={"Use more specific language for clarity."} />{" "}</span>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                     <button
@@ -599,9 +577,7 @@ export function MarkdownWorkspaceEditor({ pageId }: Props) {
                         border: "none",
                         cursor: "pointer",
                       }}
-                    >
-                      ✓ Accept
-                    </button>
+                    >{" "}<LocalizedText message={"✓ Accept"} />{" "}</button>
                     <button
                       type="button"
                       onClick={() => setShowAiSuggestion(false)}
@@ -614,9 +590,7 @@ export function MarkdownWorkspaceEditor({ pageId }: Props) {
                         border: "none",
                         cursor: "pointer",
                       }}
-                    >
-                      Dismiss
-                    </button>
+                    >{" "}<LocalizedText message={"Dismiss"} />{" "}</button>
                   </div>
                 </div>
               )}
@@ -626,9 +600,7 @@ export function MarkdownWorkspaceEditor({ pageId }: Props) {
             <div style={{ marginTop: 32, marginBottom: 28 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
                 <span className="docs-step-large">2</span>
-                <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
-                  Sign in to NexFellas
-                </h2>
+                <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>{" "}<LocalizedText message={"Sign in to NexFellas"} />{" "}</h2>
               </div>
               <div style={{ display: "grid", gap: 12, paddingLeft: 6 }}>
                 {[
@@ -651,31 +623,20 @@ export function MarkdownWorkspaceEditor({ pageId }: Props) {
                 <span className="docs-step-large">3</span>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <Monitor size={18} style={{ color: "var(--text-secondary)" }} />
-                  <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
-                    Theme Preferences
-                  </h2>
+                  <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>{" "}<LocalizedText message={"Theme Preferences"} />{" "}</h2>
                 </div>
               </div>
-              <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.6 }}>
-                You can switch between{" "}
+              <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.6 }}>{" "}<LocalizedText message={"You can switch between"} />{" "}
                 <span
                   className="docs-comment-highlight"
                   onClick={() => setSelectedHighlightComment("c2")}
-                >
-                  Light and Dark mode in Settings
-                  <span className="docs-author-pill" style={{ background: "#8B5CF6" }}>
-                    Priya Shah
-                  </span>
-                </span>{" "}
-                to match your preference.
-              </p>
+                >{" "}<LocalizedText message={"Light and Dark mode in Settings"} />{" "}<span className="docs-author-pill" style={{ background: "#8B5CF6" }}>{" "}<LocalizedText message={"Priya Shah"} />{" "}</span>
+                </span>{" "}{" "}<LocalizedText message={"to match your preference."} />{" "}</p>
 
               {/* Settings Action Callout */}
               <div className="docs-callout-settings">
                 <Settings size={18} style={{ color: "var(--text-tertiary)", flexShrink: 0 }} />
-                <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>
-                  Go to <b>Settings → Appearance</b> to update your theme preference at any time.
-                </span>
+                <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>{" "}<LocalizedText message={"Go to"} />{" "}<b><LocalizedText message={"Settings → Appearance"} /></b>{" "}<LocalizedText message={"to update your theme preference at any time."} />{" "}</span>
               </div>
             </div>
 
@@ -685,14 +646,10 @@ export function MarkdownWorkspaceEditor({ pageId }: Props) {
                 <span className="docs-step-large">4</span>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <Lock size={18} style={{ color: "var(--text-secondary)" }} />
-                  <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
-                    Password Management
-                  </h2>
+                  <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>{" "}<LocalizedText message={"Password Management"} />{" "}</h2>
                 </div>
               </div>
-              <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.6 }}>
-                Update your password under <b>Settings → Security</b> (signs out active sessions).
-              </p>
+              <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.6 }}>{" "}<LocalizedText message={"Update your password under"} />{" "}<b><LocalizedText message={"Settings → Security"} /></b>{" "}<LocalizedText message={"(signs out active sessions)."} />{" "}</p>
             </div>
 
             {/* Section 5: Admin Password Reset */}
@@ -701,26 +658,18 @@ export function MarkdownWorkspaceEditor({ pageId }: Props) {
                 <span className="docs-step-large">5</span>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <Users size={18} style={{ color: "var(--text-secondary)" }} />
-                  <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
-                    Admin Password Reset
-                  </h2>
+                  <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>{" "}<LocalizedText message={"Admin Password Reset"} />{" "}</h2>
                 </div>
               </div>
-              <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.6 }}>
-                If you’re an administrator, you can reset a user’s password directly from the Admin portal.
-              </p>
+              <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.6 }}>{" "}<LocalizedText message={"If you’re an administrator, you can reset a user’s password directly from the Admin portal."} />{" "}</p>
             </div>
 
             {/* Green Success Callout */}
             <div className="docs-callout docs-callout-success">
               <CheckCircle2 size={18} style={{ color: "var(--status-completed)", flexShrink: 0, marginTop: 2 }} />
               <div style={{ minWidth: 0, flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", marginBottom: 2 }}>
-                  All set!
-                </div>
-                <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.5 }}>
-                  Once you’re signed in, you can customize your profile, configure integrations, and invite team members.
-                </div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", marginBottom: 2 }}>{" "}<LocalizedText message={"All set!"} />{" "}</div>
+                <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.5 }}>{" "}<LocalizedText message={"Once you’re signed in, you can customize your profile, configure integrations, and invite team members."} />{" "}</div>
               </div>
             </div>
           </div>

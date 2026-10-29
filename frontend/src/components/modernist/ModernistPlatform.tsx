@@ -1,4 +1,6 @@
-'use client';
+"use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
@@ -86,6 +88,8 @@ export const ModernistPlatform: React.FC<ModernistPlatformProps> = ({
   theme = 'ocean',
   corners = 'soft',
 }) => {
+  const { t: translateUI } = useI18n();
+
   const router = useRouter();
 
   // Mode and Page
@@ -649,21 +653,17 @@ export const ModernistPlatform: React.FC<ModernistPlatformProps> = ({
                 fontSize: '11px',
                 borderRadius: 'var(--r-sm)',
               }}
-            >
-              PP
-            </div>
+            >{" "}<LocalizedText message={"PP"} />{" "}</div>
             <div style={{ lineHeight: 1.15 }}>
-              <div style={{ fontWeight: 800, fontSize: '15px' }}>Project Platform</div>
-              <div className="text-muted" style={{ fontSize: '9.5px', letterSpacing: '.12em', textTransform: 'uppercase', fontWeight: 600 }}>
-                Management workspace
-              </div>
+              <div style={{ fontWeight: 800, fontSize: '15px' }}><LocalizedText message={"Project Platform"} /></div>
+              <div className="text-muted" style={{ fontSize: '9.5px', letterSpacing: '.12em', textTransform: 'uppercase', fontWeight: 600 }}>{" "}<LocalizedText message={"Management workspace"} />{" "}</div>
             </div>
           </div>
 
           {/* Navigation Items */}
           <nav
             role="navigation"
-            aria-label="Primary navigation"
+            aria-label={translateUI("Primary navigation")}
             style={{ flex: 1, overflowY: 'auto', padding: '4px 12px 20px' }}
           >
             {mode === 'teams' ? (
@@ -728,13 +728,11 @@ export const ModernistPlatform: React.FC<ModernistPlatformProps> = ({
                     onClick={() => openDocDialog()}
                     style={{ flex: 1, minHeight: '36px' }}
                   >
-                    <Icon d={IC.plus} size={15} style={{ flex: 'none' }} />
-                    New file
-                  </button>
+                    <Icon d={IC.plus} size={15} style={{ flex: 'none' }} />{" "}<LocalizedText message={"New file"} />{" "}</button>
                   <button
                     className="btn btn-secondary btn-icon"
-                    aria-label="Graph view"
-                    title="Graph view"
+                    aria-label={translateUI("Graph view")}
+                    title={translateUI("Graph view")}
                     onClick={() => {
                       setDocView('graph');
                       setDocId(null);
@@ -785,9 +783,7 @@ export const ModernistPlatform: React.FC<ModernistPlatformProps> = ({
                   );
                 })}
 
-                <h6 className="text-muted" style={{ margin: '20px 10px 6px', fontSize: '10.5px' }}>
-                  Folders
-                </h6>
+                <h6 className="text-muted" style={{ margin: '20px 10px 6px', fontSize: '10.5px' }}>{" "}<LocalizedText message={"Folders"} />{" "}</h6>
                 {FOLDERS.map(([k, l, col]) => {
                   const folderFiles = docs.filter(d => d.folder === k);
                   const open = !!folderOpen[k];
@@ -887,9 +883,7 @@ export const ModernistPlatform: React.FC<ModernistPlatformProps> = ({
                   );
                 })}
 
-                <h6 className="text-muted" style={{ margin: '20px 10px 8px', fontSize: '10.5px' }}>
-                  Tags
-                </h6>
+                <h6 className="text-muted" style={{ margin: '20px 10px 8px', fontSize: '10.5px' }}>{" "}<LocalizedText message={"Tags"} />{" "}</h6>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', padding: '0 6px' }}>
                   {Array.from(new Set(docs.flatMap(d => d.tags))).slice(0, 10).map((tg, idx) => {
                     const on = docView === 'tag' && docTag === tg;
@@ -948,9 +942,7 @@ export const ModernistPlatform: React.FC<ModernistPlatformProps> = ({
                 fontWeight: 800,
                 borderRadius: 'var(--r-av)',
               }}
-            >
-              PA
-              <span
+            >{" "}<LocalizedText message={"PA"} />{" "}<span
                 style={{
                   position: 'absolute',
                   right: '-3px',
@@ -964,15 +956,13 @@ export const ModernistPlatform: React.FC<ModernistPlatformProps> = ({
               />
             </div>
             <div style={{ flex: 1, minWidth: 0, lineHeight: 1.25 }}>
-              <div style={{ fontSize: '14px', fontWeight: 700 }}>Platform Admin</div>
-              <div className="text-muted" style={{ fontSize: '11px' }}>
-                Administrator
-              </div>
+              <div style={{ fontSize: '14px', fontWeight: 700 }}><LocalizedText message={"Platform Admin"} /></div>
+              <div className="text-muted" style={{ fontSize: '11px' }}>{" "}<LocalizedText message={"Administrator"} />{" "}</div>
             </div>
             <button
               className="btn btn-icon"
-              aria-label="Sign out"
-              title="Sign out"
+              aria-label={translateUI("Sign out")}
+              title={translateUI("Sign out")}
               onClick={() => router.push('/login')}
             >
               <Icon d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4 M16 17l5-5-5-5 M21 12H9" size={16} />
@@ -1021,7 +1011,7 @@ export const ModernistPlatform: React.FC<ModernistPlatformProps> = ({
             <button
               data-burger="1"
               className="btn btn-secondary btn-icon"
-              aria-label="Open menu"
+              aria-label={translateUI("Open menu")}
               onClick={() => setNavOpen(!navOpen)}
               style={{
                 width: '40px',
@@ -1108,7 +1098,7 @@ export const ModernistPlatform: React.FC<ModernistPlatformProps> = ({
             <button
               data-search-btn="1"
               onClick={() => setPalette(true)}
-              aria-label="Search projects, tasks, people…"
+              aria-label={translateUI("Search projects, tasks, people…")}
               style={{
                 marginLeft: 'auto',
                 justifyContent: 'center',
@@ -1129,9 +1119,7 @@ export const ModernistPlatform: React.FC<ModernistPlatformProps> = ({
               }}
             >
               <Icon d={IC.search} size={16} style={{ flex: 'none' }} />
-              <span data-hl="1" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                Search projects, tasks, people…
-              </span>
+              <span data-hl="1" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{" "}<LocalizedText message={"Search projects, tasks, people…"} />{" "}</span>
               <span
                 data-hl="1"
                 style={{
@@ -1142,17 +1130,15 @@ export const ModernistPlatform: React.FC<ModernistPlatformProps> = ({
                   flex: 'none',
                   borderRadius: 'var(--r-xs)',
                 }}
-              >
-                ⌘K
-              </span>
+              >{" "}<LocalizedText message={"⌘K"} />{" "}</span>
             </button>
 
             {/* Header "+ Create" button */}
             <button
               data-create-btn="1"
               className="btn btn-primary"
-              aria-label="Create task"
-              title="Create task"
+              aria-label={translateUI("Create task")}
+              title={translateUI("Create task")}
               onClick={() => {
                 if (mode === 'docs') openDocDialog();
                 else openTaskDialog({ project: page === 'project' && projectId ? projectId : undefined });
@@ -1160,13 +1146,13 @@ export const ModernistPlatform: React.FC<ModernistPlatformProps> = ({
               style={{ minHeight: '40px', flex: 'none', borderRadius: 'var(--r-sm)' }}
             >
               <Icon d={IC.plus} size={16} style={{ flex: 'none' }} />
-              <span data-hl="1">Create</span>
+              <span data-hl="1"><LocalizedText message={"Create"} /></span>
             </button>
 
             {/* Notifications button */}
             <button
               className="btn btn-secondary btn-icon"
-              aria-label="Notifications"
+              aria-label={translateUI("Notifications")}
               onClick={() => navigateTo('notifications')}
               style={{
                 position: 'relative',
@@ -1206,15 +1192,13 @@ export const ModernistPlatform: React.FC<ModernistPlatformProps> = ({
               className="tag tag-neutral"
               style={{ gap: '6px', fontWeight: 600, whiteSpace: 'nowrap', flex: 'none' }}
             >
-              <span style={{ width: '7px', height: '7px', background: 'oklch(0.6 0.15 152)', borderRadius: 'var(--r-av)' }} />
-              Online
-            </span>
+              <span style={{ width: '7px', height: '7px', background: 'oklch(0.6 0.15 152)', borderRadius: 'var(--r-av)' }} />{" "}<LocalizedText message={"Online"} />{" "}</span>
 
             {/* Team chat toggle button */}
             <button
               className="btn btn-secondary btn-icon"
-              aria-label="Team chat"
-              title="Team chat"
+              aria-label={translateUI("Team chat")}
+              title={translateUI("Team chat")}
               onClick={() => setChatOpen(!chatOpen)}
               style={{
                 width: '40px',
@@ -1563,7 +1547,7 @@ export const ModernistPlatform: React.FC<ModernistPlatformProps> = ({
       {/* Mobile Primary Navigation Bar to satisfy tests & responsive UI */}
       <nav
         role="navigation"
-        aria-label="Mobile primary navigation"
+        aria-label={translateUI("Mobile primary navigation")}
         className="pmp-mobile-nav"
         style={{
           position: 'fixed',
@@ -1583,37 +1567,29 @@ export const ModernistPlatform: React.FC<ModernistPlatformProps> = ({
           onClick={() => navigateTo('home')}
           style={{ border: 0, background: 'transparent', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, fontSize: 10 }}
         >
-          <Icon d={IC.home} size={18} />
-          Home
-        </button>
+          <Icon d={IC.home} size={18} />{" "}<LocalizedText message={"Home"} />{" "}</button>
         <button
           onClick={() => navigateTo('projects')}
           style={{ border: 0, background: 'transparent', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, fontSize: 10 }}
         >
-          <Icon d={IC.projects} size={18} />
-          Projects
-        </button>
+          <Icon d={IC.projects} size={18} />{" "}<LocalizedText message={"Projects"} />{" "}</button>
         <button
           onClick={() => navigateTo('tasks')}
           style={{ border: 0, background: 'transparent', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, fontSize: 10 }}
         >
-          <Icon d={IC.tasks} size={18} />
-          Tasks
-        </button>
+          <Icon d={IC.tasks} size={18} />{" "}<LocalizedText message={"Tasks"} />{" "}</button>
         <button
           onClick={() => setMobileMoreOpen(true)}
           style={{ border: 0, background: 'transparent', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, fontSize: 10 }}
         >
-          <Icon d={IC.menu} size={18} />
-          More
-        </button>
+          <Icon d={IC.menu} size={18} />{" "}<LocalizedText message={"More"} />{" "}</button>
       </nav>
 
       {/* Mobile More Navigation Dialog */}
       {mobileMoreOpen && (
         <div
           role="dialog"
-          aria-label="More navigation"
+          aria-label={translateUI("More navigation")}
           onClick={() => setMobileMoreOpen(false)}
           style={{
             position: 'fixed',
@@ -1637,7 +1613,7 @@ export const ModernistPlatform: React.FC<ModernistPlatformProps> = ({
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0 }}>More navigation</h3>
+              <h3 style={{ margin: 0 }}><LocalizedText message={"More navigation"} /></h3>
               <button className="btn btn-icon" onClick={() => setMobileMoreOpen(false)}>
                 <Icon d={IC.x} size={16} />
               </button>

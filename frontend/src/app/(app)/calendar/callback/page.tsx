@@ -1,4 +1,6 @@
 "use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
@@ -86,17 +88,16 @@ function CalendarCallbackInner() {
           >
             <CalendarCheck2 size={28} />
           </div>
-          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>Calendar Connected</h2>
+          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}><LocalizedText message={"Calendar Connected"} /></h2>
           <p style={{ margin: 0, fontSize: 13.5, color: "var(--text-secondary)", lineHeight: 1.6 }}>
             {message}
           </p>
           <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
             <Link href="/settings">
-              <Button variant="secondary">Go to Settings</Button>
+              <Button variant="secondary"><LocalizedText message={"Go to Settings"} /></Button>
             </Link>
             <Link href="/h/holding">
-              <Button>
-                Open Workspace <ArrowRight size={14} />
+              <Button>{" "}<LocalizedText message={"Open Workspace"} />{" "}<ArrowRight size={14} />
               </Button>
             </Link>
           </div>
@@ -128,12 +129,12 @@ function CalendarCallbackInner() {
           >
             <AlertTriangle size={28} />
           </div>
-          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>Connection Failed</h2>
+          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}><LocalizedText message={"Connection Failed"} /></h2>
           <p style={{ margin: 0, fontSize: 13.5, color: "var(--text-secondary)", lineHeight: 1.6 }}>
             {message}
           </p>
           <Link href="/settings" style={{ marginTop: 8 }}>
-            <Button variant="secondary">Back to Settings</Button>
+            <Button variant="secondary"><LocalizedText message={"Back to Settings"} /></Button>
           </Link>
         </div>
       )}
@@ -142,8 +143,10 @@ function CalendarCallbackInner() {
 }
 
 export default function CalendarCallbackPage() {
+  const { t: translateUI } = useI18n();
+
   return (
-    <Suspense fallback={<Spinner label="Connecting…" />}>
+    <Suspense fallback={<Spinner label={translateUI("Connecting…")} />}>
       <CalendarCallbackInner />
     </Suspense>
   );

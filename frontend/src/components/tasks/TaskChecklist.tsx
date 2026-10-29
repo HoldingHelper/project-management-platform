@@ -1,5 +1,8 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
+
 import { useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Check, ListChecks, Pencil, Plus, Trash2, X } from "lucide-react";
@@ -11,6 +14,8 @@ import styles from "./TaskChecklist.module.css";
 export type ChecklistDraft = { id?: string | null; text: string; is_done?: boolean };
 
 function AddItem({ disabled, onAdd, saving = false }: { disabled?: boolean; saving?: boolean; onAdd: (text: string) => void }) {
+  const { t: translateUI } = useI18n();
+
   const [text, setText] = useState("");
   function add() {
     if (disabled || !text.trim()) return;
@@ -18,21 +23,23 @@ function AddItem({ disabled, onAdd, saving = false }: { disabled?: boolean; savi
     if (!saving) { setText(""); }
   }
   return <div className={styles.add}>
-    <TextInput value={text} disabled={disabled} maxLength={500} aria-label="New checklist item" placeholder="Add a checklist item…" onChange={(event) => setText(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); add(); } }} />
-    <Button type="button" variant="secondary" size="sm" disabled={disabled || !text.trim()} onClick={add}><Plus size={15} aria-hidden />Add item</Button>
+    <TextInput value={text} disabled={disabled} maxLength={500} aria-label={translateUI("New checklist item")} placeholder={translateUI("Add a checklist item…")} onChange={(event) => setText(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); add(); } }} />
+    <Button type="button" variant="secondary" size="sm" disabled={disabled || !text.trim()} onClick={add}><Plus size={15} aria-hidden /><LocalizedText message={"Add item"} /></Button>
   </div>;
 }
 
 export function ChecklistEditor({ items, onChange, disabled, entity = "task" }: { items: ChecklistDraft[]; onChange: (items: ChecklistDraft[]) => void; disabled?: boolean; entity?: "task" | "project" }) {
+  const { t: translateUI } = useI18n();
+
   return <div className={styles.editor}>
-    {items.length === 0 && <p className={styles.hint}>Break the {entity} into small, actionable steps.</p>}
+    {items.length === 0 && <p className={styles.hint}><LocalizedText message={entity === "task" ? "Break the task into small, actionable steps." : "Break the project into small, actionable steps."} /></p>}
     {items.map((item, index) => <div className={styles.row} key={item.id ?? index}>
-      <span className={styles.marker} aria-label={item.is_done ? "Completed" : undefined}>{item.is_done ? <Check size={16} /> : `${index + 1}.`}</span>
-      <TextInput value={item.text} disabled={disabled} maxLength={500} aria-label={`Checklist item ${index + 1}`} onChange={(event) => onChange(items.map((current, i) => i === index ? { ...current, text: event.target.value } : current))} />
-      <Button type="button" variant="ghost" size="sm" disabled={disabled} aria-label={`Remove checklist item ${index + 1}`} title="Remove item" onClick={() => onChange(items.filter((_, i) => i !== index))}><X size={16} aria-hidden /></Button>
+      <span className={styles.marker} aria-label={item.is_done ? translateUI("Completed") : undefined}>{item.is_done ? <Check size={16} /> : `${index + 1}.`}</span>
+      <TextInput value={item.text} disabled={disabled} maxLength={500} aria-label={translateUI("Checklist item {number}", { number: index + 1 })} onChange={(event) => onChange(items.map((current, i) => i === index ? { ...current, text: event.target.value } : current))} />
+      <Button type="button" variant="ghost" size="sm" disabled={disabled} aria-label={translateUI("Remove checklist item {number}", { number: index + 1 })} title={translateUI("Remove item")} onClick={() => onChange(items.filter((_, i) => i !== index))}><X size={16} aria-hidden /></Button>
     </div>)}
     <AddItem disabled={disabled} onAdd={(text) => onChange([...items, { id: null, text }])} />
-    <span className={styles.hint}>Press Enter to add an item. Changes are saved with the {entity}.</span>
+    <span className={styles.hint}><LocalizedText message={entity === "task" ? "Press Enter to add an item. Changes are saved with the task." : "Press Enter to add an item. Changes are saved with the project."} /></span>
   </div>;
 }
 
@@ -44,6 +51,8 @@ export function ProjectChecklist({ project, canEdit }: { project: ProjectRead; c
   return <EntityChecklist entity={{ id: project.id, checklist_items: project.checklist_items ?? [] }} canEdit={canEdit} kind="project" />;
 }
 function EntityChecklist({ entity: task, canEdit, kind }: { entity: Pick<TaskRead, "id" | "checklist_items">; canEdit: boolean; kind: "task" | "project" }) {
+  const { t: translateUI } = useI18n();
+
   const qc = useQueryClient();
   const toast = useToast();
   const lock = useRef(false);
@@ -94,33 +103,33 @@ function EntityChecklist({ entity: task, canEdit, kind }: { entity: Pick<TaskRea
   const total = task.checklist_items.length;
   const percent = total ? Math.round(completed / total * 100) : 0;
   const disabled = mutation.isPending;
-  return <section className="task-content-card" aria-label={kind === "task" ? "Task checklist" : "Project checklist"}>
-    <div className="card-top-bar"><div className={styles.heading}><ListChecks size={16} aria-hidden /><span className="card-title">Checklist</span></div><span className={styles.hint} aria-live="polite">{total ? `${completed} of ${total} completed` : "No items yet"}</span></div>
+  return <section className="task-content-card" aria-label={translateUI(kind === "task" ? "Task checklist" : "Project checklist")}>
+    <div className="card-top-bar"><div className={styles.heading}><ListChecks size={16} aria-hidden /><span className="card-title"><LocalizedText message={"Checklist"} /></span></div><span className={styles.hint} aria-live="polite">{total ? translateUI("{completed} of {total} completed", { completed, total }) : <LocalizedText message={"No items yet"} />}</span></div>
     <div className={styles.content}>
-      {total > 0 && <div className={styles.progress} role="progressbar" aria-label="Checklist completion" aria-valuemin={0} aria-valuemax={total} aria-valuenow={completed}><span style={{ width: `${percent}%` }} /></div>}
-      {!total && <p className={styles.hint}>Break this {kind} into small steps and track each one here.</p>}
+      {total > 0 && <div className={styles.progress} role="progressbar" aria-label={translateUI("Checklist completion")} aria-valuemin={0} aria-valuemax={total} aria-valuenow={completed}><span style={{ width: `${percent}%` }} /></div>}
+      {!total && <p className={styles.hint}><LocalizedText message={kind === "task" ? "Break this task into small steps and track each one here." : "Break this project into small steps and track each one here."} /></p>}
       {task.checklist_items.map((item) => <div key={item.id} className={styles.item}>
         <div className={styles.row}>
-          <input type="checkbox" className={styles.checkbox} checked={item.is_done} disabled={!canEdit || disabled} aria-label={`Complete ${item.text}`} onChange={(event) => submit({ type: "toggle", id: item.id, done: event.target.checked })} />
+          <input type="checkbox" className={styles.checkbox} checked={item.is_done} disabled={!canEdit || disabled} aria-label={translateUI("Complete {item}", { item: item.text })} onChange={(event) => submit({ type: "toggle", id: item.id, done: event.target.checked })} />
           {editing === item.id ? <>
-            <TextInput autoFocus value={draft} maxLength={500} aria-label="Edit checklist item" disabled={disabled} onChange={(event) => setDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); if (draft.trim()) submit({ type: "edit", id: item.id, text: draft.trim() }); } if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); setEditing(null); } }} />
-            <Button type="button" variant="secondary" size="sm" disabled={disabled || !draft.trim()} aria-label="Save checklist item" onClick={() => submit({ type: "edit", id: item.id, text: draft.trim() })}><Check size={16} aria-hidden /></Button>
-            <Button type="button" variant="ghost" size="sm" disabled={disabled} aria-label="Cancel editing checklist item" onClick={() => setEditing(null)}><X size={16} aria-hidden /></Button>
+            <TextInput autoFocus value={draft} maxLength={500} aria-label={translateUI("Edit checklist item")} disabled={disabled} onChange={(event) => setDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); if (draft.trim()) submit({ type: "edit", id: item.id, text: draft.trim() }); } if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); setEditing(null); } }} />
+            <Button type="button" variant="secondary" size="sm" disabled={disabled || !draft.trim()} aria-label={translateUI("Save checklist item")} onClick={() => submit({ type: "edit", id: item.id, text: draft.trim() })}><Check size={16} aria-hidden /></Button>
+            <Button type="button" variant="ghost" size="sm" disabled={disabled} aria-label={translateUI("Cancel editing checklist item")} onClick={() => setEditing(null)}><X size={16} aria-hidden /></Button>
           </> : <>
             <span className={item.is_done ? styles.done : styles.text}>{item.text}</span>
             {canEdit && <div className={styles.actions}>
-              <Button type="button" variant="ghost" size="sm" disabled={disabled} aria-label={`Edit checklist item ${item.text}`} title="Edit item" onClick={() => { setEditing(item.id); setDraft(item.text); setRemoving(null); }}><Pencil size={14} aria-hidden /></Button>
-              <Button type="button" variant="ghost" size="sm" disabled={disabled} aria-label={`Remove checklist item ${item.text}`} title="Remove item" onClick={() => { setRemoving(item.id); setEditing(null); }}><Trash2 size={14} aria-hidden /></Button>
+              <Button type="button" variant="ghost" size="sm" disabled={disabled} aria-label={translateUI("Edit checklist item {item}", { item: item.text })} title={translateUI("Edit item")} onClick={() => { setEditing(item.id); setDraft(item.text); setRemoving(null); }}><Pencil size={14} aria-hidden /></Button>
+              <Button type="button" variant="ghost" size="sm" disabled={disabled} aria-label={translateUI("Remove checklist item {item}", { item: item.text })} title={translateUI("Remove item")} onClick={() => { setRemoving(item.id); setEditing(null); }}><Trash2 size={14} aria-hidden /></Button>
             </div>}
           </>}
         </div>
-        {removing === item.id && <div className={styles.confirm}><span>Remove this item?</span><Button type="button" variant="secondary" size="sm" disabled={disabled} onClick={() => setRemoving(null)}>Cancel</Button><Button type="button" variant="danger" size="sm" disabled={disabled} onClick={() => submit({ type: "remove", id: item.id })}>Remove item</Button></div>}
+        {removing === item.id && <div className={styles.confirm}><span><LocalizedText message={"Remove this item?"} /></span><Button type="button" variant="secondary" size="sm" disabled={disabled} onClick={() => setRemoving(null)}><LocalizedText message={"Cancel"} /></Button><Button type="button" variant="danger" size="sm" disabled={disabled} onClick={() => submit({ type: "remove", id: item.id })}><LocalizedText message={"Remove item"} /></Button></div>}
       </div>)}
       {canEdit && <div className={styles.add}>
-        <TextInput value={text} maxLength={500} disabled={disabled} aria-label="New checklist item" placeholder="Add a checklist item…" onChange={(event) => setText(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); if (text.trim()) submit({ type: "add", text: text.trim() }); } }} />
-        <Button type="button" variant="secondary" size="sm" disabled={disabled || !text.trim()} onClick={() => submit({ type: "add", text: text.trim() })}><Plus size={15} aria-hidden />{disabled && mutation.variables?.type === "add" ? "Adding…" : "Add item"}</Button>
+        <TextInput value={text} maxLength={500} disabled={disabled} aria-label={translateUI("New checklist item")} placeholder={translateUI("Add a checklist item…")} onChange={(event) => setText(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); if (text.trim()) submit({ type: "add", text: text.trim() }); } }} />
+        <Button type="button" variant="secondary" size="sm" disabled={disabled || !text.trim()} onClick={() => submit({ type: "add", text: text.trim() })}><Plus size={15} aria-hidden />{disabled && mutation.variables?.type === "add" ? <LocalizedText message={"Adding…"} /> : <LocalizedText message={"Add item"} />}</Button>
       </div>}
-      <span className={styles.hint}>{disabled ? "Saving…" : total && kind === "task" ? "Checking all items automatically marks the task as Done." : canEdit ? "Press Enter to add. Each change saves automatically." : ""}</span>
+      <span className={styles.hint}>{disabled ? <LocalizedText message={"Saving…"} /> : total && kind === "task" ? <LocalizedText message={"Checking all items automatically marks the task as Done."} /> : canEdit ? <LocalizedText message={"Press Enter to add. Each change saves automatically."} /> : ""}</span>
     </div>
   </section>;
 }

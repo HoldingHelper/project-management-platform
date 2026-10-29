@@ -1,4 +1,6 @@
 "use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 import { useState } from "react";
 import { Check, Clock, Sparkles, Trash2, X } from "lucide-react";
@@ -42,6 +44,8 @@ interface Props {
 }
 
 export function UserStatusPickerModal({ isOpen, onClose, onSuccess }: Props) {
+  const { t: translateUI } = useI18n();
+
   const { user, setUser } = useAuth();
 
   const [presence, setPresence] = useState<PresenceStatus>(
@@ -161,12 +165,8 @@ export function UserStatusPickerModal({ isOpen, onClose, onSuccess }: Props) {
               <Sparkles size={16} />
             </span>
             <div>
-              <h2 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: "var(--text-primary)" }}>
-                Set your status
-              </h2>
-              <p style={{ fontSize: 12, color: "var(--text-tertiary)", margin: 0, marginTop: 1 }}>
-                Let your team know your availability & focus
-              </p>
+              <h2 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: "var(--text-primary)" }}>{" "}<LocalizedText message={"Set your status"} />{" "}</h2>
+              <p style={{ fontSize: 12, color: "var(--text-tertiary)", margin: 0, marginTop: 1 }}>{" "}<LocalizedText message={"Let your team know your availability & focus"} />{" "}</p>
             </div>
           </div>
           <button
@@ -189,9 +189,7 @@ export function UserStatusPickerModal({ isOpen, onClose, onSuccess }: Props) {
         <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 18, maxHeight: "75vh", overflowY: "auto" }}>
           {/* Active vs Inactive state segmented switch */}
           <div>
-            <label style={{ fontSize: 11.5, fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.04em", display: "block", marginBottom: 8 }}>
-              Availability State
-            </label>
+            <label style={{ fontSize: 11.5, fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.04em", display: "block", marginBottom: 8 }}>{" "}<LocalizedText message={"Availability State"} />{" "}</label>
             <div
               style={{
                 display: "grid",
@@ -224,7 +222,7 @@ export function UserStatusPickerModal({ isOpen, onClose, onSuccess }: Props) {
                 }}
               >
                 <PresenceDot status="online" size={10} />
-                <span>Active</span>
+                <span><LocalizedText message={"Active"} /></span>
               </button>
               <button
                 type="button"
@@ -247,16 +245,14 @@ export function UserStatusPickerModal({ isOpen, onClose, onSuccess }: Props) {
                 }}
               >
                 <PresenceDot status="away" size={10} />
-                <span>Away / Inactive</span>
+                <span><LocalizedText message={"Away / Inactive"} /></span>
               </button>
             </div>
           </div>
 
           {/* Custom Status Message & Emoji Input */}
           <div>
-            <label style={{ fontSize: 11.5, fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.04em", display: "block", marginBottom: 8 }}>
-              Custom Status Message
-            </label>
+            <label style={{ fontSize: 11.5, fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.04em", display: "block", marginBottom: 8 }}>{" "}<LocalizedText message={"Custom Status Message"} />{" "}</label>
             <div
               style={{
                 display: "flex",
@@ -284,7 +280,7 @@ export function UserStatusPickerModal({ isOpen, onClose, onSuccess }: Props) {
                     alignItems: "center",
                     justifyContent: "center",
                   }}
-                  title="Pick emoji"
+                  title={translateUI("Pick emoji")}
                 >
                   {emoji || "💬"}
                 </button>
@@ -337,7 +333,7 @@ export function UserStatusPickerModal({ isOpen, onClose, onSuccess }: Props) {
                 type="text"
                 value={text}
                 onChange={(e) => setText(e.target.value)}
-                placeholder="What's your status? (e.g. Out sick, Deep working...)"
+                placeholder={translateUI("What's your status? (e.g. Out sick, Deep working...)")}
                 maxLength={255}
                 style={{
                   flex: 1,
@@ -363,9 +359,7 @@ export function UserStatusPickerModal({ isOpen, onClose, onSuccess }: Props) {
 
           {/* Quick Presets */}
           <div>
-            <label style={{ fontSize: 11.5, fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.04em", display: "block", marginBottom: 8 }}>
-              Quick Presets
-            </label>
+            <label style={{ fontSize: 11.5, fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.04em", display: "block", marginBottom: 8 }}>{" "}<LocalizedText message={"Quick Presets"} />{" "}</label>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
               {PRESETS.map((p) => {
                 const isSelected = text === p.text && emoji === p.emoji;
@@ -389,7 +383,7 @@ export function UserStatusPickerModal({ isOpen, onClose, onSuccess }: Props) {
                     }}
                   >
                     <span>{p.emoji}</span>
-                    <span>{p.text}</span>
+                    <span>{translateUI(p.text)}</span>
                   </button>
                 );
               })}
@@ -399,9 +393,7 @@ export function UserStatusPickerModal({ isOpen, onClose, onSuccess }: Props) {
           {/* Auto-Clear Duration */}
           <div>
             <label style={{ fontSize: 11.5, fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.04em", display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-              <Clock size={13} />
-              Clear After
-            </label>
+              <Clock size={13} />{" "}<LocalizedText message={"Clear After"} />{" "}</label>
             <select
               value={durationMinutes}
               onChange={(e) => setDurationMinutes(Number(e.target.value))}
@@ -419,7 +411,7 @@ export function UserStatusPickerModal({ isOpen, onClose, onSuccess }: Props) {
             >
               {DURATION_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
-                  {opt.label}
+                  {translateUI(opt.label)}
                 </option>
               ))}
             </select>
@@ -456,8 +448,7 @@ export function UserStatusPickerModal({ isOpen, onClose, onSuccess }: Props) {
               opacity: !user?.status_text && !user?.status_emoji ? 0.5 : 1,
             }}
           >
-            <Trash2 size={14} /> Clear status
-          </button>
+            <Trash2 size={14} />{" "}<LocalizedText message={"Clear status"} />{" "}</button>
 
           <div style={{ display: "flex", gap: 8 }}>
             <button
@@ -474,9 +465,7 @@ export function UserStatusPickerModal({ isOpen, onClose, onSuccess }: Props) {
                 fontWeight: 600,
                 cursor: "pointer",
               }}
-            >
-              Cancel
-            </button>
+            >{" "}<LocalizedText message={"Cancel"} />{" "}</button>
             <button
               type="button"
               onClick={handleSave}
@@ -497,7 +486,7 @@ export function UserStatusPickerModal({ isOpen, onClose, onSuccess }: Props) {
               }}
             >
               <Check size={15} />
-              {saving ? "Saving…" : "Save Status"}
+              {saving ? <LocalizedText message={"Saving…"} /> : <LocalizedText message={"Save Status"} />}
             </button>
           </div>
         </div>

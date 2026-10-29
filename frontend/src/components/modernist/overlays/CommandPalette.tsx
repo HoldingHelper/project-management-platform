@@ -1,3 +1,6 @@
+"use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 import React, { useState } from 'react';
 import { Project, Task, Person, DocFile } from '../types';
 import { Icon } from '../icons';
@@ -41,6 +44,8 @@ export function CommandPalette({
   onNavigatePage,
   onTriggerAction,
 }: CommandPaletteProps) {
+  const { t: translateUI } = useI18n();
+
   const [pq, setPq] = useState('');
 
   const q = pq.trim().toLowerCase();
@@ -208,7 +213,7 @@ export function CommandPalette({
       <div
         onClick={(e) => e.stopPropagation()}
         role="dialog"
-        aria-label="Search"
+        aria-label={translateUI("Search")}
         style={{
           width: '100%',
           maxWidth: 640,
@@ -239,8 +244,8 @@ export function CommandPalette({
             value={pq}
             onChange={(e) => setPq(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Search projects, tasks, people or pages…"
-            aria-label="Search"
+            placeholder={translateUI("Search projects, tasks, people or pages…")}
+            aria-label={translateUI("Search")}
             style={{
               flex: 1,
               minHeight: 56,
@@ -259,9 +264,7 @@ export function CommandPalette({
               padding: '1px 6px',
               borderRadius: 'var(--r-xs)',
             }}
-          >
-            Esc
-          </span>
+          >{" "}<LocalizedText message={"Esc"} />{" "}</span>
         </div>
 
         <div style={{ overflow: 'auto', padding: '4px 8px 8px' }}>
@@ -326,9 +329,7 @@ export function CommandPalette({
           ))}
 
           {groups.length === 0 && (
-            <p className="text-muted" style={{ padding: '16px 8px', margin: 0, fontSize: 14 }}>
-              Nothing matches that search.
-            </p>
+            <p className="text-muted" style={{ padding: '16px 8px', margin: 0, fontSize: 14 }}>{" "}<LocalizedText message={"Nothing matches that search."} />{" "}</p>
           )}
         </div>
 
@@ -339,9 +340,7 @@ export function CommandPalette({
             borderTop: '1px solid var(--color-divider)',
             fontSize: 12,
           }}
-        >
-          Enter opens the first result · ⌘K toggles search
-        </div>
+        >{" "}<LocalizedText message={"Enter opens the first result · ⌘K toggles search"} />{" "}</div>
       </div>
     </div>
   );

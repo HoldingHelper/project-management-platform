@@ -157,6 +157,9 @@ export function acceptInvitation(
 
 // ---- Profile & settings ----
 export function updateMyProfile(input: {
+  locale?: "en" | "fa";
+  calendar?: "gregory" | "persian";
+  numbering_system?: "latn" | "arabext";
   first_name?: string;
   last_name?: string;
   job_title?: string;

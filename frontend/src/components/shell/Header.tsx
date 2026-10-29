@@ -1,4 +1,10 @@
 "use client";
+import { LocalizedRelativeTime } from "@/lib/i18n/I18nProvider";
+
+import { useI18n } from "@/lib/i18n/I18nProvider";
+
+import { LanguageSelector } from "@/components/LanguageSelector";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
@@ -49,6 +55,8 @@ export function Header({
 }: {
   onOpenSearch: () => void;
 }) {
+  const { t: translateUI, number: displayNumber } = useI18n();
+
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuth();
@@ -98,30 +106,28 @@ export function Header({
         zIndex: "var(--z-sticky)",
       }}
     >
-      <div className="workspace-module-switcher" aria-label="Workspace modules">
+      <div className="workspace-module-switcher" aria-label={translateUI("Workspace modules")}>
         <Link href="/app/docs" aria-current={docsModule ? "page" : undefined} onClick={() => {
           if (user) rememberWorkspaceLocation(user.id, window.location.pathname + window.location.search);
-        }}><BookOpenText size={15}/>Docs</Link>
-        <Link href="/h/holding" aria-current={!docsModule ? "page" : undefined}><Landmark size={15}/>Holding</Link>
+        }}><BookOpenText size={15}/><LocalizedText message={"Docs"} /></Link>
+        <Link href="/h/holding" aria-current={!docsModule ? "page" : undefined}><Landmark size={15}/><LocalizedText message={"Holding"} /></Link>
       </div>
 
       {docsModule ? (
         <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, minWidth: 0, flex: 1 }}>
-          <span style={{ color: "var(--text-tertiary)" }}>Docs</span>
+          <span style={{ color: "var(--text-tertiary)" }}><LocalizedText message={"Docs"} /></span>
           <span style={{ color: "var(--text-tertiary)" }}>›</span>
-          <span style={{ color: "var(--text-secondary)" }}>Getting Started</span>
+          <span style={{ color: "var(--text-secondary)" }}><LocalizedText message={"Getting Started"} /></span>
           <span style={{ color: "var(--text-tertiary)" }}>›</span>
-          <span style={{ color: "var(--text-primary)", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            Signing In & Profile Management
-          </span>
+          <span style={{ color: "var(--text-primary)", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{" "}<LocalizedText message={"Signing In & Profile Management"} />{" "}</span>
         </div>
       ) : (
         <>
           <div className="pmp-header-route" style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
             <div style={{ fontSize: 11, color: "var(--text-tertiary)", letterSpacing: "0.04em", textTransform: "uppercase" }}>
-              {match.crumb}
+              {<LocalizedText message={match.crumb} />}
             </div>
-            <div style={{ fontSize: 16, fontWeight: 700, lineHeight: "20px" }}>{match.title}</div>
+            <div style={{ fontSize: 16, fontWeight: 700, lineHeight: "20px" }}>{<LocalizedText message={match.title} />}</div>
           </div>
           <div style={{ flex: 1 }} />
         </>
@@ -144,20 +150,14 @@ export function Header({
             }}
           >
             <Search size={14} style={{ color: "var(--text-tertiary)", flexShrink: 0 }} />
-            <span style={{ fontSize: 12, color: "var(--text-tertiary)", flex: 1 }}>Search across docs…</span>
-            <span style={{ fontSize: 9.5, padding: "1px 4px", borderRadius: 4, background: "var(--surface-3)", color: "var(--text-tertiary)", fontFamily: "var(--font-mono)" }}>
-              ⌘K
-            </span>
+            <span style={{ fontSize: 12, color: "var(--text-tertiary)", flex: 1 }}><LocalizedText message={"Search across docs…"} /></span>
+            <span style={{ fontSize: 9.5, padding: "1px 4px", borderRadius: 4, background: "var(--surface-3)", color: "var(--text-tertiary)", fontFamily: "var(--font-mono)" }}>{" "}<LocalizedText message={"⌘K"} />{" "}</span>
           </div>
 
           {/* Collaborators Avatar Stack */}
           <div style={{ display: "flex", alignItems: "center" }}>
-            <div style={{ width: 26, height: 26, borderRadius: "50%", background: "#3B82F6", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, border: "2px solid var(--surface-1)" }}>
-              JD
-            </div>
-            <div style={{ width: 26, height: 26, borderRadius: "50%", background: "#EC4899", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, border: "2px solid var(--surface-1)", marginLeft: -8 }}>
-              MK
-            </div>
+            <div style={{ width: 26, height: 26, borderRadius: "50%", background: "#3B82F6", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, border: "2px solid var(--surface-1)" }}>{" "}<LocalizedText message={"JD"} />{" "}</div>
+            <div style={{ width: 26, height: 26, borderRadius: "50%", background: "#EC4899", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, border: "2px solid var(--surface-1)", marginLeft: -8 }}>{" "}<LocalizedText message={"MK"} />{" "}</div>
             <div style={{ width: 26, height: 26, borderRadius: "50%", background: "var(--surface-3)", color: "var(--text-secondary)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9.5, fontWeight: 700, border: "2px solid var(--surface-1)", marginLeft: -8 }}>
               +2
             </div>
@@ -178,7 +178,7 @@ export function Header({
             }}
           >
             <Share2 size={13} />
-            <span>Share</span>
+            <span><LocalizedText message={"Share"} /></span>
           </button>
 
           {/* Publish Button */}
@@ -200,13 +200,13 @@ export function Header({
             }}
           >
             <Upload size={13} />
-            <span>Publish</span>
+            <span><LocalizedText message={"Publish"} /></span>
           </button>
         </div>
       ) : (
         <button
           type="button"
-          aria-label="Open global search"
+          aria-label={translateUI("Open global search")}
           onClick={onOpenSearch}
           className="pmp-global-search-trigger pmp-row"
           style={{
@@ -225,8 +225,8 @@ export function Header({
           }}
         >
           <Search size={15} style={{ color: "var(--text-tertiary)", flexShrink: 0 }} />
-          <span style={{ fontSize: 13.5, flex: 1, minWidth: 0, textAlign: "left" }}>Search projects, tasks, people…</span>
-          <span className="pmp-search-kbd">⌘K</span>
+          <span style={{ fontSize: 13.5, flex: 1, minWidth: 0, textAlign: "left" }}><LocalizedText message={"Search projects, tasks, people…"} /></span>
+          <span className="pmp-search-kbd"><LocalizedText message={"⌘K"} /></span>
         </button>
       )}
 
@@ -235,8 +235,8 @@ export function Header({
       <div ref={bellRef} style={{ position: "relative" }}>
         <button
           className="pmp-icon-btn"
-          title="Notifications"
-          aria-label={`Notifications${unreadCount ? `, ${unreadCount} unread` : ""}`}
+          title={translateUI("Notifications")}
+          aria-label={unreadCount ? translateUI("Notifications, {count} unread", { count: unreadCount }) : translateUI("Notifications")}
           onClick={() => setBellOpen((o) => !o)}
           style={{
             position: "relative",
@@ -273,7 +273,7 @@ export function Header({
                 border: "2px solid var(--surface-1)",
               }}
             >
-              {unreadCount > 9 ? "9+" : unreadCount}
+              {unreadCount > 9 ? `${displayNumber(9)}+` : displayNumber(unreadCount)}
             </span>
           )}
         </button>
@@ -281,7 +281,7 @@ export function Header({
           <div
             style={{
               position: "absolute",
-              right: 0,
+              insetInlineEnd: 0,
               top: 44,
               width: 340,
               background: "var(--surface-2)",
@@ -303,14 +303,14 @@ export function Header({
                 borderBottom: "1px solid var(--border-subtle)",
               }}
             >
-              <span style={{ fontSize: 13, fontWeight: 700 }}>Notifications</span>
+              <span style={{ fontSize: 13, fontWeight: 700 }}><LocalizedText message={"Notifications"} /></span>
               <button
                 onClick={async () => {
                   await markAllNotificationsRead();
                   refresh();
                 }}
-                title="Mark all read"
-                aria-label="Mark all notifications as read"
+                title={translateUI("Mark all read")}
+                aria-label={translateUI("Mark all notifications as read")}
                 style={{
                   border: "none",
                   background: "transparent",
@@ -322,13 +322,10 @@ export function Header({
                   fontSize: 11.5,
                 }}
               >
-                <CheckCheck size={13} /> Mark all read
-              </button>
+                <CheckCheck size={13} />{" "}<LocalizedText message={"Mark all read"} />{" "}</button>
             </div>
             {recent.length === 0 && (
-              <div style={{ padding: 18, fontSize: 12.5, color: "var(--text-tertiary)", textAlign: "center" }}>
-                You&apos;re all caught up.
-              </div>
+              <div style={{ padding: 18, fontSize: 12.5, color: "var(--text-tertiary)", textAlign: "center" }}>{" "}<LocalizedText message={"You're all caught up."} />{" "}</div>
             )}
             {recent.map((n) => (
               <Link
@@ -350,7 +347,7 @@ export function Header({
                         {formatNotificationBody(n.body)}
                       </div>
                     )}
-                    <div style={{ fontSize: 10.5, color: "var(--text-tertiary)" }}>{relativeTime(n.created_at)}</div>
+                    <div style={{ fontSize: 10.5, color: "var(--text-tertiary)" }}>{<LocalizedRelativeTime value={n.created_at} />}</div>
                 </div>
               </Link>
             ))}
@@ -366,9 +363,7 @@ export function Header({
                 fontWeight: 600,
                 color: "var(--text-link)",
               }}
-            >
-              Open notification center
-            </Link>
+            >{" "}<LocalizedText message={"Open notification center"} />{" "}</Link>
           </div>
         )}
       </div>
@@ -387,8 +382,9 @@ export function Header({
       </div>
       <div ref={menuRef} style={{ position: "relative" }}>
         <button
+          className="pmp-profile-menu-trigger"
           onClick={() => setMenuOpen((o) => !o)}
-          aria-label={`Open profile menu for ${user?.full_name ?? "current user"}`}
+          aria-label={translateUI("Open profile menu for {name}", { name: user?.full_name ?? "" })}
           style={{ border: "none", background: "transparent", cursor: "pointer", padding: 0, display: "flex", position: "relative" }}
         >
           <span style={{ position: "relative", display: "inline-flex" }}>
@@ -400,7 +396,7 @@ export function Header({
           <div
             style={{
               position: "absolute",
-              right: 0,
+              insetInlineEnd: 0,
               top: 44,
               background: "var(--surface-2)",
               border: "1px solid var(--border-default)",
@@ -418,7 +414,8 @@ export function Header({
               <div style={{ fontSize: 11, color: "var(--text-tertiary)" }}>{user?.email}</div>
             </div>
 
-            {/* Custom status shortcut */}
+            <div style={{padding:"10px 12px"}}><LanguageSelector /></div>
+{/* Custom status shortcut */}
             <button
               type="button"
               onClick={() => {
@@ -443,20 +440,18 @@ export function Header({
               }}
             >
               <Sparkles size={14} style={{ color: "var(--accent-primary)" }} />
-              <span>Set custom status…</span>
+              <span><LocalizedText message={"Set custom status…"} /></span>
             </button>
 
             <div style={{ padding: "8px 12px", borderBottom: "1px solid var(--border-subtle)" }}>
-              <div style={{ fontSize: 10.5, color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 6 }}>
-                Presence
-              </div>
+              <div style={{ fontSize: 10.5, color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 6 }}>{" "}<LocalizedText message={"Presence"} />{" "}</div>
               <div style={{ display: "flex", gap: 6 }}>
                 {PRESENCE_OPTIONS.map((s) => (
                   <button
                     key={s}
                     onClick={() => pickPresence(s)}
-                    title={PRESENCE_LABELS[s]}
-                    aria-label={`Set presence to ${PRESENCE_LABELS[s]}`}
+                    title={translateUI(PRESENCE_LABELS[s])}
+                    aria-label={translateUI("Set presence to {status}", { status: translateUI(PRESENCE_LABELS[s]) })}
                     style={{
                       display: "flex",
                       alignItems: "center",
@@ -471,7 +466,7 @@ export function Header({
                     }}
                   >
                     <PresenceDot status={s} size={7} />
-                    {PRESENCE_LABELS[s].split(" ")[0]}
+                    {translateUI(PRESENCE_LABELS[s])}
                   </button>
                 ))}
               </div>
@@ -482,16 +477,14 @@ export function Header({
               className="pmp-row"
               style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", fontSize: 13, color: "var(--text-secondary)" }}
             >
-              <UserIcon size={15} /> My profile
-            </Link>
+              <UserIcon size={15} />{" "}<LocalizedText message={"My profile"} />{" "}</Link>
             <Link
               href="/settings"
               onClick={() => setMenuOpen(false)}
               className="pmp-row"
               style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", fontSize: 13, color: "var(--text-secondary)" }}
             >
-              <Settings size={15} /> Settings
-            </Link>
+              <Settings size={15} />{" "}<LocalizedText message={"Settings"} />{" "}</Link>
             <button
               onClick={handleLogout}
               className="pmp-row"
@@ -510,8 +503,7 @@ export function Header({
                 borderTop: "1px solid var(--border-subtle)",
               }}
             >
-              <LogOut size={15} /> Log out
-            </button>
+              <LogOut size={15} />{" "}<LocalizedText message={"Log out"} />{" "}</button>
           </div>
         )}
       </div>

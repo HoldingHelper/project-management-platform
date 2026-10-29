@@ -1,4 +1,5 @@
 "use client";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 /* Generic sortable data table used by admin screens and the task browser. */
 
@@ -81,10 +82,10 @@ export function DataTable<T>({ columns, rows, rowKey, onRowClick, emptyText = "N
               >
                 {col.sortValue ? (
                   <button className="pmp-table-sort" type="button" onClick={() => toggleSort(col.key, true)}>
-                    {col.header}
+                    {typeof col.header === "string" ? <LocalizedText message={col.header} /> : col.header}
                     {sortKey === col.key && (sortDir === 1 ? <ChevronUp size={13} /> : <ChevronDown size={13} />)}
                   </button>
-                ) : <span className="pmp-table-heading">{col.header}</span>}
+                ) : <span className="pmp-table-heading">{typeof col.header === "string" ? <LocalizedText message={col.header} /> : col.header}</span>}
               </th>
             ))}
           </tr>
@@ -96,7 +97,7 @@ export function DataTable<T>({ columns, rows, rowKey, onRowClick, emptyText = "N
                 colSpan={columns.length}
                 style={{ padding: 24, textAlign: "center", color: "var(--text-tertiary)" }}
               >
-                {emptyText}
+                {<LocalizedText message={emptyText} />}
               </td>
             </tr>
           )}
@@ -126,7 +127,7 @@ export function DataTable<T>({ columns, rows, rowKey, onRowClick, emptyText = "N
       </table>
       </div>
       <div className="pmp-data-cards" role="list" aria-label={label}>
-        {sorted.length === 0 && <div className="pmp-data-card-empty">{emptyText}</div>}
+        {sorted.length === 0 && <div className="pmp-data-card-empty">{<LocalizedText message={emptyText} />}</div>}
         {sorted.map((row) => (
           <div
             key={rowKey(row)}
@@ -143,7 +144,7 @@ export function DataTable<T>({ columns, rows, rowKey, onRowClick, emptyText = "N
           >
             {columns.filter((column) => !column.hideOnMobile).map((column, index) => (
               <div className={`pmp-data-card-field ${index === 0 ? "is-primary" : ""}`} key={column.key}>
-                {index > 0 && <span className="pmp-data-card-label">{column.mobileLabel ?? column.header}</span>}
+                {index > 0 && <span className="pmp-data-card-label">{typeof (column.mobileLabel ?? column.header) === "string" ? <LocalizedText message={String(column.mobileLabel ?? column.header)} /> : column.mobileLabel ?? column.header}</span>}
                 <span className="pmp-data-card-value">{column.render(row)}</span>
               </div>
             ))}

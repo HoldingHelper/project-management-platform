@@ -1,5 +1,8 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
+
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FileText, Link2, Pencil, Plus, Upload, X } from "lucide-react";
@@ -18,6 +21,10 @@ export function EditProductLine({ product, products }: { product: ProductRead; p
   return <ProductLineEditor product={product} products={products} />;
 }
 function ProductLineEditor({ product, products }: { product?: ProductRead; products: ProductRead[] }) {
+  const { t: localizeAttribute } = useI18n();
+
+  const { t: translateUI } = useI18n();
+
   const { user, hasPermission } = useAuth();
   const queryClient = useQueryClient();
   const toast = useToast();
@@ -101,28 +108,28 @@ function ProductLineEditor({ product, products }: { product?: ProductRead; produ
   return (
     <>
       <Button variant={product ? "tertiary" : "primary"} size={product ? "sm" : "md"} aria-label={product ? `Edit ${product.name}` : action} onClick={() => { setForm(initial()); setDocSearch(""); setSelectedDocs([]); createdProduct.current = null; setDocumentationFile(null); setFileError(""); save.reset(); setOpen(true); }}>
-        {product ? <Pencil size={14} aria-hidden /> : <Plus size={16} aria-hidden />}{product ? "Edit" : action}
+        {product ? <Pencil size={14} aria-hidden /> : <Plus size={16} aria-hidden />}{product ? <LocalizedText message={"Edit"} /> : action}
       </Button>
       <Modal open={open} onClose={close} title={action} width={600} closeOnBackdrop={!save.isPending}>
         <form onSubmit={(event) => { event.preventDefault(); if (form.name.trim() && !duplicate && !fileError && !save.isPending && (!product || (!linkedDocs.isFetching && !linkedDocs.isError))) save.mutate(); }} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: 13 }}>Product lines group projects. Changes also appear in project dropdowns.</p>
-          <Field label="Product line name" hint="For example, PMP or GMALL."><TextInput value={form.name} onChange={(e) => field("name", e.target.value)} maxLength={200} required disabled={save.isPending} /></Field>
-          <Field label="Description"><TextArea value={form.description} onChange={(e) => field("description", e.target.value)} disabled={save.isPending} rows={3} /></Field>
+          <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: 13 }}><LocalizedText message={"Product lines group projects. Changes also appear in project dropdowns."} /></p>
+          <Field label={translateUI("Product line name")} hint={translateUI("For example, PMP or GMALL.")}><TextInput value={form.name} onChange={(e) => field("name", e.target.value)} maxLength={200} required disabled={save.isPending} /></Field>
+          <Field label={translateUI("Description")}><TextArea value={form.description} onChange={(e) => field("description", e.target.value)} disabled={save.isPending} rows={3} /></Field>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
-            <Field label="Status"><Select value={form.status} onChange={(e) => field("status", e.target.value)} disabled={save.isPending} options={["Planning", "Active", "Maintenance", "Sunset"].map((value) => ({ value, label: value }))} /></Field>
-            <Field label="Priority"><Select value={form.priority} onChange={(e) => field("priority", e.target.value)} disabled={save.isPending} options={["P0", "P1", "P2", "P3"].map((value) => ({ value, label: value }))} /></Field>
-            <Field label="Environment"><Select value={form.environment} onChange={(e) => field("environment", e.target.value)} disabled={save.isPending} options={["Development", "Staging", "Production"].map((value) => ({ value, label: value }))} /></Field>
+            <Field label={translateUI("Status")}><Select translateOptions value={form.status} onChange={(e) => field("status", e.target.value)} disabled={save.isPending} options={["Planning", "Active", "Maintenance", "Sunset"].map((value) => ({ value, label: value }))} /></Field>
+            <Field label={translateUI("Priority")}><Select translateOptions value={form.priority} onChange={(e) => field("priority", e.target.value)} disabled={save.isPending} options={["P0", "P1", "P2", "P3"].map((value) => ({ value, label: value }))} /></Field>
+            <Field label={translateUI("Environment")}><Select translateOptions value={form.environment} onChange={(e) => field("environment", e.target.value)} disabled={save.isPending} options={["Development", "Staging", "Production"].map((value) => ({ value, label: value }))} /></Field>
           </div>
-          <Field label="Technology stack" hint="Separate technologies with commas."><TextInput value={form.stack} onChange={(e) => field("stack", e.target.value)} disabled={save.isPending} placeholder="React, Python, PostgreSQL" /></Field>
-          <Field label="Repository URL"><TextInput type="url" value={form.repository} onChange={(e) => field("repository", e.target.value)} disabled={save.isPending} placeholder="https://…" /></Field>
+          <Field label={translateUI("Technology stack")} hint={translateUI("Separate technologies with commas.")}><TextInput value={form.stack} onChange={(e) => field("stack", e.target.value)} disabled={save.isPending} placeholder={translateUI("React, Python, PostgreSQL")} /></Field>
+          <Field label={translateUI("Repository URL")}><TextInput type="url" value={form.repository} onChange={(e) => field("repository", e.target.value)} disabled={save.isPending} placeholder={translateUI("https://…")} /></Field>
           <div className={styles.field}>
-            <span className={styles.label}>Connected documents</span>
-            {linkedDocs.isError ? <div role="alert"><Alert kind="warning" title="Could not load connected documents" /><Button type="button" variant="tertiary" size="sm" onClick={() => linkedDocs.refetch()}>Retry</Button></div> : <>
+            <span className={styles.label}><LocalizedText message={"Connected documents"} /></span>
+            {linkedDocs.isError ? <div role="alert"><Alert kind="warning" title={translateUI("Could not load connected documents")} /><Button type="button" variant="tertiary" size="sm" onClick={() => linkedDocs.refetch()}><LocalizedText message={"Retry"} /></Button></div> : <>
               <SearchSuggestionInput
                 value={docSearch}
                 options={(docs.data ?? []).filter((doc) => !selectedDocs.some((selected) => selected.id === doc.id)).map((doc) => ({ id: doc.id, label: doc.title, detail: doc.excerpt ?? "Internal Docs" }))}
-                placeholder="Search documents…"
-                ariaLabel="Search documents to connect to product line"
+                placeholder={translateUI("Search documents…")}
+                ariaLabel={localizeAttribute("Search documents to connect to product line")}
                 onChange={setDocSearch}
                 onSelect={(option) => { if (!save.isPending && !linkedDocs.isFetching) { setSelectedDocs((current) => [...current, { id: option.id, title: option.label }]); setDocSearch(""); } }}
               />
@@ -130,11 +137,11 @@ function ProductLineEditor({ product, products }: { product?: ProductRead; produ
                 <Link2 size={14} aria-hidden /><span className={styles.title} style={{ flex: 1 }}>{doc.title}</span>
                 <Button type="button" variant="ghost" size="sm" disabled={save.isPending || linkedDocs.isFetching} aria-label={`Disconnect document ${doc.title}`} onClick={() => setSelectedDocs((current) => current.filter((item) => item.id !== doc.id))}><X size={14} aria-hidden /></Button>
               </div>)}
-              {linkedDocs.isFetching && <span className={styles.hint}>Loading connected documents…</span>}
+              {linkedDocs.isFetching && <span className={styles.hint}><LocalizedText message={"Loading connected documents…"} /></span>}
             </>}
           </div>
           <div className={styles.field}>
-            <label htmlFor={`documentation-${product?.id ?? "new"}`} className={styles.label}>Documentation</label>
+            <label htmlFor={`documentation-${product?.id ?? "new"}`} className={styles.label}><LocalizedText message={"Documentation"} /></label>
             <input
               ref={fileInput}
               id={`documentation-${product?.id ?? "new"}`}
@@ -156,23 +163,23 @@ function ProductLineEditor({ product, products }: { product?: ProductRead; produ
                 <span className={styles.title} title={documentationFile?.name}>{documentationFile?.name ?? (form.documentation ? "Documentation attached" : "Upload a document")}</span>
                 <span className={styles.caption}>{documentationFile
                   ? `${documentationFile.size >= 1024 * 1024 ? `${(documentationFile.size / (1024 * 1024)).toFixed(1)} MB` : `${(documentationFile.size / 1024).toFixed(1)} KB`} · Ready to save`
-                  : form.documentation ? "Choose a new file to replace it" : "Add a guide, specification, or reference"}</span>
+                  : form.documentation ? <LocalizedText message={"Choose a new file to replace it"} /> : <LocalizedText message={"Add a guide, specification, or reference"} />}</span>
               </div>
               <div className={styles.actions}>
                 <Button type="button" variant="secondary" size="sm" disabled={save.isPending} onClick={() => fileInput.current?.click()}>
-                  <Upload size={15} aria-hidden />{documentationFile || form.documentation ? "Replace file" : "Choose file"}
+                  <Upload size={15} aria-hidden />{documentationFile || form.documentation ? <LocalizedText message={"Replace file"} /> : <LocalizedText message={"Choose file"} />}
                 </Button>
-                {(documentationFile || fileError) && <Button type="button" variant="ghost" size="sm" aria-label="Clear selected document" title="Clear selection" disabled={save.isPending} style={{ padding: 8 }} onClick={() => { setDocumentationFile(null); setFileError(""); if (fileInput.current) fileInput.current.value = ""; }}><X size={16} aria-hidden /></Button>}
+                {(documentationFile || fileError) && <Button type="button" variant="ghost" size="sm" aria-label={translateUI("Clear selected document")} title={translateUI("Clear selection")} disabled={save.isPending} style={{ padding: 8 }} onClick={() => { setDocumentationFile(null); setFileError(""); if (fileInput.current) fileInput.current.value = ""; }}><X size={16} aria-hidden /></Button>}
               </div>
             </div>
-            <span id={`documentation-hint-${product?.id ?? "new"}`} className={styles.hint}>PDF, Word, text, Markdown, RTF, or ODT · Max 25 MB. Uploaded when you save.</span>
+            <span id={`documentation-hint-${product?.id ?? "new"}`} className={styles.hint}><LocalizedText message={"PDF, Word, text, Markdown, RTF, or ODT · Max 25 MB. Uploaded when you save."} /></span>
           </div>
           {fileError && <div role="alert"><Alert kind="warning" title={fileError} /></div>}
-          {duplicate && <div role="alert"><Alert kind="warning" title="A product line with this name already exists." /></div>}
-          {save.error && <div role="alert"><Alert kind="critical" title="Could not save product line" description={save.error.message} /></div>}
+          {duplicate && <div role="alert"><Alert kind="warning" title={translateUI("A product line with this name already exists.")} /></div>}
+          {save.error && <div role="alert"><Alert kind="critical" title={translateUI("Could not save product line")} description={save.error.message} /></div>}
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-            <Button type="button" variant="secondary" disabled={save.isPending} onClick={close}>Cancel</Button>
-            <Button type="submit" disabled={!form.name.trim() || duplicate || !!fileError || save.isPending || (!!product && (linkedDocs.isFetching || linkedDocs.isError))}>{save.isPending ? "Saving…" : product ? "Save changes" : "Add product line"}</Button>
+            <Button type="button" variant="secondary" disabled={save.isPending} onClick={close}><LocalizedText message={"Cancel"} /></Button>
+            <Button type="submit" disabled={!form.name.trim() || duplicate || !!fileError || save.isPending || (!!product && (linkedDocs.isFetching || linkedDocs.isError))}>{save.isPending ? <LocalizedText message={"Saving…"} /> : product ? <LocalizedText message={"Save changes"} /> : <LocalizedText message={"Add product line"} />}</Button>
           </div>
         </form>
       </Modal>

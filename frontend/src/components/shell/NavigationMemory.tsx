@@ -1,4 +1,6 @@
 "use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 import { useEffect, useRef, type RefObject } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
@@ -9,11 +11,13 @@ import { closeTaskPreview, openTaskPreview } from "@/lib/navigation";
 import type { UUID } from "@/lib/types";
 
 const TaskDetail = dynamic(() => import("@/app/(app)/tasks/[taskId]/TaskDetailClient"), {
-  loading: () => <div role="status" style={{ padding: 24 }}>Loading task details…</div>,
+  loading: () => <div role="status" style={{ padding: 24 }}><LocalizedText message={"Loading task details…"} /></div>,
 });
 const taskPath = /^(?:\/app\/teams)?\/tasks\/([a-f0-9-]{36})\/?$/i;
 
 export function NavigationMemory({ mainRef }: { mainRef: RefObject<HTMLElement | null> }) {
+  const { t: translateUI } = useI18n();
+
   const pathname = usePathname();
   const params = useSearchParams();
   const taskId = params.get("task");
@@ -75,9 +79,9 @@ export function NavigationMemory({ mainRef }: { mainRef: RefObject<HTMLElement |
     if (!taskId) origin.current?.focus({ preventScroll: true });
   }, [taskId]);
 
-  return <Modal open={Boolean(taskId)} onClose={closeTaskPreview} title="Task details" width={1200} fullScreenMobile closeOnBackdrop={false}>
+  return <Modal open={Boolean(taskId)} onClose={closeTaskPreview} title={translateUI("Task details")} width={1200} fullScreenMobile closeOnBackdrop={false}>
     <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16 }}>
-      <Link data-full-page href={`/tasks/${taskId}`} style={{ color: "var(--text-link)" }}>Open full page →</Link>
+      <Link data-full-page href={`/tasks/${taskId}`} style={{ color: "var(--text-link)" }}><LocalizedText message={"Open full page →"} /></Link>
     </div>
     {taskId && <TaskDetail key={taskId} taskId={taskId as UUID} embedded onClose={closeTaskPreview} />}
   </Modal>;

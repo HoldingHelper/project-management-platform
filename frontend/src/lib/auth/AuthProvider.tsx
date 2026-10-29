@@ -10,6 +10,8 @@ import {
   type ReactNode,
 } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { accountPreferences } from "@/lib/i18n/core";
 import * as authApi from "@/lib/api/auth";
 import type { TokenResponse, UserRead } from "@/lib/types";
 import {
@@ -36,9 +38,13 @@ interface AuthState {
 const AuthContext = createContext<AuthState | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const { setPreferences } = useI18n();
   const queryClient = useQueryClient();
   const [user, setUser] = useState<UserRead | null>(null);
   const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    if (user) setPreferences(accountPreferences(user));
+  }, [user?.id, user?.locale, user?.calendar, user?.numbering_system, setPreferences]);
 
   // On mount, restore a session from the persisted refresh token.
   useEffect(() => {

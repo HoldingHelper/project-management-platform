@@ -1,5 +1,8 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -54,6 +57,8 @@ function permissionLabel(code: string): string {
 }
 
 export default function McpSettingsPage() {
+  const { t: translateUI, date: displayDate } = useI18n();
+
   const toast = useToast();
   const queryClient = useQueryClient();
   const [name, setName] = useState("My AI agent");
@@ -168,18 +173,17 @@ export default function McpSettingsPage() {
   };
 
   if (setupQuery.isLoading || tokensQuery.isLoading) {
-    return <div style={PAGE_STYLE}><Spinner label="Loading MCP access…" /></div>;
+    return <div style={PAGE_STYLE}><Spinner label={translateUI("Loading MCP access…")} /></div>;
   }
 
   return (
     <div style={PAGE_STYLE}>
       <PageHeader
-        title="AI & MCP Connections"
-        subtitle="Connect Codex, Claude, Cursor, or another MCP client as your own Platform account—with revocable, permission-limited access."
+        title={translateUI("AI & MCP Connections")}
+        subtitle={translateUI("Connect Codex, Claude, Cursor, or another MCP client as your own Platform account—with revocable, permission-limited access.")}
         badge={
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "5px 9px", borderRadius: 999, background: "var(--status-success-bg)", color: "var(--status-success)", fontSize: 12, fontWeight: 700 }}>
-            <ShieldCheck size={13} /> User-scoped
-          </span>
+            <ShieldCheck size={13} />{" "}<LocalizedText message={"User-scoped"} />{" "}</span>
         }
       />
 
@@ -189,26 +193,24 @@ export default function McpSettingsPage() {
             <LockKeyhole size={21} />
           </span>
           <div>
-            <h2 style={{ margin: "1px 0 5px", fontSize: 16 }}>Passwords never leave Platform</h2>
-            <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: 13, lineHeight: 1.6 }}>
-              AI clients authenticate with a personal token. Platform stores only its hash, checks your live account permissions on every request, and exposes the full authenticated JSON API plus typed tools—never more than you can already access.
-            </p>
+            <h2 style={{ margin: "1px 0 5px", fontSize: 16 }}><LocalizedText message={"Passwords never leave Platform"} /></h2>
+            <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: 13, lineHeight: 1.6 }}>{" "}<LocalizedText message={"AI clients authenticate with a personal token. Platform stores only its hash, checks your live account permissions on every request, and exposes the full authenticated JSON API plus typed tools—never more than you can already access."} />{" "}</p>
           </div>
         </div>
       </Card>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 430px), 1fr))", gap: 20, alignItems: "start" }}>
         <Card
-          title="1. Create a personal MCP token"
-          subtitle="Start with all your available MCP permissions, then remove anything the agent does not need."
+          title={translateUI("1. Create a personal MCP token")}
+          subtitle={translateUI("Start with all your available MCP permissions, then remove anything the agent does not need.")}
         >
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(130px, 0.4fr)", gap: 12 }}>
-              <Field label="Connection name">
-                <TextInput value={name} onChange={(event) => setName(event.target.value)} placeholder="Work Mac — Codex" />
+              <Field label={translateUI("Connection name")}>
+                <TextInput value={name} onChange={(event) => setName(event.target.value)} placeholder={translateUI("Work Mac — Codex")} />
               </Field>
-              <Field label="Expires after">
-                <Select
+              <Field label={translateUI("Expires after")}>
+                <Select translateOptions
                   value={expiresInDays}
                   onChange={(event) => setExpiresInDays(event.target.value)}
                   options={[
@@ -225,19 +227,19 @@ export default function McpSettingsPage() {
             <div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 9 }}>
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 700 }}>Permission limit</div>
-                  <div style={{ color: "var(--text-tertiary)", fontSize: 11.5, marginTop: 2 }}>{selectedPermissions.length} selected · {selectedToolNames.size} tools · None gives identity/skill only</div>
+                  <div style={{ fontSize: 13, fontWeight: 700 }}><LocalizedText message={"Permission limit"} /></div>
+                  <div style={{ color: "var(--text-tertiary)", fontSize: 11.5, marginTop: 2 }}>{selectedPermissions.length}{" "}<LocalizedText message={"selected ·"} />{" "}{selectedToolNames.size}{" "}<LocalizedText message={"tools · None gives identity/skill only"} /></div>
                 </div>
                 <div style={{ display: "flex", gap: 6 }}>
-                  <Button size="sm" variant="ghost" onClick={() => setSelectedPermissions(setup?.available_permissions.map((permission) => permission.code) ?? [])}>All</Button>
-                  <Button size="sm" variant="ghost" onClick={() => setSelectedPermissions([])}>None</Button>
+                  <Button size="sm" variant="ghost" onClick={() => setSelectedPermissions(setup?.available_permissions.map((permission) => permission.code) ?? [])}><LocalizedText message={"All"} /></Button>
+                  <Button size="sm" variant="ghost" onClick={() => setSelectedPermissions([])}><LocalizedText message={"None"} /></Button>
                 </div>
               </div>
               <TextInput
                 value={permissionSearch}
                 onChange={(event) => setPermissionSearch(event.target.value)}
                 icon={<Search size={15} />}
-                placeholder="Search permissions or tools…"
+                placeholder={translateUI("Search permissions or tools…")}
               />
               <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 330, overflowY: "auto", marginTop: 10, paddingRight: 3 }}>
                 {filteredPermissions.map((permission) => {
@@ -265,25 +267,25 @@ export default function McpSettingsPage() {
               onClick={() => createMutation.mutate()}
               disabled={!name.trim() || createMutation.isPending}
             >
-              <KeyRound size={15} /> {createMutation.isPending ? "Generating…" : "Generate connection token"}
+              <KeyRound size={15} /> {createMutation.isPending ? <LocalizedText message={"Generating…"} /> : <LocalizedText message={"Generate connection token"} />}
             </Button>
           </div>
         </Card>
 
         <Card
-          title="2. Copy into your AI client"
-          subtitle="The configuration includes the generated token and the MCP endpoint."
+          title={translateUI("2. Copy into your AI client")}
+          subtitle={translateUI("The configuration includes the generated token and the MCP endpoint.")}
         >
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             {createdToken ? (
               <div style={{ padding: 12, borderRadius: 10, border: "1px solid var(--status-warning)", background: "var(--status-warning-bg)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
                   <div>
-                    <div style={{ color: "var(--status-warning)", fontSize: 12, fontWeight: 800 }}>COPY NOW — SHOWN ONCE</div>
-                    <div style={{ color: "var(--text-secondary)", fontSize: 11.5, marginTop: 3 }}>If lost, revoke it and generate another.</div>
+                    <div style={{ color: "var(--status-warning)", fontSize: 12, fontWeight: 800 }}><LocalizedText message={"COPY NOW — SHOWN ONCE"} /></div>
+                    <div style={{ color: "var(--text-secondary)", fontSize: 11.5, marginTop: 3 }}><LocalizedText message={"If lost, revoke it and generate another."} /></div>
                   </div>
                   <Button size="sm" variant="secondary" onClick={() => setShowSecret((value) => !value)}>
-                    {showSecret ? <EyeOff size={14} /> : <Eye size={14} />} {showSecret ? "Hide" : "Show"}
+                    {showSecret ? <EyeOff size={14} /> : <Eye size={14} />} {showSecret ? <LocalizedText message={"Hide"} /> : <LocalizedText message={"Show"} />}
                   </Button>
                 </div>
                 <code style={{ display: "block", marginTop: 10, padding: 10, borderRadius: 7, background: "var(--surface-1)", overflowWrap: "anywhere", fontSize: 11.5 }}>
@@ -291,12 +293,10 @@ export default function McpSettingsPage() {
                 </code>
               </div>
             ) : (
-              <div style={{ padding: 12, borderRadius: 10, background: "var(--surface-1)", color: "var(--text-secondary)", fontSize: 12.5 }}>
-                Generate a token on the left. Your ready-to-copy configuration will appear here with the secret already inserted.
-              </div>
+              <div style={{ padding: 12, borderRadius: 10, background: "var(--surface-1)", color: "var(--text-secondary)", fontSize: 12.5 }}>{" "}<LocalizedText message={"Generate a token on the left. Your ready-to-copy configuration will appear here with the secret already inserted."} />{" "}</div>
             )}
 
-            <div role="tablist" aria-label="MCP client configuration" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            <div role="tablist" aria-label={translateUI("MCP client configuration")} style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               {([
                 ["json", "MCP JSON"],
                 ["codex", "Codex config"],
@@ -319,9 +319,9 @@ export default function McpSettingsPage() {
         </Card>
       </div>
 
-      <Card title="Active and previous connections" subtitle="Revocation is immediate. Existing client sessions lose access on their next request.">
+      <Card title={translateUI("Active and previous connections")} subtitle={translateUI("Revocation is immediate. Existing client sessions lose access on their next request.")}>
         {(tokensQuery.data ?? []).length === 0 ? (
-          <EmptyState title="No MCP connections yet" hint="Generate your first personal token above." icon={<KeyRound size={20} />} />
+          <EmptyState title={translateUI("No MCP connections yet")} hint={translateUI("Generate your first personal token above.")} icon={<KeyRound size={20} />} />
         ) : (
           <div style={{ display: "grid", gap: 10 }}>
             {(tokensQuery.data ?? []).map((token) => (
@@ -330,12 +330,12 @@ export default function McpSettingsPage() {
                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                     <strong style={{ fontSize: 13.5 }}>{token.name}</strong>
                     <span style={{ padding: "2px 7px", borderRadius: 999, fontSize: 10.5, fontWeight: 700, background: token.is_active ? "var(--status-success-bg)" : "var(--surface-3)", color: token.is_active ? "var(--status-success)" : "var(--text-tertiary)" }}>
-                      {token.is_active ? "Active" : token.revoked_at ? "Revoked" : "Expired"}
+                      {token.is_active ? <LocalizedText message={"Active"} /> : token.revoked_at ? <LocalizedText message={"Revoked"} /> : <LocalizedText message={"Expired"} />}
                     </span>
                   </div>
                   <code style={{ display: "block", color: "var(--text-tertiary)", fontSize: 11.5, marginTop: 5 }}>{token.token_prefix}…</code>
                   <div style={{ color: "var(--text-secondary)", fontSize: 11.5, marginTop: 5, lineHeight: 1.5 }}>
-                    {token.permission_codes.length} permissions · Last used {formatDate(token.last_used_at)} · Expires {formatDate(token.expires_at)}
+                    {token.permission_codes.length}{" "}<LocalizedText message={"permissions · Last used"} />{" "}{token.last_used_at ? displayDate(token.last_used_at, { hour: "2-digit", minute: "2-digit" }) : translateUI("Never")}{" "}<LocalizedText message={"· Expires"} />{" "}{token.expires_at ? displayDate(token.expires_at, { hour: "2-digit", minute: "2-digit" }) : translateUI("Never")}
                   </div>
                 </div>
                 {token.is_active && (
@@ -347,8 +347,7 @@ export default function McpSettingsPage() {
                       if (window.confirm(`Revoke “${token.name}”? Its AI client will immediately lose access.`)) revokeMutation.mutate(token.id);
                     }}
                   >
-                    <Trash2 size={14} /> Revoke
-                  </Button>
+                    <Trash2 size={14} />{" "}<LocalizedText message={"Revoke"} />{" "}</Button>
                 )}
               </div>
             ))}
@@ -358,22 +357,22 @@ export default function McpSettingsPage() {
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 420px), 1fr))", gap: 20, alignItems: "start" }}>
         <Card
-          title={<span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><FileCode2 size={16} /> Agent SKILL.md</span>}
+          title={<span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><FileCode2 size={16} />{" "}<LocalizedText message={"Agent SKILL.md"} /></span>}
           subtitle={`Advertised through MCP as ${setup?.skill_resource_uri ?? "pmp://agent/SKILL.md"}.`}
           right={
             <div style={{ display: "flex", gap: 7 }}>
-              <Button size="sm" variant="secondary" onClick={() => setup && copy(setup.skill_markdown, "SKILL.md")}><Copy size={13} /> Copy</Button>
-              <Button size="sm" variant="secondary" onClick={downloadSkill}><Download size={13} /> Download</Button>
+              <Button size="sm" variant="secondary" onClick={() => setup && copy(setup.skill_markdown, "SKILL.md")}><Copy size={13} />{" "}<LocalizedText message={"Copy"} /></Button>
+              <Button size="sm" variant="secondary" onClick={downloadSkill}><Download size={13} />{" "}<LocalizedText message={"Download"} /></Button>
             </div>
           }
         >
-          <pre tabIndex={0} aria-label="Platform MCP agent skill" style={{ margin: 0, maxHeight: 430, overflow: "auto", whiteSpace: "pre-wrap", overflowWrap: "anywhere", padding: 14, borderRadius: 9, background: "var(--surface-1)", border: "1px solid var(--border-subtle)", color: "var(--text-secondary)", fontSize: 11.5, lineHeight: 1.6 }}>
+          <pre tabIndex={0} aria-label={translateUI("Platform MCP agent skill")} style={{ margin: 0, maxHeight: 430, overflow: "auto", whiteSpace: "pre-wrap", overflowWrap: "anywhere", padding: 14, borderRadius: 9, background: "var(--surface-1)", border: "1px solid var(--border-subtle)", color: "var(--text-secondary)", fontSize: 11.5, lineHeight: 1.6 }}>
             {setup?.skill_markdown}
           </pre>
         </Card>
 
         <Card
-          title={<span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><Bot size={16} /> Available agent tools</span>}
+          title={<span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><Bot size={16} />{" "}<LocalizedText message={"Available agent tools"} /></span>}
           subtitle={`${setup?.available_tools.length ?? 0} typed tools, including permission-scoped access to the full authenticated JSON API.`}
         >
           <div style={{ display: "grid", gap: 8 }}>
@@ -394,10 +393,12 @@ export default function McpSettingsPage() {
 }
 
 function CodeBlock({ value, onCopy, disabled }: { value: string; onCopy: () => void; disabled?: boolean }) {
+  const { t: translateUI, date: displayDate } = useI18n();
+
   const [copied, setCopied] = useState(false);
   return (
     <div style={{ position: "relative", minWidth: 0 }}>
-      <pre tabIndex={0} aria-label="MCP client configuration" style={{ margin: 0, minHeight: 160, maxHeight: 310, overflow: "auto", padding: "46px 14px 14px", borderRadius: 10, background: "var(--surface-1)", border: "1px solid var(--border-subtle)", color: "var(--text-secondary)", fontSize: 11.5, lineHeight: 1.55 }}>
+      <pre tabIndex={0} aria-label={translateUI("MCP client configuration")} style={{ margin: 0, minHeight: 160, maxHeight: 310, overflow: "auto", padding: "46px 14px 14px", borderRadius: 10, background: "var(--surface-1)", border: "1px solid var(--border-subtle)", color: "var(--text-secondary)", fontSize: 11.5, lineHeight: 1.55 }}>
         {value}
       </pre>
       <Button
@@ -411,7 +412,7 @@ function CodeBlock({ value, onCopy, disabled }: { value: string; onCopy: () => v
           window.setTimeout(() => setCopied(false), 1800);
         }}
       >
-        {copied ? <Check size={13} /> : <Copy size={13} />} {copied ? "Copied" : "Copy"}
+        {copied ? <Check size={13} /> : <Copy size={13} />} {copied ? <LocalizedText message={"Copied"} /> : <LocalizedText message={"Copy"} />}
       </Button>
     </div>
   );

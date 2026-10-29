@@ -1,5 +1,10 @@
 "use client";
 
+import { LocalizedRelativeTime } from "@/lib/i18n/I18nProvider";
+
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
+
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -169,8 +174,10 @@ const HEALTH_STATUS_OPTIONS = [
 ];
 
 export default function ProjectWorkspacePage() {
+  const { t: translateUI } = useI18n();
+
   return (
-    <Suspense fallback={<Spinner label="Loading project…" />}>
+    <Suspense fallback={<Spinner label={translateUI("Loading project…")} />}>
       <ProjectWorkspaceInner />
     </Suspense>
   );
@@ -179,6 +186,8 @@ export default function ProjectWorkspacePage() {
 const VALID_TABS = new Set(TAB_KEYS.map((t) => t.key));
 
 function ProjectWorkspaceInner() {
+  const { t: translateUI } = useI18n();
+
   const { projectId: exportedProjectId } = useParams<{ projectId: string }>();
   const [projectId] = useStaticExportParams([exportedProjectId], ["projects"]);
   const searchParams = useSearchParams();
@@ -242,7 +251,7 @@ function ProjectWorkspaceInner() {
   if (!projectId || overview.isLoading)
     return (
       <div style={PAGE_STYLE}>
-        <Spinner label="Loading project…" />
+        <Spinner label={translateUI("Loading project…")} />
       </div>
     );
   if (overview.isError || !overview.data)
@@ -273,8 +282,7 @@ function ProjectWorkspaceInner() {
           onClick={(event) => { if (!event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) { event.preventDefault(); goBack("/portfolio"); } }}
           style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--text-tertiary)", fontSize: 12.5, marginBottom: 10 }}
         >
-          <ChevronLeft size={14} /> Portfolio
-        </Link>
+          <ChevronLeft size={14} />{" "}<LocalizedText message={"Portfolio"} />{" "}</Link>
         <div style={{ display: "flex", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
           <div style={{ flex: 1, minWidth: 260 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
@@ -292,8 +300,7 @@ function ProjectWorkspaceInner() {
               <span style={partitionBadge}>{projectPartitionFromTags(p.tags)}</span>
               <span style={levelBadge}>{PROJECT_LEVELS.find((level) => level.value === projectLevelFromTags(p.tags))?.label}</span>
               {(o.current_sprint ?? o.current_phase) && (
-                <span style={{ fontSize: 12, color: "var(--accent-gold-bright)", background: "rgba(212,169,55,0.12)", padding: "3px 10px", borderRadius: "var(--radius-full)" }}>
-                  Sprint: {(o.current_sprint ?? o.current_phase)?.name}
+                <span style={{ fontSize: 12, color: "var(--accent-gold-bright)", background: "rgba(212,169,55,0.12)", padding: "3px 10px", borderRadius: "var(--radius-full)" }}>{" "}<LocalizedText message={"Sprint:"} />{" "}{(o.current_sprint ?? o.current_phase)?.name}
                 </span>
               )}
             </div>
@@ -308,19 +315,18 @@ function ProjectWorkspaceInner() {
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {p.status !== "archived" && (
                 <Button variant="secondary" disabled={archive.isPending} onClick={() => archive.mutate()}>
-                  <Archive size={14} /> {archive.isPending ? "Archiving..." : "Archive"}
+                  <Archive size={14} /> {archive.isPending ? <LocalizedText message={"Archiving..."} /> : <LocalizedText message={"Archive"} />}
                 </Button>
               )}
               <Button variant="secondary" onClick={() => setEditOpen(true)}>
-                <Pencil size={14} /> Edit project
-              </Button>
+                <Pencil size={14} />{" "}<LocalizedText message={"Edit project"} />{" "}</Button>
               <Button
                 variant="secondary"
                 disabled={removeProject.isPending}
                 onClick={confirmDeleteProject}
                 style={dangerButton}
               >
-                <Trash2 size={14} /> {removeProject.isPending ? "Deleting..." : "Delete"}
+                <Trash2 size={14} /> {removeProject.isPending ? <LocalizedText message={"Deleting..."} /> : <LocalizedText message={"Delete"} />}
               </Button>
             </div>
           )}
@@ -364,6 +370,10 @@ function EditProjectModal({
   project: ProjectRead;
   onSaved: () => void;
 }) {
+  const { t: localizeAttribute } = useI18n();
+
+  const { t: translateUI } = useI18n();
+
   const toast = useToast();
   const qc = useQueryClient();
   const { partitions } = useTaskPartitions();
@@ -486,102 +496,100 @@ function EditProjectModal({
     <Modal
       open={open}
       onClose={onClose}
-      title="Edit project"
+      title={translateUI("Edit project")}
       width={860}
       footer={
         <>
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button variant="secondary" onClick={onClose}><LocalizedText message={"Cancel"} /></Button>
           <Button disabled={!form.name.trim() || checklist.some((item) => !item.text.trim()) || !datesPaired || !datesOrdered || save.isPending} onClick={() => save.mutate()}>
-            {save.isPending ? "Saving..." : "Save changes"}
+            {save.isPending ? <LocalizedText message={"Saving..."} /> : <LocalizedText message={"Save changes"} />}
           </Button>
         </>
       }
     >
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 340px), 1fr))", gap: 18 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <Field label="Project name">
+          <Field label={translateUI("Project name")}>
             <TextInput value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
           </Field>
-          <Field label="Product line">
+          <Field label={translateUI("Product line")}>
             <Select
               value={form.product_id}
               onChange={(e) => setForm((f) => ({ ...f, product_id: e.target.value as UUID }))}
               options={(products.data ?? []).map((p) => ({ value: p.id, label: p.name }))}
             />
           </Field>
-          <Field label="Project level">
-            <Select
+          <Field label={translateUI("Project level")}>
+            <Select translateOptions
               value={form.level}
               onChange={(e) => setForm((f) => ({ ...f, level: e.target.value as ProjectLevel }))}
               options={PROJECT_LEVELS.map((level) => ({ value: level.value, label: `${level.label} · ${level.detail}` }))}
             />
           </Field>
-          <Field label="Project partition">
+          <Field label={translateUI("Project partition")}>
             <Select
               value={form.partition}
               onChange={(e) => setForm((f) => ({ ...f, partition: e.target.value }))}
               options={partitions.length ? partitions.map((item) => ({ value: item.slug, label: item.name })) : PROJECT_PARTITIONS}
             />
           </Field>
-          <Field label="Description (Markdown)">
+          <Field label={translateUI("Description (Markdown)")}>
             <TextArea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
           </Field>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}><div className="card-title">Checklist</div><ChecklistEditor items={checklist} onChange={setChecklist} disabled={save.isPending} entity="project" /></div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}><div className="card-title"><LocalizedText message={"Checklist"} /></div><ChecklistEditor items={checklist} onChange={setChecklist} disabled={save.isPending} entity="project" /></div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 10 }}>
-            <Field label="Status">
-              <Select value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))} options={PROJECT_STATUS_OPTIONS} />
+            <Field label={translateUI("Status")}>
+              <Select translateOptions value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))} options={PROJECT_STATUS_OPTIONS} />
             </Field>
-            <Field label="Health">
-              <Select value={form.health_status} onChange={(e) => setForm((f) => ({ ...f, health_status: e.target.value }))} options={HEALTH_STATUS_OPTIONS} />
+            <Field label={translateUI("Health")}>
+              <Select translateOptions value={form.health_status} onChange={(e) => setForm((f) => ({ ...f, health_status: e.target.value }))} options={HEALTH_STATUS_OPTIONS} />
             </Field>
-            <Field label="Priority">
-              <Select value={form.priority} onChange={(e) => setForm((f) => ({ ...f, priority: e.target.value }))} options={["P0", "P1", "P2", "P3"].map((p) => ({ value: p, label: p }))} />
+            <Field label={translateUI("Priority")}>
+              <Select translateOptions value={form.priority} onChange={(e) => setForm((f) => ({ ...f, priority: e.target.value }))} options={["P0", "P1", "P2", "P3"].map((p) => ({ value: p, label: p }))} />
             </Field>
-            <Field label="Risk">
-              <Select value={form.risk_level} onChange={(e) => setForm((f) => ({ ...f, risk_level: e.target.value }))} options={["Low", "Medium", "High", "Critical"].map((risk) => ({ value: risk, label: risk }))} />
+            <Field label={translateUI("Risk")}>
+              <Select translateOptions value={form.risk_level} onChange={(e) => setForm((f) => ({ ...f, risk_level: e.target.value }))} options={["Low", "Medium", "High", "Critical"].map((risk) => ({ value: risk, label: risk }))} />
             </Field>
           </div>
-          <Field label="Budget">
+          <Field label={translateUI("Budget")}>
             <TextInput type="number" min={0} step="0.01" value={form.budget} onChange={(e) => setForm((f) => ({ ...f, budget: e.target.value }))} />
           </Field>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10 }}>
-            <Field label="Planned start">
+            <Field label={translateUI("Planned start")}>
               <TextInput type="date" value={form.start_date} onChange={(e) => setForm((f) => ({ ...f, start_date: e.target.value }))} disabled={plannedDatesLocked} />
             </Field>
-            <Field label="Planned end">
+            <Field label={translateUI("Planned end")}>
               <TextInput type="date" value={form.end_date} onChange={(e) => setForm((f) => ({ ...f, end_date: e.target.value }))} disabled={plannedDatesLocked} />
             </Field>
-            <Field label="Actual end date">
+            <Field label={translateUI("Actual end date")}>
               <TextInput type="date" value={form.actual_completion_date} onChange={(e) => setForm((f) => ({ ...f, actual_completion_date: e.target.value }))} disabled={!form.start_date || !form.end_date} />
             </Field>
           </div>
           {plannedDatesLocked && (
-            <div style={{ fontSize: 11.5, color: "var(--text-tertiary)", marginTop: -6 }}>
-              Planned dates are baseline dates and cannot be changed. Record schedule movement using the estimated and actual end dates.
-            </div>
+            <div style={{ fontSize: 11.5, color: "var(--text-tertiary)", marginTop: -6 }}>{" "}<LocalizedText message={"Planned dates are baseline dates and cannot be changed. Record schedule movement using the estimated and actual end dates."} />{" "}</div>
           )}
-          {!datesPaired && <div style={{ fontSize: 11.5, color: "var(--status-delayed)" }}>Set both planned dates or leave both empty.</div>}
-          {!datesOrdered && <div style={{ fontSize: 11.5, color: "var(--status-delayed)" }}>Planned end must be on or after planned start.</div>}
-          <Field label="Estimated completion">
+          {!datesPaired && <div style={{ fontSize: 11.5, color: "var(--status-delayed)" }}><LocalizedText message={"Set both planned dates or leave both empty."} /></div>}
+          {!datesOrdered && <div style={{ fontSize: 11.5, color: "var(--status-delayed)" }}><LocalizedText message={"Planned end must be on or after planned start."} /></div>}
+          <Field label={translateUI("Estimated completion")}>
             <TextInput type="date" value={form.estimated_completion_date} onChange={(e) => setForm((f) => ({ ...f, estimated_completion_date: e.target.value }))} />
           </Field>
-          <Field label="Tags">
+          <Field label={translateUI("Tags")}>
             <TextInput value={form.tags} onChange={(e) => setForm((f) => ({ ...f, tags: e.target.value }))} />
           </Field>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <Card title="Project description preview" padded>
+          <Card title={translateUI("Project description preview")} padded>
             <MarkdownPreview value={form.description} />
           </Card>
-          <Card title="Connected documents" padded>
+          <Card title={translateUI("Connected documents")} padded>
             <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
               <SearchSuggestionInput
                 value={docSearch}
                 options={(docs.data ?? [])
                   .filter((doc) => !selectedDocs.some((selected) => selected.id === doc.id))
                   .map((doc) => ({ id: doc.id, label: doc.title, detail: doc.excerpt ?? "Internal Docs" }))}
-                placeholder="Search documents…"
-                ariaLabel="Search documents to connect to project"
+                placeholder={translateUI("Search documents…")}
+                ariaLabel={localizeAttribute("Search documents to connect to project")}
                 onChange={setDocSearch}
                 onSelect={(option) => {
                   setSelectedDocs((current) => [...current, { id: option.id, title: option.label }]);
@@ -593,7 +601,7 @@ function EditProjectModal({
                   <Link2 size={13} /> <span>{doc.title}</span> <X size={13} />
                 </button>
               ))}
-              {selectedDocs.length === 0 && <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>No documents connected.</span>}
+              {selectedDocs.length === 0 && <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}><LocalizedText message={"No documents connected."} /></span>}
               <DocumentationUpload files={documentationFiles} onChange={setDocumentationFiles} disabled={save.isPending} entityType="project" entityId={project.id} />
             </div>
           </Card>
@@ -605,6 +613,8 @@ function EditProjectModal({
 
 /* ------------------------------ Overview ------------------------------ */
 function OverviewTab({ projectId, canManage }: { projectId: string; canManage: boolean }) {
+  const { t: translateUI } = useI18n();
+
   const { nameOf } = useUserMap();
   const { hasPermission, isSuperAdmin } = useAuth();
   const canSeeBottlenecks = isSuperAdmin() || hasPermission("analytics.view_org", "reports.view_executive");
@@ -654,29 +664,29 @@ function OverviewTab({ projectId, canManage }: { projectId: string; canManage: b
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-      <Card title="Project brief" padded>
+      <Card title={translateUI("Project brief")} padded>
         <MarkdownPreview value={p.description} />
       </Card>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 12 }}>
-        <MetricCard label="Completion" value={`${Math.round(pct)}%`} tone="in-progress" />
-        <MetricCard label="Tasks done" value={`${o.task_stats.done}/${o.task_stats.total}`} />
-        <MetricCard label="In progress" value={String(o.task_stats.in_progress)} />
-        <MetricCard label="Blocked" value={String(o.task_stats.blocked)} tone={o.task_stats.blocked > 0 ? "blocked" : "default"} />
-        <MetricCard label="Overdue" value={String(o.task_stats.overdue)} tone={o.task_stats.overdue > 0 ? "delayed" : "default"} />
-        <MetricCard label="Open blockers" value={String(o.open_blockers)} tone={o.open_blockers > 0 ? "blocked" : "default"} />
+        <MetricCard label={translateUI("Completion")} value={`${Math.round(pct)}%`} tone="in-progress" />
+        <MetricCard label={translateUI("Tasks done")} value={`${o.task_stats.done}/${o.task_stats.total}`} />
+        <MetricCard label={translateUI("In progress")} value={String(o.task_stats.in_progress)} />
+        <MetricCard label={translateUI("Blocked")} value={String(o.task_stats.blocked)} tone={o.task_stats.blocked > 0 ? "blocked" : "default"} />
+        <MetricCard label={translateUI("Overdue")} value={String(o.task_stats.overdue)} tone={o.task_stats.overdue > 0 ? "delayed" : "default"} />
+        <MetricCard label={translateUI("Open blockers")} value={String(o.open_blockers)} tone={o.open_blockers > 0 ? "blocked" : "default"} />
       </div>
 
       <ProjectChecklist key={projectId} project={p} canEdit={canManage} />
-      <Card title="Uploaded documentation" padded><DocumentationFiles entityType="project" entityId={projectId} /></Card>
-      <Card title="Project progress" padded>
+      <Card title={translateUI("Uploaded documentation")} padded><DocumentationFiles entityType="project" entityId={projectId} /></Card>
+      <Card title={translateUI("Project progress")} padded>
         <div style={{ marginBottom: 16 }}><ProgressBar percent={pct} /></div>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {sprints.map((ph) => (
             <div key={ph.id} style={{ display: "grid", gridTemplateColumns: "180px minmax(160px, 1fr) 150px 90px", gap: 12, alignItems: "center" }}>
               <span style={{ fontSize: 12.5, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {ph.name}
-                {!ph.is_sprint && <small style={{ marginLeft: 6, color: "var(--text-tertiary)" }}>Legacy</small>}
+                {!ph.is_sprint && <small style={{ marginLeft: 6, color: "var(--text-tertiary)" }}><LocalizedText message={"Legacy"} /></small>}
               </span>
               <ProgressBar percent={Number(ph.progress_percentage)} blocks={22} showLabel={false} />
               <span style={{ display: "flex", alignItems: "center", gap: 7, minWidth: 0 }}>
@@ -688,20 +698,20 @@ function OverviewTab({ projectId, canManage }: { projectId: string; canManage: b
                     </span>
                   </>
                 ) : (
-                  <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>No lead</span>
+                  <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}><LocalizedText message={"No lead"} /></span>
                 )}
               </span>
               <StatusChip status={String(ph.status)} />
             </div>
           ))}
           {sprints.length === 0 && (
-            <div style={{ fontSize: 12.5, color: "var(--text-tertiary)" }}>No sprints yet — create one in the Board tab.</div>
+            <div style={{ fontSize: 12.5, color: "var(--text-tertiary)" }}><LocalizedText message={"No sprints yet — create one in the Board tab."} /></div>
           )}
         </div>
       </Card>
 
       <div className="pmp-two-col-grid" style={{ display: "grid", gridTemplateColumns: "1.15fr 0.85fr", gap: 18, alignItems: "start" }}>
-        <Card title="Remaining ownership" padded>
+        <Card title={translateUI("Remaining ownership")} padded>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {loadRows.map((row) => {
               const max = Math.max(1, ...loadRows.map((item) => item.tasks));
@@ -717,23 +727,21 @@ function OverviewTab({ projectId, canManage }: { projectId: string; canManage: b
                     <span style={{ display: "block", width: `${percent}%`, height: "100%", background: row.blocked || row.overdue ? "var(--status-delayed)" : "var(--accent-primary)" }} />
                   </span>
                   <span style={{ fontSize: 12, color: "var(--text-tertiary)", fontFamily: "var(--font-mono)", textAlign: "right" }}>
-                    {row.tasks} open
-                  </span>
+                    {row.tasks}{" "}<LocalizedText message={"open"} />{" "}</span>
                   {(row.blocked > 0 || row.overdue > 0 || row.points > 0) && (
                     <span style={{ gridColumn: "2 / 4", fontSize: 11.5, color: "var(--text-tertiary)" }}>
-                      {row.points > 0 ? `${row.points} pts` : "No points"} · {row.blocked} blocked · {row.overdue} overdue
-                    </span>
+                      {row.points > 0 ? `${row.points} pts` : <LocalizedText message={"No points"} />} · {row.blocked}{" "}<LocalizedText message={"blocked ·"} />{" "}{row.overdue}{" "}<LocalizedText message={"overdue"} />{" "}</span>
                   )}
                 </div>
               );
             })}
             {!tasks.isLoading && loadRows.length === 0 && (
-              <div style={{ fontSize: 12.5, color: "var(--text-tertiary)" }}>No remaining assigned work.</div>
+              <div style={{ fontSize: 12.5, color: "var(--text-tertiary)" }}><LocalizedText message={"No remaining assigned work."} /></div>
             )}
           </div>
         </Card>
 
-        <Card title="Partition pressure" padded>
+        <Card title={translateUI("Partition pressure")} padded>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {partitionRows.map(([partition, count]) => (
               <div key={partition} style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -745,16 +753,16 @@ function OverviewTab({ projectId, canManage }: { projectId: string; canManage: b
               </div>
             ))}
             {!tasks.isLoading && partitionRows.length === 0 && (
-              <div style={{ fontSize: 12.5, color: "var(--text-tertiary)" }}>No open partition load.</div>
+              <div style={{ fontSize: 12.5, color: "var(--text-tertiary)" }}><LocalizedText message={"No open partition load."} /></div>
             )}
           </div>
         </Card>
       </div>
 
       <div className="pmp-two-col-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18, alignItems: "start" }}>
-        <Card title="Upcoming deadlines" padded={false}>
+        <Card title={translateUI("Upcoming deadlines")} padded={false}>
           {o.upcoming_deadlines.length === 0 && (
-            <div style={{ padding: 16, fontSize: 12.5, color: "var(--text-tertiary)" }}>No upcoming deadlines.</div>
+            <div style={{ padding: 16, fontSize: 12.5, color: "var(--text-tertiary)" }}><LocalizedText message={"No upcoming deadlines."} /></div>
           )}
           {o.upcoming_deadlines.map((d) => (
             <Link
@@ -773,7 +781,7 @@ function OverviewTab({ projectId, canManage }: { projectId: string; canManage: b
           ))}
         </Card>
 
-        <Card title="Milestones & team" padded>
+        <Card title={translateUI("Milestones & team")} padded>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {o.milestones.slice(0, 5).map((m) => (
               <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -784,7 +792,7 @@ function OverviewTab({ projectId, canManage }: { projectId: string; canManage: b
                 <span style={{ fontSize: 11.5, color: "var(--text-tertiary)", marginLeft: "auto" }}>{m.due_date ?? ""}</span>
               </div>
             ))}
-            {o.milestones.length === 0 && <div style={{ fontSize: 12.5, color: "var(--text-tertiary)" }}>No milestones yet.</div>}
+            {o.milestones.length === 0 && <div style={{ fontSize: 12.5, color: "var(--text-tertiary)" }}><LocalizedText message={"No milestones yet."} /></div>}
             <div style={{ borderTop: "1px solid var(--border-subtle)", paddingTop: 12, display: "flex", alignItems: "center", gap: 4 }}>
               <Users size={13} style={{ color: "var(--text-tertiary)", marginRight: 6 }} />
               {o.members.slice(0, 8).map((m, i) => (
@@ -793,19 +801,16 @@ function OverviewTab({ projectId, canManage }: { projectId: string; canManage: b
                 </span>
               ))}
               <span style={{ fontSize: 12, color: "var(--text-tertiary)", marginLeft: 8 }}>
-                {o.members.length} member(s)
-              </span>
+                {o.members.length}{" "}<LocalizedText message={"member(s)"} />{" "}</span>
             </div>
           </div>
         </Card>
       </div>
 
       {canSeeBottlenecks && (
-        <Card title="Bottlenecks — needs attention" padded={false}>
+        <Card title={translateUI("Bottlenecks — needs attention")} padded={false}>
           {(bottlenecks.data ?? []).length === 0 ? (
-            <div style={{ padding: 18, fontSize: 12.5, color: "var(--text-tertiary)" }}>
-              No bottlenecks in this project right now.
-            </div>
+            <div style={{ padding: 18, fontSize: 12.5, color: "var(--text-tertiary)" }}>{" "}<LocalizedText message={"No bottlenecks in this project right now."} />{" "}</div>
           ) : (
             (bottlenecks.data ?? []).map((b) => (
               <Link
@@ -846,6 +851,10 @@ function OverviewTab({ projectId, canManage }: { projectId: string; canManage: b
 const GANTT_LABEL_WIDTH = 200;
 
 function TimelineTab({ projectId, canManage }: { projectId: string; canManage: boolean }) {
+  const { t: localizeAttribute } = useI18n();
+
+  const { t: translateUI } = useI18n();
+
   const router = useRouter();
   const qc = useQueryClient();
   const toast = useToast();
@@ -943,19 +952,19 @@ function TimelineTab({ projectId, canManage }: { projectId: string; canManage: b
     return { bars, days, todayOffset, startDate: new Date(chartStart).toISOString() };
   }, [timeline.data]);
 
-  if (timeline.isLoading) return <Spinner label="Loading timeline…" />;
+  if (timeline.isLoading) return <Spinner label={translateUI("Loading timeline…")} />;
   if (timeline.isError) return <ErrorState message="Timeline could not be loaded." />;
 
   const unscheduled = (timeline.data?.tasks.length ?? 0) - chart.bars.length;
 
   return (
     <Card
-      title="Project timeline"
+      title={translateUI("Project timeline")}
       right={
         <div className="pmp-gantt-header-actions">
           <span className="pmp-gantt-legend">
-            <span style={{ color: "var(--status-delayed)" }}>● critical path</span>
-            <span style={{ color: "var(--status-delayed)" }}>today line</span>
+            <span style={{ color: "var(--status-delayed)" }}><LocalizedText message={"● critical path"} /></span>
+            <span style={{ color: "var(--status-delayed)" }}><LocalizedText message={"today line"} /></span>
           </span>
           <button
             type="button"
@@ -963,17 +972,17 @@ function TimelineTab({ projectId, canManage }: { projectId: string; canManage: b
             onClick={() => canManage && setTimelineLocked((locked) => !locked)}
             disabled={!canManage}
             aria-pressed={!timelineLocked}
-            aria-label={timelineLocked ? "Unlock timeline editing" : "Lock timeline editing"}
+            aria-label={timelineLocked ? localizeAttribute("Unlock timeline editing") : localizeAttribute("Lock timeline editing")}
             title={
               !canManage
-                ? "You do not have permission to reschedule tasks"
+                ? localizeAttribute("You do not have permission to reschedule tasks")
                 : timelineLocked
-                  ? "Unlock to zoom, pan and drag tasks"
-                  : "Lock timeline to prevent accidental changes"
+                  ? localizeAttribute("Unlock to zoom, pan and drag tasks")
+                  : localizeAttribute("Lock timeline to prevent accidental changes")
             }
           >
             {timelineLocked ? <Lock size={15} /> : <Unlock size={15} />}
-            <span>{timelineLocked ? "Locked" : "Editing"}</span>
+            <span>{timelineLocked ? <LocalizedText message={"Locked"} /> : <LocalizedText message={"Editing"} />}</span>
           </button>
         </div>
       }
@@ -981,8 +990,8 @@ function TimelineTab({ projectId, canManage }: { projectId: string; canManage: b
     >
       {chart.bars.length === 0 ? (
         <EmptyState
-          title="No scheduled tasks"
-          hint="Give tasks a due date and an estimate to place them on the timeline."
+          title={translateUI("No scheduled tasks")}
+          hint={translateUI("Give tasks a due date and an estimate to place them on the timeline.")}
         />
       ) : (
         <div ref={containerRef}>
@@ -1009,14 +1018,13 @@ function TimelineTab({ projectId, canManage }: { projectId: string; canManage: b
             <div className={`pmp-gantt-help ${timelineLocked ? "is-locked" : "is-unlocked"}`}>
               {timelineLocked ? <Lock size={13} /> : <Unlock size={13} />}
               {timelineLocked
-                ? "Timeline is fixed. Scroll horizontally to inspect dates; unlock it to make changes."
-                : "Editing enabled: wheel to zoom, drag empty space to pan, drag a bar to move it, or drag its edges to resize it."}
+                ? <LocalizedText message={"Timeline is fixed. Scroll horizontally to inspect dates; unlock it to make changes."} />
+                : <LocalizedText message={"Editing enabled: wheel to zoom, drag empty space to pan, drag a bar to move it, or drag its edges to resize it."} />}
             </div>
           )}
           {unscheduled > 0 && (
             <div style={{ marginTop: 12, fontSize: 12, color: "var(--text-tertiary)" }}>
-              {unscheduled} task{unscheduled === 1 ? "" : "s"} without a due date are not shown.
-            </div>
+              {unscheduled}{" "}<LocalizedText message={"task"} />{unscheduled === 1 ? "" : <LocalizedText message={"s"} />}{" "}<LocalizedText message={"without a due date are not shown."} />{" "}</div>
           )}
         </div>
       )}
@@ -1036,6 +1044,10 @@ function BoardTab({
   canMoveTasks: boolean;
   canCreateTasks: boolean;
 }) {
+  const { t: localizeAttribute } = useI18n();
+
+  const { t: translateUI } = useI18n();
+
   const qc = useQueryClient();
   const toast = useToast();
   const { nameOf } = useUserMap();
@@ -1216,11 +1228,10 @@ function BoardTab({
             flexWrap: "wrap",
           }}
         >
-          <EmptyState title="No sprints yet" hint={canManage ? "Create the first two-week sprint to start planning work." : "An administrator needs to create a sprint first."} />
+          <EmptyState title={translateUI("No sprints yet")} hint={canManage ? localizeAttribute("Create the first two-week sprint to start planning work.") : localizeAttribute("An administrator needs to create a sprint first.")} />
           {canManage && (
             <Button onClick={openNewSprint}>
-              <Plus size={14} /> Create sprint
-            </Button>
+              <Plus size={14} />{" "}<LocalizedText message={"Create sprint"} />{" "}</Button>
           )}
         </div>
       ) : (
@@ -1248,37 +1259,33 @@ function BoardTab({
                   >
                     <span style={{ display: "block", fontWeight: 800, fontSize: 12.5 }}>{sprint.name}</span>
                     <span style={{ display: "block", marginTop: 3, color: "var(--text-secondary)", fontSize: 11, fontWeight: 600 }}>
-                      {sprint.start_date && sprint.end_date ? `${sprint.start_date} – ${sprint.end_date}` : "Legacy schedule"}
+                      {sprint.start_date && sprint.end_date ? `${sprint.start_date} – ${sprint.end_date}` : <LocalizedText message={"Legacy schedule"} />}
                     </span>
                   </button>
                 );
               })}
             </div>
             <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-              <Select
-                aria-label="Sort tasks on board"
+              <Select translateOptions
+                aria-label={translateUI("Sort tasks on board")}
                 value={sortMode}
                 onChange={(event) => setSortMode(event.target.value as TaskSortMode)}
                 options={TASK_SORT_OPTIONS}
               />
               {canCreateTasks && (
                 <Button variant="secondary" onClick={() => setNewTaskOpen(true)} disabled={!phaseId}>
-                  <Plus size={14} /> Task
-                </Button>
+                  <Plus size={14} />{" "}<LocalizedText message={"Task"} />{" "}</Button>
               )}
               {canManage && (
                 <Button variant="secondary" onClick={openNewSprint}>
-                  <Plus size={14} /> Sprint
-                </Button>
+                  <Plus size={14} />{" "}<LocalizedText message={"Sprint"} />{" "}</Button>
               )}
             </div>
           </div>
 
           <div style={{ background: "var(--surface-2)", border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-3)", padding: 18 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
-                Sprint progress
-              </div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.04em" }}>{" "}<LocalizedText message={"Sprint progress"} />{" "}</div>
               <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
                 {activePhase?.lead_assignee_user_id ? (
                   <>
@@ -1288,7 +1295,7 @@ function BoardTab({
                     </span>
                   </>
                 ) : (
-                  <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>No sprint lead</span>
+                  <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}><LocalizedText message={"No sprint lead"} /></span>
                 )}
               </div>
             </div>
@@ -1296,7 +1303,7 @@ function BoardTab({
           </div>
 
           {tasks.isLoading ? (
-            <Spinner label="Loading tasks…" />
+            <Spinner label={translateUI("Loading tasks…")} />
           ) : (
             <div style={{ display: "flex", gap: 14, alignItems: "flex-start", overflowX: "auto", paddingBottom: 6 }}>
               {byColumn.map((col) => (
@@ -1326,7 +1333,7 @@ function BoardTab({
                       canDrag={canMoveTasks && !moveMutation.isPending}
                     />
                   ))}
-                  {col.tasks.length === 0 && <div style={{ fontSize: 12, color: "var(--text-tertiary)", padding: "8px 4px" }}>No tasks</div>}
+                  {col.tasks.length === 0 && <div style={{ fontSize: 12, color: "var(--text-tertiary)", padding: "8px 4px" }}><LocalizedText message={"No tasks"} /></div>}
                 </div>
               ))}
             </div>
@@ -1337,26 +1344,24 @@ function BoardTab({
       <Modal
         open={newPhaseOpen}
         onClose={() => setNewPhaseOpen(false)}
-        title="New two-week sprint"
+        title={translateUI("New two-week sprint")}
         footer={
           <>
-            <Button variant="secondary" onClick={() => setNewPhaseOpen(false)}>Cancel</Button>
+            <Button variant="secondary" onClick={() => setNewPhaseOpen(false)}><LocalizedText message={"Cancel"} /></Button>
             <Button disabled={!phaseName || addPhase.isPending} onClick={() => addPhase.mutate()}>
-              {addPhase.isPending ? "Creating…" : "Create sprint"}
+              {addPhase.isPending ? <LocalizedText message={"Creating…"} /> : <LocalizedText message={"Create sprint"} />}
             </Button>
           </>
         }
       >
         <div style={{ display: "grid", gap: 12 }}>
-          <Field label="Sprint name">
+          <Field label={translateUI("Sprint name")}>
             <TextInput value={phaseName} onChange={(e) => setPhaseName(e.target.value)} placeholder={`Sprint ${(phases.data?.length ?? 0) + 1}`} />
           </Field>
-          <Field label="Sprint start">
+          <Field label={translateUI("Sprint start")}>
             <TextInput type="date" value={sprintStart} onChange={(e) => setSprintStart(e.target.value)} />
           </Field>
-          <div style={{ fontSize: 12, color: "var(--text-tertiary)" }}>
-            Ends {addDaysIso(sprintStart, 13)} · exactly 14 calendar days
-          </div>
+          <div style={{ fontSize: 12, color: "var(--text-tertiary)" }}>{" "}<LocalizedText message={"Ends"} />{" "}{addDaysIso(sprintStart, 13)}{" "}<LocalizedText message={"· exactly 14 calendar days"} />{" "}</div>
         </div>
       </Modal>
       <TaskEditorModal
@@ -1395,6 +1400,8 @@ function TaskCard({
   onDropBefore: () => void;
   canDrag: boolean;
 }) {
+  const { t: translateUI } = useI18n();
+
   const [expanded, setExpanded] = useState(false);
   const assignee = task.assignee_user_ids[0];
   return (
@@ -1415,7 +1422,7 @@ function TaskCard({
     >
       <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
         {canDrag && (
-          <span title="Drag to reorder or move" aria-hidden="true" style={{ color: "var(--text-tertiary)", display: "inline-flex", marginTop: 2, cursor: "grab" }}>
+          <span title={translateUI("Drag to reorder or move")} aria-hidden="true" style={{ color: "var(--text-tertiary)", display: "inline-flex", marginTop: 2, cursor: "grab" }}>
             <GripVertical size={15} />
           </span>
         )}
@@ -1432,13 +1439,13 @@ function TaskCard({
           <span style={{ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 800, lineHeight: "21px" }}>{task.title}</span>
         </button>
         {task.github_url && (
-          <a href={task.github_url} target="_blank" rel="noreferrer" title="View in GitHub" aria-label={`View ${task.title} in GitHub`} onClick={(e) => e.stopPropagation()}>
+          <a href={task.github_url} target="_blank" rel="noreferrer" title={translateUI("View in GitHub")} aria-label={`View ${task.title} in GitHub`} onClick={(e) => e.stopPropagation()}>
             <ExternalLink size={15} style={{ color: "var(--text-tertiary)", marginTop: 2 }} />
           </a>
         )}
         <button
           type="button"
-          title="Open task details"
+          title={translateUI("Open task details")}
           aria-label={`Open task details for ${task.title}`}
           onClick={(e) => {
             e.stopPropagation();
@@ -1461,8 +1468,7 @@ function TaskCard({
             {task.partition && <span style={taskPill}>{task.partition}</span>}
             {task.parent_task_id && (
               <span style={taskPill}>
-                <GitBranch size={11} /> Subtask
-              </span>
+                <GitBranch size={11} />{" "}<LocalizedText message={"Subtask"} />{" "}</span>
             )}
             {task.labels.slice(0, 4).map((label) => (
               <span key={label} style={labelPill}>{label}</span>
@@ -1474,9 +1480,9 @@ function TaskCard({
           </div>
           {(task.start_date || task.due_date || task.estimated_hours != null) && (
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", fontSize: 11.5, color: "var(--text-tertiary)" }}>
-              {task.start_date && <span>Start {task.start_date}</span>}
-              {task.due_date && <span>Due {task.due_date}</span>}
-              {task.estimated_hours != null && <span>{task.estimated_hours}h est</span>}
+              {task.start_date && <span><LocalizedText message={"Start"} />{" "}{task.start_date}</span>}
+              {task.due_date && <span><LocalizedText message={"Due"} />{" "}{task.due_date}</span>}
+              {task.estimated_hours != null && <span>{task.estimated_hours}<LocalizedText message={"h est"} /></span>}
             </div>
           )}
         </>
@@ -1484,22 +1490,21 @@ function TaskCard({
       {!expanded && (
         <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--text-tertiary)", fontSize: 12.5 }}>
           <PriorityBadge level={task.priority} compact />
-          {task.due_date && <span>Due {task.due_date}</span>}
-          {task.estimated_hours != null && <span>{task.estimated_hours}h</span>}
+          {task.due_date && <span><LocalizedText message={"Due"} />{" "}{task.due_date}</span>}
+          {task.estimated_hours != null && <span>{task.estimated_hours}<LocalizedText message={"h"} /></span>}
         </div>
       )}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid var(--border-subtle)", paddingTop: 9 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          {assignee ? <Avatar name={nameOf(assignee)} size={26} /> : <span style={{ fontSize: 12.5, color: "var(--text-tertiary)" }}>Unassigned</span>}
+          {assignee ? <Avatar name={nameOf(assignee)} size={26} /> : <span style={{ fontSize: 12.5, color: "var(--text-tertiary)" }}><LocalizedText message={"Unassigned"} /></span>}
           {task.assignee_user_ids.length > 1 && <span style={{ fontSize: 12.5, color: "var(--text-tertiary)" }}>+{task.assignee_user_ids.length - 1}</span>}
-          {task.is_critical && <span title="Critical path" style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--status-delayed)" }} />}
+          {task.is_critical && <span title={translateUI("Critical path")} style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--status-delayed)" }} />}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           {task.labels.length > 4 && <span style={{ fontSize: 11.5, color: "var(--text-tertiary)" }}>+{task.labels.length - 4}</span>}
           {task.story_points != null && (
             <span style={{ fontSize: 12.5, fontWeight: 800, fontFamily: "var(--font-mono)", color: "var(--text-secondary)", background: "var(--surface-3)", borderRadius: "var(--radius-full)", padding: "3px 10px" }}>
-              {task.story_points} pts
-            </span>
+              {task.story_points}{" "}<LocalizedText message={"pts"} />{" "}</span>
           )}
           {task.labels.length > 0 && <ListChecks size={15} style={{ color: "var(--text-tertiary)" }} />}
         </div>
@@ -1515,11 +1520,13 @@ function BoardTaskDetailModal({
   taskId: UUID | null;
   onClose: () => void;
 }) {
+  const { t: translateUI } = useI18n();
+
   return (
     <Modal
       open={!!taskId}
       onClose={onClose}
-      title="Task details"
+      title={translateUI("Task details")}
       width={1240}
       closeOnBackdrop={false}
       fullScreenMobile
@@ -1572,6 +1579,8 @@ const docLinkRow: React.CSSProperties = {
 const MEMBER_ROLES = ["ProjectManager", "TeamLead", "Developer", "QA", "UIUX", "BusinessAnalyst", "Client", "Observer"];
 
 function TeamTab({ projectId, canManage }: { projectId: string; canManage: boolean }) {
+  const { t: translateUI } = useI18n();
+
   const toast = useToast();
   const { user, hasPermission, isSuperAdmin } = useAuth();
   const { nameOf, users } = useUserMap();
@@ -1635,17 +1644,15 @@ function TeamTab({ projectId, canManage }: { projectId: string; canManage: boole
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginBottom: 12 }}>
         {canTransferAdmin && adminCandidates.length > 0 && (
           <Button variant="secondary" onClick={() => setTransferOpen(true)}>
-            <ShieldAlert size={14} /> Transfer admin
-          </Button>
+            <ShieldAlert size={14} />{" "}<LocalizedText message={"Transfer admin"} />{" "}</Button>
         )}
         {canManage && (
           <Button onClick={() => setAddOpen(true)}>
-            <Plus size={14} /> Add member
-          </Button>
+            <Plus size={14} />{" "}<LocalizedText message={"Add member"} />{" "}</Button>
         )}
       </div>
       <Card padded={false}>
-        {members.length === 0 && <div style={{ padding: 18, fontSize: 12.5, color: "var(--text-tertiary)" }}>No members yet.</div>}
+        {members.length === 0 && <div style={{ padding: 18, fontSize: 12.5, color: "var(--text-tertiary)" }}><LocalizedText message={"No members yet."} /></div>}
         {members.map((m) => (
           <div key={m.user_id} className="pmp-row" style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 16px", borderBottom: "1px solid var(--border-subtle)" }}>
             <Avatar name={nameOf(m.user_id)} size={30} />
@@ -1658,7 +1665,7 @@ function TeamTab({ projectId, canManage }: { projectId: string; canManage: boole
             {canManage && m.role !== "ProjectManager" && (
               <button
                 onClick={() => remove.mutate(m.user_id)}
-                title="Remove member"
+                title={translateUI("Remove member")}
                 style={{ border: "none", background: "transparent", color: "var(--text-tertiary)", cursor: "pointer", display: "flex" }}
               >
                 <Trash2 size={14} />
@@ -1671,27 +1678,27 @@ function TeamTab({ projectId, canManage }: { projectId: string; canManage: boole
       <Modal
         open={addOpen}
         onClose={() => setAddOpen(false)}
-        title="Add project member"
+        title={translateUI("Add project member")}
         footer={
           <>
-            <Button variant="secondary" onClick={() => setAddOpen(false)}>Cancel</Button>
+            <Button variant="secondary" onClick={() => setAddOpen(false)}><LocalizedText message={"Cancel"} /></Button>
             <Button disabled={!userId || add.isPending} onClick={() => add.mutate()}>
-              {add.isPending ? "Adding…" : "Add member"}
+              {add.isPending ? <LocalizedText message={"Adding…"} /> : <LocalizedText message={"Add member"} />}
             </Button>
           </>
         }
       >
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <Field label="User">
+          <Field label={translateUI("User")}>
             <Select
               value={userId}
               onChange={(e) => setUserId(e.target.value)}
-              placeholder="Choose a user…"
+              placeholder={translateUI("Choose a user…")}
               options={nonMembers.map((u) => ({ value: u.id, label: u.full_name }))}
             />
           </Field>
-          <Field label="Project role">
-            <Select value={role} onChange={(e) => setRole(e.target.value)} options={MEMBER_ROLES.map((r) => ({ value: r, label: r }))} />
+          <Field label={translateUI("Project role")}>
+            <Select translateOptions value={role} onChange={(e) => setRole(e.target.value)} options={MEMBER_ROLES.map((r) => ({ value: r, label: r }))} />
           </Field>
         </div>
       </Modal>
@@ -1699,35 +1706,33 @@ function TeamTab({ projectId, canManage }: { projectId: string; canManage: boole
       <Modal
         open={transferOpen}
         onClose={() => setTransferOpen(false)}
-        title="Transfer project admin"
+        title={translateUI("Transfer project admin")}
         footer={
           <>
-            <Button variant="secondary" onClick={() => setTransferOpen(false)}>Cancel</Button>
+            <Button variant="secondary" onClick={() => setTransferOpen(false)}><LocalizedText message={"Cancel"} /></Button>
             <Button
               disabled={!newAdminUserId || transferAdmin.isPending}
               onClick={() => transferAdmin.mutate()}
             >
-              {transferAdmin.isPending ? "Transferring…" : "Transfer admin"}
+              {transferAdmin.isPending ? <LocalizedText message={"Transferring…"} /> : <LocalizedText message={"Transfer admin"} />}
             </Button>
           </>
         }
       >
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <div style={{ fontSize: 12.5, color: "var(--text-secondary)" }}>
-            The selected member becomes the project admin. Existing project admins remain on the team with the role chosen below.
-          </div>
-          <Field label="New project admin">
+          <div style={{ fontSize: 12.5, color: "var(--text-secondary)" }}>{" "}<LocalizedText message={"The selected member becomes the project admin. Existing project admins remain on the team with the role chosen below."} />{" "}</div>
+          <Field label={translateUI("New project admin")}>
             <Select
               value={newAdminUserId}
               onChange={(event) => setNewAdminUserId(event.target.value)}
-              placeholder="Choose a project member…"
+              placeholder={translateUI("Choose a project member…")}
               options={adminCandidates.map((member) => ({
                 value: member.user_id,
                 label: `${nameOf(member.user_id)} · ${member.role}`,
               }))}
             />
           </Field>
-          <Field label="Previous admin role">
+          <Field label={translateUI("Previous admin role")}>
             <Select
               value={previousAdminRole}
               onChange={(event) => setPreviousAdminRole(event.target.value)}
@@ -1744,6 +1749,10 @@ function TeamTab({ projectId, canManage }: { projectId: string; canManage: boole
 
 /* ------------------------------ Milestones ------------------------------ */
 function MilestonesTab({ projectId, canManage }: { projectId: string; canManage: boolean }) {
+  const { t: localizeAttribute } = useI18n();
+
+  const { t: translateUI } = useI18n();
+
   const toast = useToast();
   const [createOpen, setCreateOpen] = useState(false);
   const [form, setForm] = useState({ name: "", due_date: "" });
@@ -1778,17 +1787,16 @@ function MilestonesTab({ projectId, canManage }: { projectId: string; canManage:
       <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
         {canManage && (
           <Button onClick={() => setCreateOpen(true)}>
-            <Plus size={14} /> Milestone
-          </Button>
+            <Plus size={14} />{" "}<LocalizedText message={"Milestone"} />{" "}</Button>
         )}
       </div>
       <Card padded={false}>
-        {milestones.length === 0 && <div style={{ padding: 18, fontSize: 12.5, color: "var(--text-tertiary)" }}>No milestones yet.</div>}
+        {milestones.length === 0 && <div style={{ padding: 18, fontSize: 12.5, color: "var(--text-tertiary)" }}><LocalizedText message={"No milestones yet."} /></div>}
         {milestones.map((m) => (
           <div key={m.id} className="pmp-row" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: "1px solid var(--border-subtle)" }}>
             <button
               onClick={() => canManage && toggle.mutate({ id: m.id, completed: !m.completed_at })}
-              title={m.completed_at ? "Mark incomplete" : "Mark complete"}
+              title={m.completed_at ? localizeAttribute("Mark incomplete") : localizeAttribute("Mark complete")}
               style={{ border: "none", background: "transparent", cursor: canManage ? "pointer" : "default", display: "flex" }}
             >
               <Diamond size={16} style={{ color: m.completed_at ? "var(--status-completed)" : "var(--accent-gold)" }} fill={m.completed_at ? "var(--status-completed)" : "none"} />
@@ -1807,21 +1815,21 @@ function MilestonesTab({ projectId, canManage }: { projectId: string; canManage:
       <Modal
         open={createOpen}
         onClose={() => setCreateOpen(false)}
-        title="New milestone"
+        title={translateUI("New milestone")}
         footer={
           <>
-            <Button variant="secondary" onClick={() => setCreateOpen(false)}>Cancel</Button>
+            <Button variant="secondary" onClick={() => setCreateOpen(false)}><LocalizedText message={"Cancel"} /></Button>
             <Button disabled={!form.name || create.isPending} onClick={() => create.mutate()}>
-              {create.isPending ? "Creating…" : "Create milestone"}
+              {create.isPending ? <LocalizedText message={"Creating…"} /> : <LocalizedText message={"Create milestone"} />}
             </Button>
           </>
         }
       >
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <Field label="Name">
-            <TextInput value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="e.g. Beta release" />
+          <Field label={translateUI("Name")}>
+            <TextInput value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder={translateUI("e.g. Beta release")} />
           </Field>
-          <Field label="Due date">
+          <Field label={translateUI("Due date")}>
             <TextInput type="date" value={form.due_date} onChange={(e) => setForm((f) => ({ ...f, due_date: e.target.value }))} />
           </Field>
         </div>
@@ -1839,6 +1847,8 @@ const REASON_LABEL: Record<string, string> = {
 };
 
 function BlockersTab({ projectId }: { projectId: string }) {
+  const { t: translateUI } = useI18n();
+
   const { nameOf } = useUserMap();
   const { data: blockers } = useQuery({ queryKey: ["blockers"], queryFn: () => listBlockers() });
   const { data: phases } = useQuery({ queryKey: ["phases", projectId], queryFn: () => getProjectSprints(projectId) });
@@ -1861,7 +1871,7 @@ function BlockersTab({ projectId }: { projectId: string }) {
 
   return (
     <div style={{ maxWidth: 860, display: "flex", flexDirection: "column", gap: 10 }}>
-      {projectBlockers.length === 0 && <EmptyState title="No blockers" hint="Nothing in this project is blocked. Keep it that way!" />}
+      {projectBlockers.length === 0 && <EmptyState title={translateUI("No blockers")} hint={translateUI("Nothing in this project is blocked. Keep it that way!")} />}
       {projectBlockers.map((b: BlockerRead) => (
         <div
           key={b.id}
@@ -1887,13 +1897,12 @@ function BlockersTab({ projectId }: { projectId: string }) {
                 </span>
               )}
             </div>
-            <div style={{ fontSize: 12.5, color: "var(--text-secondary)", marginTop: 4 }}>
-              Blocks: {taskById.get(b.blocked_task_id)?.title ?? b.blocked_task_id.slice(0, 8)}
+            <div style={{ fontSize: 12.5, color: "var(--text-secondary)", marginTop: 4 }}>{" "}<LocalizedText message={"Blocks:"} />{" "}{taskById.get(b.blocked_task_id)?.title ?? b.blocked_task_id.slice(0, 8)}
             </div>
             <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 4, display: "flex", gap: 14, flexWrap: "wrap" }}>
-              <span>Pending on <b style={{ color: "var(--text-secondary)" }}>{nameOf(b.pending_on_user_id)}</b></span>
-              {b.estimated_unblock_date && <span>ETA {b.estimated_unblock_date}</span>}
-              <span>Raised {relativeTime(b.created_at)}</span>
+              <span><LocalizedText message={"Pending on"} />{" "}<b style={{ color: "var(--text-secondary)" }}>{nameOf(b.pending_on_user_id)}</b></span>
+              {b.estimated_unblock_date && <span><LocalizedText message={"ETA"} />{" "}{b.estimated_unblock_date}</span>}
+              <span><LocalizedText message={"Raised"} />{" "}{<LocalizedRelativeTime value={b.created_at} />}</span>
             </div>
           </div>
         </div>
@@ -1904,14 +1913,16 @@ function BlockersTab({ projectId }: { projectId: string }) {
 
 /* ------------------------------ Discussions ------------------------------ */
 function DiscussionsTab({ projectId }: { projectId: string }) {
+  const { t: translateUI } = useI18n();
+
   const { data: channels } = useQuery({ queryKey: ["chat-channels"], queryFn: listChannels });
   const channel = (channels ?? []).find((c) => c.channel.project_id === projectId)?.channel;
 
   if (!channel) {
     return (
       <EmptyState
-        title="No project channel"
-        hint="You may not be a member of this project. Project channels are created automatically and are member-only."
+        title={translateUI("No project channel")}
+        hint={translateUI("You may not be a member of this project. Project channels are created automatically and are member-only.")}
       />
     );
   }

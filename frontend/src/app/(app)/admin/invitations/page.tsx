@@ -1,4 +1,9 @@
 "use client";
+import { LocalizedDate } from "@/lib/i18n/I18nProvider";
+import { LocalizedRelativeTime } from "@/lib/i18n/I18nProvider";
+
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -16,6 +21,8 @@ const STATUS_COLOR: Record<InvitationRead["status"], string> = {
 };
 
 export default function AdminInvitationsPage() {
+  const { t: translateUI } = useI18n();
+
   const queryClient = useQueryClient();
   const toast = useToast();
   const { data, isLoading } = useQuery({
@@ -54,7 +61,7 @@ export default function AdminInvitationsPage() {
       header: "Sent",
       sortValue: (i) => i.created_at,
       render: (i) => (
-        <span style={{ color: "var(--text-tertiary)", fontSize: 12.5 }}>{relativeTime(i.created_at)}</span>
+        <span style={{ color: "var(--text-tertiary)", fontSize: 12.5 }}>{<LocalizedRelativeTime value={i.created_at} />}</span>
       ),
     },
     {
@@ -62,7 +69,7 @@ export default function AdminInvitationsPage() {
       header: "Expires",
       render: (i) => (
         <span style={{ color: "var(--text-tertiary)", fontSize: 12.5 }}>
-          {new Date(i.expires_at).toLocaleDateString()}
+          <LocalizedDate value={i.expires_at} />
         </span>
       ),
     },
@@ -81,12 +88,8 @@ export default function AdminInvitationsPage() {
                 await navigator.clipboard.writeText(url);
                 toast.push("Invite link copied to clipboard!", "success");
               }}
-            >
-              Copy Link
-            </Button>
-            <Button variant="tertiary" onClick={() => revoke.mutate(i.id)} disabled={revoke.isPending}>
-              Revoke
-            </Button>
+            >{" "}<LocalizedText message={"Copy Link"} />{" "}</Button>
+            <Button variant="tertiary" onClick={() => revoke.mutate(i.id)} disabled={revoke.isPending}>{" "}<LocalizedText message={"Revoke"} />{" "}</Button>
           </div>
         ) : null,
     },
@@ -95,19 +98,19 @@ export default function AdminInvitationsPage() {
   return (
     <div style={PAGE_STYLE}>
       <PageHeader
-        title="Invitations"
+        title={translateUI("Invitations")}
         subtitle={`${(data ?? []).filter((i) => i.status === "pending").length} pending.`}
         actions={
           <Link href="/admin/users">
-            <Button variant="secondary">Back to users</Button>
+            <Button variant="secondary"><LocalizedText message={"Back to users"} /></Button>
           </Link>
         }
       />
       {isLoading ? (
-        <Spinner label="Loading invitations…" />
+        <Spinner label={translateUI("Loading invitations…")} />
       ) : (
         <div style={{ background: "var(--surface-2)", border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-3)", overflow: "hidden" }}>
-          <DataTable columns={columns} rows={data ?? []} rowKey={(i) => i.id} emptyText="No invitations yet." />
+          <DataTable columns={columns} rows={data ?? []} rowKey={(i) => i.id} emptyText={translateUI("No invitations yet.")} />
         </div>
       )}
     </div>

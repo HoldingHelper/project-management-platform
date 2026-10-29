@@ -1,3 +1,6 @@
+"use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 import React, { useState } from 'react';
 import { Icon } from '../icons';
 import { hash } from '../tokens';
@@ -13,6 +16,8 @@ interface PdfBlockProps {
 }
 
 export function PdfBlock({ id, title, data, onToast }: PdfBlockProps) {
+  const { t: translateUI } = useI18n();
+
   const [page, setPage] = useState(1);
   const [zoom, setZoom] = useState(100);
 
@@ -42,7 +47,7 @@ export function PdfBlock({ id, title, data, onToast }: PdfBlockProps) {
       >
         <button
           type="button"
-          aria-label="Previous page"
+          aria-label={translateUI("Previous page")}
           onClick={() => setPage(Math.max(1, pg - 1))}
           style={{
             width: 32,
@@ -58,12 +63,11 @@ export function PdfBlock({ id, title, data, onToast }: PdfBlockProps) {
         >
           <Icon name="cleft" size={16} />
         </button>
-        <span style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>
-          Page {pg} of {n}
+        <span style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>{" "}<LocalizedText message={"Page"} />{" "}{pg}{" "}<LocalizedText message={"of"} />{" "}{n}
         </span>
         <button
           type="button"
-          aria-label="Next page"
+          aria-label={translateUI("Next page")}
           onClick={() => setPage(Math.min(n, pg + 1))}
           style={{
             width: 32,
@@ -82,7 +86,7 @@ export function PdfBlock({ id, title, data, onToast }: PdfBlockProps) {
         <span style={{ flex: 1 }} />
         <button
           type="button"
-          aria-label="Zoom out"
+          aria-label={translateUI("Zoom out")}
           onClick={() => setZoom(Math.max(60, zoom - 20))}
           style={{
             width: 32,
@@ -103,7 +107,7 @@ export function PdfBlock({ id, title, data, onToast }: PdfBlockProps) {
         </span>
         <button
           type="button"
-          aria-label="Zoom in"
+          aria-label={translateUI("Zoom in")}
           onClick={() => setZoom(Math.min(160, zoom + 20))}
           style={{
             width: 32,
@@ -121,7 +125,7 @@ export function PdfBlock({ id, title, data, onToast }: PdfBlockProps) {
         </button>
         <button
           type="button"
-          aria-label="Download"
+          aria-label={translateUI("Download")}
           onClick={() => onToast(`${title} downloaded`)}
           style={{
             width: 32,
@@ -276,8 +280,7 @@ export function PdfBlock({ id, title, data, onToast }: PdfBlockProps) {
                 {data.note![1]}
               </span>
             )}
-            <span style={{ marginTop: 'auto', fontSize: 10, color: '#6b6f7a' }}>
-              Page {pg} of {n}
+            <span style={{ marginTop: 'auto', fontSize: 10, color: '#6b6f7a' }}>{" "}<LocalizedText message={"Page"} />{" "}{pg}{" "}<LocalizedText message={"of"} />{" "}{n}
             </span>
           </div>
         </div>

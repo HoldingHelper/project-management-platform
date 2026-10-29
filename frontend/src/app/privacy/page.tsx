@@ -1,3 +1,4 @@
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 import type { Metadata } from "next";
 import { PublicShell } from "@/components/public/PublicShell";
 import { ShieldCheck, Lock, Eye, FileText } from "lucide-react";
@@ -38,8 +39,7 @@ export default function PrivacyPage() {
               marginBottom: "16px",
             }}
           >
-            <ShieldCheck size={14} /> Legal & Compliance
-          </div>
+            <ShieldCheck size={14} />{" "}<LocalizedText message={"Legal & Compliance"} />{" "}</div>
           <h1
             style={{
               fontSize: "36px",
@@ -50,18 +50,14 @@ export default function PrivacyPage() {
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
             }}
-          >
-            Privacy Policy
-          </h1>
+          >{" "}<LocalizedText message={"Privacy Policy"} />{" "}</h1>
           <p
             style={{
               fontSize: "15px",
               color: "var(--text-secondary, #94a3b8)",
               margin: 0,
             }}
-          >
-            Effective date: September 25, 2026 · Version 2.4
-          </p>
+          >{" "}<LocalizedText message={"Effective date: September 25, 2026 · Version 2.4"} />{" "}</p>
         </div>
 
         <div
@@ -93,15 +89,12 @@ export default function PrivacyPage() {
                 gap: "10px",
               }}
             >
-              <Eye size={18} color="var(--accent-primary, #6366f1)" /> 1. Information We Collect
-            </h2>
-            <p style={{ margin: "0 0 12px 0" }}>
-              We collect information you provide directly to us when creating an account, configuring your organization, or interacting with workspaces. This includes:
-            </p>
+              <Eye size={18} color="var(--accent-primary, #6366f1)" />{" "}<LocalizedText message={"1. Information We Collect"} />{" "}</h2>
+            <p style={{ margin: "0 0 12px 0" }}>{" "}<LocalizedText message={"We collect information you provide directly to us when creating an account, configuring your organization, or interacting with workspaces. This includes:"} />{" "}</p>
             <ul style={{ margin: "0 0 0 20px", padding: 0 }}>
-              <li><strong>Account Identifiers:</strong> Name, work email address, job title, and team affiliations.</li>
-              <li><strong>Operational Data:</strong> Projects, tasks, sprint cycles, task attachments, and documentation pages created by your organization.</li>
-              <li><strong>Integration Credentials:</strong> OAuth tokens for GitHub, Google Calendar, and Google Drive, which are encrypted at rest using industry-standard AES/Fernet encryption.</li>
+              <li><strong><LocalizedText message={"Account Identifiers:"} /></strong>{" "}<LocalizedText message={"Name, work email address, job title, and team affiliations."} /></li>
+              <li><strong><LocalizedText message={"Operational Data:"} /></strong>{" "}<LocalizedText message={"Projects, tasks, sprint cycles, task attachments, and documentation pages created by your organization."} /></li>
+              <li><strong><LocalizedText message={"Integration Credentials:"} /></strong>{" "}<LocalizedText message={"OAuth tokens for GitHub, Google Calendar, and Google Drive, which are encrypted at rest using industry-standard AES/Fernet encryption."} /></li>
             </ul>
           </section>
 
@@ -124,15 +117,12 @@ export default function PrivacyPage() {
                 gap: "10px",
               }}
             >
-              <Lock size={18} color="var(--accent-primary, #6366f1)" /> 2. Security & Data Protection
-            </h2>
-            <p style={{ margin: "0 0 12px 0" }}>
-              We implement strict technical and organizational controls to protect personal and business data against unauthorized access, loss, or alteration:
-            </p>
+              <Lock size={18} color="var(--accent-primary, #6366f1)" />{" "}<LocalizedText message={"2. Security & Data Protection"} />{" "}</h2>
+            <p style={{ margin: "0 0 12px 0" }}>{" "}<LocalizedText message={"We implement strict technical and organizational controls to protect personal and business data against unauthorized access, loss, or alteration:"} />{" "}</p>
             <ul style={{ margin: "0 0 0 20px", padding: 0 }}>
-              <li>All network communication is enforced over TLS 1.3 encryption.</li>
-              <li>Authentication is governed by role-based access control (RBAC) with distributed token revocation and brute-force mitigation.</li>
-              <li>Uploaded documents and attachments are scanned and served with forced download disposition to prevent inline execution risks.</li>
+              <li><LocalizedText message={"All network communication is enforced over TLS 1.3 encryption."} /></li>
+              <li><LocalizedText message={"Authentication is governed by role-based access control (RBAC) with distributed token revocation and brute-force mitigation."} /></li>
+              <li><LocalizedText message={"Uploaded documents and attachments are scanned and served with forced download disposition to prevent inline execution risks."} /></li>
             </ul>
           </section>
 
@@ -155,11 +145,8 @@ export default function PrivacyPage() {
                 gap: "10px",
               }}
             >
-              <FileText size={18} color="var(--accent-primary, #6366f1)" /> 3. Data Retention & Your Rights
-            </h2>
-            <p style={{ margin: 0 }}>
-              You have the right to access, rectify, export, or delete your personal data. Department and organization administrators can manage member profiles directly from the Admin settings console. Upon account deactivation, operational tokens and active sessions are revoked immediately.
-            </p>
+              <FileText size={18} color="var(--accent-primary, #6366f1)" />{" "}<LocalizedText message={"3. Data Retention & Your Rights"} />{" "}</h2>
+            <p style={{ margin: 0 }}>{" "}<LocalizedText message={"You have the right to access, rectify, export, or delete your personal data. Department and organization administrators can manage member profiles directly from the Admin settings console. Upon account deactivation, operational tokens and active sessions are revoked immediately."} />{" "}</p>
           </section>
         </div>
       </div>

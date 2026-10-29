@@ -1,4 +1,5 @@
 "use client";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 import { useState } from "react";
 import {
@@ -81,12 +82,10 @@ export function InteractiveBento() {
       <div className="public-container">
         <div className="public-section-heading">
           <div>
-            <span className="public-kicker">Platform Superpowers</span>
-            <h2 id="bento-heading">Architected for engineering velocity & clarity.</h2>
+            <span className="public-kicker"><LocalizedText message={"Platform Superpowers"} /></span>
+            <h2 id="bento-heading"><LocalizedText message={"Architected for engineering velocity & clarity."} /></h2>
           </div>
-          <p>
-            Experience how modern engineering teams break down complex roadmaps, connect decisions to code, and maintain complete data governance.
-          </p>
+          <p>{" "}<LocalizedText message={"Experience how modern engineering teams break down complex roadmaps, connect decisions to code, and maintain complete data governance."} />{" "}</p>
         </div>
 
         <div className="bento-grid">
@@ -97,18 +96,16 @@ export function InteractiveBento() {
                 <Sparkles size={16} />
               </span>
               <div className="bento-title-group">
-                <span className="bento-kicker">AI Project Generator</span>
-                <h3>Turn natural outcomes into executable delivery boards</h3>
+                <span className="bento-kicker"><LocalizedText message={"AI Project Generator"} /></span>
+                <h3><LocalizedText message={"Turn natural outcomes into executable delivery boards"} /></h3>
               </div>
             </div>
 
-            <p className="bento-desc">
-              Describe your project outcome. Our LangGraph-powered generation worker crafts sprint roadmaps, task hierarchies, and acceptance criteria in seconds.
-            </p>
+            <p className="bento-desc">{" "}<LocalizedText message={"Describe your project outcome. Our LangGraph-powered generation worker crafts sprint roadmaps, task hierarchies, and acceptance criteria in seconds."} />{" "}</p>
 
             <div className="bento-interactive-box">
               <div className="bento-prompt-selector">
-                <span className="prompt-label">Try sample prompt:</span>
+                <span className="prompt-label"><LocalizedText message={"Try sample prompt:"} /></span>
                 <div className="prompt-chips">
                   {Object.keys(AI_TEMPLATES).map((key) => (
                     <button
@@ -126,12 +123,12 @@ export function InteractiveBento() {
               <div className={`bento-ai-result ${isGenerating ? "generating" : ""}`}>
                 <div className="ai-result-top">
                   <span className="ai-pill-status">
-                    <Bot size={13} /> {isGenerating ? "Analyzing architecture…" : "Generated Roadmap"}
+                    <Bot size={13} /> {isGenerating ? <LocalizedText message={"Analyzing architecture…"} /> : <LocalizedText message={"Generated Roadmap"} />}
                   </span>
                   <div className="ai-counts">
-                    <span>{aiData.sprints} Sprints</span>
+                    <span>{aiData.sprints}{" "}<LocalizedText message={"Sprints"} /></span>
                     <span>·</span>
-                    <span>{aiData.tasks} Tasks</span>
+                    <span>{aiData.tasks}{" "}<LocalizedText message={"Tasks"} /></span>
                   </div>
                 </div>
 
@@ -156,14 +153,12 @@ export function InteractiveBento() {
                 <BookOpenText size={16} />
               </span>
               <div className="bento-title-group">
-                <span className="bento-kicker">Interactive Docs</span>
-                <h3>Living Specifications</h3>
+                <span className="bento-kicker"><LocalizedText message={"Interactive Docs"} /></span>
+                <h3><LocalizedText message={"Living Specifications"} /></h3>
               </div>
             </div>
 
-            <p className="bento-desc">
-              Write rich markdown with live task mentions, embedded diagrams, and dual internal/public publishing.
-            </p>
+            <p className="bento-desc">{" "}<LocalizedText message={"Write rich markdown with live task mentions, embedded diagrams, and dual internal/public publishing."} />{" "}</p>
 
             <div className="bento-interactive-box">
               <div className="bento-md-toolbar">
@@ -173,17 +168,15 @@ export function InteractiveBento() {
                     className={mdMode === "write" ? "active" : ""}
                     onClick={() => setMdMode("write")}
                   >
-                    <Code2 size={12} /> Markdown
-                  </button>
+                    <Code2 size={12} />{" "}<LocalizedText message={"Markdown"} />{" "}</button>
                   <button
                     type="button"
                     className={mdMode === "preview" ? "active" : ""}
                     onClick={() => setMdMode("preview")}
                   >
-                    <Eye size={12} /> Rendered
-                  </button>
+                    <Eye size={12} />{" "}<LocalizedText message={"Rendered"} />{" "}</button>
                 </div>
-                <span className="md-tag">RFC-2026.4</span>
+                <span className="md-tag"><LocalizedText message={"RFC-2026.4"} /></span>
               </div>
 
               <div className="bento-md-content">
@@ -199,21 +192,17 @@ export function InteractiveBento() {
                   </pre>
                 ) : (
                   <div className="md-preview-view">
-                    <h4>Architecture Decisions</h4>
+                    <h4><LocalizedText message={"Architecture Decisions"} /></h4>
                     <ul className="md-preview-checklist">
                       <li className="checked">
-                        <Check size={12} /> Redis Pub/Sub for WebSockets
-                      </li>
+                        <Check size={12} />{" "}<LocalizedText message={"Redis Pub/Sub for WebSockets"} />{" "}</li>
                       <li className="checked">
-                        <Check size={12} /> @mention real-time alerts
-                      </li>
+                        <Check size={12} />{" "}<LocalizedText message={"@mention real-time alerts"} />{" "}</li>
                       <li className="pending">
-                        <span className="pending-box" /> Multi-region S3 file asset sync
-                      </li>
+                        <span className="pending-box" />{" "}<LocalizedText message={"Multi-region S3 file asset sync"} />{" "}</li>
                     </ul>
                     <div className="md-ref-badge">
-                      <FolderKanban size={12} /> Linked to Task: API Contract
-                    </div>
+                      <FolderKanban size={12} />{" "}<LocalizedText message={"Linked to Task: API Contract"} />{" "}</div>
                   </div>
                 )}
               </div>
@@ -227,49 +216,47 @@ export function InteractiveBento() {
                 <Zap size={16} />
               </span>
               <div className="bento-title-group">
-                <span className="bento-kicker">Sub-millisecond Sync</span>
-                <h3>Realtime Presence & WebSockets</h3>
+                <span className="bento-kicker"><LocalizedText message={"Sub-millisecond Sync"} /></span>
+                <h3><LocalizedText message={"Realtime Presence & WebSockets"} /></h3>
               </div>
             </div>
 
-            <p className="bento-desc">
-              Every card move, comment mention, and presence update broadcasts across cluster replicas instantly via Redis backplane.
-            </p>
+            <p className="bento-desc">{" "}<LocalizedText message={"Every card move, comment mention, and presence update broadcasts across cluster replicas instantly via Redis backplane."} />{" "}</p>
 
             <div className="bento-interactive-box">
               <div className="bento-presence-demo">
                 <div className="presence-active-users">
                   <div className="user-presence-card">
-                    <span className="user-avatar user-green">MB</span>
+                    <span className="user-avatar user-green"><LocalizedText message={"MB"} /></span>
                     <div className="user-info">
-                      <b>Alex Morgan</b>
-                      <small>Editing Sprint 14 Board</small>
+                      <b><LocalizedText message={"Alex Morgan"} /></b>
+                      <small><LocalizedText message={"Editing Sprint 14 Board"} /></small>
                     </div>
                     <span className="pulse-dot-green" />
                   </div>
 
                   <div className="user-presence-card">
-                    <span className="user-avatar user-blue">HA</span>
+                    <span className="user-avatar user-blue"><LocalizedText message={"HA"} /></span>
                     <div className="user-info">
-                      <b>Sam Taylor</b>
-                      <small>Reviewing PR #42</small>
+                      <b><LocalizedText message={"Sam Taylor"} /></b>
+                      <small><LocalizedText message={"Reviewing PR #42"} /></small>
                     </div>
                     <span className="pulse-dot-green" />
                   </div>
 
                   <div className="user-presence-card">
-                    <span className="user-avatar user-purple">AI</span>
+                    <span className="user-avatar user-purple"><LocalizedText message={"AI"} /></span>
                     <div className="user-info">
-                      <b>Platform Copilot</b>
-                      <small>Running healthcheck</small>
+                      <b><LocalizedText message={"Platform Copilot"} /></b>
+                      <small><LocalizedText message={"Running healthcheck"} /></small>
                     </div>
                     <span className="pulse-dot-green" />
                   </div>
                 </div>
 
                 <div className="presence-stats-bar">
-                  <span>⚡ Broadcast: &lt;12ms</span>
-                  <span>🔄 Reconnect: Automatic</span>
+                  <span><LocalizedText message={"⚡ Broadcast: <12ms"} /></span>
+                  <span><LocalizedText message={"🔄 Reconnect: Automatic"} /></span>
                 </div>
               </div>
             </div>
@@ -282,18 +269,16 @@ export function InteractiveBento() {
                 <ShieldCheck size={16} />
               </span>
               <div className="bento-title-group">
-                <span className="bento-kicker">Enterprise Security</span>
-                <h3>Granular Role-Based Access Matrix</h3>
+                <span className="bento-kicker"><LocalizedText message={"Enterprise Security"} /></span>
+                <h3><LocalizedText message={"Granular Role-Based Access Matrix"} /></h3>
               </div>
             </div>
 
-            <p className="bento-desc">
-              Control permissions with precision. Assign specific roles to team members or invite external stakeholders with link-based tokens.
-            </p>
+            <p className="bento-desc">{" "}<LocalizedText message={"Control permissions with precision. Assign specific roles to team members or invite external stakeholders with link-based tokens."} />{" "}</p>
 
             <div className="bento-interactive-box">
               <div className="bento-role-tabs">
-                <span className="role-tabs-label">Inspect Role:</span>
+                <span className="role-tabs-label"><LocalizedText message={"Inspect Role:"} /></span>
                 <div className="role-buttons">
                   {(Object.keys(ROLES_PERMISSIONS) as RoleName[]).map((r) => (
                     <button
@@ -310,33 +295,33 @@ export function InteractiveBento() {
 
               <div className="bento-permission-matrix">
                 <div className="matrix-row">
-                  <span className="perm-name">Read Workspaces & Docs</span>
+                  <span className="perm-name"><LocalizedText message={"Read Workspaces & Docs"} /></span>
                   <span className={`perm-status ${perms.read ? "allowed" : "denied"}`}>
-                    {perms.read ? <Check size={12} /> : <Lock size={12} />} {perms.read ? "Allowed" : "Restricted"}
+                    {perms.read ? <Check size={12} /> : <Lock size={12} />} {perms.read ? <LocalizedText message={"Allowed"} /> : <LocalizedText message={"Restricted"} />}
                   </span>
                 </div>
                 <div className="matrix-row">
-                  <span className="perm-name">Create & Edit Tasks</span>
+                  <span className="perm-name"><LocalizedText message={"Create & Edit Tasks"} /></span>
                   <span className={`perm-status ${perms.write ? "allowed" : "denied"}`}>
-                    {perms.write ? <Check size={12} /> : <Lock size={12} />} {perms.write ? "Allowed" : "Restricted"}
+                    {perms.write ? <Check size={12} /> : <Lock size={12} />} {perms.write ? <LocalizedText message={"Allowed"} /> : <LocalizedText message={"Restricted"} />}
                   </span>
                 </div>
                 <div className="matrix-row">
-                  <span className="perm-name">Generate Invite Links</span>
+                  <span className="perm-name"><LocalizedText message={"Generate Invite Links"} /></span>
                   <span className={`perm-status ${perms.invite ? "allowed" : "denied"}`}>
-                    {perms.invite ? <Check size={12} /> : <Lock size={12} />} {perms.invite ? "Allowed" : "Restricted"}
+                    {perms.invite ? <Check size={12} /> : <Lock size={12} />} {perms.invite ? <LocalizedText message={"Allowed"} /> : <LocalizedText message={"Restricted"} />}
                   </span>
                 </div>
                 <div className="matrix-row">
-                  <span className="perm-name">Delete Resources & Projects</span>
+                  <span className="perm-name"><LocalizedText message={"Delete Resources & Projects"} /></span>
                   <span className={`perm-status ${perms.delete ? "allowed" : "denied"}`}>
-                    {perms.delete ? <Check size={12} /> : <Lock size={12} />} {perms.delete ? "Allowed" : "Restricted"}
+                    {perms.delete ? <Check size={12} /> : <Lock size={12} />} {perms.delete ? <LocalizedText message={"Allowed"} /> : <LocalizedText message={"Restricted"} />}
                   </span>
                 </div>
                 <div className="matrix-row">
-                  <span className="perm-name">Manage Workspace & System Roles</span>
+                  <span className="perm-name"><LocalizedText message={"Manage Workspace & System Roles"} /></span>
                   <span className={`perm-status ${perms.admin ? "allowed" : "denied"}`}>
-                    {perms.admin ? <Check size={12} /> : <Lock size={12} />} {perms.admin ? "Allowed" : "Restricted"}
+                    {perms.admin ? <Check size={12} /> : <Lock size={12} />} {perms.admin ? <LocalizedText message={"Allowed"} /> : <LocalizedText message={"Restricted"} />}
                   </span>
                 </div>
               </div>

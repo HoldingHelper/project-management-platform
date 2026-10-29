@@ -22,6 +22,7 @@ export function TextInput({ icon, trailing, style, ...rest }: Props) {
     >
       {icon && <span style={{ color: "var(--text-tertiary)", display: "flex", flexShrink: 0 }}>{icon}</span>}
       <input
+        dir="auto"
         {...rest}
         style={{
           border: "none",

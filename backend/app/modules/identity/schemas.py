@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Literal
 from uuid import UUID
 
 from pydantic import (
@@ -39,6 +39,9 @@ class LoginRequest(BaseModel):
 
 class UserRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
+    locale: Optional[Literal["en", "fa"]] = None
+    calendar: Literal["gregory", "persian"] = "gregory"
+    numbering_system: Literal["latn", "arabext"] = "latn"
 
     id: UUID
     email: str
@@ -275,6 +278,9 @@ class AcceptInvitationRequest(BaseModel):
 
 
 class UpdateProfileRequest(BaseModel):
+    locale: Optional[Literal["en", "fa"]] = None
+    calendar: Optional[Literal["gregory", "persian"]] = None
+    numbering_system: Optional[Literal["latn", "arabext"]] = None
     first_name: Optional[str] = Field(default=None, min_length=1, max_length=100)
     last_name: Optional[str] = Field(default=None, min_length=1, max_length=100)
     job_title: Optional[str] = Field(default=None, max_length=150)

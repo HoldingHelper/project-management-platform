@@ -1,4 +1,6 @@
 "use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 import { useState, type DragEvent, type ReactNode } from "react";
 import Link from "next/link";
@@ -37,6 +39,8 @@ const DEFAULT_CATEGORIES = [
 ];
 
 export function DocsSidebar() {
+  const { t: translateUI } = useI18n();
+
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -84,7 +88,7 @@ export function DocsSidebar() {
   return (
     <aside
       className="pmp-sidebar internal-docs-sidebar"
-      aria-label="Knowledge Base Explorer"
+      aria-label={translateUI("Knowledge Base Explorer")}
       style={{
         width: "var(--pmp-sidebar-width, 260px)",
         flexShrink: 0,
@@ -110,15 +114,13 @@ export function DocsSidebar() {
       >
         <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
           <BookOpen size={18} style={{ color: "var(--accent-primary)" }} />
-          <span style={{ fontSize: 14.5, fontWeight: 700, color: "var(--text-primary)", letterSpacing: "-0.015em" }}>
-            Knowledge Base
-          </span>
+          <span style={{ fontSize: 14.5, fontWeight: 700, color: "var(--text-primary)", letterSpacing: "-0.015em" }}>{" "}<LocalizedText message={"Knowledge Base"} />{" "}</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
           <button
             type="button"
             onClick={() => setCreateModalOpen(true)}
-            title="Create new document"
+            title={translateUI("Create new document")}
             className="pmp-icon-btn"
             style={{
               width: 28,
@@ -157,7 +159,7 @@ export function DocsSidebar() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search documentation…"
+            placeholder={translateUI("Search documentation…")}
             style={{
               background: "transparent",
               border: "none",
@@ -177,9 +179,7 @@ export function DocsSidebar() {
               color: "var(--text-tertiary)",
               fontFamily: "var(--font-mono)",
             }}
-          >
-            ⌘K
-          </span>
+          >{" "}<LocalizedText message={"⌘K"} />{" "}</span>
         </div>
       </div>
 
@@ -207,9 +207,7 @@ export function DocsSidebar() {
             cursor: "pointer",
             transition: "all var(--duration-fast) var(--ease-spring)",
           }}
-        >
-          Spaces
-        </button>
+        >{" "}<LocalizedText message={"Spaces"} />{" "}</button>
         <button
           type="button"
           onClick={() => setActiveTab("tags")}
@@ -225,14 +223,12 @@ export function DocsSidebar() {
             cursor: "pointer",
             transition: "all var(--duration-fast) var(--ease-spring)",
           }}
-        >
-          Tags
-        </button>
+        >{" "}<LocalizedText message={"Tags"} />{" "}</button>
       </div>
 
       {/* Category / Document Tree */}
       <nav
-        aria-label="Knowledge Base Navigation"
+        aria-label={translateUI("Knowledge Base Navigation")}
         style={{
           flex: 1,
           overflowY: "auto",
@@ -329,9 +325,7 @@ export function DocsSidebar() {
                         );
                       })
                     ) : (
-                      <div style={{ padding: "4px 8px", fontSize: 11, color: "var(--text-tertiary)", fontStyle: "italic" }}>
-                        No articles yet
-                      </div>
+                      <div style={{ padding: "4px 8px", fontSize: 11, color: "var(--text-tertiary)", fontStyle: "italic" }}>{" "}<LocalizedText message={"No articles yet"} />{" "}</div>
                     )}
                   </div>
                 )}
@@ -405,30 +399,24 @@ export function DocsSidebar() {
             <Headphones size={16} />
           </div>
           <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>Need help?</div>
-            <div style={{ fontSize: 10.5, color: "var(--text-tertiary)", lineHeight: 1.3 }}>
-              Visit our Help Center or contact support.
-            </div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}><LocalizedText message={"Need help?"} /></div>
+            <div style={{ fontSize: 10.5, color: "var(--text-tertiary)", lineHeight: 1.3 }}>{" "}<LocalizedText message={"Visit our Help Center or contact support."} />{" "}</div>
           </div>
           <ChevronRight size={14} style={{ color: "var(--text-tertiary)", flexShrink: 0 }} />
         </Link>
       </div>
 
       {/* Create Modal */}
-      <Modal open={createModalOpen} onClose={() => setCreateModalOpen(false)} title="Create New Document">
+      <Modal open={createModalOpen} onClose={() => setCreateModalOpen(false)} title={translateUI("Create New Document")}>
         <div style={{ display: "grid", gap: 12 }}>
-          <label style={{ display: "grid", gap: 4, fontSize: 12, fontWeight: 600, color: "var(--text-secondary)" }}>
-            Title
-            <TextInput
+          <label style={{ display: "grid", gap: 4, fontSize: 12, fontWeight: 600, color: "var(--text-secondary)" }}>{" "}<LocalizedText message={"Title"} />{" "}<TextInput
               value={newPageTitle}
               onChange={(e) => setNewPageTitle(e.target.value)}
-              placeholder="e.g. Signing In & Profile Management"
+              placeholder={translateUI("e.g. Signing In & Profile Management")}
               autoFocus
             />
           </label>
-          <label style={{ display: "grid", gap: 4, fontSize: 12, fontWeight: 600, color: "var(--text-secondary)" }}>
-            Space
-            <select
+          <label style={{ display: "grid", gap: 4, fontSize: 12, fontWeight: 600, color: "var(--text-secondary)" }}>{" "}<LocalizedText message={"Space"} />{" "}<select
               value={selectedSpaceId}
               onChange={(e) => setSelectedSpaceId(e.target.value)}
               style={{
@@ -440,7 +428,7 @@ export function DocsSidebar() {
                 fontSize: 13,
               }}
             >
-              <option value="">Select space...</option>
+              <option value=""><LocalizedText message={"Select space..."} /></option>
               {spaces.data?.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}
@@ -449,9 +437,7 @@ export function DocsSidebar() {
             </select>
           </label>
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 8 }}>
-            <Button variant="secondary" onClick={() => setCreateModalOpen(false)}>
-              Cancel
-            </Button>
+            <Button variant="secondary" onClick={() => setCreateModalOpen(false)}>{" "}<LocalizedText message={"Cancel"} />{" "}</Button>
             <Button
               onClick={() => {
                 setCreateModalOpen(false);
@@ -460,9 +446,7 @@ export function DocsSidebar() {
                 }
               }}
               disabled={!newPageTitle.trim()}
-            >
-              Create
-            </Button>
+            >{" "}<LocalizedText message={"Create"} />{" "}</Button>
           </div>
         </div>
       </Modal>

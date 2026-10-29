@@ -1,15 +1,20 @@
+"use client";
 import type { SelectHTMLAttributes } from "react";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 interface Option {
   value: string;
   label: string;
+  translateLabel?: boolean;
 }
 interface Props extends SelectHTMLAttributes<HTMLSelectElement> {
   options: Option[];
   placeholder?: string;
+  translateOptions?: boolean;
 }
 
-export function Select({ options, placeholder, style, className, ...rest }: Props) {
+export function Select({ options, placeholder, translateOptions = false, style, className, ...rest }: Props) {
+  const { t } = useI18n();
   return (
     <select
       {...rest}
@@ -29,10 +34,10 @@ export function Select({ options, placeholder, style, className, ...rest }: Prop
         ...style,
       }}
     >
-      {placeholder && <option value="">{placeholder}</option>}
+      {placeholder && <option value="">{t(placeholder)}</option>}
       {options.map((o) => (
         <option key={o.value} value={o.value}>
-          {o.label}
+          {o.translateLabel || translateOptions ? t(o.label) : o.label}
         </option>
       ))}
     </select>

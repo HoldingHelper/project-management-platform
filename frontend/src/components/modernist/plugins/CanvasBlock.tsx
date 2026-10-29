@@ -1,3 +1,7 @@
+"use client";
+
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 import React, { useState, useRef, useEffect } from 'react';
 import { CanvasElement } from '../types';
 import { Icon } from '../icons';
@@ -22,6 +26,8 @@ const TOOLS = [
 ];
 
 export function CanvasBlock({ id: _blockId, data, onUpdate }: CanvasBlockProps) {
+  const { t: translateUI } = useI18n();
+
   const [tool, setTool] = useState('select');
   const [sel, setSel] = useState<string | null>(null);
   const [link, setLink] = useState<string | null>(null);
@@ -200,7 +206,7 @@ export function CanvasBlock({ id: _blockId, data, onUpdate }: CanvasBlockProps) 
             <>
               <span style={{ width: 1, height: 22, background: 'var(--color-divider)', margin: '0 4px' }} />
               <input
-                aria-label="Shape text"
+                aria-label={translateUI("Shape text")}
                 value={selectedEl?.text || ''}
                 onChange={(e) => handleUpdateText(e.target.value)}
                 style={{
@@ -217,7 +223,7 @@ export function CanvasBlock({ id: _blockId, data, onUpdate }: CanvasBlockProps) 
               />
               <button
                 type="button"
-                aria-label="Delete shape"
+                aria-label={translateUI("Delete shape")}
                 onClick={handleDeleteSel}
                 style={{
                   width: 32,
@@ -396,20 +402,18 @@ export function CanvasBlock({ id: _blockId, data, onUpdate }: CanvasBlockProps) 
                 fontSize: 14,
                 pointerEvents: 'none',
               }}
-            >
-              Pick a tool above, then click the board to place it.
-            </div>
+            >{" "}<LocalizedText message={"Pick a tool above, then click the board to place it."} />{" "}</div>
           )}
         </div>
       </div>
       <div className="text-muted" style={{ padding: '8px 12px', fontSize: 12 }}>
         {tool === 'arrow'
           ? link
-            ? 'Now click the shape to connect to.'
-            : 'Click the first shape, then the second, to draw an arrow.'
+            ? <LocalizedText message={"Now click the shape to connect to."} />
+            : <LocalizedText message={"Click the first shape, then the second, to draw an arrow."} />
           : tool === 'select'
-          ? 'Drag shapes to move them. Select a shape to rename or delete it.'
-          : 'Click anywhere on the board to place the shape.'}
+          ? <LocalizedText message={"Drag shapes to move them. Select a shape to rename or delete it."} />
+          : <LocalizedText message={"Click anywhere on the board to place the shape."} />}
       </div>
     </div>
   );

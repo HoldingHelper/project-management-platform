@@ -18,8 +18,10 @@ frontend-check:
   script:
     - cd frontend
     - npm ci --no-audit --no-fund
+    - npm run i18n:audit
     - npm run typecheck
     - npm test
+    - npx --no-install tsx --test src/lib/i18n/*.test.ts
     - npm run build
 
 deploy-production:

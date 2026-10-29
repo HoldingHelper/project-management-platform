@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 /* Google OAuth redirect target for the music module's Drive connection.
    Opened as a popup from MusicChannelView; exchanges ?code&state for a stored
@@ -56,8 +57,10 @@ function DriveCallbackInner() {
 }
 
 export default function DriveCallbackPage() {
+  const { t: translateUI } = useI18n();
+
   return (
-    <Suspense fallback={<Spinner label="Loading…" />}>
+    <Suspense fallback={<Spinner label={translateUI("Loading…")} />}>
       <DriveCallbackInner />
     </Suspense>
   );

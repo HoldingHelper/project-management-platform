@@ -150,6 +150,9 @@ export interface CustomStatusUpdateRequest {
 }
 
 export interface UserRead {
+  locale?: "en" | "fa" | null;
+  calendar?: "gregory" | "persian";
+  numbering_system?: "latn" | "arabext";
   id: UUID;
   email: string;
   username?: string | null;

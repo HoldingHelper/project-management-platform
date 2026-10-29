@@ -1,3 +1,4 @@
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 import React, { useState } from 'react';
 import { Task } from '../types';
 import { Icon } from '../icons';
@@ -233,7 +234,7 @@ export function KanbanBoardView({
                         }}
                       >
                         <Icon
-                          name={t.type === 'Feature' ? 'check' : t.type === 'Bug' ? 'target' : 'sparkles'}
+                          name={t.type === 'Feature' ? "check" : t.type === 'Bug' ? 'target' : 'sparkles'}
                           size={10}
                           strokeWidth={3}
                         />
@@ -258,7 +259,7 @@ export function KanbanBoardView({
                           borderRadius: 'var(--r-xs)',
                         }}
                       >
-                        {t.e == null ? 'No date' : dayStr(t.e)}
+                        {t.e == null ? <LocalizedText message={"No date"} /> : dayStr(t.e)}
                       </span>
                       <Icon
                         name="layers"
@@ -301,9 +302,7 @@ export function KanbanBoardView({
                     color: 'var(--color-neutral-700)',
                     borderRadius: 'var(--r-md)',
                   }}
-                >
-                  Drop tasks here
-                </div>
+                >{" "}<LocalizedText message={"Drop tasks here"} />{" "}</div>
               )}
 
               <button
@@ -324,9 +323,7 @@ export function KanbanBoardView({
                   borderRadius: 'var(--r-sm)',
                 }}
               >
-                <Icon name="plus" size={14} />
-                Create task
-              </button>
+                <Icon name="plus" size={14} />{" "}<LocalizedText message={"Create task"} />{" "}</button>
             </div>
           );
         })}

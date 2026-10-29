@@ -1,4 +1,6 @@
 "use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 import { useMemo, useRef, useState } from "react";
 import {
@@ -35,6 +37,8 @@ export function OrgChartTree({
   onEditUser,
   canManage = false,
 }: Props) {
+  const { t: translateUI } = useI18n();
+
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -205,7 +209,7 @@ export function OrgChartTree({
               style={{ position: "absolute", left: 10, top: 10, color: "var(--text-tertiary)" }}
             />
             <TextInput
-              placeholder="Search coworkers or teams…"
+              placeholder={translateUI("Search coworkers or teams…")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               style={{ paddingLeft: 32, height: 34, fontSize: 12.5 }}
@@ -228,8 +232,7 @@ export function OrgChartTree({
                 cursor: "pointer",
                 whiteSpace: "nowrap",
               }}
-            >
-              All Departments ({data.total_departments})
+            >{" "}<LocalizedText message={"All Departments ("} />{data.total_departments})
             </button>
             {departments.map((dept) => (
               <button
@@ -272,10 +275,9 @@ export function OrgChartTree({
               fontSize: 12,
               cursor: "pointer",
             }}
-            title="Expand all branches"
+            title={translateUI("Expand all branches")}
           >
-            <Maximize2 size={13} /> Expand All
-          </button>
+            <Maximize2 size={13} />{" "}<LocalizedText message={"Expand All"} />{" "}</button>
           <button
             type="button"
             onClick={collapseAll}
@@ -291,10 +293,9 @@ export function OrgChartTree({
               fontSize: 12,
               cursor: "pointer",
             }}
-            title="Collapse all branches"
+            title={translateUI("Collapse all branches")}
           >
-            <Minimize2 size={13} /> Collapse All
-          </button>
+            <Minimize2 size={13} />{" "}<LocalizedText message={"Collapse All"} />{" "}</button>
 
           <div
             style={{
@@ -316,7 +317,7 @@ export function OrgChartTree({
                 color: "var(--text-secondary)",
                 cursor: "pointer",
               }}
-              title="Zoom out"
+              title={translateUI("Zoom out")}
             >
               <Minus size={13} />
             </button>
@@ -342,7 +343,7 @@ export function OrgChartTree({
                 color: "var(--text-secondary)",
                 cursor: "pointer",
               }}
-              title="Zoom in"
+              title={translateUI("Zoom in")}
             >
               <Plus size={13} />
             </button>
@@ -357,7 +358,7 @@ export function OrgChartTree({
                 color: "var(--text-tertiary)",
                 cursor: "pointer",
               }}
-              title="Reset view"
+              title={translateUI("Reset view")}
             >
               <RotateCcw size={12} />
             </button>
@@ -365,8 +366,7 @@ export function OrgChartTree({
 
           {canManage && onInvite && (
             <Button size="sm" onClick={onInvite}>
-              <UserPlus size={13} style={{ marginRight: 5 }} /> Invite
-            </Button>
+              <UserPlus size={13} style={{ marginRight: 5 }} />{" "}<LocalizedText message={"Invite"} />{" "}</Button>
           )}
         </div>
       </div>
@@ -402,8 +402,8 @@ export function OrgChartTree({
             }}
           >
             <Users size={36} style={{ opacity: 0.5 }} />
-            <div style={{ fontSize: 15, fontWeight: 600 }}>No teammates found</div>
-            <div style={{ fontSize: 12.5 }}>Try adjusting your search query or department filter.</div>
+            <div style={{ fontSize: 15, fontWeight: 600 }}><LocalizedText message={"No teammates found"} /></div>
+            <div style={{ fontSize: 12.5 }}><LocalizedText message={"Try adjusting your search query or department filter."} /></div>
           </div>
         ) : (
           <div
@@ -451,7 +451,7 @@ export function OrgChartTree({
           }}
         >
           <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-tertiary)", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 6 }}>
-            <Users size={14} /> Unassigned Teammates ({data.unassigned.length}):
+            <Users size={14} />{" "}<LocalizedText message={"Unassigned Teammates ("} />{data.unassigned.length}):
           </span>
           <div style={{ display: "flex", gap: 8 }}>
             {data.unassigned.map((node) => (

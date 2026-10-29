@@ -1,4 +1,5 @@
 "use client";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 import { useState, useRef, type ReactNode } from "react";
 import Link from "next/link";
@@ -184,9 +185,7 @@ export function UserStatusHoverCard({
                   fontWeight: 600,
                   textDecoration: "none",
                 }}
-              >
-                View Profile
-              </Link>
+              >{" "}<LocalizedText message={"View Profile"} />{" "}</Link>
             </div>
           )}
         </div>

@@ -1,3 +1,6 @@
+"use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 import React from 'react';
 import { Person, Task } from '../types';
 import { Icon } from '../icons';
@@ -24,6 +27,8 @@ export function PersonDrawer({
   onAssignTask,
   onOpenTask,
 }: PersonDrawerProps) {
+  const { t: translateUI } = useI18n();
+
   if (!person) return null;
 
   const presColor =
@@ -50,7 +55,7 @@ export function PersonDrawer({
       />
       <aside
         role="dialog"
-        aria-label="Person"
+        aria-label={translateUI("Person")}
         data-screen-label="Person"
         style={{
           position: 'fixed',
@@ -77,13 +82,11 @@ export function PersonDrawer({
             borderBottom: '2px solid var(--color-divider)',
           }}
         >
-          <h6 className="text-muted" style={{ margin: 0 }}>
-            Profile
-          </h6>
+          <h6 className="text-muted" style={{ margin: 0 }}>{" "}<LocalizedText message={"Profile"} />{" "}</h6>
           <button
             type="button"
             className="btn btn-icon"
-            aria-label="Close"
+            aria-label={translateUI("Close")}
             onClick={onClose}
           >
             <Icon name="x" size={16} />
@@ -144,18 +147,14 @@ export function PersonDrawer({
               onClick={() => onMessage(person.name)}
               style={{ minHeight: 40, borderRadius: 'var(--r-sm)' }}
             >
-              <Icon name="chat" size={16} />
-              Message
-            </button>
+              <Icon name="chat" size={16} />{" "}<LocalizedText message={"Message"} />{" "}</button>
             <button
               type="button"
               className="btn btn-secondary"
               onClick={() => onAssignTask(person.name)}
               style={{ minHeight: 40, borderRadius: 'var(--r-sm)' }}
             >
-              <Icon name="plus" size={16} />
-              Assign a task
-            </button>
+              <Icon name="plus" size={16} />{" "}<LocalizedText message={"Assign a task"} />{" "}</button>
           </div>
 
           <div style={{ borderTop: '2px solid var(--color-divider)' }}>
@@ -185,8 +184,7 @@ export function PersonDrawer({
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <h6 className="text-muted" style={{ marginBottom: 8 }}>
-              Open tasks · {tasks.length}
+            <h6 className="text-muted" style={{ marginBottom: 8 }}>{" "}<LocalizedText message={"Open tasks ·"} />{" "}{tasks.length}
             </h6>
             {tasks.map((t) => {
               const ty = TYPE[t.type] || TYPE.Chore;
@@ -234,7 +232,7 @@ export function PersonDrawer({
                       }}
                     >
                       <Icon
-                        name={t.type === 'Feature' ? 'check' : t.type === 'Bug' ? 'target' : 'sparkles'}
+                        name={t.type === 'Feature' ? "check" : t.type === 'Bug' ? 'target' : 'sparkles'}
                         size={10}
                         strokeWidth={3}
                       />
@@ -263,9 +261,7 @@ export function PersonDrawer({
               );
             })}
             {tasks.length === 0 && (
-              <p className="text-muted" style={{ margin: '8px 0 0', fontSize: 13 }}>
-                No open tasks.
-              </p>
+              <p className="text-muted" style={{ margin: '8px 0 0', fontSize: 13 }}>{" "}<LocalizedText message={"No open tasks."} />{" "}</p>
             )}
           </div>
         </div>

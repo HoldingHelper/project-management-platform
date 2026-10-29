@@ -1,4 +1,5 @@
 "use client";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 import { useId, useMemo, useState } from "react";
 
@@ -96,7 +97,7 @@ export function SearchSuggestionInput({
               {option.detail && <small style={{ color: "var(--text-tertiary)" }}>{option.detail}</small>}
             </button>
           )) : (
-            <div style={{ padding: 12, color: "var(--text-tertiary)", fontSize: 12 }}>No matching options</div>
+            <div style={{ padding: 12, color: "var(--text-tertiary)", fontSize: 12 }}><LocalizedText message={"No matching options"} /></div>
           )}
         </div>
       )}

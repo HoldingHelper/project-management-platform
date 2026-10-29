@@ -1,3 +1,6 @@
+"use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 import React, { useState } from 'react';
 import { SlideData } from '../types';
 import { Icon } from '../icons';
@@ -28,6 +31,8 @@ export function slideView(x: SlideData) {
 }
 
 export function SlidesBlock({ slides, onPresent }: SlidesBlockProps) {
+  const { t: translateUI } = useI18n();
+
   const [idx, setIdx] = useState(0);
   const n = slides.length;
   const curIdx = Math.min(Math.max(0, idx), n - 1);
@@ -197,7 +202,7 @@ export function SlidesBlock({ slides, onPresent }: SlidesBlockProps) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <button
             type="button"
-            aria-label="Previous slide"
+            aria-label={translateUI("Previous slide")}
             onClick={() => setIdx(Math.max(0, curIdx - 1))}
             style={{
               width: 32,
@@ -218,7 +223,7 @@ export function SlidesBlock({ slides, onPresent }: SlidesBlockProps) {
           </span>
           <button
             type="button"
-            aria-label="Next slide"
+            aria-label={translateUI("Next slide")}
             onClick={() => setIdx(Math.min(n - 1, curIdx + 1))}
             style={{
               width: 32,
@@ -241,9 +246,7 @@ export function SlidesBlock({ slides, onPresent }: SlidesBlockProps) {
             onClick={onPresent}
             style={{ minHeight: 34 }}
           >
-            <Icon name="play" size={14} />
-            Present
-          </button>
+            <Icon name="play" size={14} />{" "}<LocalizedText message={"Present"} />{" "}</button>
         </div>
       </div>
     </div>

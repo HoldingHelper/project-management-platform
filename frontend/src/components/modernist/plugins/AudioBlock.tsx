@@ -1,3 +1,7 @@
+"use client";
+
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 import React, { useState, useEffect, useRef } from 'react';
 import { Icon } from '../icons';
 import { hash, avBg } from '../tokens';
@@ -11,6 +15,10 @@ interface AudioBlockProps {
 }
 
 export function AudioBlock({ id, data }: AudioBlockProps) {
+  const { t: localizeAttribute } = useI18n();
+
+  const { t: translateUI } = useI18n();
+
   const [playing, setPlaying] = useState(false);
   const [pos, setPos] = useState(0);
   const [speed, setSpeed] = useState(1);
@@ -63,7 +71,7 @@ export function AudioBlock({ id, data }: AudioBlockProps) {
         <button
           type="button"
           onClick={togglePlay}
-          aria-label={playing ? 'Pause' : 'Play'}
+          aria-label={playing ? localizeAttribute("Pause") : localizeAttribute("Play")}
           style={{
             width: 48,
             height: 48,
@@ -77,14 +85,14 @@ export function AudioBlock({ id, data }: AudioBlockProps) {
             cursor: 'pointer',
           }}
         >
-          <Icon name={playing ? 'pause' : 'play'} size={20} />
+          <Icon name={playing ? "pause" : "play"} size={20} />
         </button>
 
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
           <div
             onClick={handleSeek}
             role="slider"
-            aria-label="Seek"
+            aria-label={translateUI("Seek")}
             tabIndex={0}
             style={{
               display: 'flex',

@@ -1,3 +1,4 @@
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 import React from 'react';
 import { Project, Department, Team, Person, Task } from '../types';
 import { TN, st, stT, pcol } from '../tokens';
@@ -50,10 +51,8 @@ export function ExecutiveView({
       {/* Partition Health */}
       <section style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div style={{ paddingBottom: 12, borderBottom: '2px solid var(--color-divider)' }}>
-          <h4 style={{ margin: 0 }}>Partition health</h4>
-          <div className="text-muted" style={{ fontSize: 13 }}>
-            Status mix and average progress per partition. Open one to see its projects.
-          </div>
+          <h4 style={{ margin: 0 }}><LocalizedText message={"Partition health"} /></h4>
+          <div className="text-muted" style={{ fontSize: 13 }}>{" "}<LocalizedText message={"Status mix and average progress per partition. Open one to see its projects."} />{" "}</div>
         </div>
 
         <div
@@ -116,8 +115,7 @@ export function ExecutiveView({
                     {p}
                   </span>
                   <span className="text-muted" style={{ fontSize: 12 }}>
-                    {ps.length} projects
-                  </span>
+                    {ps.length}{" "}<LocalizedText message={"projects"} />{" "}</span>
                 </span>
 
                 <span style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
@@ -131,9 +129,7 @@ export function ExecutiveView({
                   >
                     {avg}%
                   </span>
-                  <span className="text-muted" style={{ fontSize: 12 }}>
-                    average progress
-                  </span>
+                  <span className="text-muted" style={{ fontSize: 12 }}>{" "}<LocalizedText message={"average progress"} />{" "}</span>
                 </span>
 
                 <span
@@ -187,10 +183,8 @@ export function ExecutiveView({
         {/* Risks and Blockers */}
         <section style={{ display: 'flex', flexDirection: 'column' }}>
           <div style={{ paddingBottom: 12, borderBottom: '2px solid var(--color-divider)' }}>
-            <h4 style={{ margin: 0 }}>Risks and blockers</h4>
-            <div className="text-muted" style={{ fontSize: 13 }}>
-              Projects that need a decision.
-            </div>
+            <h4 style={{ margin: 0 }}><LocalizedText message={"Risks and blockers"} /></h4>
+            <div className="text-muted" style={{ fontSize: 13 }}>{" "}<LocalizedText message={"Projects that need a decision."} />{" "}</div>
           </div>
 
           {risks.map((x) => {
@@ -228,7 +222,7 @@ export function ExecutiveView({
                   </span>
                   <span style={{ fontSize: 13 }}>{x.risk || 'No risk note yet.'}</span>
                   <span className="text-muted" style={{ fontSize: 12 }}>
-                    {x.owner} · due {x.e == null ? 'No date' : `${x.e} days`}
+                    {x.owner}{" "}<LocalizedText message={"· due"} />{" "}{x.e == null ? <LocalizedText message={"No date"} /> : `${x.e} days`}
                   </span>
                 </span>
                 <span>
@@ -258,10 +252,8 @@ export function ExecutiveView({
         {/* Departments Table */}
         <section style={{ display: 'flex', flexDirection: 'column' }}>
           <div style={{ paddingBottom: 12, borderBottom: '2px solid var(--color-divider)' }}>
-            <h4 style={{ margin: 0 }}>Departments</h4>
-            <div className="text-muted" style={{ fontSize: 13 }}>
-              Headcount, open work and average on-time delivery.
-            </div>
+            <h4 style={{ margin: 0 }}><LocalizedText message={"Departments"} /></h4>
+            <div className="text-muted" style={{ fontSize: 13 }}>{" "}<LocalizedText message={"Headcount, open work and average on-time delivery."} />{" "}</div>
           </div>
 
           <div
@@ -277,10 +269,10 @@ export function ExecutiveView({
               color: 'color-mix(in srgb, var(--color-text) 60%, transparent)',
             }}
           >
-            <span>Department</span>
-            <span>People</span>
-            <span>Open</span>
-            <span>On-time</span>
+            <span><LocalizedText message={"Department"} /></span>
+            <span><LocalizedText message={"People"} /></span>
+            <span><LocalizedText message={"Open"} /></span>
+            <span><LocalizedText message={"On-time"} /></span>
           </div>
 
           {depts.map((d) => {
@@ -323,8 +315,7 @@ export function ExecutiveView({
                   <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                     <span style={{ fontWeight: 700 }}>{d.name}</span>
                     <span className="text-muted" style={{ fontSize: 12 }}>
-                      {d.head} · {tms.length} teams
-                    </span>
+                      {d.head} · {tms.length}{" "}<LocalizedText message={"teams"} />{" "}</span>
                   </span>
                 </span>
                 <span>{deptPeople.length}</span>
