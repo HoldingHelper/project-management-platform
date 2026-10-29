@@ -39,7 +39,6 @@ import {
   deleteTask,
   getTask,
   listTasks,
-  updateChecklistItem,
   updateTask,
   updateTaskStatus,
 } from "@/lib/api/projects";
@@ -58,6 +57,8 @@ import {
   useToast,
 } from "@/components/ds";
 import { ErrorState, PageHeader, PAGE_STYLE, Spinner } from "@/components/ui/States";
+import { DocumentationFiles } from "@/components/docs/DocumentationUpload";
+import { TaskChecklist } from "@/components/tasks/TaskChecklist";
 import { TaskEditorModal } from "@/components/tasks/TaskEditorModal";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { useUserMap } from "@/lib/hooks";
@@ -126,7 +127,6 @@ export default function TaskDetailPage({
   const [isEditingDesc, setIsEditingDesc] = useState(false);
   const [descDraft, setDescDraft] = useState("");
   const [subtaskTitle, setSubtaskTitle] = useState("");
-  const [newChecklistText, setNewChecklistText] = useState("");
   const [newComment, setNewComment] = useState("");
   const [showGitHubPicker, setShowGitHubPicker] = useState(false);
   const [activeTab, setActiveTab] = useState<"comments" | "history">("comments");
@@ -257,20 +257,6 @@ export default function TaskDetailPage({
     onError: () => toast.push("Could not update task status.", "error"),
   });
 
-  const toggleChecklist = useMutation({
-    mutationFn: ({ itemId, isDone }: { itemId: UUID; isDone: boolean }) =>
-      updateChecklistItem(taskId as UUID, itemId, isDone),
-    onSuccess: (saved) => {
-      queryClient.setQueryData(["task", taskId], saved);
-      queryClient.invalidateQueries({ queryKey: ["tasks"] });
-      queryClient.invalidateQueries({ queryKey: ["phase-tasks"] });
-      queryClient.invalidateQueries({ queryKey: ["phase-progress"] });
-      queryClient.invalidateQueries({ queryKey: ["project-overview"] });
-      toast.push(saved.status === "Done" ? "Checklist complete. Task Done!" : "Checklist updated.", "success");
-    },
-    onError: () => toast.push("Could not update checklist.", "error"),
-  });
-
   const addSubtask = useMutation({
     mutationFn: (title: string) =>
       createTask({ title, parent_task_id: taskId as UUID, partition: task.data?.partition ?? undefined }),
@@ -332,11 +318,6 @@ export default function TaskDetailPage({
   const canManageAssignees = isSuperAdmin() || hasPermission("tasks.assign");
   const canEdit = canManageTask || isAssignedToCurrentUser;
   const canSelfAssign = Boolean(currentUser && hasPermission("tasks.edit_assigned"));
-
-  // Checklist Calculations
-  const checklistTotal = row.checklist_items.length;
-  const checklistCompleted = row.checklist_items.filter((i) => i.is_done).length;
-  const checklistPercent = checklistTotal > 0 ? Math.round((checklistCompleted / checklistTotal) * 100) : 0;
 
   // Subtask Calculations
   const subtaskList = subtasks.data?.items ?? [];
@@ -628,58 +609,12 @@ export default function TaskDetailPage({
             )}
           </div>
 
-          {/* INTERACTIVE CHECKLIST WITH PROGRESS BAR */}
           <div className="task-content-card">
-            <div className="card-top-bar">
-              <div className="flex items-center gap-2">
-                <ListChecks size={15} className="text-emerald-400" />
-                <span className="card-title">Checklist</span>
-                {checklistTotal > 0 && (
-                  <span className="progress-fraction">
-                    {checklistCompleted}/{checklistTotal} ({checklistPercent}%)
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {checklistTotal > 0 && (
-              <div className="checklist-progress-track">
-                <div
-                  className="checklist-progress-fill"
-                  style={{ width: `${checklistPercent}%` }}
-                />
-              </div>
-            )}
-
-            <div className="checklist-items-list">
-              {row.checklist_items.length === 0 ? (
-                <span className="text-xs text-neutral-500">No checklist items defined yet.</span>
-              ) : (
-                row.checklist_items.map((item) => (
-                  <label key={item.id} className="checklist-item-row">
-                    <input
-                      type="checkbox"
-                      checked={item.is_done}
-                      disabled={!canEdit || toggleChecklist.isPending}
-                      onChange={(event) =>
-                        toggleChecklist.mutate({ itemId: item.id, isDone: event.target.checked })
-                      }
-                      className="task-custom-checkbox"
-                    />
-                    <span className={`checklist-item-text ${item.is_done ? "is-done" : ""}`}>
-                      {item.text}
-                    </span>
-                  </label>
-                ))
-              )}
-            </div>
-
-            {checklistTotal > 0 && (
-              <div className="checklist-hint">
-                <CheckCircle2 size={12} /> Checking all items automatically advances task to Done.
-              </div>
-            )}
+            <div className="card-top-bar"><span className="card-title">Uploaded documentation</span></div>
+            <div style={{ padding: 16 }}><DocumentationFiles entityType="task" entityId={row.id} /></div>
           </div>
+
+          <TaskChecklist key={row.id} task={row} canEdit={canEdit} />
 
           {/* SUBTASKS HIERARCHY WITH PROGRESS */}
           <div className="task-content-card">

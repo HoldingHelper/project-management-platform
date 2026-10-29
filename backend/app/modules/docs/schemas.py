@@ -440,7 +440,7 @@ class AttachmentRead(BaseModel):
 
 
 class LinkCreate(BaseModel):
-    entity_type: Literal["project", "task", "team", "user"]
+    entity_type: Literal["product", "project", "task", "team", "user"]
     entity_id: UUID
 
 

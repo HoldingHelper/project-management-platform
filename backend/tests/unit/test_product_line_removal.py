@@ -62,10 +62,10 @@ def test_product_with_projects_cannot_be_removed():
 
 def test_empty_product_can_be_removed():
     db = AsyncMock()
-    db.execute.side_effect = [result(SimpleNamespace(id=uuid4())), result(None), MagicMock()]
+    db.execute.side_effect = [result(SimpleNamespace(id=uuid4())), result(None), MagicMock(), MagicMock(), MagicMock()]
     asyncio.run(service.delete_product(db, uuid4()))
     db.commit.assert_awaited_once()
-    assert db.execute.await_count == 3
+    assert db.execute.await_count == 5
 
 
 def test_missing_product_returns_not_found():

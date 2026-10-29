@@ -210,6 +210,47 @@ async def update_product(
     return await service.update_product(db, product_id, payload)
 
 
+@products_router.post("/{product_id}/documentation", status_code=status.HTTP_201_CREATED)
+async def upload_product_documentation(
+    product_id: UUID,
+    file: UploadFile = File(...),
+    current_user: CurrentUser = Depends(require_permission(Permissions.PRODUCTS_UPDATE, Permissions.PRODUCTS_MANAGE_ALL)),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.modules.projects.product_documentation import MAX_DOCUMENT_BYTES, upload_document
+    from app.modules.collaboration.schemas import FileAttachmentRead
+    await require_product_access(db, current_user, product_id)
+    content = await file.read(MAX_DOCUMENT_BYTES + 1)
+    attachment = await upload_document(db, product_id, current_user, file.filename or "document", file.content_type or "application/octet-stream", content)
+    return FileAttachmentRead.model_validate(attachment)
+
+
+@products_router.get("/{product_id}/documentation")
+async def get_product_documentation(
+    product_id: UUID, current_user: CurrentUser = Depends(get_current_user), db: AsyncSession = Depends(get_db),
+):
+    from app.modules.projects.product_documentation import get_document
+    from app.modules.collaboration.schemas import FileAttachmentRead
+    await require_product_access(db, current_user, product_id)
+    return FileAttachmentRead.model_validate(await get_document(db, product_id))
+
+
+@products_router.get("/{product_id}/documentation/download")
+async def download_product_documentation(
+    product_id: UUID, current_user: CurrentUser = Depends(get_current_user), db: AsyncSession = Depends(get_db),
+) -> Response:
+    from urllib.parse import quote
+    from app.core.storage import file_storage_service
+    from app.modules.projects.product_documentation import get_document
+    await require_product_access(db, current_user, product_id)
+    document = await get_document(db, product_id)
+    content = await file_storage_service.download_async(document.storage_key)
+    return Response(content, media_type="application/octet-stream", headers={
+        "Content-Disposition": f"attachment; filename*=UTF-8''{quote(document.file_name, safe='')}",
+        "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff",
+    })
+
+
 @products_router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_product(
     product_id: UUID,

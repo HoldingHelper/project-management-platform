@@ -511,7 +511,7 @@ async def set_task_labels(
 
 
 async def set_task_checklist(
-    db: AsyncSession, task_id: UUID, items: List[ChecklistItem]
+    db: AsyncSession, task_id: UUID, items: List[ChecklistItem], *, match_by_id: bool = False
 ) -> None:
     result = await db.execute(
         select(ChecklistItem)
@@ -519,6 +519,25 @@ async def set_task_checklist(
         .order_by(ChecklistItem.order, ChecklistItem.id)
     )
     existing = list(result.scalars().all())
+    if match_by_id:
+        from app.core.exceptions import ValidationAppError
+        by_id = {item.id: item for item in existing}
+        supplied_ids = [item.id for item in items if item.id is not None]
+        if len(supplied_ids) != len(set(supplied_ids)) or any(item_id not in by_id for item_id in supplied_ids):
+            raise ValidationAppError("Checklist items must belong to this task and cannot be repeated.")
+        retained = set(supplied_ids)
+        for item in items:
+            if item.id is not None:
+                current = by_id[item.id]
+                current.text = item.text
+                current.order = item.order
+            else:
+                item.task_id = task_id
+                db.add(item)
+        for current in existing:
+            if current.id not in retained:
+                await db.delete(current)
+        return
     for index, item in enumerate(items):
         if index < len(existing):
             current = existing[index]

@@ -1,0 +1,18 @@
+.content, .editor { display: flex; flex-direction: column; gap: 12px; }
+.content { padding: 16px; }
+.heading, .row, .add, .actions, .confirm { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.heading { color: var(--accent-primary); }
+.row > :global(.pmp-text-input), .add > :global(.pmp-text-input) { flex: 1; min-width: 0; width: 100%; }
+.item { border-bottom: 1px solid var(--border-subtle); padding: 2px 0 8px; }
+.text, .done { flex: 1; min-width: 0; overflow-wrap: anywhere; font-size: 13.5px; line-height: 1.5; color: var(--text-primary); }
+.done { text-decoration: line-through; color: var(--text-secondary); }
+.checkbox { accent-color: var(--accent-primary); width: 18px; height: 18px; flex-shrink: 0; cursor: pointer; }
+.actions { gap: 0; flex-shrink: 0; }
+.actions > button { padding: 0 8px !important; }
+.hint { color: var(--text-secondary); font-size: 12px; line-height: 1.5; margin: 0; }
+.marker { width: 20px; flex-shrink: 0; color: var(--text-secondary); font-size: 12px; }
+.progress { height: 5px; border-radius: 99px; background: var(--surface-3); overflow: hidden; }
+.progress > span { display: block; height: 100%; background: var(--accent-primary); transition: width 180ms ease; }
+.confirm { flex-wrap: wrap; justify-content: flex-end; font-size: 12px; padding-top: 8px; }
+.confirm > span { margin-right: auto; color: var(--text-secondary); }
+@media(max-width: 480px) { .add { flex-wrap: wrap; } .add > :global(.pmp-text-input) { flex-basis: 100%; } .add > button { width: 100%; } }

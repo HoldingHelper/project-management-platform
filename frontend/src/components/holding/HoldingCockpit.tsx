@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { AddProductLine, EditProductLine } from "./AddProductLine";
 import { RemoveProductLine } from "./RemoveProductLine";
+import { ProductDocumentation } from "./ProductDocumentation";
 import { notFound } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, ArrowRight, Building2, CalendarClock, CircleDot, Network, UsersRound } from "lucide-react";
@@ -39,8 +40,8 @@ export function HoldingCockpit({ slug }: { slug: string }) {
                   <span>{product.environment}</span><span>· {product.priority}</span>
                   {product.technology_stack.length > 0 && <span>· {product.technology_stack.join(", ")}</span>}
                   {product.repository_url && /^https?:\/\//i.test(product.repository_url) && <a href={product.repository_url} target="_blank" rel="noreferrer">Repository</a>}
-                  {product.documentation_link && /^https?:\/\//i.test(product.documentation_link) && <a href={product.documentation_link} target="_blank" rel="noreferrer">Documentation</a>}
                 </div>
+                <ProductDocumentation product={product} />
               </Card>
             ))}
           </div>

@@ -139,3 +139,12 @@ export async function apiFetch<T>(path: string, opts: Options = {}): Promise<T> 
   const text = await res.text();
   return (text ? JSON.parse(text) : undefined) as T;
 }
+
+export async function apiFetchBlob(path: string, opts: Options = {}): Promise<Blob> {
+  let response = await doFetch(path, opts);
+  if (response.status === 401 && (opts.auth ?? true)) {
+    if (await refreshAccessToken()) response = await doFetch(path, opts);
+  }
+  if (!response.ok) throw await parseError(response);
+  return response.blob();
+}

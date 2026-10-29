@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import date, datetime
 from typing import List, Optional
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -80,6 +80,14 @@ class ProjectSprintCreate(BaseModel):
         return self
 
 
+class ProjectChecklistItem(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+    id: UUID = Field(default_factory=uuid4)
+    text: str = Field(min_length=1, max_length=500)
+    is_done: bool = False
+    order: int = Field(default=0, ge=0)
+
+
 class ProjectCreate(BaseModel):
     product_id: UUID
     name: str = Field(min_length=1, max_length=200)
@@ -95,6 +103,7 @@ class ProjectCreate(BaseModel):
     status: ProjectStatus = ProjectStatus.NOT_STARTED
     tags: List[str] = Field(default_factory=list)
     sprints: List[ProjectSprintCreate] = Field(default_factory=list, max_length=52)
+    checklist_items: List[ProjectChecklistItem] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def validate_project_dates(self) -> "ProjectCreate":
@@ -123,6 +132,7 @@ class ProjectUpdate(BaseModel):
     health_status: Optional[HealthStatus] = None
     status: Optional[ProjectStatus] = None
     tags: Optional[List[str]] = None
+    checklist_items: Optional[List[ProjectChecklistItem]] = None
 
 
 class ProjectRead(BaseModel):
@@ -147,6 +157,7 @@ class ProjectRead(BaseModel):
     generation_run_id: Optional[UUID] = None
     ai_prompt_storage_key: Optional[str] = None
     ai_summary_storage_key: Optional[str] = None
+    checklist_items: List[ProjectChecklistItem] = Field(default_factory=list)
     planning_mode: str = "sprints"
     created_at: datetime
     updated_at: datetime
@@ -255,6 +266,10 @@ class ChecklistItemCreate(BaseModel):
     order: int = 0
 
 
+class ChecklistItemUpdate(ChecklistItemCreate):
+    id: Optional[UUID] = None
+
+
 class ChecklistItemRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: UUID
@@ -314,7 +329,7 @@ class TaskUpdate(BaseModel):
     assignee_user_ids: Optional[List[UUID]] = None
     label_ids: Optional[List[UUID]] = None
     label_names: Optional[List[str]] = Field(default=None, max_length=20)
-    checklist_items: Optional[List[ChecklistItemCreate]] = None
+    checklist_items: Optional[List[ChecklistItemUpdate]] = None
 
     @model_validator(mode="after")
     def validate_task_update(self) -> "TaskUpdate":

@@ -1,0 +1,82 @@
+"use client";
+
+import { useId, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Download, FileText, Upload, X } from "lucide-react";
+import { Button, useToast } from "@/components/ds";
+import { downloadFile, listFiles, uploadFile } from "@/lib/api/collaboration";
+import styles from "@/components/holding/ProductDocumentationUpload.module.css";
+
+const formats = /\.(pdf|docx?|txt|md|markdown|rtf|odt)$/i;
+function size(bytes: number) { return bytes >= 1024 * 1024 ? `${(bytes / (1024 * 1024)).toFixed(1)} MB` : `${(bytes / 1024).toFixed(1)} KB`; }
+
+export async function uploadDocumentationFiles(type: "task" | "project", id: string, files: File[]) {
+  const failed: File[] = [];
+  for (const file of files) {
+    try { await uploadFile(type, id, file, file.name, true); }
+    catch { failed.push(file); }
+  }
+  return failed;
+}
+
+export function DocumentationUpload({ files, onChange, disabled = false, entityType, entityId }: {
+  files: File[]; onChange: (files: File[]) => void; disabled?: boolean;
+  entityType: "task" | "project"; entityId?: string;
+}) {
+  const input = useRef<HTMLInputElement>(null);
+  const id = useId();
+  const [error, setError] = useState("");
+  return <div className={styles.field}>
+    <label htmlFor={id} className={styles.label}>Upload documentation</label>
+    <input hidden id={id} ref={input} type="file" multiple disabled={disabled} accept=".pdf,.doc,.docx,.txt,.md,.markdown,.rtf,.odt" aria-describedby={`${id}-hint`} onChange={(event) => {
+      const chosen = Array.from(event.target.files ?? []);
+      const invalid = chosen.filter((file) => !formats.test(file.name) || !file.size || file.size > 25 * 1024 * 1024);
+      setError(invalid.length ? `Not added: ${invalid.map((file) => file.name).join(", ")}. Choose supported, non-empty documents up to 25 MB each.` : "");
+      const next = [...files];
+      for (const file of chosen.filter((file) => !invalid.includes(file))) {
+        if (!next.some((item) => item.name === file.name && item.size === file.size && item.lastModified === file.lastModified)) next.push(file);
+      }
+      onChange(next);
+      event.target.value = "";
+    }} />
+    <div className={styles.control}>
+      <span className={styles.icon}><Upload size={20} aria-hidden /></span>
+      <div className={styles.details}><span className={styles.title}>Add documentation</span><span className={styles.caption}>Guides, specifications, or references</span></div>
+      <div className={styles.actions}><Button type="button" variant="secondary" size="sm" disabled={disabled} onClick={() => input.current?.click()}><Upload size={15} aria-hidden />Choose files</Button></div>
+    </div>
+    <span id={`${id}-hint`} className={styles.hint}>PDF, Word, text, Markdown, RTF, or ODT · Max 25 MB per file. Uploaded when you save.</span>
+    {error && <span role="alert" style={{ fontSize: 12, color: "var(--status-blocked)" }}>{error}</span>}
+    {files.map((file, index) => <div key={`${file.name}-${index}`} style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+      <FileText size={16} aria-hidden style={{ flexShrink: 0, color: "var(--accent-primary)" }} />
+      <span className={styles.details}><span className={styles.title} title={file.name}>{file.name}</span><span className={styles.caption}>{size(file.size)} · Ready to save</span></span>
+      <Button type="button" variant="ghost" size="sm" disabled={disabled} aria-label={`Remove selected file ${file.name}`} onClick={() => onChange(files.filter((_, i) => i !== index))}><X size={15} aria-hidden /></Button>
+    </div>)}
+    {entityId && <DocumentationFiles entityType={entityType} entityId={entityId} />}
+  </div>;
+}
+
+export function DocumentationFiles({ entityType, entityId }: { entityType: "task" | "project"; entityId: string }) {
+  const toast = useToast();
+  const [downloading, setDownloading] = useState<string | null>(null);
+  const documents = useQuery({ queryKey: ["entity-files", entityType, entityId], queryFn: () => listFiles(entityType, entityId) });
+  async function download(id: string, name: string) {
+    setDownloading(id);
+    try {
+      const blob = await downloadFile(id);
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a"); anchor.href = url; anchor.download = name; anchor.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch { toast.push("Could not download the document. Please try again.", "error"); }
+    finally { setDownloading(null); }
+  }
+  return <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+    {documents.isLoading && <span className={styles.caption}>Loading documents…</span>}
+    {documents.data?.length === 0 && <span className={styles.caption}>No uploaded documents yet.</span>}
+    {documents.isError && <span role="alert" className={styles.caption}>Could not load uploaded documents. <button type="button" onClick={() => documents.refetch()}>Retry</button></span>}
+    {(documents.data ?? []).map((file) => <div key={file.id} style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+      <FileText size={16} aria-hidden style={{ flexShrink: 0, color: "var(--accent-primary)" }} />
+      <span className={styles.details}><span className={styles.title} title={file.file_name}>{file.file_name}</span><span className={styles.caption}>{size(file.size_bytes)}</span></span>
+      <Button type="button" variant="tertiary" size="sm" disabled={!!downloading} aria-label={`Download ${file.file_name}`} onClick={() => download(file.id, file.file_name)}><Download size={14} aria-hidden />{downloading === file.id ? "Downloading…" : "Download"}</Button>
+    </div>)}
+  </div>;
+}

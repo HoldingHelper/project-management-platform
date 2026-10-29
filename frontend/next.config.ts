@@ -11,6 +11,7 @@ const nextConfig: NextConfig = {
   output: isExport ? "export" : "standalone",
   ...(isExport ? { images: { unoptimized: true }, trailingSlash: true } : {}),
   reactStrictMode: true,
+  experimental: { proxyClientMaxBodySize: "30mb" },
   poweredByHeader: false,
   async headers() {
     return [
