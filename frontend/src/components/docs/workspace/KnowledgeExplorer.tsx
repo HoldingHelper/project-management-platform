@@ -79,7 +79,7 @@ export function KnowledgeExplorer({ onNewPage }: { onNewPage?: (spaceId?: string
           alignItems: "center",
           justifyContent: "space-between",
           padding: "0 14px",
-          height: 48,
+          height: "var(--pmp-header-height)",
           borderBottom: "1px solid var(--border-subtle)",
           flexShrink: 0,
         }}

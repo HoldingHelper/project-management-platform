@@ -5746,7 +5746,9 @@ a:hover {
 .knowledge-workspace-navigation {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   height: var(--pmp-header-height);
+  min-height: var(--pmp-header-height);
   flex-shrink: 0;
   padding: 0 20px;
   border-bottom: 1px solid var(--border-subtle);
@@ -5759,4 +5761,33 @@ a:hover {
 }
 @media (max-width: 640px) {
   .knowledge-workspace-navigation { padding-inline: 10px; }
+}
+
+/* Keep the three Docs panel headers on the same baseline. */
+.knowledge-workspace-toolbar {
+  height: 48px;
+  min-height: 48px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.knowledge-workspace-panel-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  width: 36px;
+  flex-shrink: 0;
+  border: 0;
+}
+.knowledge-workspace-inspector-tabs {
+  height: var(--pmp-header-height);
+  min-height: var(--pmp-header-height);
+}
+.knowledge-workspace-inspector-tabs > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  white-space: nowrap;
+  min-width: 0;
 }

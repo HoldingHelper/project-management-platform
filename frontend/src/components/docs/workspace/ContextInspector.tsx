@@ -62,7 +62,8 @@ export function ContextInspector({ activePageId }: Props) {
       className="pmp-sidebar"
       style={{
         width: "100%",
-        height: "100%",
+        flex: 1,
+        minHeight: 0,
         background: "var(--surface-1)",
         borderLeft: "1px solid var(--border-subtle)",
         display: "flex",
@@ -72,7 +73,7 @@ export function ContextInspector({ activePageId }: Props) {
       }}
     >
       {/* Top Tabs: Outline, Comments (3), Backlinks, AI Assistant */}
-      <div
+      <div className="knowledge-workspace-inspector-tabs"
         style={{
           display: "flex",
           borderBottom: "1px solid var(--border-subtle)",
@@ -85,7 +86,7 @@ export function ContextInspector({ activePageId }: Props) {
           onClick={() => setActiveTab("outline")}
           style={{
             flex: 1,
-            padding: "11px 4px",
+            padding: "0 4px",
             fontSize: 12,
             fontWeight: activeTab === "outline" ? 700 : 500,
             color: activeTab === "outline" ? "var(--accent-primary)" : "var(--text-secondary)",
@@ -104,7 +105,7 @@ export function ContextInspector({ activePageId }: Props) {
           onClick={() => setActiveTab("comments")}
           style={{
             flex: 1,
-            padding: "11px 4px",
+            padding: "0 4px",
             fontSize: 12,
             fontWeight: activeTab === "comments" ? 700 : 500,
             color: activeTab === "comments" ? "var(--accent-primary)" : "var(--text-secondary)",
@@ -123,7 +124,7 @@ export function ContextInspector({ activePageId }: Props) {
           onClick={() => setActiveTab("backlinks")}
           style={{
             flex: 1,
-            padding: "11px 4px",
+            padding: "0 4px",
             fontSize: 12,
             fontWeight: activeTab === "backlinks" ? 700 : 500,
             color: activeTab === "backlinks" ? "var(--accent-primary)" : "var(--text-secondary)",
@@ -142,7 +143,7 @@ export function ContextInspector({ activePageId }: Props) {
           onClick={() => setActiveTab("ai")}
           style={{
             flex: 1,
-            padding: "11px 4px",
+            padding: "0 4px",
             fontSize: 12,
             fontWeight: activeTab === "ai" ? 700 : 500,
             color: activeTab === "ai" ? "var(--accent-primary)" : "var(--text-secondary)",
