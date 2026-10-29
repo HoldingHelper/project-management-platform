@@ -40,7 +40,7 @@ function ProductLineEditor({ product, products }: { product?: ProductRead; produ
   const docs = useQuery({
     queryKey: ["product-doc-search", docSearch],
     queryFn: () => docSearch.trim().length >= 2 ? searchDocPages(docSearch.trim()) : listDocPages(),
-    enabled: open && !!product,
+    enabled: open,
   });
   useEffect(() => {
     if (open && linkedDocs.data) setSelectedDocs(linkedDocs.data.map((link) => ({ id: link.page_id, title: link.title })));
@@ -58,13 +58,13 @@ function ProductLineEditor({ product, products }: { product?: ProductRead; produ
       const current = product ?? createdProduct.current;
       const saved = current ? await updateProduct(current.id, details) : await createProduct({ ...details, owner_user_id: user!.id });
       createdProduct.current = saved;
-      if (product) {
+      if (current || selectedDocs.length > 0) {
         try {
-          const existing = await listEntityDocLinks("product", product.id);
+          const existing = await listEntityDocLinks("product", saved.id);
           const selectedIds = new Set(selectedDocs.map((doc) => doc.id));
           const existingIds = new Set(existing.map((link) => link.page_id));
           for (const doc of selectedDocs.filter((doc) => !existingIds.has(doc.id))) {
-            await addDocLink(doc.id, { entity_type: "product", entity_id: product.id });
+            await addDocLink(doc.id, { entity_type: "product", entity_id: saved.id });
           }
           for (const link of existing.filter((link) => !selectedIds.has(link.page_id))) {
             await deleteDocLink(link.page_id, link.id);
@@ -83,10 +83,10 @@ function ProductLineEditor({ product, products }: { product?: ProductRead; produ
       }
       return saved;
     },
-    onSuccess: () => {
+    onSuccess: (saved) => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["product-documentation"] });
-      queryClient.invalidateQueries({ queryKey: ["entity-doc-links", "product", product?.id] });
+      queryClient.invalidateQueries({ queryKey: ["entity-doc-links", "product", saved.id] });
       setOpen(false);
       toast.push(product ? "Product line updated." : "Product line added.", "success");
     },
@@ -113,7 +113,7 @@ function ProductLineEditor({ product, products }: { product?: ProductRead; produ
           </div>
           <Field label="Technology stack" hint="Separate technologies with commas."><TextInput value={form.stack} onChange={(e) => field("stack", e.target.value)} disabled={save.isPending} placeholder="React, Python, PostgreSQL" /></Field>
           <Field label="Repository URL"><TextInput type="url" value={form.repository} onChange={(e) => field("repository", e.target.value)} disabled={save.isPending} placeholder="https://…" /></Field>
-          {product && <div className={styles.field}>
+          <div className={styles.field}>
             <span className={styles.label}>Connected documents</span>
             {linkedDocs.isError ? <div role="alert"><Alert kind="warning" title="Could not load connected documents" /><Button type="button" variant="tertiary" size="sm" onClick={() => linkedDocs.refetch()}>Retry</Button></div> : <>
               <SearchSuggestionInput
@@ -130,7 +130,7 @@ function ProductLineEditor({ product, products }: { product?: ProductRead; produ
               </div>)}
               {linkedDocs.isFetching && <span className={styles.hint}>Loading connected documents…</span>}
             </>}
-          </div>}
+          </div>
           <div className={styles.field}>
             <label htmlFor={`documentation-${product?.id ?? "new"}`} className={styles.label}>Documentation</label>
             <input
