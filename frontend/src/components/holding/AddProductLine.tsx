@@ -86,6 +86,8 @@ function ProductLineEditor({ product, products }: { product?: ProductRead; produ
     onSuccess: (saved) => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["product-documentation"] });
+      queryClient.invalidateQueries({ queryKey: ["doc-pages"] });
+      queryClient.invalidateQueries({ queryKey: ["doc-spaces"] });
       queryClient.invalidateQueries({ queryKey: ["entity-doc-links", "product", saved.id] });
       setOpen(false);
       toast.push(product ? "Product line updated." : "Product line added.", "success");

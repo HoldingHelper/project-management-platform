@@ -80,6 +80,7 @@ async def test_only_creator_or_publisher_can_publish(monkeypatch):
         async def refresh(self, _value):
             pass
 
+    monkeypatch.setattr(service.repo, "get_space", AsyncMock(return_value=DocSpace(id=uuid4(), product_id=None, task_id=None)))
     monkeypatch.setattr(service.repo, "get_page", get_page)
     monkeypatch.setattr(service, "_page_editable", editable)
     with pytest.raises(ForbiddenError):
@@ -107,6 +108,7 @@ async def test_hierarchy_move_rejects_nesting_a_page_in_its_child(monkeypatch):
     async def editable(*_args):
         return True
 
+    monkeypatch.setattr(service.repo, "get_space", AsyncMock(return_value=DocSpace(id=uuid4(), product_id=None, task_id=None)))
     monkeypatch.setattr(service.repo, "get_page", get_page)
     monkeypatch.setattr(service, "_page_editable", editable)
     with pytest.raises(ValidationAppError):

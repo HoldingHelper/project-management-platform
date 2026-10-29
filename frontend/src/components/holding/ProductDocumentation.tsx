@@ -6,6 +6,7 @@ import { Download, FileText } from "lucide-react";
 import { Button, useToast } from "@/components/ds";
 import { downloadProductDocumentation, getProductDocumentation } from "@/lib/api/projects";
 import type { ProductRead } from "@/lib/types";
+import { DeleteDocumentButton } from "@/components/docs/DeleteDocumentButton";
 
 export function ProductDocumentation({ product }: { product: ProductRead }) {
   const uploaded = product.documentation_link?.startsWith("attachment:");
@@ -33,6 +34,7 @@ export function ProductDocumentation({ product }: { product: ProductRead }) {
     <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, marginTop: 12, fontSize: 12, color: "var(--text-secondary)" }}>
       <FileText size={15} aria-hidden /><span>{document.data?.file_name ?? "Documentation"}</span>
       <Button variant="tertiary" size="sm" disabled={downloading} onClick={download}><Download size={14} aria-hidden />{downloading ? "Downloading…" : "Download"}</Button>
+      {document.data && <DeleteDocumentButton attachmentId={document.data.id} fileName={document.data.file_name} />}
     </div>
   );
 }

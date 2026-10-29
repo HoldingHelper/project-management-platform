@@ -284,6 +284,8 @@ export function TaskEditorModal({ open, onClose, task, projectId, phaseId, onCre
         docLinkFailures ? "error" : "success",
       );
       qc.invalidateQueries({ queryKey: ["tasks"] });
+      qc.invalidateQueries({ queryKey: ["doc-pages"] });
+      qc.invalidateQueries({ queryKey: ["doc-spaces"] });
       qc.invalidateQueries({ queryKey: ["phase-tasks"] });
       qc.invalidateQueries({ queryKey: ["phase-progress"] });
       qc.invalidateQueries({ queryKey: ["project-overview"] });
@@ -339,6 +341,8 @@ export function TaskEditorModal({ open, onClose, task, projectId, phaseId, onCre
     onSuccess: (saved) => {
       toast.push("Task updated.", "success");
       qc.invalidateQueries({ queryKey: ["tasks"] });
+      qc.invalidateQueries({ queryKey: ["doc-pages"] });
+      qc.invalidateQueries({ queryKey: ["doc-spaces"] });
       qc.invalidateQueries({ queryKey: ["task", saved.id] });
       qc.invalidateQueries({ queryKey: ["phase-tasks"] });
       qc.invalidateQueries({ queryKey: ["phase-progress"] });

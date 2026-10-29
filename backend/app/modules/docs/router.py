@@ -127,6 +127,20 @@ async def delete_page(page_id: UUID, db: AsyncSession = Depends(get_db), user: C
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
+@docs_router.get("/pages/{page_id}/delete-permission")
+async def page_delete_permission(page_id: UUID, db: AsyncSession = Depends(get_db), user: CurrentUser = Depends(get_current_user)) -> dict:
+    from app.modules.docs.deletion import require_page_delete_access
+    from app.core.exceptions import ForbiddenError
+    from app.modules.docs import repository
+    await service.get_page(db, user, page_id)
+    page = await repository.get_page(db, page_id)
+    try:
+        await require_page_delete_access(db, user, page)
+        return {"can_delete": True}
+    except ForbiddenError:
+        return {"can_delete": False}
+
+
 @docs_router.get("/pages/{page_id}/revisions", response_model=list[RevisionRead])
 async def revisions(page_id: UUID, db: AsyncSession = Depends(get_db), user: CurrentUser = Depends(get_current_user)) -> list[RevisionRead]:
     return await service.list_revisions(db, user, page_id)

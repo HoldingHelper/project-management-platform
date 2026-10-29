@@ -510,6 +510,8 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
       );
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["doc-pages"] });
+      queryClient.invalidateQueries({ queryKey: ["doc-spaces"] });
       queryClient.invalidateQueries({ queryKey: ["portfolio-gantt"] });
       queryClient.invalidateQueries({ queryKey: ["chat-channels"] });
       queryClient.invalidateQueries({ queryKey: ["tasks"] });

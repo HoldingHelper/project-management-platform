@@ -208,6 +208,8 @@ function ProjectWorkspaceInner() {
     onSuccess: () => {
       toast.push("Project archived.", "success");
       qc.invalidateQueries({ queryKey: ["projects"] });
+      qc.invalidateQueries({ queryKey: ["doc-pages"] });
+      qc.invalidateQueries({ queryKey: ["doc-spaces"] });
       qc.invalidateQueries({ queryKey: ["portfolio-gantt"] });
       qc.invalidateQueries({ queryKey: ["project-overview", projectId] });
       overview.refetch();
@@ -221,6 +223,8 @@ function ProjectWorkspaceInner() {
       toast.push("Project deleted.", "success");
       qc.removeQueries({ queryKey: ["project-overview", projectId] });
       qc.invalidateQueries({ queryKey: ["projects"] });
+      qc.invalidateQueries({ queryKey: ["doc-pages"] });
+      qc.invalidateQueries({ queryKey: ["doc-spaces"] });
       qc.invalidateQueries({ queryKey: ["portfolio-gantt"] });
       qc.invalidateQueries({ queryKey: ["tasks"] });
       qc.invalidateQueries({ queryKey: ["phase-tasks"] });
@@ -465,6 +469,8 @@ function EditProjectModal({
     onSuccess: () => {
       toast.push("Project updated.", "success");
       qc.invalidateQueries({ queryKey: ["projects"] });
+      qc.invalidateQueries({ queryKey: ["doc-pages"] });
+      qc.invalidateQueries({ queryKey: ["doc-spaces"] });
       qc.invalidateQueries({ queryKey: ["portfolio-gantt"] });
       qc.invalidateQueries({ queryKey: ["project-overview", project.id] });
       qc.invalidateQueries({ queryKey: ["entity-doc-links", "project", project.id] });

@@ -59,6 +59,8 @@ async def upload_document(db, product_id, actor, file_name, content_type, conten
         db.add(attachment)
         await db.flush()
         product.documentation_link = f"attachment:{attachment.id}"
+        from app.modules.docs.upload_library import index_upload
+        await index_upload(db, attachment)
         await db.commit()
 
     except Exception:

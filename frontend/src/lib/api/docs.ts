@@ -1,6 +1,8 @@
 import { apiFetch } from "./client";
 export type DocCategory = "Technical" | "Marketing" | "Operations" | "Platform" | "Business" | "Designs";
 export type DocSpace = {
+  product_id?: string | null;
+  task_id?: string | null;
   id: string;
   name: string;
   slug: string;
@@ -14,6 +16,9 @@ export type DocSpace = {
   updated_at: string;
 };
 export type DocPageSummary = {
+  source_attachment_id?: string | null;
+  source_entity_type?: string | null;
+  source_entity_id?: string | null;
   id: string;
   space_id: string;
   parent_page_id?: string | null;

@@ -60,6 +60,10 @@ def has_global_docs_access(user: CurrentUser, action: str) -> bool:
 
 
 async def can_access(db: AsyncSession, user: CurrentUser, resource_type: str, resource_id: UUID, action: str) -> bool:
+    from app.modules.docs.upload_library import managed_access
+    managed = await managed_access(db, user, resource_type, resource_id, action)
+    if managed is not None:
+        return managed
     if user.is_super_admin() or user.has_permission("docs.manage") or user.has_permission("*"):
         return True
 
@@ -94,6 +98,9 @@ async def can_access(db: AsyncSession, user: CurrentUser, resource_type: str, re
 
 
 async def _page_visible(db: AsyncSession, user: CurrentUser, page: DocPage, space: DocSpace) -> bool:
+    from app.modules.docs.upload_library import managed_access
+    if space.product_id or space.task_id:
+        return bool(await managed_access(db, user, "page", page.id))
     if user.is_super_admin() or user.has_permission("docs.manage"):
         return True
     if page.created_by == user.user_id or page.responsible_user_id == user.user_id:
@@ -113,7 +120,10 @@ async def _page_visible(db: AsyncSession, user: CurrentUser, page: DocPage, spac
 
 
 async def _page_editable(db: AsyncSession, user: CurrentUser, page: DocPage) -> bool:
+    from app.modules.docs.upload_library import managed_access
     space = await repo.get_space(db, page.space_id)
+    if space and (space.product_id or space.task_id):
+        return bool(await managed_access(db, user, "page", page.id, "edit"))
     if page.responsible_user_id == user.user_id or (space and space.responsible_user_id == user.user_id):
         return True
     visibility = space.visibility if space and page.visibility == "inherit" else page.visibility
@@ -153,13 +163,15 @@ async def update_space(db: AsyncSession, user: CurrentUser, space_id: UUID, payl
 
 async def list_spaces(db: AsyncSession, user: CurrentUser, category: str | None = None) -> list[SpaceRead]:
     spaces = await repo.list_spaces(db, category=category)
-    visible = [
-        s for s in spaces
-        if s.visibility == "public"
-        or (s.visibility == "workspace" and has_global_docs_access(user, "view"))
-        or s.responsible_user_id == user.user_id
-        or await can_access(db, user, "space", s.id, "view")
-    ]
+    visible = []
+    from app.modules.docs.upload_library import managed_access
+    for space in spaces:
+        managed = await managed_access(db, user, "space", space.id)
+        if managed is not None:
+            if managed:
+                visible.append(space)
+        elif (space.visibility == "public" or (space.visibility == "workspace" and has_global_docs_access(user, "view")) or space.responsible_user_id == user.user_id or await can_access(db, user, "space", space.id, "view")):
+            visible.append(space)
     return [SpaceRead.model_validate(s) for s in visible]
 
 
@@ -176,12 +188,22 @@ async def create_page(db: AsyncSession, user: CurrentUser, space_id: UUID, paylo
         parent = await repo.get_page(db, payload.parent_page_id)
         if not parent or parent.space_id != space_id:
             raise ValidationAppError("Parent page must belong to the same space.")
-    page = DocPage(**payload.model_dump(), space_id=space_id, slug=await _unique_page_slug(db, space_id, payload.title), created_by=user.user_id, updated_by=user.user_id)
+    page = DocPage(**payload.model_dump(exclude={"tags"}), space_id=space_id, slug=await _unique_page_slug(db, space_id, payload.title), created_by=user.user_id, updated_by=user.user_id)
     db.add(page)
+    if payload.tags:
+        await db.flush()
+        for name in sorted({value.strip().lstrip("#").lower() for value in payload.tags} - {""}):
+            tag = (await db.execute(select(DocTag).where(DocTag.name == name))).scalar_one_or_none()
+            if not tag:
+                tag = DocTag(name=name)
+                db.add(tag)
+                await db.flush()
+            db.add(DocPageTag(page_id=page.id, tag_id=tag.id))
     await db.commit()
     await db.refresh(page)
-    await resolve_stubs_for_new_page(db, page.id, page.space_id, page.title, page.slug)
-    await sync_page_relations(db, page.id, page.space_id, page.content)
+    await resolve_stubs_for_new_page(db, page)
+    await sync_page_relations(db, page.id, page.content)
+    await db.commit()
     return PageRead.model_validate(page)
 
 
@@ -240,6 +262,10 @@ async def update_page(db: AsyncSession, user: CurrentUser, page_id: UUID, payloa
         raise ForbiddenError("You do not have permission to edit this page.")
     revision = DocRevision(page_id=page.id, revision_number=await repo.next_revision_number(db, page.id), title=page.title, content=page.content, content_json=page.content_json, created_by=user.user_id, created_at=utcnow())
     db.add(revision)
+    managed_space = await repo.get_space(db, page.space_id)
+    if managed_space and (managed_space.product_id or managed_space.task_id):
+        if payload.visibility not in (None, "inherit", "private") or ("parent_page_id" in payload.model_fields_set and payload.parent_page_id != page.parent_page_id):
+            raise ValidationAppError("Uploaded documentation must stay in its source workspace and folder.")
     changes = payload.model_dump(exclude_unset=True)
     requested_visibility = changes.get("visibility")
     if requested_visibility == "public":
@@ -265,7 +291,7 @@ async def update_page(db: AsyncSession, user: CurrentUser, page_id: UUID, payloa
     await db.commit()
     await db.refresh(page)
     if "content" in changes:
-        await sync_page_relations(db, page.id, page.space_id, page.content)
+        await sync_page_relations(db, page.id, page.content)
     return PageRead.model_validate(page)
 
 
@@ -275,6 +301,9 @@ async def move_page(db: AsyncSession, user: CurrentUser, page_id: UUID, payload:
         raise NotFoundError("Documentation page", page_id)
     if not await _page_editable(db, user, page):
         raise ForbiddenError("You do not have permission to reorder this page.")
+    space = await repo.get_space(db, page.space_id)
+    if space and (space.product_id or space.task_id) and payload.parent_page_id != page.parent_page_id:
+        raise ValidationAppError("Uploaded documentation must stay in its source folder.")
     parent = await repo.get_page(db, payload.parent_page_id) if payload.parent_page_id else None
     if payload.parent_page_id and (not parent or parent.space_id != page.space_id):
         raise ValidationAppError("Parent page must belong to the same space.")
@@ -302,10 +331,24 @@ async def delete_page(db: AsyncSession, user: CurrentUser, page_id: UUID) -> Non
     page = await repo.get_page(db, page_id)
     if not page:
         raise NotFoundError("Documentation page", page_id)
-    if not (page.created_by == user.user_id or await can_access(db, user, "page", page_id, "manage")):
-        raise ForbiddenError("You do not have permission to delete this page.")
+    from app.modules.docs.deletion import require_page_delete_access
+    await require_page_delete_access(db, user, page)
+    if page.source_attachment_id:
+        from app.modules.collaboration.document_deletion import delete_document
+        await delete_document(db, user, page.source_attachment_id)
+        return
+    if page.source_entity_type:
+        raise ForbiddenError("Upload folders are managed automatically. Delete individual documents instead.")
+    keys = {item.storage_key for item in await repo.list_attachments(db, page_id) if item.storage_key}
     await db.delete(page)
     await db.commit()
+    import asyncio
+    import logging
+    for key in keys:
+        try:
+            await asyncio.to_thread(file_storage_service.delete, key)
+        except Exception:
+            logging.getLogger(__name__).exception("Could not clean up deleted Docs attachment storage")
 
 
 async def list_revisions(db: AsyncSession, user: CurrentUser, page_id: UUID) -> list[RevisionRead]:
@@ -483,6 +526,9 @@ async def set_published(db: AsyncSession, user: CurrentUser, page_id: UUID, publ
         raise ForbiddenError("Only a documentation publisher can publish or unpublish this page.")
     if not await _page_editable(db, user, page):
         raise ForbiddenError("You do not have permission to publish this page.")
+    space = await repo.get_space(db, page.space_id)
+    if space and (space.product_id or space.task_id):
+        raise ForbiddenError("Uploaded work documentation cannot be published publicly.")
     page.status = "published" if published else "internal"
     page.visibility = "public" if published else ("inherit" if page.visibility == "public" else page.visibility)
     page.updated_by = user.user_id
@@ -500,7 +546,7 @@ async def public_navigation(db: AsyncSession) -> list[dict]:
 
 async def get_public_page(db: AsyncSession, space_slug: str, page_slug: str) -> PublicPageRead:
     space = await repo.get_space_by_slug(db, space_slug)
-    if not space:
+    if not space or space.product_id or space.task_id:
         raise NotFoundError("Documentation page", page_slug)
     page = await repo.get_page_by_slug(db, space.id, page_slug)
     if not page or page.status != "published" or (space.visibility != "public" and page.visibility != "public"):
@@ -511,7 +557,7 @@ async def get_public_page(db: AsyncSession, space_slug: str, page_slug: str) -> 
 async def get_public_page_by_id(db: AsyncSession, page_id: UUID) -> PublicPageRead:
     page = await repo.get_page(db, page_id)
     space = await repo.get_space(db, page.space_id) if page else None
-    if not page or not space or page.status != "published" or (space.visibility != "public" and page.visibility != "public"):
+    if not page or not space or space.product_id or space.task_id or page.status != "published" or (space.visibility != "public" and page.visibility != "public"):
         raise NotFoundError("Documentation page", page_id)
     return PublicPageRead.model_validate(page)
 

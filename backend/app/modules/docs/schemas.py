@@ -32,6 +32,8 @@ class SpaceUpdate(BaseModel):
 
 
 class SpaceRead(BaseModel):
+    product_id: Optional[UUID] = None
+    task_id: Optional[UUID] = None
     model_config = ConfigDict(from_attributes=True)
     id: UUID
     name: str
@@ -96,6 +98,9 @@ class PageMove(BaseModel):
 
 
 class PageRead(BaseModel):
+    source_attachment_id: Optional[UUID] = None
+    source_entity_type: Optional[str] = None
+    source_entity_id: Optional[UUID] = None
     model_config = ConfigDict(from_attributes=True)
     id: UUID
     space_id: UUID
@@ -187,6 +192,9 @@ class PublicPageRead(BaseModel):
 
 
 class PageSummary(BaseModel):
+    source_attachment_id: Optional[UUID] = None
+    source_entity_type: Optional[str] = None
+    source_entity_id: Optional[UUID] = None
     model_config = ConfigDict(from_attributes=True)
     id: UUID
     space_id: UUID

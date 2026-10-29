@@ -1,5 +1,6 @@
 "use client";
 
+import { UploadWorkspaces } from "./UploadWorkspaces";
 import { useState } from "react";
 import {
   BookOpen,
@@ -216,11 +217,13 @@ export function KnowledgeExplorer({ onNewPage }: { onNewPage?: (spaceId?: string
           gap: 2,
         }}
       >
+        {activeTab === "spaces" && <UploadWorkspaces spaces={(spaces.data ?? []).filter((space) => !!space.product_id || !!space.task_id)} pages={pages.data ?? []} search={searchQuery} />}
         {activeTab === "spaces" ? (
           DEFAULT_CATEGORIES.map((cat) => {
             const isExpanded = expandedCategories[cat.id] ?? false;
             const categoryPages = filteredPages.filter((p) => {
               const space = spaces.data?.find((s) => s.id === p.space_id);
+              if (space?.product_id || space?.task_id) return false;
               const spaceCat = (space?.category || "Platform").toLowerCase();
               return spaceCat.includes(cat.id.split("-")[0]) || cat.id === "getting-started";
             });

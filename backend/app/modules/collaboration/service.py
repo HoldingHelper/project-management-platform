@@ -195,7 +195,24 @@ async def upload_file(
         storage_key=storage_key,
         uploaded_by_user_id=current_user.user_id,
     )
-    attachment = await repo.create_file_attachment(db, attachment)
+    if entity_type in {"product", "project", "task"}:
+        from app.modules.docs.upload_library import index_upload
+        import asyncio
+        try:
+            db.add(attachment)
+            await db.flush()
+            await index_upload(db, attachment)
+            await db.commit()
+        except Exception:
+            await db.rollback()
+            try:
+                await asyncio.to_thread(file_storage_service.delete, storage_key)
+            except Exception:
+                pass
+            raise
+        await db.refresh(attachment)
+    else:
+        attachment = await repo.create_file_attachment(db, attachment)
     return FileAttachmentRead.model_validate(attachment)
 
 

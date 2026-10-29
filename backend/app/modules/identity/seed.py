@@ -106,6 +106,8 @@ async def run_seed(db: AsyncSession) -> None:
     from app.modules.org.bootstrap import bootstrap_holding
 
     await bootstrap_holding(db)
+    from app.modules.docs.upload_library import backfill_uploads
+    await backfill_uploads(db)
     await db.commit()
     logger.info(
         "identity_seed_complete",

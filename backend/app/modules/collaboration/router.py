@@ -249,3 +249,23 @@ async def download_file(
         "Content-Disposition": f"attachment; filename*=UTF-8''{quote(attachment.file_name, safe='')}",
         "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff",
     })
+
+
+@files_router.get("/{attachment_id}/delete-permission")
+async def file_delete_permission(attachment_id: UUID, current_user: CurrentUser = Depends(get_current_user), db: AsyncSession = Depends(get_db)) -> dict:
+    from app.modules.collaboration.document_deletion import get_attachment, require_delete_access
+    from app.modules.collaboration.authorization import authorize_entity_access
+    from app.core.exceptions import ForbiddenError
+    attachment = await get_attachment(db, attachment_id)
+    await authorize_entity_access(db, current_user, attachment.entity_type, attachment.entity_id)
+    try:
+        await require_delete_access(db, current_user, attachment)
+        return {"can_delete": True}
+    except ForbiddenError:
+        return {"can_delete": False}
+
+
+@files_router.delete("/{attachment_id}", status_code=204, response_model=None)
+async def delete_uploaded_document(attachment_id: UUID, current_user: CurrentUser = Depends(get_current_user), db: AsyncSession = Depends(get_db)) -> None:
+    from app.modules.collaboration.document_deletion import delete_document
+    await delete_document(db, current_user, attachment_id)

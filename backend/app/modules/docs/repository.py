@@ -59,7 +59,7 @@ async def public_navigation(db: AsyncSession) -> Sequence[tuple[DocSpace, DocPag
     result = await db.execute(
         select(DocSpace, DocPage)
         .join(DocPage, DocPage.space_id == DocSpace.id)
-        .where(DocPage.status == "published")
+        .where(DocPage.status == "published", DocSpace.product_id.is_(None), DocSpace.task_id.is_(None))
         .where(or_(DocSpace.visibility == "public", DocPage.visibility == "public"))
         .order_by(DocSpace.position, DocPage.position, DocPage.title)
     )
@@ -76,7 +76,7 @@ async def public_search(db: AsyncSession, query: str, limit: int = 20) -> Sequen
     result = await db.execute(
         select(DocSpace, DocPage)
         .join(DocPage, DocPage.space_id == DocSpace.id)
-        .where(DocPage.status == "published")
+        .where(DocPage.status == "published", DocSpace.product_id.is_(None), DocSpace.task_id.is_(None))
         .where(or_(DocSpace.visibility == "public", DocPage.visibility == "public"))
         .where(or_(DocPage.title.ilike(needle), DocPage.excerpt.ilike(needle), DocPage.content.ilike(needle)))
         .order_by(DocPage.updated_at.desc())

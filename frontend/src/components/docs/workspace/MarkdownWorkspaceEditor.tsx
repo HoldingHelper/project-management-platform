@@ -37,6 +37,8 @@ import {
 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getDocPage, updateDocPage, listDocComments, addDocComment, type DocPage, type DocComment } from "@/lib/api/docs";
+import { UploadedDocumentView } from "./UploadedDocumentView";
+import { DeleteDocumentButton } from "../DeleteDocumentButton";
 import { MarkdownPreview } from "@/components/ds";
 import { useKnowledgeWorkspace } from "@/lib/stores/knowledgeWorkspaceStore";
 
@@ -46,7 +48,7 @@ interface Props {
 
 export function MarkdownWorkspaceEditor({ pageId }: Props) {
   const client = useQueryClient();
-  const { openTab } = useKnowledgeWorkspace();
+  const { openTab, tabs, closeTab } = useKnowledgeWorkspace();
 
   const { data: page, isLoading } = useQuery({
     queryKey: ["doc-page", pageId],
@@ -146,6 +148,8 @@ export function MarkdownWorkspaceEditor({ pageId }: Props) {
       </div>
     );
   }
+
+  if (page?.source_attachment_id) return <UploadedDocumentView page={page} />;
 
   return (
     <div
@@ -273,6 +277,7 @@ export function MarkdownWorkspaceEditor({ pageId }: Props) {
             </button>
           </div>
 
+          {page && <DeleteDocumentButton pageId={page.id} fileName={page.title} onDeleted={() => tabs.filter((tab) => tab.pageId === page.id).forEach((tab) => closeTab(tab.id))} />}
           <button
             type="button"
             onClick={() => setViewMode(viewMode === "rendered" ? "split" : "rendered")}
