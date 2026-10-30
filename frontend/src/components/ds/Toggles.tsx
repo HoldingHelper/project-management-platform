@@ -39,35 +39,43 @@ export function Checkbox({ checked, onChange, label }: CheckboxProps) {
   );
 }
 
-export function Switch({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
+export function Switch({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label?: string }) {
   return (
-    <span
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
       onClick={() => onChange(!checked)}
       style={{
-        width: 38,
-        height: 22,
+        position: "relative",
+        width: 42,
+        minWidth: 42,
+        height: 26,
+        flexShrink: 0,
+        boxSizing: "border-box",
         borderRadius: "var(--radius-full)",
         background: checked ? "var(--accent-primary)" : "var(--surface-3)",
         border: `1px solid ${checked ? "transparent" : "var(--border-default)"}`,
-        display: "inline-flex",
-        alignItems: "center",
-        padding: "2px",
+        padding: 0,
         cursor: "pointer",
-        boxShadow: checked ? "0 0 12px rgba(75, 141, 255, 0.35)" : "none",
-        transition: "background var(--duration-base) var(--ease-spring), border-color var(--duration-base) var(--ease-spring), box-shadow var(--duration-base) var(--ease-spring)",
+        transition: "background var(--duration-base) var(--ease-spring), border-color var(--duration-base) var(--ease-spring)",
       }}
     >
       <span
+        aria-hidden="true"
         style={{
+          position: "absolute",
+          insetBlockStart: 3,
+          insetInlineStart: checked ? "calc(100% - 21px)" : 3,
           width: 18,
           height: 18,
           borderRadius: "50%",
           background: "#fff",
-          boxShadow: "0 1px 4px rgba(0, 0, 0, 0.35)",
-          transform: checked ? "translateX(16px)" : "translateX(0)",
-          transition: "transform var(--duration-base) var(--ease-bounce)",
+          boxShadow: "0 1px 3px rgba(0, 0, 0, 0.22)",
+          transition: "inset-inline-start var(--duration-base) var(--ease-spring)",
         }}
       />
-    </span>
+    </button>
   );
 }

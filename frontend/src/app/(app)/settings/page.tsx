@@ -565,6 +565,8 @@ export default function SettingsPage() {
 
               <Field label={translateUI("Phone Number (E.164 with Country Code)")} hint={translateUI("e.g. +14155552671 or +905321234567")}>
                 <TextInput
+                  type="tel"
+                  dir="ltr"
                   value={waPhone}
                   onChange={(e) => setWaPhone(e.target.value)}
                   placeholder="+14155552671"
@@ -572,25 +574,26 @@ export default function SettingsPage() {
               </Field>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, minHeight: 36 }}>
                   <span style={{ fontSize: 13, color: "var(--text-primary)" }}><LocalizedText message={"Meeting Reminders (T-10m & T-2m)"} /></span>
-                  <Switch checked={waMeetings} onChange={setWaMeetings} />
+                  <Switch label={translateUI("Meeting Reminders (T-10m & T-2m)")} checked={waMeetings} onChange={setWaMeetings} />
                 </div>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, minHeight: 36 }}>
                   <span style={{ fontSize: 13, color: "var(--text-primary)" }}><LocalizedText message={"Direct Messages & @Mentions"} /></span>
-                  <Switch checked={waMentions} onChange={setWaMentions} />
+                  <Switch label={translateUI("Direct Messages & @Mentions")} checked={waMentions} onChange={setWaMentions} />
                 </div>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, minHeight: 36 }}>
                   <span style={{ fontSize: 13, color: "var(--text-primary)" }}><LocalizedText message={"Blockers Waiting On You"} /></span>
-                  <Switch checked={waBlockers} onChange={setWaBlockers} />
+                  <Switch label={translateUI("Blockers Waiting On You")} checked={waBlockers} onChange={setWaBlockers} />
                 </div>
               </div>
 
-              <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
-                <Button size="sm" onClick={() => saveWaMutation.mutate()} disabled={saveWaMutation.isPending}>{" "}<LocalizedText message={"Save WhatsApp Settings"} />{" "}</Button>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 4 }}>
+                <Button size="sm" style={{ whiteSpace: "normal", minWidth: 0, flex: "1 1 180px", paddingBlock: 10 }} onClick={() => saveWaMutation.mutate()} disabled={saveWaMutation.isPending}>{" "}<LocalizedText message={"Save WhatsApp Settings"} />{" "}</Button>
                 <Button
                   size="sm"
                   variant="secondary"
+                  style={{ whiteSpace: "normal", minWidth: 0, flex: "1 1 160px", paddingBlock: 10 }}
                   onClick={() => testWaMutation.mutate()}
                   disabled={!waPhone || testWaMutation.isPending}
                 >
