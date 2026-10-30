@@ -162,6 +162,10 @@ export default function PortfolioPage() {
     for (const p of products.data ?? []) m.set(p.id, p.owner_user_id);
     return m;
   }, [products.data]);
+  const productNameById = useMemo(
+    () => new Map((products.data ?? []).map((product) => [product.id, product.name])),
+    [products.data],
+  );
   const items = projects.data?.items ?? [];
   const q = search.trim().toLowerCase();
   const filtered = items.filter((project) =>
@@ -256,9 +260,9 @@ export default function PortfolioPage() {
       </div>
 
       <section style={{ background: "var(--surface-2)", border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-3)", overflowX: "auto", overflowY: "hidden" }}>
-        <div style={{ minWidth: 1060 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "minmax(220px,1.35fr) 150px 120px 150px 260px 140px 90px 110px", padding: "11px 18px", fontSize: 11, fontWeight: 600, color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "0.04em", borderBottom: "1px solid var(--border-subtle)", background: "var(--surface-1)" }}>
-          <span><LocalizedText message={"Project"} /></span><span><LocalizedText message={"Owner"} /></span><span><LocalizedText message={"Partition"} /></span><span><LocalizedText message={"Level"} /></span><span><LocalizedText message={"Progress & team"} /></span><span><LocalizedText message={"Status"} /></span><span><LocalizedText message={"Priority"} /></span><span style={{ textAlign: "right" }}><LocalizedText message={"Updated"} /></span>
+        <div style={{ minWidth: 1436 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(220px,1.35fr) 160px 150px 120px 150px 260px 140px 90px 110px", padding: "11px 18px", fontSize: 11, fontWeight: 600, color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "0.04em", borderBottom: "1px solid var(--border-subtle)", background: "var(--surface-1)" }}>
+          <span><LocalizedText message={"Project"} /></span><span><LocalizedText message={"Product line"} /></span><span><LocalizedText message={"Owner"} /></span><span><LocalizedText message={"Partition"} /></span><span><LocalizedText message={"Level"} /></span><span><LocalizedText message={"Progress & team"} /></span><span><LocalizedText message={"Status"} /></span><span><LocalizedText message={"Priority"} /></span><span style={{ textAlign: "right" }}><LocalizedText message={"Updated"} /></span>
         </div>
 
         {projects.isLoading ? (
@@ -279,11 +283,14 @@ export default function PortfolioPage() {
                 key={p.id}
                 href={`/projects/${p.id}`}
                 className="pmp-row"
-                style={{ display: "grid", gridTemplateColumns: "minmax(220px,1.35fr) 150px 120px 150px 260px 140px 90px 110px", alignItems: "center", padding: "13px 18px", borderBottom: "1px solid var(--border-subtle)", opacity: archived ? 0.68 : 1 }}
+                style={{ display: "grid", gridTemplateColumns: "minmax(220px,1.35fr) 160px 150px 120px 150px 260px 140px 90px 110px", alignItems: "center", padding: "13px 18px", borderBottom: "1px solid var(--border-subtle)", opacity: archived ? 0.68 : 1 }}
               >
                 <span style={{ minWidth: 0 }}>
                   <span style={{ display: "block", fontWeight: 700, fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</span>
                   <span style={{ fontSize: 11, color: "var(--text-tertiary)", fontFamily: "var(--font-mono)" }}>{p.id.slice(0, 8)}</span>
+                </span>
+                <span title={productNameById.get(p.product_id)} style={{ paddingInlineEnd: 16, fontSize: 12.5, color: "var(--text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {productNameById.get(p.product_id) ?? "—"}
                 </span>
                 <span style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
                   <Avatar name={owner} size={24} />
