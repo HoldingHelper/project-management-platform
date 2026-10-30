@@ -9,7 +9,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     process.env.NEXT_PUBLIC_APP_URL ||
     "https://pmp-frontend-706796253833.europe-west1.run.app";
   const staticRoutes = [
-    "",
     "/product",
     "/features",
     "/docs",
@@ -35,7 +34,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...staticRoutes.map((route) => ({
       url: `${base}${route}`,
       changeFrequency: "weekly" as const,
-      priority: route === "" ? 1 : 0.7,
+      priority: 0.7,
     })),
     ...Array.from(categorySlugs).map((category) => ({
       url: `${base}/docs/${category}`,

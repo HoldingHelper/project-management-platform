@@ -9,8 +9,8 @@ import { ArrowUpRight, Menu } from "lucide-react";
 import { BrandMark } from "./BrandMark";
 
 const links = [
-  { href: "/#workspaces", label: "Product" },
-  { href: "/#capabilities", label: "Capabilities" },
+  { href: "/product", label: "Product" },
+  { href: "/features", label: "Capabilities" },
   { href: "/docs", label: "Docs" },
   { href: "/tutorials", label: "Tutorials" },
 ];
@@ -92,8 +92,8 @@ export function PublicShell({ children }: { children: ReactNode }) {
           </div>
 
           <div className="footer-links-row">
-            <Link href="/#workspaces"><LocalizedText message={"Product"} /></Link>
-            <Link href="/#capabilities"><LocalizedText message={"Capabilities"} /></Link>
+            <Link href="/product"><LocalizedText message={"Product"} /></Link>
+            <Link href="/features"><LocalizedText message={"Capabilities"} /></Link>
             <Link href="/docs"><LocalizedText message={"Documentation"} /></Link>
             <Link href="/tutorials"><LocalizedText message={"Tutorials"} /></Link>
             <Link href="/privacy"><LocalizedText message={"Privacy"} /></Link>
