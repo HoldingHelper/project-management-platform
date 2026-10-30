@@ -46,6 +46,8 @@ async def test_graphql_query_me(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_graphql_mutation_create_diagram_doc(monkeypatch):
+    from app.modules.docs import service as docs_service
+
     user_id = uuid4()
     space_id = uuid4()
     mock_user = CurrentUser(
@@ -57,6 +59,9 @@ async def test_graphql_mutation_create_diagram_doc(monkeypatch):
     )
 
     mock_db = AsyncMock()
+    mock_db.add = MagicMock()
+    can_access = AsyncMock(return_value=True)
+    monkeypatch.setattr(docs_service, "can_access", can_access)
     context = GraphQLContext(request=MagicMock(), current_user=mock_user)
     context._db = mock_db
 
@@ -79,6 +84,7 @@ async def test_graphql_mutation_create_diagram_doc(monkeypatch):
 
     res = await schema.execute(mutation, variable_values=variables, context_value=context)
     assert res.errors is None
+    can_access.assert_awaited_once_with(mock_db, mock_user, "space", space_id, "edit")
     data = res.data["createDiagramDoc"]
     assert data["title"] == "Core System Architecture"
     assert data["diagramType"] == "architecture"
