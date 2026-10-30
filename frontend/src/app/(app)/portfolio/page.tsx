@@ -431,7 +431,6 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
     end_date: "",
     actual_completion_date: "",
     sprint_duration: "14",
-    sprint_durations: DEFAULT_SPRINTS.map(() => 14),
     sprint_count: "4",
     sprint_names: [...DEFAULT_SPRINTS],
     project_manager_id: "",
@@ -441,7 +440,7 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
     partition: "tech",
     tags: "",
   });
-  const schedule = sprintSchedule(form.start_date, form.sprint_durations);
+  const schedule = sprintSchedule(form.start_date, form.sprint_names.map(() => Number(form.sprint_duration)));
   const plannedEnd = schedule.at(-1)?.end_date ?? "";
   const [docSearch, setDocSearch] = useState("");
   const [selectedDocs, setSelectedDocs] = useState<{ id: string; title: string }[]>([]);
@@ -571,7 +570,7 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
         while (names.includes(`Sprint ${number}`)) number++;
         names.push(`Sprint ${number}`);
       }
-      return { ...current, sprint_count: String(count), sprint_names: names, sprint_durations: Array.from({ length: count }, (_, index) => current.sprint_durations[index] ?? Number(current.sprint_duration)) };
+      return { ...current, sprint_count: String(count), sprint_names: names };
     });
   }
 
@@ -708,8 +707,8 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
             <MarkdownPreview value={form.description} />
           </Card>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <Field label={translateUI("Sprint duration")} hint={translateUI("Applies to all sprints. Individual durations can be changed below.")}>
-              <Select value={form.sprint_duration} options={SPRINT_DURATIONS.map((days) => ({ value: String(days), label: translateUI("{days} days", { days }) }))} onChange={(e) => setForm((current) => ({ ...current, sprint_duration: e.target.value, sprint_durations: current.sprint_names.map(() => Number(e.target.value)) }))} />
+            <Field label={translateUI("Sprint duration")} hint={translateUI("Applies to all sprints.")}>
+              <Select value={form.sprint_duration} options={SPRINT_DURATIONS.map((days) => ({ value: String(days), label: translateUI("{days} days", { days }) }))} onChange={(e) => setForm((current) => ({ ...current, sprint_duration: e.target.value }))} />
             </Field>
             <Field label={translateUI("Number of sprints")} hint={translateUI("Changing this count updates the sprint list below.")}>
               <TextInput
@@ -735,14 +734,13 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
                     onChange={(event) => setForm((current) => ({ ...current, sprint_names: current.sprint_names.map((item, itemIndex) => itemIndex === index ? event.target.value : item) }))}
                     style={{ flex: 1, minWidth: 0 }}
                   />
-                  <Select aria-label={translateUI("Sprint {number} duration", { number: index + 1 })} value={String(form.sprint_durations[index])} options={SPRINT_DURATIONS.map((days) => ({ value: String(days), label: translateUI("{days} days", { days }) }))} onChange={(e) => setForm((current) => ({ ...current, sprint_durations: current.sprint_durations.map((days, itemIndex) => itemIndex === index ? Number(e.target.value) : days) }))} style={{ width: 110 }} />
                   <small style={{ color: "var(--text-secondary)", flexBasis: "100%", order: 1 }}>{schedule[index] ? `${schedule[index].start_date} → ${schedule[index].end_date}` : ""}</small>
                   <Button
                     variant="ghost"
                     aria-label={`Remove sprint ${index + 1}`}
                     title={form.sprint_names.length === 1 ? localizeAttribute("At least one sprint is required") : `Remove sprint ${index + 1}`}
                     disabled={form.sprint_names.length === 1}
-                    onClick={() => setForm((current) => ({ ...current, sprint_names: current.sprint_names.filter((_, itemIndex) => itemIndex !== index), sprint_durations: current.sprint_durations.filter((_, itemIndex) => itemIndex !== index), sprint_count: String(current.sprint_names.length - 1) }))}
+                    onClick={() => setForm((current) => ({ ...current, sprint_names: current.sprint_names.filter((_, itemIndex) => itemIndex !== index), sprint_count: String(current.sprint_names.length - 1) }))}
                     style={{ padding: "0 10px" }}
                   ><X size={16} aria-hidden /></Button>
                 </div>

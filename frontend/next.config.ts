@@ -51,6 +51,7 @@ const nextConfig: NextConfig = {
     : {
         async redirects() {
           return [
+            { source: "/", destination: "/login", permanent: false },
             { source: "/app/teams", destination: "/h/holding", permanent: false },
             { source: "/app/teams/portfolio", destination: "/portfolio", permanent: false },
             { source: "/app/teams/tasks", destination: "/tasks", permanent: false },

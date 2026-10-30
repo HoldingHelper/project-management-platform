@@ -558,22 +558,6 @@
     ]
   },
   {
-    "message": "A clearer way forward",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "app/page.tsx"
-    ]
-  },
-  {
-    "message": "A more productive tomorrow, together.",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "app/page.tsx"
-    ]
-  },
-  {
     "message": "A paragraph",
     "translated": true,
     "neutral": false,
@@ -1287,14 +1271,6 @@
     ]
   },
   {
-    "message": "and momentum.",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "app/page.tsx"
-    ]
-  },
-  {
     "message": "Any",
     "translated": true,
     "neutral": false,
@@ -1319,7 +1295,7 @@
     ]
   },
   {
-    "message": "Applies to all sprints. Individual durations can be changed below.",
+    "message": "Applies to all sprints.",
     "translated": true,
     "neutral": false,
     "files": [
@@ -1679,14 +1655,6 @@
     ]
   },
   {
-    "message": "Authority by design",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "app/page.tsx"
-    ]
-  },
-  {
     "message": "Availability State",
     "translated": true,
     "neutral": false,
@@ -2004,14 +1972,6 @@
     ]
   },
   {
-    "message": "Bring your plans, your knowledge, and your team into one focused workspace.",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "app/page.tsx"
-    ]
-  },
-  {
     "message": "Browse by topic",
     "translated": true,
     "neutral": false,
@@ -2033,14 +1993,6 @@
     "neutral": false,
     "files": [
       "app/(app)/automations/page.tsx"
-    ]
-  },
-  {
-    "message": "Built for what is next",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "app/page.tsx"
     ]
   },
   {
@@ -3316,14 +3268,6 @@
     "neutral": false,
     "files": [
       "app/(app)/tasks/[taskId]/TaskDetailClient.tsx"
-    ]
-  },
-  {
-    "message": "Core workspaces",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "app/page.tsx"
     ]
   },
   {
@@ -5012,14 +4956,6 @@
     ]
   },
   {
-    "message": "Engineering that carries",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "app/page.tsx"
-    ]
-  },
-  {
     "message": "English",
     "translated": true,
     "neutral": false,
@@ -5203,14 +5139,6 @@
     "neutral": false,
     "files": [
       "components/public/InteractiveFaq.tsx"
-    ]
-  },
-  {
-    "message": "Everything your team needs.",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "app/page.tsx"
     ]
   },
   {
@@ -5407,14 +5335,6 @@
     ]
   },
   {
-    "message": "Explore documentation",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "app/page.tsx"
-    ]
-  },
-  {
     "message": "Explore our deep architectural documentation and tutorials.",
     "translated": true,
     "neutral": false,
@@ -5565,14 +5485,6 @@
     "neutral": false,
     "files": [
       "components/modernist/views/OrgChartView.tsx"
-    ]
-  },
-  {
-    "message": "Find tasks, docs, projects, and people without remembering where they live.",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "app/page.tsx"
     ]
   },
   {
@@ -6427,14 +6339,6 @@
     ]
   },
   {
-    "message": "Ideas",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "app/page.tsx"
-    ]
-  },
-  {
     "message": "If an account matches",
     "translated": true,
     "neutral": false,
@@ -6742,14 +6646,6 @@
     ]
   },
   {
-    "message": "Keep meetings, milestones, and delivery windows in the same working context.",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "app/page.tsx"
-    ]
-  },
-  {
     "message": "Key",
     "translated": true,
     "neutral": false,
@@ -6795,14 +6691,6 @@
     "neutral": false,
     "files": [
       "components/public/WorkspaceMap.tsx"
-    ]
-  },
-  {
-    "message": "Knowledge and execution, connected",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "app/page.tsx"
     ]
   },
   {
@@ -7168,14 +7056,6 @@
     "neutral": false,
     "files": [
       "components/public/WorkspaceMap.tsx"
-    ]
-  },
-  {
-    "message": "Live workspace",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "app/page.tsx"
     ]
   },
   {
@@ -7553,14 +7433,6 @@
     "neutral": false,
     "files": [
       "components/docs/workspace/KnowledgeWorkspaceShell.tsx"
-    ]
-  },
-  {
-    "message": "Make progress,",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "app/page.tsx"
     ]
   },
   {
@@ -9092,14 +8964,6 @@
     ]
   },
   {
-    "message": "Nothing disconnected.",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "app/page.tsx"
-    ]
-  },
-  {
     "message": "Nothing here yet",
     "translated": true,
     "neutral": false,
@@ -9314,22 +9178,6 @@
     "neutral": false,
     "files": [
       "components/public/PublicShell.tsx"
-    ]
-  },
-  {
-    "message": "One operating system",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "app/page.tsx"
-    ]
-  },
-  {
-    "message": "One search surface",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "app/page.tsx"
     ]
   },
   {
@@ -9603,14 +9451,6 @@
     "neutral": false,
     "files": [
       "app/(app)/calendar/callback/page.tsx"
-    ]
-  },
-  {
-    "message": "Open your workspace",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "app/page.tsx"
     ]
   },
   {
@@ -10098,7 +9938,6 @@
     "translated": true,
     "neutral": false,
     "files": [
-      "app/page.tsx",
       "components/modernist/overlays/InviteDialog.tsx",
       "components/modernist/views/ExecutiveView.tsx"
     ]
@@ -10928,14 +10767,6 @@
     ]
   },
   {
-    "message": "Project Management Platform gives modern teams one clear place to turn plans and knowledge into measurable progress.",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "app/page.tsx"
-    ]
-  },
-  {
     "message": "Project Management Platform home",
     "translated": true,
     "neutral": false,
@@ -11027,14 +10858,6 @@
     "neutral": false,
     "files": [
       "app/about/page.tsx"
-    ]
-  },
-  {
-    "message": "Project tools usually show what is happening. Knowledge tools explain why. Project Platform keeps both sides close enough to strengthen every decision.",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "app/page.tsx"
     ]
   },
   {
@@ -12801,14 +12624,6 @@
     ]
   },
   {
-    "message": "Server-enforced access protects every resource, action, and confidential space.",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "app/page.tsx"
-    ]
-  },
-  {
     "message": "Set both planned dates first.",
     "translated": true,
     "neutral": false,
@@ -12945,14 +12760,6 @@
     "neutral": false,
     "files": [
       "components/organization/InviteModal.tsx"
-    ]
-  },
-  {
-    "message": "Shared operating rhythm",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "app/page.tsx"
     ]
   },
   {
@@ -13168,14 +12975,6 @@
     ]
   },
   {
-    "message": "Sprint {number} duration",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "app/(app)/portfolio/page.tsx"
-    ]
-  },
-  {
     "message": "Sprint 1: Architecture & RBAC",
     "translated": true,
     "neutral": false,
@@ -13370,14 +13169,6 @@
     "neutral": false,
     "files": [
       "components/modernist/overlays/CreateDocDialog.tsx"
-    ]
-  },
-  {
-    "message": "Start in the workspace",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "app/page.tsx"
     ]
   },
   {
@@ -13834,7 +13625,6 @@
     "translated": true,
     "neutral": false,
     "files": [
-      "app/page.tsx",
       "components/public/BrandMark.tsx",
       "components/public/PublicShell.tsx"
     ]
@@ -13999,14 +13789,6 @@
     "neutral": false,
     "files": [
       "app/(app)/organization/page.tsx"
-    ]
-  },
-  {
-    "message": "Teams keep their momentum.",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "app/page.tsx"
     ]
   },
   {
@@ -14519,14 +14301,6 @@
     "neutral": false,
     "files": [
       "components/calendar/HeaderMeetingPill.tsx"
-    ]
-  },
-  {
-    "message": "together.",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "app/page.tsx"
     ]
   },
   {
@@ -15250,14 +15024,6 @@
     ]
   },
   {
-    "message": "weight, memory",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "app/page.tsx"
-    ]
-  },
-  {
     "message": "Welcome back",
     "translated": true,
     "neutral": false,
@@ -15331,14 +15097,6 @@
     ]
   },
   {
-    "message": "Work",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "app/page.tsx"
-    ]
-  },
-  {
     "message": "Work by status",
     "translated": true,
     "neutral": false,
@@ -15360,14 +15118,6 @@
     "neutral": false,
     "files": [
       "components/modernist/overlays/InviteDialog.tsx"
-    ]
-  },
-  {
-    "message": "Work keeps its context.",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "app/page.tsx"
     ]
   },
   {
