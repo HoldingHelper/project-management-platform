@@ -58,6 +58,7 @@ class Permissions:
     ANALYTICS_EXPORT = "analytics.export"
     PLANNING_UPLOAD = "planning.upload"
 
+    DOCS_CREATE = "docs.create"
     DOCS_VIEW = "docs.view"
     DOCS_COMMENT = "docs.comment"
     DOCS_EDIT = "docs.edit"
@@ -127,6 +128,7 @@ ROLE_PERMISSIONS: dict[str, list[str]] = {
         Permissions.READONLY_ACCESS,
         Permissions.DOCS_VIEW,
         Permissions.DOCS_COMMENT,
+        Permissions.DOCS_CREATE,
     ],
     ROLE_COMPANY_MANAGER: [
         Permissions.PRODUCTS_VIEW_ALL,
@@ -148,6 +150,7 @@ ROLE_PERMISSIONS: dict[str, list[str]] = {
         Permissions.ANALYTICS_EXPORT,
         Permissions.DOCS_VIEW,
         Permissions.DOCS_COMMENT,
+        Permissions.DOCS_CREATE,
         Permissions.DOCS_EDIT,
         Permissions.DOCS_MANAGE,
         Permissions.DOCS_PUBLISH,
@@ -171,6 +174,7 @@ ROLE_PERMISSIONS: dict[str, list[str]] = {
         Permissions.ANALYTICS_EXPORT,
         Permissions.DOCS_VIEW,
         Permissions.DOCS_COMMENT,
+        Permissions.DOCS_CREATE,
         Permissions.DOCS_EDIT,
     ],
     ROLE_TEAM_LEAD: [
@@ -187,6 +191,7 @@ ROLE_PERMISSIONS: dict[str, list[str]] = {
         Permissions.MUSIC_ACCESS,
         Permissions.DOCS_VIEW,
         Permissions.DOCS_COMMENT,
+        Permissions.DOCS_CREATE,
         Permissions.DOCS_EDIT,
     ],
     ROLE_DEVELOPER: [
@@ -199,6 +204,7 @@ ROLE_PERMISSIONS: dict[str, list[str]] = {
         Permissions.MUSIC_ACCESS,
         Permissions.DOCS_VIEW,
         Permissions.DOCS_COMMENT,
+        Permissions.DOCS_CREATE,
     ],
     ROLE_QA: [
         Permissions.PRODUCTS_VIEW_ASSIGNED,
@@ -210,6 +216,7 @@ ROLE_PERMISSIONS: dict[str, list[str]] = {
         Permissions.MUSIC_ACCESS,
         Permissions.DOCS_VIEW,
         Permissions.DOCS_COMMENT,
+        Permissions.DOCS_CREATE,
     ],
     ROLE_UIUX: [
         Permissions.PRODUCTS_VIEW_ASSIGNED,
@@ -221,6 +228,7 @@ ROLE_PERMISSIONS: dict[str, list[str]] = {
         Permissions.MUSIC_ACCESS,
         Permissions.DOCS_VIEW,
         Permissions.DOCS_COMMENT,
+        Permissions.DOCS_CREATE,
         Permissions.DOCS_EDIT,
     ],
     ROLE_BUSINESS_ANALYST: [
@@ -233,6 +241,7 @@ ROLE_PERMISSIONS: dict[str, list[str]] = {
         Permissions.MUSIC_ACCESS,
         Permissions.DOCS_VIEW,
         Permissions.DOCS_COMMENT,
+        Permissions.DOCS_CREATE,
         Permissions.DOCS_EDIT,
     ],
     ROLE_CLIENT: [

@@ -106,7 +106,7 @@ async def favorites(category: str | None = None, db: AsyncSession = Depends(get_
 
 
 @docs_router.post("/spaces/{space_id}/pages", response_model=PageRead, status_code=status.HTTP_201_CREATED)
-async def create_page(space_id: UUID, payload: PageCreate, db: AsyncSession = Depends(get_db), user: CurrentUser = Depends(require_permission(Permissions.DOCS_EDIT, Permissions.DOCS_MANAGE))) -> PageRead:
+async def create_page(space_id: UUID, payload: PageCreate, db: AsyncSession = Depends(get_db), user: CurrentUser = Depends(require_permission(Permissions.DOCS_CREATE, Permissions.DOCS_EDIT, Permissions.DOCS_MANAGE))) -> PageRead:
     return await service.create_page(db, user, space_id, payload)
 
 

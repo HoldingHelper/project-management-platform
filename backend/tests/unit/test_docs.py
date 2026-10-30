@@ -197,3 +197,11 @@ async def test_seed_internal_documentation():
     page_count = sum(1 for item in mock_db.added if isinstance(item, DocPage))
     assert space_count == len(DOC_SPACES_DATA)
     assert page_count > 0
+
+
+@pytest.mark.asyncio
+async def test_creation_permission_cannot_bypass_managed_workspace_access(monkeypatch):
+    from app.modules.docs import upload_library
+    space = DocSpace(id=uuid4(), visibility="workspace", product_id=uuid4())
+    monkeypatch.setattr(upload_library, "managed_access", AsyncMock(return_value=False))
+    assert not await service.can_create_page(AsyncMock(), user("docs.create", "docs.edit"), space)

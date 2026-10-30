@@ -32,6 +32,7 @@ class SpaceUpdate(BaseModel):
 
 
 class SpaceRead(BaseModel):
+    can_create_pages: bool = False
     product_id: Optional[UUID] = None
     task_id: Optional[UUID] = None
     model_config = ConfigDict(from_attributes=True)

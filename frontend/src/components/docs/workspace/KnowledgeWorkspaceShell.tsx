@@ -66,6 +66,7 @@ function KnowledgeWorkspaceInner({
   const [newPageDocType, setNewPageDocType] = useState<string>("document");
   const [spaces, setSpaces] = useState<DocSpace[]>([]);
   const [creatingPage, setCreatingPage] = useState(false);
+  const [createPageError, setCreatePageError] = useState("");
   const [isMobile, setIsMobile] = useState(false);
   const [mobilePanel, setMobilePanel] = useState<"explorer" | "inspector" | null>(null);
   const shellRef = useRef<HTMLDivElement>(null);
@@ -111,9 +112,18 @@ function KnowledgeWorkspaceInner({
     listDocSpaces().then(setSpaces).catch(console.error);
   }, []);
 
+  useEffect(() => {
+    if (!newPageModalOpen) return;
+    setCreatePageError("");
+    if (!spaces.some((space) => space.id === newPageSpaceId && space.can_create_pages)) {
+      setNewPageSpaceId(spaces.find((space) => space.can_create_pages)?.id ?? "");
+    }
+  }, [newPageModalOpen, newPageSpaceId, spaces]);
+
   const handleCreatePage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPageTitle.trim() || !newPageSpaceId) return;
+    if (creatingPage || !newPageTitle.trim() || !newPageSpaceId) return;
+    setCreatePageError("");
     setCreatingPage(true);
     try {
       const page = await createDocPage(newPageSpaceId, {
@@ -132,7 +142,7 @@ function KnowledgeWorkspaceInner({
       setNewPageModalOpen(false);
       setNewPageTitle("");
     } catch (err) {
-      console.error("Failed to create page:", err);
+      setCreatePageError(err instanceof Error ? err.message : String(err));
     } finally {
       setCreatingPage(false);
     }
@@ -323,7 +333,7 @@ function KnowledgeWorkspaceInner({
                   className="w-full px-3 py-1.5 bg-slate-950 border border-white/10 rounded text-xs text-white outline-none"
                 >
                   <option value=""><LocalizedText message={"Select a space..."} /></option>
-                  {spaces.map((s) => (
+                  {spaces.filter((s) => s.can_create_pages).map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.name}
                     </option>
@@ -357,6 +367,7 @@ function KnowledgeWorkspaceInner({
                 </select>
               </div>
 
+              {createPageError && <p role="alert" className="text-xs text-red-300">{createPageError}</p>}
               <div className="flex items-center justify-end gap-2 pt-2">
                 <button
                   type="button"

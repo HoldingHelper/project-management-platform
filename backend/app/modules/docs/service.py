@@ -182,17 +182,27 @@ async def list_spaces(db: AsyncSession, user: CurrentUser, category: str | None 
                 visible.append(space)
         elif (space.visibility == "public" or (space.visibility == "workspace" and has_global_docs_access(user, "view")) or space.responsible_user_id == user.user_id or await can_access(db, user, "space", space.id, "view")):
             visible.append(space)
-    return [SpaceRead.model_validate(s) for s in visible]
+    return [SpaceRead.model_validate(s).model_copy(update={"can_create_pages": await can_create_page(db, user, s)}) for s in visible]
+
+
+async def can_create_page(db: AsyncSession, user: CurrentUser, space: DocSpace) -> bool:
+    # Creation is separate from editing other users' drafts. Managed workspaces
+    # still require the corresponding product/task authorization.
+    if not (user.is_super_admin() or user.has_any_permission("docs.create", "docs.edit", "docs.manage")):
+        return False
+    from app.modules.docs.upload_library import managed_access
+    managed = await managed_access(db, user, "space", space.id, "edit")
+    if managed is not None:
+        return managed
+    return (space.visibility in {"workspace", "public"}
+            or await can_access(db, user, "space", space.id, "edit"))
 
 
 async def create_page(db: AsyncSession, user: CurrentUser, space_id: UUID, payload: PageCreate) -> PageRead:
     space = await repo.get_space(db, space_id)
     if not space:
         raise NotFoundError("Documentation space", space_id)
-    if not (
-        (space.visibility in {"workspace", "public"} and has_global_docs_access(user, "edit"))
-        or await can_access(db, user, "space", space_id, "edit")
-    ):
+    if not await can_create_page(db, user, space):
         raise ForbiddenError("You do not have permission to create pages in this space.")
     if payload.parent_page_id:
         parent = await repo.get_page(db, payload.parent_page_id)

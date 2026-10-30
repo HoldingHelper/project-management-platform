@@ -1,6 +1,7 @@
 import { apiFetch } from "./client";
 export type DocCategory = "Technical" | "Marketing" | "Operations" | "Platform" | "Business" | "Designs";
 export type DocSpace = {
+  can_create_pages?: boolean;
   product_id?: string | null;
   task_id?: string | null;
   id: string;

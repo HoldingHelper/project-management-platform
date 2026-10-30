@@ -474,7 +474,7 @@ TOOL_PERMISSIONS: dict[str, tuple[str, ...]] = {
     "pmp_people_and_teams_search": TASK_WRITE_PERMISSIONS,
     "pmp_docs_list_spaces": DOC_READ_PERMISSIONS,
     "pmp_docs_search_or_get": DOC_READ_PERMISSIONS,
-    "pmp_docs_create_page": DOC_WRITE_PERMISSIONS,
+    "pmp_docs_create_page": (Permissions.DOCS_CREATE, *DOC_WRITE_PERMISSIONS),
     "pmp_docs_update_page": DOC_WRITE_PERMISSIONS,
     "pmp_docs_upload_attachment": DOC_WRITE_PERMISSIONS,
     "pmp_diagram_create": DOC_WRITE_PERMISSIONS,
