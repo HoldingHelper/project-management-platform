@@ -836,6 +836,7 @@ async def get_portfolio_gantt(
 # ---------- Tasks ----------
 @tasks_router.get("", response_model=Page[TaskRead])
 async def list_tasks(
+    product_id: Optional[UUID] = Query(default=None),
     partition: Optional[str] = Query(default=None),
     label: Optional[str] = Query(default=None),
     assignee_user_id: Optional[UUID] = Query(default=None),
@@ -849,6 +850,7 @@ async def list_tasks(
 ) -> Page[TaskRead]:
     items, total = await service.list_tasks(
         db,
+        product_id=product_id,
         partition=partition,
         label=label,
         assignee_user_id=assignee_user_id,

@@ -5448,6 +5448,14 @@
     ]
   },
   {
+    "message": "Filter tasks by product line",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/tasks/page.tsx"
+    ]
+  },
+  {
     "message": "Filter tasks by project",
     "translated": true,
     "neutral": false,
@@ -10578,6 +10586,14 @@
     ]
   },
   {
+    "message": "Product line: {name}",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/tasks/page.tsx"
+    ]
+  },
+  {
     "message": "product lines",
     "translated": true,
     "neutral": false,
@@ -12519,6 +12535,14 @@
     "neutral": false,
     "files": [
       "components/ds/StatusChip.tsx"
+    ]
+  },
+  {
+    "message": "Selected",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/tasks/page.tsx"
     ]
   },
   {

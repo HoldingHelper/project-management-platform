@@ -2057,5 +2057,8 @@
   "Save default language": "ذخیره زبان پیش‌فرض",
   "{label} copied.": "{label} کپی شد.",
   "Copy failed. Select the text and copy it manually.": "کپی انجام نشد. متن را انتخاب و به‌صورت دستی کپی کنید.",
-  "Applies to all sprints.": "برای همه اسپرینت‌ها اعمال می‌شود."
+  "Applies to all sprints.": "برای همه اسپرینت‌ها اعمال می‌شود.",
+  "Filter tasks by product line": "فیلتر کارها بر اساس خط محصول",
+  "Product line: {name}": "خط محصول: {name}",
+  "Selected": "انتخاب‌شده"
 }

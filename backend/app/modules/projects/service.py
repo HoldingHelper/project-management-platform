@@ -1319,6 +1319,7 @@ async def update_checklist_item(
 async def list_tasks(
     db: AsyncSession,
     *,
+    product_id: Optional[UUID] = None,
     partition: Optional[str] = None,
     label: Optional[str] = None,
     assignee_user_id: Optional[UUID] = None,
@@ -1330,6 +1331,9 @@ async def list_tasks(
     page: int = 1,
     page_size: int = 50,
 ) -> tuple[List[TaskRead], int]:
+    if product_id is not None and current_user is not None:
+        from app.modules.projects.product_access import require_product_access
+        await require_product_access(db, current_user, product_id)
     user_id = None
     if current_user is not None and not (
         current_user.is_super_admin()
@@ -1343,6 +1347,7 @@ async def list_tasks(
         user_id = current_user.user_id
     tasks, total = await repo.list_tasks(
         db,
+        product_id=product_id,
         partition=partition,
         label=label,
         assignee_user_id=assignee_user_id,

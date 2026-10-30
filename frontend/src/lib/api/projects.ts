@@ -246,6 +246,7 @@ export function updateChecklistItem(taskId: UUID, checklistItemId: UUID, is_done
 }
 
 export interface TaskListFilters {
+  product_id?: UUID;
   partition?: string;
   label?: string;
   assignee_user_id?: UUID;
@@ -259,6 +260,7 @@ export interface TaskListFilters {
 
 export function listTasks(filters: TaskListFilters = {}) {
   const q = new URLSearchParams();
+  if (filters.product_id) q.set("product_id", filters.product_id);
   if (filters.partition) q.set("partition", filters.partition);
   if (filters.label) q.set("label", filters.label);
   if (filters.assignee_user_id) q.set("assignee_user_id", filters.assignee_user_id);
