@@ -519,6 +519,16 @@ async def _locked_page(db, page_id):
     return page
 
 
+async def _can_publish_page(db, user, page):
+    author_can_publish = page.created_by == user.user_id and (
+        user.allow_role_bypass or user.has_any_permission("docs.create", "docs.edit", "docs.manage")
+    )
+    return bool(
+        (user.is_super_admin() or has_global_docs_access(user, "publish") or author_can_publish)
+        and await _page_editable(db, user, page)
+    )
+
+
 async def lifecycle_permissions(db, user, page_id):
     page = await repo.get_page(db, page_id)
     if not page:
@@ -531,7 +541,7 @@ async def lifecycle_permissions(db, user, page_id):
     return {
         "page_id": str(page.id), "status": page.status,
         "can_edit": await _page_editable(db, user, page),
-        "can_publish": page.status in {"draft", "internal"} and await _page_editable(db, user, page) and (user.is_super_admin() or has_global_docs_access(user, "publish")),
+        "can_publish": await _can_publish_page(db, user, page),
         "can_archive": not managed_folder and page.status != "archived" and (user.is_super_admin() or (page.created_by == user.user_id and writable_token)),
         "can_restore": page.status == "archived" and user.is_super_admin(),
     }
@@ -575,10 +585,8 @@ async def set_published(db: AsyncSession, user: CurrentUser, page_id: UUID, publ
     if not published:
         raise ForbiddenError("Published documents cannot return to draft. Archive the document instead.")
     page = await _locked_page(db, page_id)
-    if not (user.is_super_admin() or has_global_docs_access(user, "publish")):
-        raise ForbiddenError("Only a documentation publisher can publish this page.")
-    if not await _page_editable(db, user, page):
-        raise ForbiddenError("Only draft documents can be published.")
+    if not await _can_publish_page(db, user, page):
+        raise ForbiddenError("Only the author or an authorized publisher can publish an editable draft.")
     # Publication locks content; it does not grant public or wider access.
     page.status = "published"
     page.updated_by = user.user_id

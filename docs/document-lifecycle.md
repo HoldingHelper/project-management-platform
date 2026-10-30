@@ -73,3 +73,11 @@ and frontend together.
 Verification: 15 targeted backend tests, including rollback-only PostgreSQL tests
 for Developer, QA, CLevel, and ProjectManager draft creation/saving, plus access
 and document lifecycle restrictions; 46 frontend tests and TypeScript passed.
+
+
+Document authors can publish their own editable drafts without global
+`docs.publish`. The lifecycle API and publish action use the same authorization
+check. Other users still need publisher permission and draft edit access; scoped
+MCP tokens must include creation/edit/manage permission to publish the author's
+own draft, or an explicit publish grant. Publication preserves visibility and
+makes the document immutable.

@@ -44,6 +44,14 @@ async def test_regular_staff_create_and_edit_own_drafts_without_global_edit(monk
                             await service.update_page(db, actor, original.id, PageUpdate(content="Unauthorized edit"))
                     with pytest.raises(ForbiddenError):
                         await service.create_page(db, actor, private.id, PageCreate(title="Denied"))
+                    assert (await service.lifecycle_permissions(db, actor, page.id))["can_publish"]
+                    with pytest.raises(ForbiddenError):
+                        await service.set_published(db, actor, original.id, True)
+                    published = await service.set_published(db, actor, page.id, True)
+                    assert published.status == "published" and published.visibility == "inherit"
+                    assert not (await service.lifecycle_permissions(db, actor, page.id))["can_publish"]
+                    with pytest.raises(ForbiddenError):
+                        await service.update_page(db, actor, page.id, PageUpdate(content="Published edit denied"))
                 for permissions in (["docs.view"], ["docs.view", "docs.comment"]):
                     viewer = CurrentUser(ids[2], "viewer@example.com", "Viewer", permissions=permissions)
                     with pytest.raises(ForbiddenError):

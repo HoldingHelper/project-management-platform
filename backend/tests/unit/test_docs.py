@@ -88,11 +88,11 @@ async def test_only_creator_or_publisher_can_publish(monkeypatch):
     with pytest.raises(ForbiddenError):
         await service.set_published(MockSession(), user("docs.edit"), page.id, True)  # type: ignore[arg-type]
 
+    token = CurrentUser(owner_id, "token@example.com", "Token", permissions=["docs.view"], allow_role_bypass=False)
     with pytest.raises(ForbiddenError):
-        # Even the creator cannot publish without docs.publish (H-2)
-        await service.set_published(MockSession(), user("docs.edit", user_id=owner_id), page.id, True)  # type: ignore[arg-type]
+        await service.set_published(MockSession(), token, page.id, True)
 
-    result = await service.set_published(MockSession(), user("docs.publish", user_id=owner_id), page.id, True)  # type: ignore[arg-type]
+    result = await service.set_published(MockSession(), user("docs.create", user_id=owner_id), page.id, True)  # type: ignore[arg-type]
     assert result.status == "published"
     assert result.visibility == "private"  # Publication must never widen access.
 
