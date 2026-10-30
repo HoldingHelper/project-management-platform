@@ -5934,3 +5934,14 @@ input[type="email"], input[type="url"], input[type="password"], input[type="date
 html[data-locale-pending="true"] body { visibility: hidden; }
 .knowledge-editor-source { direction: ltr; }
 .knowledge-editor-source textarea { unicode-bidi: plaintext; text-align: start; }
+
+/* Persian task list: keep cell content and headings on the same leading edge. */
+[dir="rtl"] .pmp-task-list .pmp-data-table th,
+[dir="rtl"] .pmp-task-list .pmp-data-table td { text-align: right !important; }
+[dir="rtl"] .pmp-task-list .pmp-table-sort,
+[dir="rtl"] .pmp-task-list .pmp-table-heading { letter-spacing: normal; }
+[dir="rtl"] .pmp-task-list .pmp-task-type > span { gap: 6px; white-space: nowrap; letter-spacing: normal; }
+[dir="rtl"] .pmp-task-list .pmp-task-type svg { flex-shrink: 0; }
+[dir="rtl"] .pmp-task-list .pmp-task-date-line { display: flex; align-items: baseline; gap: 4px; white-space: nowrap; }
+[dir="rtl"] .pmp-task-list .pmp-task-assignee { margin-left: 0 !important; }
+[dir="rtl"] .pmp-task-list .pmp-task-assignee + .pmp-task-assignee { margin-right: -8px; }

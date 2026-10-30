@@ -309,7 +309,7 @@ function TasksPage() {
         header: "Type",
         sortValue: (t) => String(t.task_type),
         render: (t) => (
-          <span style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+          <span className="pmp-task-type" style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
             <span style={smallPill}><LocalizedText message={String(t.task_type)} /></span>
             {t.is_ticket && <span style={{ ...smallPill, color: "var(--primary)" }}><Ticket size={11} />{" "}<LocalizedText message={"Ticket"} /></span>}
           </span>
@@ -328,7 +328,7 @@ function TasksPage() {
         render: (t) => (
           <span style={{ display: "flex" }}>
             {t.assignee_user_ids.slice(0, 4).map((id, i) => (
-              <span key={id} style={{ marginLeft: i === 0 ? 0 : -8 }} title={nameOf(id)}>
+              <span className="pmp-task-assignee" key={id} style={{ marginLeft: i === 0 ? 0 : -8 }} title={nameOf(id)}>
                 <Avatar name={nameOf(id)} size={24} />
               </span>
             ))}
@@ -344,8 +344,8 @@ function TasksPage() {
         sortValue: (t) => t.due_date ?? t.created_at,
         render: (t) => (
           <span style={{ display: "flex", flexDirection: "column", gap: 2, fontSize: 11.5, color: "var(--text-tertiary)" }}>
-            <span><LocalizedText message={"Created"} />{" "}{<LocalizedDate value={t.created_at} />}</span>
-            {t.due_date && <span><LocalizedText message={"Due"} />{" "}{<LocalizedDate value={t.due_date} />}</span>}
+            <span className="pmp-task-date-line"><LocalizedText message={"Created"} />{" "}{<LocalizedDate value={t.created_at} />}</span>
+            {t.due_date && <span className="pmp-task-date-line"><LocalizedText message={"Due"} />{" "}{<LocalizedDate value={t.due_date} />}</span>}
           </span>
         ),
       },
@@ -595,7 +595,7 @@ function TasksPage() {
         <MonthlyTaskPlanner rows={filteredRows} nameOf={nameOf} canAttach={canAttach} />
       ) : (
         <>
-          <div style={{ background: "var(--surface-2)", border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-3)", overflow: "hidden" }}>
+          <div className="pmp-task-list" style={{ background: "var(--surface-2)", border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-3)", overflow: "hidden" }}>
             <DataTable columns={columns} rows={pageRows} rowKey={(t) => t.id} emptyText={hasFilters ? localizeAttribute("No tasks match these filters. Clear filters to see more work.") : localizeAttribute("No tasks yet.")} />
           </div>
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 12, alignItems: "center" }}>
