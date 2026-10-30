@@ -49,6 +49,7 @@ from app.modules.projects.schemas import (
     MilestoneRead,
     MilestoneUpdate,
     PhaseCreate,
+    SprintBatchCreate,
     PhaseRead,
     PhaseUpdate,
     PortfolioGantt,
@@ -256,7 +257,10 @@ async def get_product_documentation(
     from app.modules.projects.product_documentation import get_document
     from app.modules.collaboration.schemas import FileAttachmentRead
     await require_product_access(db, current_user, product_id)
-    return FileAttachmentRead.model_validate(await get_document(db, product_id))
+    document = await get_document(db, product_id)
+    from app.modules.docs.lifecycle import require_visible_upload
+    await require_visible_upload(db, current_user, document.id)
+    return FileAttachmentRead.model_validate(document)
 
 
 @products_router.get("/{product_id}/documentation/download")
@@ -268,6 +272,8 @@ async def download_product_documentation(
     from app.modules.projects.product_documentation import get_document
     await require_product_access(db, current_user, product_id)
     document = await get_document(db, product_id)
+    from app.modules.docs.lifecycle import require_visible_upload
+    await require_visible_upload(db, current_user, document.id)
     content = await file_storage_service.download_async(document.storage_key)
     return Response(content, media_type="application/octet-stream", headers={
         "Content-Disposition": f"attachment; filename*=UTF-8''{quote(document.file_name, safe='')}",
@@ -740,6 +746,12 @@ async def add_project_member(
     await service.add_project_member(db, project_id, payload)
 
 
+@projects_router.post("/{project_id}/sprints/batch", response_model=list[PhaseRead], status_code=status.HTTP_201_CREATED)
+async def create_sprint_batch(project_id: UUID, payload: SprintBatchCreate, current_user: CurrentUser = Depends(require_permission(Permissions.PHASES_MANAGE_ALL, Permissions.PHASES_MANAGE_TEAM)), db: AsyncSession = Depends(get_db)):
+    await service.require_project_manage_access(db, project_id, current_user)
+    return await service.create_sprint_batch(db, project_id, payload)
+
+
 # ---------- Phases ----------
 @sprints_router.post("", response_model=PhaseRead, status_code=status.HTTP_201_CREATED)
 @phases_router.post("", response_model=PhaseRead, status_code=status.HTTP_201_CREATED, deprecated=True)
@@ -752,6 +764,7 @@ async def create_phase(
     ),
     db: AsyncSession = Depends(get_db),
 ) -> PhaseRead:
+    await service.require_project_manage_access(db, payload.project_id, current_user)
     return await service.create_phase(db, payload)
 
 

@@ -42,8 +42,12 @@ from app.modules.docs.schemas import (
     TagRead,
 )
 
-public_docs_router = APIRouter(prefix="/docs/public", tags=["Public documentation"])
-docs_router = APIRouter(prefix="/docs", tags=["Documentation"])
+async def prevent_document_caching(response: Response):
+    response.headers["Cache-Control"] = "private, no-store"
+
+
+public_docs_router = APIRouter(prefix="/docs/public", tags=["Public documentation"], dependencies=[Depends(prevent_document_caching)])
+docs_router = APIRouter(prefix="/docs", tags=["Documentation"], dependencies=[Depends(prevent_document_caching)])
 
 
 @public_docs_router.get("/navigation")
@@ -121,24 +125,31 @@ async def move_page(page_id: UUID, payload: PageMove, db: AsyncSession = Depends
     return await service.move_page(db, user, page_id, payload)
 
 
-@docs_router.delete("/pages/{page_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_page(page_id: UUID, db: AsyncSession = Depends(get_db), user: CurrentUser = Depends(get_current_user)) -> Response:
-    await service.delete_page(db, user, page_id)
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+@docs_router.get("/pages/{page_id}/lifecycle")
+async def page_lifecycle(page_id: UUID, db: AsyncSession = Depends(get_db), user: CurrentUser = Depends(get_current_user)):
+    return await service.lifecycle_permissions(db, user, page_id)
 
 
-@docs_router.get("/pages/{page_id}/delete-permission")
-async def page_delete_permission(page_id: UUID, db: AsyncSession = Depends(get_db), user: CurrentUser = Depends(get_current_user)) -> dict:
-    from app.modules.docs.deletion import require_page_delete_access
+@docs_router.post("/pages/{page_id}/archive")
+async def archive_page(page_id: UUID, db: AsyncSession = Depends(get_db), user: CurrentUser = Depends(get_current_user)):
+    page = await service.set_archived(db, user, page_id, True)
+    return {"id": str(page.id), "status": page.status}
+
+
+@docs_router.post("/pages/{page_id}/restore", response_model=PageRead)
+async def restore_page(page_id: UUID, db: AsyncSession = Depends(get_db), user: CurrentUser = Depends(get_current_user)):
+    return await service.set_archived(db, user, page_id, False)
+
+
+@docs_router.get("/archived", response_model=list[PageSummary])
+async def archived_pages(db: AsyncSession = Depends(get_db), user: CurrentUser = Depends(get_current_user)):
     from app.core.exceptions import ForbiddenError
-    from app.modules.docs import repository
-    await service.get_page(db, user, page_id)
-    page = await repository.get_page(db, page_id)
-    try:
-        await require_page_delete_access(db, user, page)
-        return {"can_delete": True}
-    except ForbiddenError:
-        return {"can_delete": False}
+    if not user.is_super_admin():
+        raise ForbiddenError("Only a Super Admin can view archived documents.")
+    from app.modules.docs.models import DocPage
+    from sqlalchemy import select
+    pages = (await db.execute(select(DocPage).where(DocPage.status == "archived").order_by(DocPage.updated_at.desc()))).scalars().all()
+    return [PageSummary.model_validate(page, from_attributes=True) for page in pages]
 
 
 @docs_router.get("/pages/{page_id}/revisions", response_model=list[RevisionRead])
@@ -154,11 +165,6 @@ async def restore_revision(page_id: UUID, revision_id: UUID, db: AsyncSession = 
 @docs_router.post("/pages/{page_id}/publish", response_model=PageRead)
 async def publish(page_id: UUID, db: AsyncSession = Depends(get_db), user: CurrentUser = Depends(get_current_user)) -> PageRead:
     return await service.set_published(db, user, page_id, True)
-
-
-@docs_router.post("/pages/{page_id}/unpublish", response_model=PageRead)
-async def unpublish(page_id: UUID, db: AsyncSession = Depends(get_db), user: CurrentUser = Depends(get_current_user)) -> PageRead:
-    return await service.set_published(db, user, page_id, False)
 
 
 @docs_router.put("/pages/{page_id}/favorite", status_code=status.HTTP_204_NO_CONTENT)
@@ -357,16 +363,6 @@ async def get_source(
     return await sources_service.get_source(db, user, source_id)
 
 
-@docs_router.delete("/sources/{source_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_source(
-    source_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    user: CurrentUser = Depends(get_current_user),
-) -> Response:
-    await sources_service.delete_source(db, user, source_id)
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-
 @docs_router.post("/ai/chat/stream")
 async def ai_chat_stream(
     payload: AIChatRequest,
@@ -423,3 +419,22 @@ async def remove_page_tag(
     await service.remove_page_tag(db, user, page_id, tag_name)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
+
+
+@docs_router.get("/attachments/{attachment_id}/download")
+async def download_attachment(attachment_id: UUID, db: AsyncSession = Depends(get_db), user: CurrentUser = Depends(get_current_user)):
+    from app.modules.docs import repository
+    from app.core.exceptions import NotFoundError
+    from app.core.storage import file_storage_service
+    from urllib.parse import quote
+    attachment = await repository.get_attachment(db, attachment_id)
+    if not attachment:
+        raise NotFoundError("Documentation attachment", attachment_id)
+    await service.get_page(db, user, attachment.page_id)
+    if not attachment.storage_key:
+        raise NotFoundError("Stored documentation file", attachment_id)
+    content = await file_storage_service.download_async(attachment.storage_key)
+    return Response(content, media_type="application/octet-stream", headers={
+        "Content-Disposition": f"attachment; filename*=UTF-8''{quote(attachment.file_name, safe='')}",
+        "Cache-Control": "private, no-store",
+    })

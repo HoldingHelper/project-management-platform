@@ -217,10 +217,10 @@ def _validate_project_date_baseline(
 
 
 def _validate_sprint_window(start_date: date, end_date: date) -> None:
-    if (end_date - start_date).days != SPRINT_DURATION_DAYS - 1:
+    if (end_date - start_date).days + 1 not in (3, 7, 14):
         raise ValidationAppError(
-            "A sprint must span exactly 14 calendar days.",
-            errors={"end_date": ["Choose the inclusive date 13 days after the start."]},
+            "Sprint duration must be 3, 7, or 14 days.",
+            errors={"end_date": ["End dates are calculated from the selected sprint duration."]},
         )
 
 
@@ -276,6 +276,9 @@ async def delete_product(db: AsyncSession, product_id: UUID) -> None:
         raise BusinessRuleError("This product line has projects. Move or remove its projects before removing the product line.")
     from app.modules.collaboration.models import FileAttachment
     files = list((await db.execute(select(FileAttachment).where(FileAttachment.entity_type == "product", FileAttachment.entity_id == product_id))).scalars().all())
+    from app.modules.docs.models import DocSpace
+    if files or (await db.execute(select(DocSpace.id).where(DocSpace.product_id == product_id).limit(1))).scalar_one_or_none():
+        raise BusinessRuleError("This product line retains documents and cannot be deleted.")
     await db.execute(delete(FileAttachment).where(FileAttachment.entity_type == "product", FileAttachment.entity_id == product_id))
     await db.execute(delete(Product).where(Product.id == product_id))
     await db.commit()
@@ -335,6 +338,14 @@ async def create_project(
     if created_by_user_id is not None:
         await membership.require_product_members(db, payload.product_id, [created_by_user_id])
     data = _dump(payload, exclude={"sprints"})
+    if payload.sprints:
+        calculated_start = min(sprint.start_date for sprint in payload.sprints)
+        calculated_end = max(sprint.end_date for sprint in payload.sprints)
+        if payload.end_date is not None and payload.end_date != calculated_end:
+            raise ValidationAppError("Project end date is calculated from its sprint schedule.")
+        data.update(start_date=calculated_start, end_date=calculated_end)
+        if data.get("estimated_completion_date") is None:
+            data["estimated_completion_date"] = calculated_end
     data["checklist_items"] = [item.model_dump(mode="json") for item in payload.checklist_items]
     _validate_project_date_baseline(data.get("start_date"), data.get("end_date"))
     project = Project(**data, planning_mode="sprints")
@@ -516,6 +527,18 @@ async def _delete_entity_artifacts(
 
     project_ids = project_ids or []
     task_ids = task_ids or []
+
+    from app.modules.docs.models import DocSpace, DocPage, DocLink
+    from sqlalchemy import or_
+    scopes = ([("project", project_ids)] if project_ids else []) + ([("task", task_ids)] if task_ids else [])
+    for kind, ids in scopes:
+        for model in (Comment, FileAttachment):
+            if (await db.execute(select(model.id).where(model.entity_type == kind, model.entity_id.in_(ids)).limit(1))).scalar_one_or_none():
+                raise BusinessRuleError("This item retains documents or messages and cannot be deleted. Archive it instead.")
+        if (await db.execute(select(DocPage.id).where(DocPage.source_entity_type == kind, DocPage.source_entity_id.in_(ids)).limit(1))).scalar_one_or_none() or (await db.execute(select(DocLink.id).where(DocLink.entity_type == kind, DocLink.entity_id.in_(ids)).limit(1))).scalar_one_or_none():
+            raise BusinessRuleError("This item retains documents and cannot be deleted.")
+        if kind == "task" and (await db.execute(select(DocSpace.id).where(DocSpace.task_id.in_(ids)).limit(1))).scalar_one_or_none():
+            raise BusinessRuleError("This item retains a documentation workspace and cannot be deleted.")
 
     if task_ids:
         await db.execute(delete(Blocker).where(Blocker.blocked_task_id.in_(task_ids)))
@@ -849,23 +872,38 @@ async def create_phase(db: AsyncSession, payload: PhaseCreate) -> PhaseRead:
     project = await repo.get_project(db, payload.project_id)
     if project is None:
         raise NotFoundError("Project", payload.project_id)
-    data = _dump(payload, exclude={"team_ids"})
+    data = _dump(payload, exclude={"team_ids", "duration_days"})
     existing = list(await repo.list_phases_by_project(db, payload.project_id))
-    if data.get("start_date") is None and data.get("end_date") is None:
-        last_end = max(
-            (item.end_date for item in existing if item.end_date is not None),
-            default=None,
-        )
+    start = data.get("start_date")
+    if start is None:
+        last_end = max((item.end_date for item in existing if item.end_date is not None), default=None)
         start = (last_end + timedelta(days=1)) if last_end else (project.start_date or date.today())
-        data["start_date"] = start
-        data["end_date"] = start + timedelta(days=SPRINT_DURATION_DAYS - 1)
-    elif data.get("start_date") is None or data.get("end_date") is None:
-        raise ValidationAppError("Sprint start and end dates must be set together.")
-    _validate_sprint_window(data["start_date"], data["end_date"])
+    duration = payload.duration_days or ((data["end_date"] - start).days + 1 if data.get("end_date") else 14)
+    calculated = start + timedelta(days=duration - 1)
+    if data.get("end_date") is not None and data["end_date"] != calculated:
+        raise ValidationAppError("Sprint end date is calculated from its start and duration.")
+    _validate_sprint_window(start, calculated)
+    data.update(start_date=start, end_date=calculated)
     data["is_sprint"] = True
     phase = Phase(**data)
     phase = await repo.create_phase(db, phase, payload.team_ids)
     return PhaseRead.model_validate(phase)
+
+
+async def create_sprint_batch(db, project_id, payload):
+    project = await membership.lock_project(db, project_id)
+    existing = list(await repo.list_phases_by_project(db, project_id))
+    sequence = max((phase.sequence for phase in existing), default=0)
+    phases = []
+    for index in range(payload.count):
+        start = payload.start_date + timedelta(days=index * payload.duration_days)
+        phase = Phase(project_id=project_id, name=payload.name if payload.count == 1 else f"{payload.name} {index + 1}", phase_type=PhaseType.DEVELOPMENT.value, sequence=sequence + index + 1, start_date=start, end_date=start + timedelta(days=payload.duration_days - 1), is_sprint=True)
+        db.add(phase)
+        phases.append(phase)
+    await db.commit()
+    for phase in phases:
+        await db.refresh(phase)
+    return [PhaseRead.model_validate(phase) for phase in phases]
 
 
 async def get_phase(db: AsyncSession, phase_id: UUID) -> PhaseRead:
@@ -881,13 +919,17 @@ async def update_phase(
     phase = await repo.get_phase(db, phase_id)
     if phase is None:
         raise NotFoundError("Phase", phase_id)
-    data = _dump(payload, exclude_unset=True)
-    if phase.is_sprint and ({"start_date", "end_date"} & payload.model_fields_set):
+    data = _dump(payload, exclude_unset=True, exclude={"duration_days"})
+    if phase.is_sprint and ({"start_date", "end_date", "duration_days"} & payload.model_fields_set):
         start = data.get("start_date", phase.start_date)
-        end = data.get("end_date", phase.end_date)
-        if start is None or end is None:
-            raise ValidationAppError("Sprint start and end dates must be set together.")
-        _validate_sprint_window(start, end)
+        if start is None:
+            raise ValidationAppError("A sprint start date is required.")
+        duration = payload.duration_days or ((phase.end_date - phase.start_date).days + 1 if phase.start_date and phase.end_date else 14)
+        calculated = start + timedelta(days=duration - 1)
+        if "end_date" in data and data["end_date"] != calculated:
+            raise ValidationAppError("Sprint end date is read-only. Choose the start date and duration instead.")
+        _validate_sprint_window(start, calculated)
+        data.update(start_date=start, end_date=calculated)
     for field, value in data.items():
         setattr(phase, field, value)
     await db.commit()

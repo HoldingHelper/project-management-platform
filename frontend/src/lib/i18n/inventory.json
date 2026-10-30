@@ -65,14 +65,6 @@
     ]
   },
   {
-    "message": "· exactly 14 calendar days",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
-    ]
-  },
-  {
     "message": "· Expires",
     "translated": true,
     "neutral": false,
@@ -130,14 +122,6 @@
     ]
   },
   {
-    "message": "(signs out active sessions).",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "components/docs/workspace/MarkdownWorkspaceEditor.tsx"
-    ]
-  },
-  {
     "message": "(Valid for 30m)",
     "translated": true,
     "neutral": false,
@@ -191,6 +175,15 @@
     "neutral": false,
     "files": [
       "app/(app)/my-work/page.tsx"
+    ]
+  },
+  {
+    "message": "{days} days",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/portfolio/page.tsx",
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
     ]
   },
   {
@@ -346,14 +339,6 @@
     "neutral": false,
     "files": [
       "components/docs/workspace/KnowledgeAIPanel.tsx"
-    ]
-  },
-  {
-    "message": "✓ Accept",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "components/docs/workspace/MarkdownWorkspaceEditor.tsx"
     ]
   },
   {
@@ -538,14 +523,6 @@
     "neutral": false,
     "files": [
       "app/terms/page.tsx"
-    ]
-  },
-  {
-    "message": "5 min read",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "components/docs/workspace/MarkdownWorkspaceEditor.tsx"
     ]
   },
   {
@@ -1069,8 +1046,7 @@
     "translated": true,
     "neutral": false,
     "files": [
-      "components/docs/workspace/ContextInspector.tsx",
-      "components/docs/workspace/MarkdownWorkspaceEditor.tsx"
+      "components/docs/workspace/ContextInspector.tsx"
     ]
   },
   {
@@ -1278,14 +1254,6 @@
     ]
   },
   {
-    "message": "All set!",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "components/docs/workspace/MarkdownWorkspaceEditor.tsx"
-    ]
-  },
-  {
     "message": "All statuses",
     "translated": true,
     "neutral": false,
@@ -1350,14 +1318,6 @@
     ]
   },
   {
-    "message": "and simplify access across all tools.",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "components/docs/workspace/MarkdownWorkspaceEditor.tsx"
-    ]
-  },
-  {
     "message": "Any",
     "translated": true,
     "neutral": false,
@@ -1379,6 +1339,14 @@
     "neutral": false,
     "files": [
       "components/modernist/overlays/CreateProjectDialog.tsx"
+    ]
+  },
+  {
+    "message": "Applies to all sprints. Individual durations can be changed below.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/portfolio/page.tsx"
     ]
   },
   {
@@ -1418,7 +1386,24 @@
     "translated": true,
     "neutral": false,
     "files": [
-      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx",
+      "components/docs/DocumentLifecycleControls.tsx"
+    ]
+  },
+  {
+    "message": "Archive document {name}",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/docs/DocumentLifecycleControls.tsx"
+    ]
+  },
+  {
+    "message": "Archive document?",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/docs/DocumentLifecycleControls.tsx"
     ]
   },
   {
@@ -1427,6 +1412,30 @@
     "neutral": false,
     "files": [
       "app/(app)/portfolio/page.tsx"
+    ]
+  },
+  {
+    "message": "Archived · Read-only",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/docs/DocumentLifecycleControls.tsx"
+    ]
+  },
+  {
+    "message": "Archived documents",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/docs/workspace/KnowledgeExplorer.tsx"
+    ]
+  },
+  {
+    "message": "Archived documents are hidden from all regular users, including the author. Only a Super Admin can restore them.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/docs/DocumentLifecycleControls.tsx"
     ]
   },
   {
@@ -1681,8 +1690,7 @@
     "translated": true,
     "neutral": false,
     "files": [
-      "components/docs/workspace/ContextInspector.tsx",
-      "components/docs/workspace/MarkdownWorkspaceEditor.tsx"
+      "components/docs/workspace/ContextInspector.tsx"
     ]
   },
   {
@@ -2084,6 +2092,22 @@
     ]
   },
   {
+    "message": "Calculated end date",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
+    ]
+  },
+  {
+    "message": "Calculated from the start date, duration, and number of sprints.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
+    ]
+  },
+  {
     "message": "Calendar",
     "translated": true,
     "neutral": false,
@@ -2128,8 +2152,8 @@
       "app/(app)/tasks/[taskId]/TaskDetailClient.tsx",
       "app/(app)/tasks/page.tsx",
       "components/chat/ChatPanel.tsx",
-      "components/docs/DeleteDocumentButton.tsx",
       "components/docs/DocsSidebar.tsx",
+      "components/docs/DocumentLifecycleControls.tsx",
       "components/docs/workspace/KnowledgeWorkspaceShell.tsx",
       "components/holding/AddProductLine.tsx",
       "components/holding/RemoveProductLine.tsx",
@@ -2354,6 +2378,14 @@
     "neutral": false,
     "files": [
       "app/(app)/projects/ai-generator/page.tsx"
+    ]
+  },
+  {
+    "message": "Choose 3, 7, or 14 days per sprint. End dates are calculated automatically.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/portfolio/page.tsx"
     ]
   },
   {
@@ -3373,6 +3405,14 @@
     ]
   },
   {
+    "message": "Could not update the document.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/docs/DocumentLifecycleControls.tsx"
+    ]
+  },
+  {
     "message": "Create",
     "translated": true,
     "neutral": false,
@@ -3589,7 +3629,7 @@
     ]
   },
   {
-    "message": "Create the first two-week sprint to start planning work.",
+    "message": "Create the first sprint to start planning work.",
     "translated": true,
     "neutral": false,
     "files": [
@@ -3793,8 +3833,7 @@
     "files": [
       "app/(app)/admin/users/page.tsx",
       "app/(app)/projects/[projectId]/ProjectDetailClient.tsx",
-      "app/(app)/tasks/[taskId]/TaskDetailClient.tsx",
-      "components/docs/DeleteDocumentButton.tsx"
+      "app/(app)/tasks/[taskId]/TaskDetailClient.tsx"
     ]
   },
   {
@@ -3811,30 +3850,6 @@
     "neutral": false,
     "files": [
       "app/(app)/admin/users/page.tsx"
-    ]
-  },
-  {
-    "message": "Delete document",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "components/docs/DeleteDocumentButton.tsx"
-    ]
-  },
-  {
-    "message": "Delete document {name}",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "components/docs/DeleteDocumentButton.tsx"
-    ]
-  },
-  {
-    "message": "Delete document?",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "components/docs/DeleteDocumentButton.tsx"
     ]
   },
   {
@@ -3898,8 +3913,7 @@
     "translated": true,
     "neutral": false,
     "files": [
-      "app/(app)/admin/users/page.tsx",
-      "components/docs/DeleteDocumentButton.tsx"
+      "app/(app)/admin/users/page.tsx"
     ]
   },
   {
@@ -4129,7 +4143,6 @@
     "translated": true,
     "neutral": false,
     "files": [
-      "components/docs/workspace/MarkdownWorkspaceEditor.tsx",
       "components/modernist/overlays/Toast.tsx"
     ]
   },
@@ -4196,6 +4209,14 @@
     "neutral": false,
     "files": [
       "components/docs/workspace/MarkdownWorkspaceEditor.tsx"
+    ]
+  },
+  {
+    "message": "Document lifecycle updated.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/docs/DocumentLifecycleControls.tsx"
     ]
   },
   {
@@ -4353,6 +4374,14 @@
       "components/docs/DocumentationUpload.tsx",
       "components/docs/workspace/UploadedDocumentView.tsx",
       "components/holding/ProductDocumentation.tsx"
+    ]
+  },
+  {
+    "message": "Draft / On Publish",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/docs/DocumentLifecycleControls.tsx"
     ]
   },
   {
@@ -4791,6 +4820,14 @@
     ]
   },
   {
+    "message": "Edit sprint",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
+    ]
+  },
+  {
     "message": "Edit status",
     "translated": true,
     "neutral": false,
@@ -4945,14 +4982,6 @@
     "neutral": false,
     "files": [
       "app/(app)/projects/ai-generator/page.tsx"
-    ]
-  },
-  {
-    "message": "Ends",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
     ]
   },
   {
@@ -5139,14 +5168,6 @@
     "neutral": false,
     "files": [
       "components/modernist/views/VaultHomeView.tsx"
-    ]
-  },
-  {
-    "message": "Every sprint is scheduled as an exact 14-day window. New projects always include at least one sprint.",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "app/(app)/portfolio/page.tsx"
     ]
   },
   {
@@ -5930,7 +5951,6 @@
     "translated": true,
     "neutral": false,
     "files": [
-      "components/docs/workspace/MarkdownWorkspaceEditor.tsx",
       "components/shell/Header.tsx"
     ]
   },
@@ -5989,14 +6009,6 @@
     "neutral": false,
     "files": [
       "components/shell/GlobalSearch.tsx"
-    ]
-  },
-  {
-    "message": "Go to",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "components/docs/workspace/MarkdownWorkspaceEditor.tsx"
     ]
   },
   {
@@ -6404,14 +6416,6 @@
     ]
   },
   {
-    "message": "identity provider (SSO) to keep your account secure",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "components/docs/workspace/MarkdownWorkspaceEditor.tsx"
-    ]
-  },
-  {
     "message": "If an account matches",
     "translated": true,
     "neutral": false,
@@ -6425,14 +6429,6 @@
     "neutral": false,
     "files": [
       "app/(app)/settings/mcp/page.tsx"
-    ]
-  },
-  {
-    "message": "If you’re an administrator, you can reset a user’s password directly from the Admin portal.",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "components/docs/workspace/MarkdownWorkspaceEditor.tsx"
     ]
   },
   {
@@ -6960,14 +6956,6 @@
     ]
   },
   {
-    "message": "Last updated 2m ago",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "components/docs/workspace/MarkdownWorkspaceEditor.tsx"
-    ]
-  },
-  {
     "message": "Late tasks",
     "translated": true,
     "neutral": false,
@@ -7032,14 +7020,6 @@
     ]
   },
   {
-    "message": "Learn how to sign in to NexFellas using your corporate email, configure your profile, and manage your account settings.",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "components/docs/workspace/MarkdownWorkspaceEditor.tsx"
-    ]
-  },
-  {
     "message": "Leave items unpartitioned",
     "translated": true,
     "neutral": false,
@@ -7096,14 +7076,6 @@
       "components/modernist/overlays/CreateProjectDialog.tsx",
       "components/modernist/views/ProjectsView.tsx",
       "components/modernist/views/TimelineView.tsx"
-    ]
-  },
-  {
-    "message": "Light and Dark mode in Settings",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "components/docs/workspace/MarkdownWorkspaceEditor.tsx"
     ]
   },
   {
@@ -7802,14 +7774,6 @@
     ]
   },
   {
-    "message": "Mike Chen",
-    "translated": false,
-    "neutral": true,
-    "files": [
-      "components/docs/workspace/MarkdownWorkspaceEditor.tsx"
-    ]
-  },
-  {
     "message": "milestone",
     "translated": true,
     "neutral": false,
@@ -8295,6 +8259,14 @@
     ]
   },
   {
+    "message": "New sprints",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
+    ]
+  },
+  {
     "message": "New subtask title",
     "translated": true,
     "neutral": false,
@@ -8320,14 +8292,6 @@
     ]
   },
   {
-    "message": "New two-week sprint",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
-    ]
-  },
-  {
     "message": "NexFellas AI",
     "translated": true,
     "neutral": false,
@@ -8341,22 +8305,6 @@
     "neutral": false,
     "files": [
       "components/docs/workspace/ContextInspector.tsx"
-    ]
-  },
-  {
-    "message": "NexFellas uses your company’s",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "components/docs/workspace/MarkdownWorkspaceEditor.tsx"
-    ]
-  },
-  {
-    "message": "NexFellas uses your company’s identity provider (SSO) to keep your account secure and simplify access across all tools.",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "components/docs/workspace/MarkdownWorkspaceEditor.tsx"
     ]
   },
   {
@@ -8426,6 +8374,14 @@
     "neutral": false,
     "files": [
       "app/(app)/activity/page.tsx"
+    ]
+  },
+  {
+    "message": "No archived documents.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/docs/workspace/KnowledgeExplorer.tsx"
     ]
   },
   {
@@ -9227,7 +9183,8 @@
     "translated": true,
     "neutral": false,
     "files": [
-      "app/(app)/portfolio/page.tsx"
+      "app/(app)/portfolio/page.tsx",
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
     ]
   },
   {
@@ -9329,14 +9286,6 @@
     "files": [
       "components/modernist/views/ExecutiveView.tsx",
       "components/modernist/views/PerformanceView.tsx"
-    ]
-  },
-  {
-    "message": "Once you’re signed in, you can customize your profile, configure integrations, and invite team members.",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "components/docs/workspace/MarkdownWorkspaceEditor.tsx"
     ]
   },
   {
@@ -9982,8 +9931,7 @@
     "translated": true,
     "neutral": false,
     "files": [
-      "components/docs/workspace/ContextInspector.tsx",
-      "components/docs/workspace/MarkdownWorkspaceEditor.tsx"
+      "components/docs/workspace/ContextInspector.tsx"
     ]
   },
   {
@@ -10303,7 +10251,6 @@
     "translated": true,
     "neutral": false,
     "files": [
-      "app/(app)/portfolio/page.tsx",
       "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
     ]
   },
@@ -10696,14 +10643,6 @@
     "neutral": false,
     "files": [
       "app/privacy/page.tsx"
-    ]
-  },
-  {
-    "message": "Priya Shah",
-    "translated": false,
-    "neutral": true,
-    "files": [
-      "components/docs/workspace/MarkdownWorkspaceEditor.tsx"
     ]
   },
   {
@@ -11221,11 +11160,43 @@
     ]
   },
   {
+    "message": "Publish document",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/docs/DocumentLifecycleControls.tsx"
+    ]
+  },
+  {
+    "message": "Publish document?",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/docs/DocumentLifecycleControls.tsx"
+    ]
+  },
+  {
+    "message": "Published · Read-only",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/docs/DocumentLifecycleControls.tsx"
+    ]
+  },
+  {
     "message": "Published from the workspace",
     "translated": true,
     "neutral": false,
     "files": [
       "components/docs/PublishedWorkspaceDocs.tsx"
+    ]
+  },
+  {
+    "message": "Publishing makes this document permanently read-only. Its current access stays unchanged.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/docs/DocumentLifecycleControls.tsx"
     ]
   },
   {
@@ -11846,6 +11817,30 @@
     ]
   },
   {
+    "message": "Restore document",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/docs/DocumentLifecycleControls.tsx"
+    ]
+  },
+  {
+    "message": "Restore document?",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/docs/DocumentLifecycleControls.tsx"
+    ]
+  },
+  {
+    "message": "Restore the document to its previous publication state. Published content stays read-only.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/docs/DocumentLifecycleControls.tsx"
+    ]
+  },
+  {
     "message": "Restricted",
     "translated": true,
     "neutral": false,
@@ -11868,6 +11863,7 @@
     "files": [
       "app/(app)/tasks/page.tsx",
       "components/docs/DocumentationUpload.tsx",
+      "components/docs/workspace/KnowledgeExplorer.tsx",
       "components/holding/AddProductLine.tsx"
     ]
   },
@@ -12194,6 +12190,14 @@
     ]
   },
   {
+    "message": "Save sprint schedule",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
+    ]
+  },
+  {
     "message": "Save Status",
     "translated": true,
     "neutral": false,
@@ -12242,6 +12246,7 @@
       "app/(app)/admin/users/page.tsx",
       "app/(app)/profile/[userId]/ProfileClient.tsx",
       "app/(app)/settings/page.tsx",
+      "components/docs/DocumentLifecycleControls.tsx",
       "components/docs/workspace/MarkdownWorkspaceEditor.tsx",
       "components/holding/AddProductLine.tsx",
       "components/status/UserStatusPickerModal.tsx",
@@ -12906,22 +12911,6 @@
     ]
   },
   {
-    "message": "Settings → Appearance",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "components/docs/workspace/MarkdownWorkspaceEditor.tsx"
-    ]
-  },
-  {
-    "message": "Settings → Security",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "components/docs/workspace/MarkdownWorkspaceEditor.tsx"
-    ]
-  },
-  {
     "message": "Shape text",
     "translated": true,
     "neutral": false,
@@ -13060,8 +13049,7 @@
     "translated": true,
     "neutral": false,
     "files": [
-      "components/docs/workspace/ContextInspector.tsx",
-      "components/docs/workspace/MarkdownWorkspaceEditor.tsx"
+      "components/docs/workspace/ContextInspector.tsx"
     ]
   },
   {
@@ -13168,6 +13156,14 @@
     ]
   },
   {
+    "message": "Sprint {number} duration",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/portfolio/page.tsx"
+    ]
+  },
+  {
     "message": "Sprint 1: Architecture & RBAC",
     "translated": true,
     "neutral": false,
@@ -13216,6 +13212,15 @@
     ]
   },
   {
+    "message": "Sprint duration",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/portfolio/page.tsx",
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
+    ]
+  },
+  {
     "message": "Sprint name",
     "translated": true,
     "neutral": false,
@@ -13240,11 +13245,27 @@
     ]
   },
   {
+    "message": "Sprint schedule saved.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
+    ]
+  },
+  {
     "message": "Sprint start",
     "translated": true,
     "neutral": false,
     "files": [
       "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
+    ]
+  },
+  {
+    "message": "Sprint start date",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/portfolio/page.tsx"
     ]
   },
   {
@@ -13561,14 +13582,6 @@
     "neutral": false,
     "files": [
       "components/docs/DocsSearch.tsx"
-    ]
-  },
-  {
-    "message": "Suggested improvement:",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "components/docs/workspace/MarkdownWorkspaceEditor.tsx"
     ]
   },
   {
@@ -14205,8 +14218,7 @@
     "translated": true,
     "neutral": false,
     "files": [
-      "components/docs/workspace/ContextInspector.tsx",
-      "components/docs/workspace/MarkdownWorkspaceEditor.tsx"
+      "components/docs/workspace/ContextInspector.tsx"
     ]
   },
   {
@@ -14218,19 +14230,19 @@
     ]
   },
   {
-    "message": "This cannot be undone.",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "components/docs/DeleteDocumentButton.tsx"
-    ]
-  },
-  {
     "message": "This dashboard is for executives and managers (analytics access required).",
     "translated": true,
     "neutral": false,
     "files": [
       "app/(app)/dashboards/executive/page.tsx"
+    ]
+  },
+  {
+    "message": "This document is unavailable or archived.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/docs/workspace/MarkdownWorkspaceEditor.tsx"
     ]
   },
   {
@@ -14247,6 +14259,14 @@
     "neutral": false,
     "files": [
       "components/docs/workspace/ContextInspector.tsx"
+    ]
+  },
+  {
+    "message": "This draft has no content yet.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/docs/workspace/MarkdownWorkspaceEditor.tsx"
     ]
   },
   {
@@ -14295,22 +14315,6 @@
     "neutral": false,
     "files": [
       "app/(app)/admin/users/page.tsx"
-    ]
-  },
-  {
-    "message": "This permanently removes the uploaded file and its connected Docs entry.",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "components/docs/DeleteDocumentButton.tsx"
-    ]
-  },
-  {
-    "message": "This permanently removes this document and its connected links.",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "components/docs/DeleteDocumentButton.tsx"
     ]
   },
   {
@@ -14455,14 +14459,6 @@
     ]
   },
   {
-    "message": "to match your preference.",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "components/docs/workspace/MarkdownWorkspaceEditor.tsx"
-    ]
-  },
-  {
     "message": "to notify teammates.",
     "translated": true,
     "neutral": false,
@@ -14476,14 +14472,6 @@
     "neutral": false,
     "files": [
       "app/(app)/profile/[userId]/ProfileClient.tsx"
-    ]
-  },
-  {
-    "message": "to update your theme preference at any time.",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "components/docs/workspace/MarkdownWorkspaceEditor.tsx"
     ]
   },
   {
@@ -14863,14 +14851,6 @@
     ]
   },
   {
-    "message": "Update your password under",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "components/docs/workspace/MarkdownWorkspaceEditor.tsx"
-    ]
-  },
-  {
     "message": "Updated",
     "translated": true,
     "neutral": false,
@@ -14951,27 +14931,11 @@
     ]
   },
   {
-    "message": "Use more specific language for clarity.",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "components/docs/workspace/MarkdownWorkspaceEditor.tsx"
-    ]
-  },
-  {
     "message": "Use the AI generator to upload a brief, include Google Sheets links, review the draft, then commit it.",
     "translated": true,
     "neutral": false,
     "files": [
       "app/(app)/portfolio/page.tsx"
-    ]
-  },
-  {
-    "message": "Use your corporate email",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "components/docs/workspace/MarkdownWorkspaceEditor.tsx"
     ]
   },
   {
@@ -15512,14 +15476,6 @@
     "neutral": false,
     "files": [
       "app/reset-password/page.tsx"
-    ]
-  },
-  {
-    "message": "You can switch between",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "components/docs/workspace/MarkdownWorkspaceEditor.tsx"
     ]
   },
   {

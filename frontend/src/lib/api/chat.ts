@@ -53,10 +53,6 @@ export function markChannelRead(channelId: UUID, message_id: UUID) {
   });
 }
 
-export function deleteMessage(messageId: UUID) {
-  return apiFetch<void>(`/chat/messages/${messageId}`, { method: "DELETE" });
-}
-
 export function addReaction(messageId: UUID, emoji: string) {
   return apiFetch<void>(`/chat/messages/${messageId}/reactions`, {
     method: "POST",

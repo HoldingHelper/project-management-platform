@@ -349,7 +349,8 @@ export function createProject(input: {
   sprints?: {
     name: string;
     start_date: string;
-    end_date: string;
+    end_date?: string;
+    duration_days?: number;
     lead_assignee_user_id?: UUID;
   }[];
 }) {
@@ -381,6 +382,7 @@ export function createPhase(input: {
 }
 
 export function createSprint(input: {
+  duration_days?: number;
   project_id: UUID;
   name: string;
   sequence?: number;
@@ -460,4 +462,12 @@ export function createProjectDependency(
 }
 export function deleteProjectDependency(dependencyId: UUID) {
   return apiFetch<void>(`/projects/dependencies/${dependencyId}`, { method: "DELETE" });
+}
+
+
+export function createSprintBatch(projectId: UUID, input: { name: string; start_date: string; duration_days: number; count: number }) {
+  return apiFetch<PhaseRead[]>(`/projects/${projectId}/sprints/batch`, { method: "POST", body: input });
+}
+export function updateSprint(id: UUID, input: { name?: string; start_date?: string; duration_days?: number }) {
+  return apiFetch<PhaseRead>(`/sprints/${id}`, { method: "PUT", body: input });
 }

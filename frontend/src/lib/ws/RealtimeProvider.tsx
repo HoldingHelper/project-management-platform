@@ -13,6 +13,7 @@ import {
   useRef,
   type ReactNode,
 } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { getAccessToken } from "@/lib/auth/token-store";
 import { useAuth } from "@/lib/auth/AuthProvider";
 
@@ -36,6 +37,7 @@ const RealtimeContext = createContext<RealtimeApi | null>(null);
 
 export function RealtimeProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const socketRef = useRef<WebSocket | null>(null);
   const groupsRef = useRef<Map<string, number>>(new Map());
   const listenersRef = useRef<Map<string, Set<Listener>>>(new Map());
@@ -83,6 +85,20 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
       try {
         const parsed = JSON.parse(ev.data) as RealtimeEvent;
         if (!parsed?.event) return;
+        if (parsed.event === "docs.lifecycle") {
+          const pageId = String(parsed.data.page_id ?? "");
+          if (pageId) {
+            if (parsed.data.status === "archived" && !user?.roles.includes("SuperAdmin")) {
+              void queryClient.resetQueries({ queryKey: ["doc-page", pageId] });
+            } else {
+              void queryClient.invalidateQueries({ queryKey: ["doc-page", pageId] });
+            }
+            void queryClient.invalidateQueries({ queryKey: ["document-lifecycle"] });
+            for (const key of ["doc-pages", "doc-archived", "entity-files", "entity-doc-links", "product-documentation"]) {
+              void queryClient.invalidateQueries({ queryKey: [key] });
+            }
+          }
+        }
         listenersRef.current.get(parsed.event)?.forEach((fn) => fn(parsed));
         listenersRef.current.get("*")?.forEach((fn) => fn(parsed));
       } catch {
@@ -99,7 +115,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
     ws.onerror = () => {
       /* onclose handles retry */
     };
-  }, []);
+  }, [queryClient, user]);
 
   useEffect(() => {
     if (!user) return;

@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime
-from typing import List, Optional
+from datetime import date, datetime, timedelta
+from typing import List, Optional, Literal
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -76,19 +76,36 @@ class MembershipPersonRead(BaseModel):
     is_active: bool
 
 
-class ProjectSprintCreate(BaseModel):
-    """A new delivery sprint. Sprint dates are inclusive and span 14 days."""
+SprintDuration = Literal[3, 7, 14]
 
+
+class ProjectSprintCreate(BaseModel):
+    """Inclusive sprint dates; end_date is derived from start and duration."""
     name: str = Field(min_length=1, max_length=200)
     start_date: date
-    end_date: date
+    duration_days: Optional[SprintDuration] = None
+    end_date: Optional[date] = None
     lead_assignee_user_id: Optional[UUID] = None
 
     @model_validator(mode="after")
-    def validate_two_week_window(self) -> "ProjectSprintCreate":
-        if (self.end_date - self.start_date).days != 13:
-            raise ValueError("A sprint must span exactly 14 calendar days.")
+    def calculate_end(self) -> "ProjectSprintCreate":
+        duration = self.duration_days
+        if duration is None:
+            duration = (self.end_date - self.start_date).days + 1 if self.end_date else 14
+        if duration not in (3, 7, 14):
+            raise ValueError("Sprint duration must be 3, 7, or 14 days.")
+        calculated = self.start_date + timedelta(days=duration - 1)
+        if self.end_date is not None and self.end_date != calculated:
+            raise ValueError("Sprint end date is calculated from its start and duration.")
+        self.duration_days, self.end_date = duration, calculated
         return self
+
+
+class SprintBatchCreate(BaseModel):
+    start_date: date
+    count: int = Field(default=1, ge=1, le=52)
+    duration_days: SprintDuration = 14
+    name: str = Field(default="Sprint", min_length=1, max_length=180)
 
 
 class ProjectChecklistItem(BaseModel):
@@ -209,6 +226,7 @@ class ProjectAdminTransfer(BaseModel):
 
 # ---------- Phase ----------
 class PhaseCreate(BaseModel):
+    duration_days: Optional[SprintDuration] = None
     project_id: UUID
     name: str = Field(min_length=1, max_length=200)
     phase_type: PhaseType = PhaseType.DEVELOPMENT
@@ -220,6 +238,7 @@ class PhaseCreate(BaseModel):
 
 
 class PhaseUpdate(BaseModel):
+    duration_days: Optional[SprintDuration] = None
     name: Optional[str] = None
     phase_type: Optional[PhaseType] = None
     sequence: Optional[int] = None
@@ -230,6 +249,7 @@ class PhaseUpdate(BaseModel):
 
 
 class PhaseRead(BaseModel):
+    duration_days: int = 14
     model_config = ConfigDict(from_attributes=True)
     id: UUID
     project_id: UUID

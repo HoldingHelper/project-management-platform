@@ -373,6 +373,7 @@ export interface ProjectRead {
 }
 
 export interface PhaseRead {
+  duration_days?: number;
   id: UUID;
   project_id: UUID;
   name: string;

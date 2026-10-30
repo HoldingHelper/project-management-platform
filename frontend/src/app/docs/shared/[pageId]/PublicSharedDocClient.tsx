@@ -18,6 +18,7 @@ export default function PublicSharedDocClient() {
     queryFn: () => getPublicDocPage(pageId),
     enabled: Boolean(pageId),
     retry: 1,
+    refetchInterval: 15000,
   });
 
   return (

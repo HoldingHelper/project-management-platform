@@ -54,7 +54,7 @@ async def index_upload(db, attachment):
     async def folder(slug, title, parent, kind, entity_id):
         page = (await db.execute(select(DocPage).where(DocPage.space_id == space.id, DocPage.slug == slug))).scalar_one_or_none()
         if page is None:
-            page = DocPage(space_id=space.id, slug=slug, title=title[:240], parent_page_id=parent.id if parent else None, content="", content_json={"upload_folder": True}, status="internal", visibility="inherit", created_by=actor_id, updated_by=actor_id, source_entity_type=kind, source_entity_id=entity_id)
+            page = DocPage(space_id=space.id, slug=slug, title=title[:240], parent_page_id=parent.id if parent else None, content="", content_json={"upload_folder": True}, status="draft", visibility="inherit", created_by=actor_id, updated_by=actor_id, source_entity_type=kind, source_entity_id=entity_id)
             db.add(page)
             await db.flush()
         elif page.title != title[:240]:
@@ -71,11 +71,13 @@ async def index_upload(db, attachment):
     if task:
         parent = await folder(f"tasks-{project.id if project else task.id}", "Tasks", parent, "project" if project else "task", project.id if project else task.id)
         parent = await folder(f"task-{task.id}", task.title, parent, "task", task.id)
+    if existing and existing.status in {"published", "archived"}:
+        return existing
     if existing:
         existing.space_id = space.id
         existing.parent_page_id = parent.id if parent else None
         return existing
-    page = DocPage(space_id=space.id, parent_page_id=parent.id if parent else None, title=attachment.file_name[:240], slug=f"upload-{attachment.id}", excerpt=f"Uploaded file · {attachment.file_name}"[:500], content=f"Uploaded documentation: {attachment.file_name}\n\nUse Download below to open the original file.", content_json={}, status="internal", visibility="inherit", created_by=actor_id, updated_by=actor_id, source_attachment_id=attachment.id, source_entity_type=attachment.entity_type, source_entity_id=attachment.entity_id)
+    page = DocPage(space_id=space.id, parent_page_id=parent.id if parent else None, title=attachment.file_name[:240], slug=f"upload-{attachment.id}", excerpt=f"Uploaded file · {attachment.file_name}"[:500], content=f"Uploaded documentation: {attachment.file_name}\n\nUse Download below to open the original file.", content_json={}, status="draft", visibility="inherit", created_by=actor_id, updated_by=actor_id, source_attachment_id=attachment.id, source_entity_type=attachment.entity_type, source_entity_id=attachment.entity_id)
     db.add(page)
     await db.flush()
     db.add(DocAttachment(page_id=page.id, file_name=attachment.file_name, file_url="", mime_type=attachment.content_type, uploaded_by=actor_id, storage_key=attachment.storage_key, size_bytes=attachment.size_bytes))

@@ -166,7 +166,7 @@ MCP_TOOLS: list[dict[str, Any]] = [
     ),
     _tool(
         "pmp_projects_create",
-        "Create a project as the connected user, including its required 14-day sprints.",
+        "Create a project as the connected user, including 3-, 7-, or 14-day sprints.",
         {
             "product_id": {"type": "string", "format": "uuid"},
             "name": {"type": "string"},
@@ -174,7 +174,7 @@ MCP_TOOLS: list[dict[str, Any]] = [
             "priority": {"type": "string", "enum": ["P0", "P1", "P2", "P3"]},
             "risk_level": {"type": "string", "enum": ["Low", "Medium", "High", "Critical"]},
             "start_date": {"type": "string", "format": "date"},
-            "end_date": {"type": "string", "format": "date"},
+            "end_date": {"type": "string", "format": "date", "description": "Calculated from the sprint schedule."},
             "estimated_completion_date": {"type": "string", "format": "date"},
             "status": {"type": "string", "enum": ["not-started", "in-progress", "on-hold", "completed", "cancelled", "archived"]},
             "tags": {"type": "array", "items": {"type": "string"}},
@@ -185,10 +185,11 @@ MCP_TOOLS: list[dict[str, Any]] = [
                     "properties": {
                         "name": {"type": "string"},
                         "start_date": {"type": "string", "format": "date"},
-                        "end_date": {"type": "string", "format": "date"},
+                        "end_date": {"type": "string", "format": "date", "description": "Calculated; omit when providing duration_days."},
+                        "duration_days": {"type": "integer", "enum": [3, 7, 14]},
                         "lead_assignee_user_id": {"type": "string", "format": "uuid"},
                     },
-                    "required": ["name", "start_date", "end_date"],
+                    "required": ["name", "start_date"],
                     "additionalProperties": False,
                 },
             },
@@ -234,17 +235,18 @@ MCP_TOOLS: list[dict[str, Any]] = [
     ),
     _tool(
         "pmp_sprints_create",
-        "Create a 14-day sprint in an accessible project.",
+        "Create a 3-, 7-, or 14-day sprint. End dates are calculated automatically.",
         {
             "project_id": {"type": "string", "format": "uuid"},
             "name": {"type": "string"},
             "sequence": {"type": "integer"},
             "start_date": {"type": "string", "format": "date"},
-            "end_date": {"type": "string", "format": "date"},
+            "end_date": {"type": "string", "format": "date", "description": "Calculated; omit when providing duration_days."},
+            "duration_days": {"type": "integer", "enum": [3, 7, 14]},
             "lead_assignee_user_id": {"type": "string", "format": "uuid"},
             "team_ids": {"type": "array", "items": {"type": "string", "format": "uuid"}},
         },
-        ["project_id", "name", "start_date", "end_date"],
+        ["project_id", "name", "start_date"],
     ),
     _tool(
         "pmp_sprints_update",
@@ -254,7 +256,8 @@ MCP_TOOLS: list[dict[str, Any]] = [
             "name": {"type": "string"},
             "sequence": {"type": "integer"},
             "start_date": {"type": "string", "format": "date"},
-            "end_date": {"type": "string", "format": "date"},
+            "end_date": {"type": "string", "format": "date", "description": "Calculated; omit when providing duration_days."},
+            "duration_days": {"type": "integer", "enum": [3, 7, 14]},
             "status": {"type": "string", "enum": ["not-started", "in-progress", "blocked", "completed", "delayed"]},
             "lead_assignee_user_id": {"type": "string", "format": "uuid"},
         },
@@ -849,7 +852,8 @@ async def execute_mcp_tool(name: str, args: dict[str, Any], user: CurrentUser) -
                 name=args["name"],
                 sequence=int(args.get("sequence", 0)),
                 start_date=args["start_date"],
-                end_date=args["end_date"],
+                end_date=args.get("end_date"),
+                duration_days=args.get("duration_days"),
                 lead_assignee_user_id=(
                     UUID(args["lead_assignee_user_id"])
                     if args.get("lead_assignee_user_id")
@@ -865,7 +869,7 @@ async def execute_mcp_tool(name: str, args: dict[str, Any], user: CurrentUser) -
             await authorize_entity_access(db, user, "phase", sprint_id)
             changes = {
                 field: args[field]
-                for field in ("name", "sequence", "start_date", "end_date", "status")
+                for field in ("name", "sequence", "start_date", "end_date", "duration_days", "status")
                 if field in args
             }
             if "lead_assignee_user_id" in args:

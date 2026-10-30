@@ -4,6 +4,8 @@ import { useI18n } from "@/lib/i18n/I18nProvider";
 import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 import { UploadWorkspaces } from "./UploadWorkspaces";
+import { useAuth } from "@/lib/auth/AuthProvider";
+import { apiFetch } from "@/lib/api/client";
 import { useState } from "react";
 import {
   BookOpen,
@@ -36,6 +38,9 @@ const DEFAULT_CATEGORIES = [
 export function KnowledgeExplorer({ onNewPage }: { onNewPage?: (spaceId?: string) => void }) {
   const { t: translateUI } = useI18n();
 
+  const { isSuperAdmin } = useAuth();
+  const [showArchived, setShowArchived] = useState(false);
+  const archived = useQuery({ queryKey: ["doc-archived"], queryFn: () => apiFetch<DocPageSummary[]>("/docs/archived"), enabled: isSuperAdmin() && showArchived });
   const { openTab, tabs, activeTabId } = useKnowledgeWorkspace();
   const [activeTab, setActiveTab] = useState<"spaces" | "tags">("spaces");
   const [searchQuery, setSearchQuery] = useState("");
@@ -202,6 +207,14 @@ export function KnowledgeExplorer({ onNewPage }: { onNewPage?: (spaceId?: string
         >{" "}<LocalizedText message={"Tags"} />{" "}</button>
       </div>
 
+      {isSuperAdmin() && <div style={{ padding: 10 }}>
+        <button type="button" onClick={() => setShowArchived((value) => !value)} aria-expanded={showArchived}>{translateUI("Archived documents")}</button>
+        {showArchived && <div>
+          {archived.isError && <button type="button" onClick={() => archived.refetch()}>{translateUI("Retry")}</button>}
+          {archived.data?.length === 0 && <p>{translateUI("No archived documents.")}</p>}
+          {(archived.data ?? []).map((page) => <button type="button" key={page.id} style={{ display: "block", padding: 8, textAlign: "start" }} onClick={() => openTab({ id: page.id, pageId: page.id, spaceId: page.space_id, title: page.title, viewMode: "editor" })}>{page.title}</button>)}
+        </div>}
+      </div>}
       {/* Navigation Tree */}
       <nav
         aria-label={translateUI("Knowledge Base Navigation")}

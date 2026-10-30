@@ -60,6 +60,12 @@ def has_global_docs_access(user: CurrentUser, action: str) -> bool:
 
 
 async def can_access(db: AsyncSession, user: CurrentUser, resource_type: str, resource_id: UUID, action: str) -> bool:
+    if resource_type == "page":
+        page = await repo.get_page(db, resource_id)
+        if not page or (page.status == "archived" and not user.is_super_admin()):
+            return False
+        if action in {"edit", "manage"} and page.status not in {"draft", "internal"}:
+            return False
     from app.modules.docs.upload_library import managed_access
     managed = await managed_access(db, user, resource_type, resource_id, action)
     if managed is not None:
@@ -98,6 +104,8 @@ async def can_access(db: AsyncSession, user: CurrentUser, resource_type: str, re
 
 
 async def _page_visible(db: AsyncSession, user: CurrentUser, page: DocPage, space: DocSpace) -> bool:
+    if page.status == "archived":
+        return user.is_super_admin()
     from app.modules.docs.upload_library import managed_access
     if space.product_id or space.task_id:
         return bool(await managed_access(db, user, "page", page.id))
@@ -120,6 +128,8 @@ async def _page_visible(db: AsyncSession, user: CurrentUser, page: DocPage, spac
 
 
 async def _page_editable(db: AsyncSession, user: CurrentUser, page: DocPage) -> bool:
+    if page.status not in {"draft", "internal"}:
+        return False
     from app.modules.docs.upload_library import managed_access
     space = await repo.get_space(db, page.space_id)
     if space and (space.product_id or space.task_id):
@@ -212,7 +222,7 @@ async def list_pages(db: AsyncSession, user: CurrentUser, space_id: UUID | None 
     result = []
     for page in pages:
         space = await repo.get_space(db, page.space_id)
-        if space and await _page_visible(db, user, page, space):
+        if page.status != "archived" and space and await _page_visible(db, user, page, space):
             result.append(PageSummary.model_validate(page, from_attributes=True))
     return result
 
@@ -221,7 +231,7 @@ async def search_pages(db: AsyncSession, user: CurrentUser, query: str, category
     result: list[PageSummary] = []
     for page in await repo.search_pages(db, query, category=category):
         space = await repo.get_space(db, page.space_id)
-        if space and await _page_visible(db, user, page, space):
+        if page.status != "archived" and space and await _page_visible(db, user, page, space):
             result.append(PageSummary.model_validate(page, from_attributes=True))
     return result
 
@@ -231,7 +241,7 @@ async def list_personal_pages(db: AsyncSession, user: CurrentUser, kind: str, ca
     result: list[PageSummary] = []
     for page in pages:
         space = await repo.get_space(db, page.space_id)
-        if space and await _page_visible(db, user, page, space):
+        if page.status != "archived" and space and await _page_visible(db, user, page, space):
             result.append(PageSummary.model_validate(page, from_attributes=True))
     return result
 
@@ -255,7 +265,7 @@ async def get_page(db: AsyncSession, user: CurrentUser, page_id: UUID) -> PageRe
 
 
 async def update_page(db: AsyncSession, user: CurrentUser, page_id: UUID, payload: PageUpdate) -> PageRead:
-    page = await repo.get_page(db, page_id)
+    page = await _locked_page(db, page_id)
     if not page:
         raise NotFoundError("Documentation page", page_id)
     if not await _page_editable(db, user, page):
@@ -267,14 +277,6 @@ async def update_page(db: AsyncSession, user: CurrentUser, page_id: UUID, payloa
         if payload.visibility not in (None, "inherit", "private") or ("parent_page_id" in payload.model_fields_set and payload.parent_page_id != page.parent_page_id):
             raise ValidationAppError("Uploaded documentation must stay in its source workspace and folder.")
     changes = payload.model_dump(exclude_unset=True)
-    requested_visibility = changes.get("visibility")
-    if requested_visibility == "public":
-        if not (user.is_super_admin() or has_global_docs_access(user, "publish") or await can_access(db, user, "page", page.id, "manage")):
-            raise ForbiddenError("Only a documentation publisher or manager can make this page public.")
-        page.status = "published"
-    elif requested_visibility is not None and page.status == "published":
-        page.status = "internal"
-
     if "responsible_user_id" in changes and changes["responsible_user_id"] != page.responsible_user_id:
         if not (user.is_super_admin() or user.has_permission("docs.manage") or await can_access(db, user, "page", page.id, "manage") or (page.responsible_user_id == user.user_id)):
             raise ForbiddenError("Only the current page owner or documentation manager can reassign page responsibility.")
@@ -296,7 +298,7 @@ async def update_page(db: AsyncSession, user: CurrentUser, page_id: UUID, payloa
 
 
 async def move_page(db: AsyncSession, user: CurrentUser, page_id: UUID, payload: PageMove) -> PageRead:
-    page = await repo.get_page(db, page_id)
+    page = await _locked_page(db, page_id)
     if not page:
         raise NotFoundError("Documentation page", page_id)
     if not await _page_editable(db, user, page):
@@ -319,6 +321,8 @@ async def move_page(db: AsyncSession, user: CurrentUser, page_id: UUID, payload:
     insertion = siblings.index(before) if before in siblings else len(siblings)
     siblings.insert(insertion, page)
     page.parent_page_id = payload.parent_page_id
+    if any(sibling.status not in {"draft", "internal"} and sibling.position != index * 10 for index, sibling in enumerate(siblings)):
+        raise ForbiddenError("Published documents cannot be reordered.")
     for index, sibling in enumerate(siblings):
         sibling.position = index * 10
     page.updated_by = user.user_id
@@ -328,27 +332,7 @@ async def move_page(db: AsyncSession, user: CurrentUser, page_id: UUID, payload:
 
 
 async def delete_page(db: AsyncSession, user: CurrentUser, page_id: UUID) -> None:
-    page = await repo.get_page(db, page_id)
-    if not page:
-        raise NotFoundError("Documentation page", page_id)
-    from app.modules.docs.deletion import require_page_delete_access
-    await require_page_delete_access(db, user, page)
-    if page.source_attachment_id:
-        from app.modules.collaboration.document_deletion import delete_document
-        await delete_document(db, user, page.source_attachment_id)
-        return
-    if page.source_entity_type:
-        raise ForbiddenError("Upload folders are managed automatically. Delete individual documents instead.")
-    keys = {item.storage_key for item in await repo.list_attachments(db, page_id) if item.storage_key}
-    await db.delete(page)
-    await db.commit()
-    import asyncio
-    import logging
-    for key in keys:
-        try:
-            await asyncio.to_thread(file_storage_service.delete, key)
-        except Exception:
-            logging.getLogger(__name__).exception("Could not clean up deleted Docs attachment storage")
+    raise ForbiddenError("Documents cannot be deleted. Archive the document instead.")
 
 
 async def list_revisions(db: AsyncSession, user: CurrentUser, page_id: UUID) -> list[RevisionRead]:
@@ -357,7 +341,7 @@ async def list_revisions(db: AsyncSession, user: CurrentUser, page_id: UUID) -> 
 
 
 async def restore_revision(db: AsyncSession, user: CurrentUser, page_id: UUID, revision_id: UUID) -> PageRead:
-    page = await repo.get_page(db, page_id)
+    page = await _locked_page(db, page_id)
     revision = await repo.get_revision(db, revision_id)
     if not page or not revision or revision.page_id != page_id:
         raise NotFoundError("Documentation revision", revision_id)
@@ -385,7 +369,7 @@ async def list_attachments(db: AsyncSession, user: CurrentUser, page_id: UUID) -
 
 async def add_attachment(db: AsyncSession, user: CurrentUser, page_id: UUID, payload: AttachmentCreate) -> AttachmentRead:
     await get_page(db, user, page_id)
-    page = await repo.get_page(db, page_id)
+    page = await _locked_page(db, page_id)
     if not page or not await _page_editable(db, user, page):
         raise ForbiddenError("You do not have permission to attach files.")
     attachment = DocAttachment(page_id=page_id, uploaded_by=user.user_id, **payload.model_dump())
@@ -418,7 +402,7 @@ async def upload_attachment(
     content: BinaryIO,
     size_bytes: int,
 ) -> AttachmentRead:
-    page = await repo.get_page(db, page_id)
+    page = await _locked_page(db, page_id)
     if not page or not await _page_editable(db, user, page):
         raise ForbiddenError("You do not have permission to attach files.")
     if size_bytes <= 0 or size_bytes > 25 * 1024 * 1024:
@@ -449,7 +433,7 @@ async def attachment_download_url(
         raise NotFoundError("Documentation attachment", attachment_id)
     await get_page(db, user, attachment.page_id)
     if attachment.storage_key:
-        return file_storage_service.presigned_url(attachment.storage_key)
+        return f"/api/v1/docs/attachments/{attachment.id}/download"
     if attachment.file_url:
         return attachment.file_url
     raise NotFoundError("Documentation attachment file", attachment_id)
@@ -462,7 +446,7 @@ async def list_links(db: AsyncSession, user: CurrentUser, page_id: UUID) -> list
 
 async def add_link(db: AsyncSession, user: CurrentUser, page_id: UUID, payload: LinkCreate) -> LinkRead:
     await get_page(db, user, page_id)
-    page = await repo.get_page(db, page_id)
+    page = await _locked_page(db, page_id)
     if not page or not await _page_editable(db, user, page):
         raise ForbiddenError("You do not have permission to link this page.")
     if payload.entity_type == "product":
@@ -509,7 +493,7 @@ async def delete_link(
     link = await repo.get_link(db, link_id)
     if link is None or link.page_id != page_id:
         raise NotFoundError("Documentation link", link_id)
-    page = await repo.get_page(db, page_id)
+    page = await _locked_page(db, page_id)
     if page is None or not await _page_editable(db, user, page):
         raise ForbiddenError("You do not have permission to unlink this page.")
     if link.entity_type == "product":
@@ -518,22 +502,79 @@ async def delete_link(
     await db.commit()
 
 
-async def set_published(db: AsyncSession, user: CurrentUser, page_id: UUID, published: bool) -> PageRead:
+async def _locked_page(db, page_id):
+    page = (await db.execute(select(DocPage).where(DocPage.id == page_id).with_for_update().execution_options(populate_existing=True))).scalar_one_or_none()
+    if page is None:
+        raise NotFoundError("Documentation page", page_id)
+    return page
+
+
+async def lifecycle_permissions(db, user, page_id):
     page = await repo.get_page(db, page_id)
     if not page:
         raise NotFoundError("Documentation page", page_id)
-    if not (user.is_super_admin() or has_global_docs_access(user, "publish")):
-        raise ForbiddenError("Only a documentation publisher can publish or unpublish this page.")
-    if not await _page_editable(db, user, page):
-        raise ForbiddenError("You do not have permission to publish this page.")
     space = await repo.get_space(db, page.space_id)
-    if space and (space.product_id or space.task_id):
-        raise ForbiddenError("Uploaded work documentation cannot be published publicly.")
-    page.status = "published" if published else "internal"
-    page.visibility = "public" if published else ("inherit" if page.visibility == "public" else page.visibility)
+    if not space or not await _page_visible(db, user, page, space):
+        raise NotFoundError("Documentation page", page_id)
+    managed_folder = bool(page.source_entity_type and not page.source_attachment_id)
+    writable_token = user.allow_role_bypass or user.has_any_permission("docs.edit", "docs.manage")
+    return {
+        "page_id": str(page.id), "status": page.status,
+        "can_edit": await _page_editable(db, user, page),
+        "can_publish": page.status in {"draft", "internal"} and await _page_editable(db, user, page) and (user.is_super_admin() or has_global_docs_access(user, "publish")),
+        "can_archive": not managed_folder and page.status != "archived" and (user.is_super_admin() or (page.created_by == user.user_id and writable_token)),
+        "can_restore": page.status == "archived" and user.is_super_admin(),
+    }
+
+
+async def _notify_lifecycle(page):
+    # Invalidation only: no document titles, content, or author details in frames.
+    from app.core.websocket_manager import connection_manager, PRESENCE_GROUP
+    try:
+        await connection_manager.broadcast_to_group(PRESENCE_GROUP, "docs.lifecycle", {"page_id": str(page.id), "status": page.status})
+    except Exception:
+        import logging
+        logging.getLogger(__name__).exception("Could not broadcast document lifecycle invalidation")
+
+
+async def set_archived(db, user, page_id, archived=True):
+    page = await _locked_page(db, page_id)
+    if archived:
+        if page.source_entity_type and not page.source_attachment_id:
+            raise ForbiddenError("Managed folders cannot be archived. Archive individual documents instead.")
+        if not (user.is_super_admin() or (page.created_by == user.user_id and (user.allow_role_bypass or user.has_any_permission("docs.edit", "docs.manage")))):
+            raise ForbiddenError("Only the document author or a Super Admin can archive it.")
+        if page.status != "archived":
+            page.archived_from_status = "draft" if page.status in {"draft", "internal"} else "published"
+            page.status = "archived"
+    else:
+        if not user.is_super_admin():
+            raise ForbiddenError("Only a Super Admin can restore archived documents.")
+        if page.status != "archived":
+            raise ValidationAppError("Only archived documents can be restored.")
+        page.status = page.archived_from_status or "published"
+        page.archived_from_status = None
     page.updated_by = user.user_id
     await db.commit()
     await db.refresh(page)
+    await _notify_lifecycle(page)
+    return PageRead.model_validate(page)
+
+
+async def set_published(db: AsyncSession, user: CurrentUser, page_id: UUID, published: bool) -> PageRead:
+    if not published:
+        raise ForbiddenError("Published documents cannot return to draft. Archive the document instead.")
+    page = await _locked_page(db, page_id)
+    if not (user.is_super_admin() or has_global_docs_access(user, "publish")):
+        raise ForbiddenError("Only a documentation publisher can publish this page.")
+    if not await _page_editable(db, user, page):
+        raise ForbiddenError("Only draft documents can be published.")
+    # Publication locks content; it does not grant public or wider access.
+    page.status = "published"
+    page.updated_by = user.user_id
+    await db.commit()
+    await db.refresh(page)
+    await _notify_lifecycle(page)
     return PageRead.model_validate(page)
 
 
@@ -619,7 +660,7 @@ async def list_comments(db: AsyncSession, user: CurrentUser, page_id: UUID) -> l
 
 async def get_page_backlinks(db: AsyncSession, user: CurrentUser, page_id: UUID) -> list[RelationRead]:
     await get_page(db, user, page_id)
-    return await list_backlinks(db, page_id)
+    return await list_backlinks(db, user, page_id)
 
 
 async def get_wikilink_autocomplete(
@@ -628,7 +669,7 @@ async def get_wikilink_autocomplete(
     query: str,
     space_id: UUID | None = None,
 ) -> list[dict]:
-    return await wikilink_suggestions(db, query, space_id=space_id)
+    return await wikilink_suggestions(db, user, query)
 
 
 async def list_tags(db: AsyncSession, user: CurrentUser) -> list[TagRead]:
@@ -644,7 +685,7 @@ async def add_page_tag(
     page_id: UUID,
     tag_name: str,
 ) -> None:
-    page = await repo.get_page(db, page_id)
+    page = await _locked_page(db, page_id)
     if not page:
         raise NotFoundError("Documentation page", page_id)
     if not await _page_editable(db, user, page):
@@ -676,7 +717,7 @@ async def remove_page_tag(
     page_id: UUID,
     tag_name: str,
 ) -> None:
-    page = await repo.get_page(db, page_id)
+    page = await _locked_page(db, page_id)
     if not page:
         raise NotFoundError("Documentation page", page_id)
     if not await _page_editable(db, user, page):

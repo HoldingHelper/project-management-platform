@@ -107,20 +107,6 @@ async def mark_read(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@chat_router.delete(
-    "/messages/{message_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-    response_model=None,
-)
-async def delete_message(
-    message_id: UUID,
-    current_user: CurrentUser = Depends(_chat_access),
-    db: AsyncSession = Depends(get_db),
-) -> Response:
-    await service.delete_message(db, message_id, current_user.user_id)
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-
 @chat_router.post(
     "/messages/{message_id}/reactions",
     status_code=status.HTTP_204_NO_CONTENT,

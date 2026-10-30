@@ -1,4 +1,5 @@
 "use client";
+import { sprintSchedule, SPRINT_DURATIONS } from "@/lib/sprint-schedule";
 
 import { LocalizedRelativeTime } from "@/lib/i18n/I18nProvider";
 
@@ -35,7 +36,7 @@ import {
   addProjectMember,
   archiveProject,
   createMilestone,
-  createSprint,
+  createSprint, createSprintBatch, updateSprint,
   deleteProject,
   getSprintProgress,
   getSprintTasks,
@@ -442,6 +443,14 @@ function EditProjectModal({
   }, [open, linkedDocs.data]);
 
   const plannedDatesLocked = Boolean(project.start_date && project.end_date);
+  const editSprints = useQuery({ queryKey: ["project-phases", project.id], queryFn: () => getProjectSprints(project.id), enabled: open && !plannedDatesLocked });
+  useEffect(() => {
+    if (plannedDatesLocked || !open || !editSprints.data) return;
+    const durations = editSprints.data.length ? editSprints.data.map((phase) => phase.duration_days ?? 14) : [14];
+    const end = sprintSchedule(form.start_date, durations).at(-1)?.end_date ?? "";
+    setForm((current) => current.end_date === end ? current : { ...current, end_date: end });
+  }, [plannedDatesLocked, open, editSprints.data, form.start_date]);
+
 
   const save = useMutation({
     mutationFn: async () => {
@@ -560,7 +569,7 @@ function EditProjectModal({
               <TextInput type="date" value={form.start_date} onChange={(e) => setForm((f) => ({ ...f, start_date: e.target.value }))} disabled={plannedDatesLocked} />
             </Field>
             <Field label={translateUI("Planned end")}>
-              <TextInput type="date" value={form.end_date} onChange={(e) => setForm((f) => ({ ...f, end_date: e.target.value }))} disabled={plannedDatesLocked} />
+              <TextInput type="date" value={form.end_date} readOnly aria-readonly="true" disabled={plannedDatesLocked} />
             </Field>
             <Field label={translateUI("Actual end date")}>
               <TextInput type="date" value={form.actual_completion_date} onChange={(e) => setForm((f) => ({ ...f, actual_completion_date: e.target.value }))} disabled={!form.start_date || !form.end_date} />
@@ -1061,6 +1070,11 @@ function BoardTab({
   const [selectedTaskId, setSelectedTaskId] = useState<UUID | null>(null);
   const [phaseName, setPhaseName] = useState("");
   const [sprintStart, setSprintStart] = useState(new Date().toISOString().slice(0, 10));
+  const [sprintDuration, setSprintDuration] = useState("14");
+  const [sprintCount, setSprintCount] = useState("1");
+  const [editingSprint, setEditingSprint] = useState<UUID | null>(null);
+  const newSchedule = sprintSchedule(sprintStart, Array.from({ length: Math.max(1, Math.min(52, Number(sprintCount) || 1)) }, () => Number(sprintDuration)));
+
 
   const phases = useQuery({ queryKey: ["phases", projectId], queryFn: () => getProjectSprints(projectId) });
 
@@ -1132,24 +1146,23 @@ function BoardTab({
   });
 
   const addPhase = useMutation({
-    mutationFn: () =>
-      createSprint({
-        project_id: projectId as UUID,
-        name: phaseName,
-        sequence: (phases.data?.length ?? 0) + 1,
-        start_date: sprintStart,
-        end_date: addDaysIso(sprintStart, 13),
-      }),
+    mutationFn: async () => editingSprint
+      ? [await updateSprint(editingSprint, { name: phaseName.trim(), start_date: sprintStart, duration_days: Number(sprintDuration) })]
+      : createSprintBatch(projectId as UUID, { name: phaseName.trim(), start_date: sprintStart, duration_days: Number(sprintDuration), count: Number(sprintCount) }),
     onSuccess: () => {
-      toast.push("Two-week sprint created.", "success");
+      toast.push(translateUI("Sprint schedule saved."), "success");
       setNewPhaseOpen(false);
       setPhaseName("");
-      phases.refetch();
+      qc.invalidateQueries({ queryKey: ["phases", projectId] });
+      qc.invalidateQueries({ queryKey: ["project-phases", projectId] });
+      qc.invalidateQueries({ queryKey: ["project-overview", projectId] });
+      qc.invalidateQueries({ queryKey: ["project-timeline", projectId] });
     },
     onError: (error) => toast.push(error instanceof AppError ? error.message : "Could not create sprint.", "error"),
   });
 
   const openNewSprint = () => {
+    setEditingSprint(null); setSprintCount("1"); setSprintDuration("14"); setPhaseName(`Sprint ${(phases.data?.length ?? 0) + 1}`);
     const lastEnd = [...(phases.data ?? [])]
       .filter((sprint) => sprint.end_date)
       .sort((left, right) => String(left.end_date).localeCompare(String(right.end_date)))
@@ -1212,6 +1225,11 @@ function BoardTab({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       {error && <ErrorState message={error} />}
+      {canManage && activePhase && <Button variant="tertiary" size="sm" onClick={() => {
+        setEditingSprint(activePhase.id); setPhaseName(activePhase.name); setSprintCount("1");
+        setSprintStart(activePhase.start_date ?? new Date().toISOString().slice(0, 10));
+        setSprintDuration(String(activePhase.duration_days ?? 14)); setNewPhaseOpen(true);
+      }}>{translateUI("Edit sprint")}</Button>}
 
       {phases.isLoading ? (
         <Spinner />
@@ -1229,7 +1247,7 @@ function BoardTab({
             flexWrap: "wrap",
           }}
         >
-          <EmptyState title={translateUI("No sprints yet")} hint={canManage ? localizeAttribute("Create the first two-week sprint to start planning work.") : localizeAttribute("An administrator needs to create a sprint first.")} />
+          <EmptyState title={translateUI("No sprints yet")} hint={canManage ? localizeAttribute("Create the first sprint to start planning work.") : localizeAttribute("An administrator needs to create a sprint first.")} />
           {canManage && (
             <Button onClick={openNewSprint}>
               <Plus size={14} />{" "}<LocalizedText message={"Create sprint"} />{" "}</Button>
@@ -1345,12 +1363,12 @@ function BoardTab({
       <Modal
         open={newPhaseOpen}
         onClose={() => setNewPhaseOpen(false)}
-        title={translateUI("New two-week sprint")}
+        title={translateUI(editingSprint ? "Edit sprint" : "New sprints")}
         footer={
           <>
             <Button variant="secondary" onClick={() => setNewPhaseOpen(false)}><LocalizedText message={"Cancel"} /></Button>
-            <Button disabled={!phaseName || addPhase.isPending} onClick={() => addPhase.mutate()}>
-              {addPhase.isPending ? <LocalizedText message={"Creating…"} /> : <LocalizedText message={"Create sprint"} />}
+            <Button disabled={!phaseName.trim() || !sprintStart || !Number.isInteger(Number(sprintCount)) || Number(sprintCount) < 1 || Number(sprintCount) > 52 || !newSchedule.length || addPhase.isPending} onClick={() => addPhase.mutate()}>
+              {addPhase.isPending ? <LocalizedText message={"Creating…"} /> : <LocalizedText message={"Save sprint schedule"} />}
             </Button>
           </>
         }
@@ -1362,7 +1380,12 @@ function BoardTab({
           <Field label={translateUI("Sprint start")}>
             <TextInput type="date" value={sprintStart} onChange={(e) => setSprintStart(e.target.value)} />
           </Field>
-          <div style={{ fontSize: 12, color: "var(--text-tertiary)" }}>{" "}<LocalizedText message={"Ends"} />{" "}{addDaysIso(sprintStart, 13)}{" "}<LocalizedText message={"· exactly 14 calendar days"} />{" "}</div>
+          <Field label={translateUI("Sprint duration")}>
+            <Select value={sprintDuration} onChange={(e) => setSprintDuration(e.target.value)} options={SPRINT_DURATIONS.map((days) => ({ value: String(days), label: translateUI("{days} days", { days }) }))} />
+          </Field>
+          {!editingSprint && <Field label={translateUI("Number of sprints")}><TextInput type="number" min={1} max={52} step={1} value={sprintCount} onChange={(e) => setSprintCount(e.target.value)} /></Field>}
+          <Field label={translateUI("Calculated end date")} hint={translateUI("Calculated from the start date, duration, and number of sprints.")}><TextInput type="date" readOnly aria-readonly="true" value={newSchedule.at(-1)?.end_date ?? ""} /></Field>
+          <div style={{ maxHeight: 180, overflowY: "auto", fontSize: 12 }}>{newSchedule.map((window, index) => <div key={index}>{index + 1}. {window.start_date} → {window.end_date}</div>)}</div>
         </div>
       </Modal>
       <TaskEditorModal

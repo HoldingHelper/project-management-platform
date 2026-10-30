@@ -73,11 +73,13 @@ async def prepare_context(
     # 2. Process explicit sources
     if request.source_ids and char_count < MAX_CONTEXT_CHARS:
         for source_id in request.source_ids:
-            source = await db.get(DocSource, source_id)
-            if not source:
+            from app.modules.docs.sources_service import get_source
+            try:
+                source = await get_source(db, user, source_id)
+            except NotFoundError:
                 continue
 
-            content = source.content[:6000]
+            content = source.content_text[:6000]
             if char_count + len(content) > MAX_CONTEXT_CHARS:
                 content = content[: max(0, MAX_CONTEXT_CHARS - char_count)]
 
@@ -103,8 +105,8 @@ async def prepare_context(
     # 3. If no context explicitly provided, retrieve relevant pages via search
     if not citations:
         search_res = await search_pages_v2(db, user, request.prompt, limit=3)
-        for item in search_res.items:
-            page = await repo.get_page(db, item.page_id)
+        for item in search_res.results:
+            page = await repo.get_page(db, item.id)
             if not page:
                 continue
             space = await repo.get_space(db, page.space_id)
@@ -269,7 +271,15 @@ async def list_chat_sessions(
     stmt = select(DocChatSession).where(DocChatSession.user_id == user.user_id).order_by(DocChatSession.updated_at.desc())
     result = await db.execute(stmt)
     sessions = result.scalars().all()
-    return [{"id": str(s.id), "title": s.title, "created_at": s.created_at.isoformat()} for s in sessions]
+    visible = []
+    for session in sessions:
+        if session.page_id:
+            page = await repo.get_page(db, session.page_id)
+            space = await repo.get_space(db, page.space_id) if page else None
+            if not page or not space or not await _page_visible(db, user, page, space):
+                continue
+        visible.append({"id": str(session.id), "title": session.title, "created_at": session.created_at.isoformat()})
+    return visible
 
 
 async def get_chat_session_messages(
@@ -281,6 +291,11 @@ async def get_chat_session_messages(
     if not session or session.user_id != user.user_id:
         raise NotFoundError("Chat session", session_id)
 
+    if session.page_id:
+        page = await repo.get_page(db, session.page_id)
+        space = await repo.get_space(db, page.space_id) if page else None
+        if not page or not space or not await _page_visible(db, user, page, space):
+            raise NotFoundError("Chat session", session_id)
     stmt = select(DocChatMessage).where(DocChatMessage.session_id == session_id).order_by(DocChatMessage.created_at.asc())
     result = await db.execute(stmt)
     messages = result.scalars().all()

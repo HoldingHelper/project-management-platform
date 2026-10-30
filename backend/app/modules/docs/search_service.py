@@ -61,7 +61,7 @@ async def search_pages_v2(
 ) -> SearchResponse:
     q = query.strip()
     if not q:
-        return SearchResponse(items=[], total=0, query=query)
+        return SearchResponse(results=[], total=0, query=query)
 
     needle = f"%{q}%"
     stmt = select(DocPage, DocSpace).join(DocSpace, DocPage.space_id == DocSpace.id)

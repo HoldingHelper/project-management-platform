@@ -11,6 +11,7 @@ export function PublishedWorkspaceDocs() {
     queryKey: ["public-workspace-docs"],
     queryFn: listPublicDocNavigation,
     retry: 1,
+    refetchInterval: 15000,
   });
   const pages = (navigation.data ?? []).flatMap((space) =>
     space.pages.map((page) => ({ ...page, space: space.name })),

@@ -1,4 +1,5 @@
 "use client";
+import { sprintSchedule, SPRINT_DURATIONS } from "@/lib/sprint-schedule";
 
 import { LocalizedRelativeTime } from "@/lib/i18n/I18nProvider";
 
@@ -419,9 +420,11 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
     risk_level: "Medium",
     status: "not-started",
     health_status: "on-track",
-    start_date: "",
+    start_date: new Date().toISOString().slice(0, 10),
     end_date: "",
     actual_completion_date: "",
+    sprint_duration: "14",
+    sprint_durations: DEFAULT_SPRINTS.map(() => 14),
     sprint_count: "4",
     sprint_names: [...DEFAULT_SPRINTS],
     project_manager_id: "",
@@ -431,6 +434,8 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
     partition: "tech",
     tags: "",
   });
+  const schedule = sprintSchedule(form.start_date, form.sprint_durations);
+  const plannedEnd = schedule.at(-1)?.end_date ?? "";
   const [docSearch, setDocSearch] = useState("");
   const [selectedDocs, setSelectedDocs] = useState<{ id: string; title: string }[]>([]);
   const [documentationFiles, setDocumentationFiles] = useState<File[]>([]);
@@ -456,7 +461,6 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
 
       const count = Math.max(1, Math.min(52, Number(form.sprint_count) || 1));
       const sprintNames = form.sprint_names.map((name) => name.trim());
-      const sprintStart = form.start_date || new Date().toISOString().slice(0, 10);
 
       const project = await createProject({
         product_id: productId as UUID,
@@ -468,16 +472,15 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
         status: form.status,
         health_status: form.health_status,
         start_date: form.start_date || undefined,
-        end_date: form.end_date || undefined,
-        estimated_completion_date: form.end_date || undefined,
+        end_date: plannedEnd || undefined,
+        estimated_completion_date: plannedEnd || undefined,
         actual_completion_date: form.actual_completion_date || undefined,
         tags: tagsWithTaxonomy(form.tags, form.level, form.partition),
         sprints: Array.from({ length: count }, (_, index) => {
-          const start = addDaysIso(sprintStart, index * 14);
+          const window = schedule[index];
           return {
             name: sprintNames[index],
-            start_date: start,
-            end_date: addDaysIso(start, 13),
+            ...window,
             lead_assignee_user_id: form.lead_ids[index % Math.max(form.lead_ids.length, 1)],
           };
         }),
@@ -561,20 +564,22 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
         while (names.includes(`Sprint ${number}`)) number++;
         names.push(`Sprint ${number}`);
       }
-      return { ...current, sprint_count: String(count), sprint_names: names };
+      return { ...current, sprint_count: String(count), sprint_names: names, sprint_durations: Array.from({ length: count }, (_, index) => current.sprint_durations[index] ?? Number(current.sprint_duration)) };
     });
   }
 
-  const datesPaired = Boolean(form.start_date) === Boolean(form.end_date);
-  const datesOrdered = !form.start_date || !form.end_date || form.end_date >= form.start_date;
+  const datesPaired = Boolean(form.start_date) === Boolean(plannedEnd);
+  const datesOrdered = !form.start_date || !plannedEnd || plannedEnd >= form.start_date;
   const valid = checklist.every((item) => item.text.trim()) && form.name.trim().length > 0
     && availableProductLines.includes(form.product_line)
     && availableProductLines.length > 0
     && Number(form.sprint_count) === form.sprint_names.length
     && form.sprint_names.every((name) => name.trim().length > 0)
+    && schedule.length === form.sprint_names.length
+    && !!form.start_date
     && datesPaired
     && datesOrdered
-    && (!form.actual_completion_date || Boolean(form.start_date && form.end_date));
+    && (!form.actual_completion_date || Boolean(form.start_date && plannedEnd));
   const unattachedTasks = backlog.data?.items ?? [];
 
   return (
@@ -668,19 +673,19 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
             </Field>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 10 }}>
-            <Field label={translateUI("Planned start")}>
+            <Field label={translateUI("Sprint start date")}>
               <TextInput type="date" value={form.start_date} onChange={(e) => setForm((f) => ({ ...f, start_date: e.target.value }))} />
             </Field>
             <Field label={translateUI("Planned end")}>
-              <TextInput type="date" value={form.end_date} onChange={(e) => setForm((f) => ({ ...f, end_date: e.target.value }))} />
+              <TextInput type="date" value={plannedEnd} readOnly aria-readonly="true" />
             </Field>
             <Field label={translateUI("Actual end date")}>
               <TextInput
                 type="date"
                 value={form.actual_completion_date}
                 onChange={(e) => setForm((f) => ({ ...f, actual_completion_date: e.target.value }))}
-                disabled={!form.start_date || !form.end_date}
-                title={!form.start_date || !form.end_date ? localizeAttribute("Set both planned dates first.") : undefined}
+                disabled={!form.start_date || !plannedEnd}
+                title={!form.start_date || !plannedEnd ? localizeAttribute("Set both planned dates first.") : undefined}
               />
             </Field>
           </div>
@@ -696,6 +701,9 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
             <MarkdownPreview value={form.description} />
           </Card>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <Field label={translateUI("Sprint duration")} hint={translateUI("Applies to all sprints. Individual durations can be changed below.")}>
+              <Select value={form.sprint_duration} options={SPRINT_DURATIONS.map((days) => ({ value: String(days), label: translateUI("{days} days", { days }) }))} onChange={(e) => setForm((current) => ({ ...current, sprint_duration: e.target.value, sprint_durations: current.sprint_names.map(() => Number(e.target.value)) }))} />
+            </Field>
             <Field label={translateUI("Number of sprints")} hint={translateUI("Changing this count updates the sprint list below.")}>
               <TextInput
                 type="number"
@@ -710,7 +718,7 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
             </Field>
             <div role="group" aria-label={translateUI("Sprint names")} style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 260, overflowY: "auto", padding: 3 }}>
               {form.sprint_names.map((name, index) => (
-                <div key={index} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div key={index} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
                   <span style={{ width: 22, flexShrink: 0, fontSize: 12, color: "var(--text-tertiary)" }}>{index + 1}.</span>
                   <TextInput
                     aria-label={`Sprint ${index + 1} name`}
@@ -720,12 +728,14 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
                     onChange={(event) => setForm((current) => ({ ...current, sprint_names: current.sprint_names.map((item, itemIndex) => itemIndex === index ? event.target.value : item) }))}
                     style={{ flex: 1, minWidth: 0 }}
                   />
+                  <Select aria-label={translateUI("Sprint {number} duration", { number: index + 1 })} value={String(form.sprint_durations[index])} options={SPRINT_DURATIONS.map((days) => ({ value: String(days), label: translateUI("{days} days", { days }) }))} onChange={(e) => setForm((current) => ({ ...current, sprint_durations: current.sprint_durations.map((days, itemIndex) => itemIndex === index ? Number(e.target.value) : days) }))} style={{ width: 110 }} />
+                  <small style={{ color: "var(--text-secondary)", flexBasis: "100%", order: 1 }}>{schedule[index] ? `${schedule[index].start_date} → ${schedule[index].end_date}` : ""}</small>
                   <Button
                     variant="ghost"
                     aria-label={`Remove sprint ${index + 1}`}
                     title={form.sprint_names.length === 1 ? localizeAttribute("At least one sprint is required") : `Remove sprint ${index + 1}`}
                     disabled={form.sprint_names.length === 1}
-                    onClick={() => setForm((current) => ({ ...current, sprint_names: current.sprint_names.filter((_, itemIndex) => itemIndex !== index), sprint_count: String(current.sprint_names.length - 1) }))}
+                    onClick={() => setForm((current) => ({ ...current, sprint_names: current.sprint_names.filter((_, itemIndex) => itemIndex !== index), sprint_durations: current.sprint_durations.filter((_, itemIndex) => itemIndex !== index), sprint_count: String(current.sprint_names.length - 1) }))}
                     style={{ padding: "0 10px" }}
                   ><X size={16} aria-hidden /></Button>
                 </div>
@@ -733,7 +743,7 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
             </div>
             <Button variant="tertiary" disabled={form.sprint_names.length >= 52} onClick={() => resizeSprints(String(form.sprint_names.length + 1))}><Plus size={14} aria-hidden /><LocalizedText message={"Add sprint"} /></Button>
           </div>
-          <div style={{ fontSize: 11.5, color: "var(--text-tertiary)", marginTop: -6 }}>{" "}<LocalizedText message={"Every sprint is scheduled as an exact 14-day window. New projects always include at least one sprint."} />{" "}</div>
+          <div style={{ fontSize: 11.5, color: "var(--text-tertiary)", marginTop: -6 }}>{" "}<LocalizedText message={"Choose 3, 7, or 14 days per sprint. End dates are calculated automatically."} />{" "}</div>
           <div>
             <div style={sectionLabel}><LocalizedText message={"Connected documents"} /></div>
             <SearchSuggestionInput

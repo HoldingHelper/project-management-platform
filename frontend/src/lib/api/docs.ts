@@ -167,8 +167,8 @@ export const moveDocPage = (
   pageId: string,
   body: { parent_page_id?: string | null; before_page_id?: string | null }
 ) => apiFetch<DocPage>(`/docs/pages/${pageId}/move`, { method: "POST", body });
-export const publishDocPage = (pageId: string, published = true) =>
-  apiFetch<DocPage>(`/docs/pages/${pageId}/${published ? "publish" : "unpublish"}`, { method: "POST" });
+export const publishDocPage = (pageId: string) =>
+  apiFetch<DocPage>(`/docs/pages/${pageId}/publish`, { method: "POST" });
 export const favoriteDocPage = (pageId: string, enabled = true) =>
   apiFetch<void>(`/docs/pages/${pageId}/favorite?enabled=${enabled}`, { method: "PUT" });
 export const listDocRevisions = (pageId: string) =>
@@ -385,8 +385,7 @@ export const createDocSource = (body: {
   meta_info?: Record<string, unknown>;
 }) => apiFetch<DocSource>("/docs/sources", { method: "POST", body });
 
-export const deleteDocSource = (sourceId: string) =>
-  apiFetch<void>(`/docs/sources/${sourceId}`, { method: "DELETE" });
+
 
 export const listDocTags = () =>
   apiFetch<DocTag[]>("/docs/tags");

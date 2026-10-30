@@ -241,6 +241,10 @@ class Phase(Base, UUIDPKMixin, TimestampMixin, AuditableMixin):
     )
     is_sprint: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
+    @property
+    def duration_days(self) -> int:
+        return (self.end_date - self.start_date).days + 1 if self.start_date and self.end_date else 14
+
     project: Mapped["Project"] = relationship(back_populates="phases")
     tasks: Mapped[List["TaskItem"]] = relationship(
         back_populates="phase", cascade="all, delete-orphan"

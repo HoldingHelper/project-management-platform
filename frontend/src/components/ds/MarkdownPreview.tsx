@@ -389,7 +389,7 @@ export function MarkdownPreview({ value, empty = "No description yet.", highligh
             marginLeft: -16,
           }}
         >
-          <input type="checkbox" checked={checked} readOnly style={{ accentColor: "var(--accent-primary)" }} />
+          <input type="checkbox" checked={checked} disabled readOnly style={{ accentColor: "var(--accent-primary)" }} />
           <span style={{ textDecoration: checked ? "line-through" : "none", color: checked ? "var(--text-tertiary)" : "inherit" }}>
             {inline(checklistItem[2], highlights)}
           </span>

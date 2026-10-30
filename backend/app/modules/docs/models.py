@@ -50,6 +50,7 @@ class DocPage(Base, UUIDPKMixin, TimestampMixin, AuditableMixin):
     content: Mapped[str] = mapped_column(Text, default="", nullable=False)
     content_json: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)
     status: Mapped[str] = mapped_column(String(24), default="draft", nullable=False, index=True)
+    archived_from_status: Mapped[Optional[str]] = mapped_column(String(24), nullable=True)
     visibility: Mapped[str] = mapped_column(String(24), default="inherit", nullable=False, index=True)
     responsible_user_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
     position: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
