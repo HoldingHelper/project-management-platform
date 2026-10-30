@@ -1,3 +1,6 @@
+"use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 import React, { useState } from 'react';
 import { evaluateSpreadsheet } from '../formulaEngine';
 import { TN } from '../tokens';
@@ -11,6 +14,8 @@ interface SheetBlockProps {
 }
 
 export function SheetBlock({ data, onUpdateRows }: SheetBlockProps) {
+  const { t: translateUI } = useI18n();
+
   const [sel, setSel] = useState<[number, number]>([1, 1]);
   const rows = data.rows;
   const R = rows.length;
@@ -57,11 +62,9 @@ export function SheetBlock({ data, onUpdateRows }: SheetBlockProps) {
         >
           {refLabel}
         </span>
-        <span style={{ fontStyle: 'italic', fontWeight: 700, opacity: 0.55 }}>
-          fx
-        </span>
+        <span style={{ fontStyle: 'italic', fontWeight: 700, opacity: 0.55 }}>{" "}<LocalizedText message={"fx"} />{" "}</span>
         <input
-          aria-label="Cell value or formula"
+          aria-label={translateUI("Cell value or formula")}
           value={rawVal}
           onChange={(e) => handleCellChange(e.target.value)}
           style={{
@@ -195,9 +198,7 @@ export function SheetBlock({ data, onUpdateRows }: SheetBlockProps) {
       <div
         className="text-muted"
         style={{ padding: '8px 12px', fontSize: 12 }}
-      >
-        Select a cell and edit it in the bar above. Formulas: =SUM(B2:B7), =AVG(C2:C7) or arithmetic like =D2-C2.
-      </div>
+      >{" "}<LocalizedText message={"Select a cell and edit it in the bar above. Formulas: =SUM(B2:B7), =AVG(C2:C7) or arithmetic like =D2-C2."} />{" "}</div>
     </div>
   );
 }

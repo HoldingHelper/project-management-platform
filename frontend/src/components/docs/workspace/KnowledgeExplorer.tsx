@@ -1,5 +1,11 @@
 "use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
+
+import { UploadWorkspaces } from "./UploadWorkspaces";
+import { useAuth } from "@/lib/auth/AuthProvider";
+import { apiFetch } from "@/lib/api/client";
 import { useState } from "react";
 import {
   BookOpen,
@@ -30,6 +36,11 @@ const DEFAULT_CATEGORIES = [
 ];
 
 export function KnowledgeExplorer({ onNewPage }: { onNewPage?: (spaceId?: string) => void }) {
+  const { t: translateUI } = useI18n();
+
+  const { isSuperAdmin } = useAuth();
+  const [showArchived, setShowArchived] = useState(false);
+  const archived = useQuery({ queryKey: ["doc-archived"], queryFn: () => apiFetch<DocPageSummary[]>("/docs/archived"), enabled: isSuperAdmin() && showArchived });
   const { openTab, tabs, activeTabId } = useKnowledgeWorkspace();
   const [activeTab, setActiveTab] = useState<"spaces" | "tags">("spaces");
   const [searchQuery, setSearchQuery] = useState("");
@@ -86,14 +97,12 @@ export function KnowledgeExplorer({ onNewPage }: { onNewPage?: (spaceId?: string
       >
         <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
           <BookOpen size={16} style={{ color: "var(--accent-primary)" }} />
-          <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text-primary)" }}>
-            Knowledge Base
-          </span>
+          <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text-primary)" }}>{" "}<LocalizedText message={"Knowledge Base"} />{" "}</span>
         </div>
         <button
           type="button"
           onClick={() => onNewPage?.()}
-          title="Create document"
+          title={translateUI("Create document")}
           className="pmp-icon-btn"
           style={{
             width: 26,
@@ -131,7 +140,7 @@ export function KnowledgeExplorer({ onNewPage }: { onNewPage?: (spaceId?: string
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search documentation…"
+            placeholder={translateUI("Search documentation…")}
             style={{
               background: "transparent",
               border: "none",
@@ -151,9 +160,7 @@ export function KnowledgeExplorer({ onNewPage }: { onNewPage?: (spaceId?: string
               color: "var(--text-tertiary)",
               fontFamily: "var(--font-mono)",
             }}
-          >
-            ⌘K
-          </span>
+          >{" "}<LocalizedText message={"⌘K"} />{" "}</span>
         </div>
       </div>
 
@@ -181,9 +188,7 @@ export function KnowledgeExplorer({ onNewPage }: { onNewPage?: (spaceId?: string
             cursor: "pointer",
             transition: "all var(--duration-fast) var(--ease-spring)",
           }}
-        >
-          Spaces
-        </button>
+        >{" "}<LocalizedText message={"Spaces"} />{" "}</button>
         <button
           type="button"
           onClick={() => setActiveTab("tags")}
@@ -199,14 +204,20 @@ export function KnowledgeExplorer({ onNewPage }: { onNewPage?: (spaceId?: string
             cursor: "pointer",
             transition: "all var(--duration-fast) var(--ease-spring)",
           }}
-        >
-          Tags
-        </button>
+        >{" "}<LocalizedText message={"Tags"} />{" "}</button>
       </div>
 
+      {isSuperAdmin() && <div style={{ padding: 10 }}>
+        <button type="button" onClick={() => setShowArchived((value) => !value)} aria-expanded={showArchived}>{translateUI("Archived documents")}</button>
+        {showArchived && <div>
+          {archived.isError && <button type="button" onClick={() => archived.refetch()}>{translateUI("Retry")}</button>}
+          {archived.data?.length === 0 && <p>{translateUI("No archived documents.")}</p>}
+          {(archived.data ?? []).map((page) => <button type="button" key={page.id} style={{ display: "block", padding: 8, textAlign: "start" }} onClick={() => openTab({ id: page.id, pageId: page.id, spaceId: page.space_id, title: page.title, viewMode: "editor" })}>{page.title}</button>)}
+        </div>}
+      </div>}
       {/* Navigation Tree */}
       <nav
-        aria-label="Knowledge Base Navigation"
+        aria-label={translateUI("Knowledge Base Navigation")}
         style={{
           flex: 1,
           overflowY: "auto",
@@ -216,11 +227,13 @@ export function KnowledgeExplorer({ onNewPage }: { onNewPage?: (spaceId?: string
           gap: 2,
         }}
       >
+        {activeTab === "spaces" && <UploadWorkspaces spaces={(spaces.data ?? []).filter((space) => !!space.product_id || !!space.task_id)} pages={pages.data ?? []} search={searchQuery} />}
         {activeTab === "spaces" ? (
           DEFAULT_CATEGORIES.map((cat) => {
             const isExpanded = expandedCategories[cat.id] ?? false;
             const categoryPages = filteredPages.filter((p) => {
               const space = spaces.data?.find((s) => s.id === p.space_id);
+              if (space?.product_id || space?.task_id) return false;
               const spaceCat = (space?.category || "Platform").toLowerCase();
               return spaceCat.includes(cat.id.split("-")[0]) || cat.id === "getting-started";
             });
@@ -253,7 +266,7 @@ export function KnowledgeExplorer({ onNewPage }: { onNewPage?: (spaceId?: string
                   <div style={{ display: "flex", alignItems: "center", gap: 7, minWidth: 0 }}>
                     <cat.icon size={14} style={{ color: cat.color, flexShrink: 0 }} />
                     <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {cat.name}
+                      {<LocalizedText message={cat.name} />}
                     </span>
                   </div>
                   {isExpanded ? (
@@ -310,9 +323,7 @@ export function KnowledgeExplorer({ onNewPage }: { onNewPage?: (spaceId?: string
                         );
                       })
                     ) : (
-                      <div style={{ padding: "3px 8px", fontSize: 10.5, color: "var(--text-tertiary)", fontStyle: "italic" }}>
-                        No articles yet
-                      </div>
+                      <div style={{ padding: "3px 8px", fontSize: 10.5, color: "var(--text-tertiary)", fontStyle: "italic" }}>{" "}<LocalizedText message={"No articles yet"} />{" "}</div>
                     )}
                   </div>
                 )}
@@ -384,10 +395,8 @@ export function KnowledgeExplorer({ onNewPage }: { onNewPage?: (spaceId?: string
             <Headphones size={14} />
           </div>
           <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ fontSize: 11.5, fontWeight: 700, color: "var(--text-primary)" }}>Need help?</div>
-            <div style={{ fontSize: 10, color: "var(--text-tertiary)", lineHeight: 1.25 }}>
-              Visit Help Center
-            </div>
+            <div style={{ fontSize: 11.5, fontWeight: 700, color: "var(--text-primary)" }}><LocalizedText message={"Need help?"} /></div>
+            <div style={{ fontSize: 10, color: "var(--text-tertiary)", lineHeight: 1.25 }}>{" "}<LocalizedText message={"Visit Help Center"} />{" "}</div>
           </div>
           <ChevronRight size={13} style={{ color: "var(--text-tertiary)", flexShrink: 0 }} />
         </div>

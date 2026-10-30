@@ -1,3 +1,5 @@
+"use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
 
@@ -29,6 +31,7 @@ const toneBg: Record<Tone, string> = {
 };
 
 export function MetricCard({ label, value, trend, tone = "default", href, icon }: Props) {
+  const { t, number } = useI18n();
   const style: CSSProperties = {
     background: "var(--surface-2)",
     border: "1px solid var(--border-subtle)",
@@ -62,14 +65,14 @@ export function MetricCard({ label, value, trend, tone = "default", href, icon }
         )}
       </div>
       <div style={{ fontSize: 30, fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1, color: toneColor[tone] }}>
-        {value}
+        {typeof value === "number" ? number(value) : value}
       </div>
-      {trend && <div style={{ fontSize: 12, color: "var(--text-tertiary)" }}>{trend}</div>}
+      {trend && <div style={{ fontSize: 12, color: "var(--text-tertiary)" }}>{t(trend)}</div>}
     </>
   );
   if (href) {
     return (
-      <Link href={href} className="pmp-metric-card pmp-interactive is-clickable" data-tone={tone} aria-label={`Open ${label}`} style={style}>
+      <Link href={href} className="pmp-metric-card pmp-interactive is-clickable" data-tone={tone} aria-label={t("Open {label}", { label })} style={style}>
         {content}
       </Link>
     );

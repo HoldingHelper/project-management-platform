@@ -1,4 +1,6 @@
 "use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 import { useMemo } from "react";
 import Link from "next/link";
@@ -38,6 +40,8 @@ export function UserDetailsModal({
   onEdit,
   canEdit = false,
 }: Props) {
+  const { t: translateUI } = useI18n();
+
   const router = useRouter();
   const toast = useToast();
   const { users } = useUserMap();
@@ -91,8 +95,7 @@ export function UserDetailsModal({
               router.push(`/profile/${user.id}`);
             }}
           >
-            <ExternalLink size={14} style={{ marginRight: 6 }} /> Full Profile
-          </Button>
+            <ExternalLink size={14} style={{ marginRight: 6 }} />{" "}<LocalizedText message={"Full Profile"} />{" "}</Button>
           <div style={{ display: "flex", gap: 8 }}>
             {canEdit && onEdit && (
               <Button
@@ -101,11 +104,9 @@ export function UserDetailsModal({
                   onClose();
                   onEdit(user);
                 }}
-              >
-                Edit Teammate
-              </Button>
+              >{" "}<LocalizedText message={"Edit Teammate"} />{" "}</Button>
             )}
-            <Button onClick={onClose}>Done</Button>
+            <Button onClick={onClose}><LocalizedText message={"Done"} /></Button>
           </div>
         </div>
       }
@@ -161,7 +162,7 @@ export function UserDetailsModal({
               {user.job_title ? (
                 <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>{user.job_title}</span>
               ) : (
-                <span style={{ fontStyle: "italic", color: "var(--text-tertiary)" }}>No job title</span>
+                <span style={{ fontStyle: "italic", color: "var(--text-tertiary)" }}><LocalizedText message={"No job title"} /></span>
               )}
               {user.username && (
                 <span style={{ color: "var(--text-tertiary)", fontSize: 12 }}>@{user.username}</span>
@@ -217,8 +218,7 @@ export function UserDetailsModal({
             }}
             className="pmp-row"
           >
-            <MessageSquare size={15} style={{ color: "var(--primary)" }} /> Send Message
-          </button>
+            <MessageSquare size={15} style={{ color: "var(--primary)" }} />{" "}<LocalizedText message={"Send Message"} />{" "}</button>
           <button
             type="button"
             onClick={copyEmail}
@@ -235,10 +235,9 @@ export function UserDetailsModal({
               cursor: "pointer",
             }}
             className="pmp-row"
-            title="Copy email address"
+            title={translateUI("Copy email address")}
           >
-            <Copy size={14} /> Copy Email
-          </button>
+            <Copy size={14} />{" "}<LocalizedText message={"Copy Email"} />{" "}</button>
         </div>
 
         {/* Details Grid */}
@@ -256,7 +255,7 @@ export function UserDetailsModal({
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <Mail size={15} style={{ color: "var(--text-tertiary)", flexShrink: 0 }} />
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 11, color: "var(--text-tertiary)" }}>Email</div>
+              <div style={{ fontSize: 11, color: "var(--text-tertiary)" }}><LocalizedText message={"Email"} /></div>
               <div style={{ fontSize: 12.5, fontWeight: 500, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {user.email}
               </div>
@@ -266,7 +265,7 @@ export function UserDetailsModal({
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <Building2 size={15} style={{ color: "var(--text-tertiary)", flexShrink: 0 }} />
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 11, color: "var(--text-tertiary)" }}>Department</div>
+              <div style={{ fontSize: 11, color: "var(--text-tertiary)" }}><LocalizedText message={"Department"} /></div>
               <div style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {user.department_name ?? "General / Unassigned"}
               </div>
@@ -276,7 +275,7 @@ export function UserDetailsModal({
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <Users size={15} style={{ color: "var(--text-tertiary)", flexShrink: 0 }} />
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 11, color: "var(--text-tertiary)" }}>Team</div>
+              <div style={{ fontSize: 11, color: "var(--text-tertiary)" }}><LocalizedText message={"Team"} /></div>
               <div style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {user.team_name ?? "No team"}
               </div>
@@ -286,7 +285,7 @@ export function UserDetailsModal({
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <UserCheck size={15} style={{ color: "var(--text-tertiary)", flexShrink: 0 }} />
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 11, color: "var(--text-tertiary)" }}>Reports to (Manager)</div>
+              <div style={{ fontSize: 11, color: "var(--text-tertiary)" }}><LocalizedText message={"Reports to (Manager)"} /></div>
               <div style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {manager ? manager.full_name : user.manager_name ?? "None (Executive/Top Lead)"}
               </div>
@@ -297,7 +296,7 @@ export function UserDetailsModal({
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <MapPin size={15} style={{ color: "var(--text-tertiary)", flexShrink: 0 }} />
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 11, color: "var(--text-tertiary)" }}>Location</div>
+                <div style={{ fontSize: 11, color: "var(--text-tertiary)" }}><LocalizedText message={"Location"} /></div>
                 <div style={{ fontSize: 12.5, fontWeight: 500, color: "var(--text-primary)" }}>{user.location}</div>
               </div>
             </div>
@@ -307,7 +306,7 @@ export function UserDetailsModal({
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <Phone size={15} style={{ color: "var(--text-tertiary)", flexShrink: 0 }} />
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 11, color: "var(--text-tertiary)" }}>Phone</div>
+                <div style={{ fontSize: 11, color: "var(--text-tertiary)" }}><LocalizedText message={"Phone"} /></div>
                 <div style={{ fontSize: 12.5, fontWeight: 500, color: "var(--text-primary)" }}>{user.phone}</div>
               </div>
             </div>
@@ -317,9 +316,7 @@ export function UserDetailsModal({
         {/* Bio */}
         {user.bio && (
           <div style={{ padding: "12px", background: "var(--surface-2)", borderRadius: "var(--radius-md)", border: "1px solid var(--border-subtle)" }}>
-            <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", color: "var(--text-tertiary)", marginBottom: 6 }}>
-              About
-            </div>
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", color: "var(--text-tertiary)", marginBottom: 6 }}>{" "}<LocalizedText message={"About"} />{" "}</div>
             <div style={{ fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)", whiteSpace: "pre-wrap" }}>
               {user.bio}
             </div>
@@ -330,7 +327,7 @@ export function UserDetailsModal({
         {directReports.length > 0 && (
           <div>
             <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
-              <Users size={13} /> Direct Reports ({directReports.length})
+              <Users size={13} />{" "}<LocalizedText message={"Direct Reports ("} />{directReports.length})
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 180, overflowY: "auto" }}>
               {directReports.map((report) => (

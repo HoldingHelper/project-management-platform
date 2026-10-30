@@ -1,3 +1,5 @@
+"use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 import React from 'react';
 import { Icon } from '../icons';
 
@@ -9,6 +11,8 @@ interface ToastProps {
 }
 
 export function Toast({ text, actLabel, onAct, onClose }: ToastProps) {
+  const { t: translateUI } = useI18n();
+
   return (
     <div
       role="status"
@@ -63,7 +67,7 @@ export function Toast({ text, actLabel, onAct, onClose }: ToastProps) {
       <button
         type="button"
         onClick={onClose}
-        aria-label="Dismiss"
+        aria-label={translateUI("Dismiss")}
         style={{
           border: 0,
           background: 'transparent',

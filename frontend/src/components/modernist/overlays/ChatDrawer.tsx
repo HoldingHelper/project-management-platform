@@ -1,3 +1,6 @@
+"use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 import React, { useState } from 'react';
 import { Project, Person, ChatMessage } from '../types';
 import { Icon } from '../icons';
@@ -22,6 +25,8 @@ export function ChatDrawer({
   onSelectView,
   onSendMessage,
 }: ChatDrawerProps) {
+  const { t: translateUI } = useI18n();
+
   const [draft, setDraft] = useState('');
 
   const isDm = !!chatView && chatView.startsWith('dm:');
@@ -85,7 +90,7 @@ export function ChatDrawer({
           <button
             type="button"
             className="btn btn-icon"
-            aria-label="Back to conversations"
+            aria-label={translateUI("Back to conversations")}
             onClick={() => onSelectView(null)}
           >
             <Icon name="back" size={16} />
@@ -113,7 +118,7 @@ export function ChatDrawer({
         <button
           type="button"
           className="btn btn-icon"
-          aria-label="Close chat"
+          aria-label={translateUI("Close chat")}
           onClick={onClose}
         >
           <Icon name="x" size={16} />
@@ -123,9 +128,7 @@ export function ChatDrawer({
       {/* Conversations list view */}
       {!chatView && (
         <div style={{ flex: 1, overflow: 'auto', padding: '4px 8px 16px' }}>
-          <h6 className="text-muted" style={{ margin: '16px 8px 6px', fontSize: 10.5 }}>
-            Project channels
-          </h6>
+          <h6 className="text-muted" style={{ margin: '16px 8px 6px', fontSize: 10.5 }}>{" "}<LocalizedText message={"Project channels"} />{" "}</h6>
           {projects
             .filter((p) => p.status !== 'Done')
             .map((p) => {
@@ -174,16 +177,14 @@ export function ChatDrawer({
                         textOverflow: 'ellipsis',
                       }}
                     >
-                      {last ? `${last.who.split(' ')[0]}: ${last.text}` : 'No messages yet'}
+                      {last ? `${last.who.split(' ')[0]}: ${last.text}` : <LocalizedText message={"No messages yet"} />}
                     </span>
                   </span>
                 </button>
               );
             })}
 
-          <h6 className="text-muted" style={{ margin: '16px 8px 6px', fontSize: 10.5 }}>
-            Direct messages
-          </h6>
+          <h6 className="text-muted" style={{ margin: '16px 8px 6px', fontSize: 10.5 }}>{" "}<LocalizedText message={"Direct messages"} />{" "}</h6>
           {dms.map((name) => {
             const u = people.find((p) => p.name === name) || {
               name,
@@ -302,9 +303,7 @@ export function ChatDrawer({
               </div>
             ))}
             {currentMessages.length === 0 && (
-              <p className="text-muted" style={{ margin: 0, fontSize: 13 }}>
-                No messages yet. Say hello.
-              </p>
+              <p className="text-muted" style={{ margin: 0, fontSize: 13 }}>{" "}<LocalizedText message={"No messages yet. Say hello."} />{" "}</p>
             )}
           </div>
 
@@ -320,16 +319,16 @@ export function ChatDrawer({
             <input
               className="input"
               style={{ minHeight: 40 }}
-              placeholder="Message…"
+              placeholder={translateUI("Message…")}
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
-              aria-label="Message"
+              aria-label={translateUI("Message")}
             />
             <button
               type="submit"
               className="btn btn-primary btn-icon"
               style={{ width: 40, height: 40, flex: 'none', borderRadius: 'var(--r-sm)' }}
-              aria-label="Send"
+              aria-label={translateUI("Send")}
             >
               <Icon name="send" size={16} />
             </button>

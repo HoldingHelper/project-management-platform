@@ -244,8 +244,24 @@ async def download_file(
     if attachment is None:
         raise NotFoundError("FileAttachment", attachment_id)
     await authorize_entity_access(db, current_user, attachment.entity_type, attachment.entity_id)
+    from app.modules.docs.lifecycle import require_visible_upload
+    await require_visible_upload(db, current_user, attachment.id)
     content = await file_storage_service.download_async(attachment.storage_key)
     return Response(content, media_type="application/octet-stream", headers={
         "Content-Disposition": f"attachment; filename*=UTF-8''{quote(attachment.file_name, safe='')}",
         "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff",
     })
+
+
+
+
+@files_router.get("/{attachment_id}/lifecycle")
+async def uploaded_document_lifecycle(attachment_id: UUID, current_user: CurrentUser = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    from sqlalchemy import select
+    from app.core.exceptions import NotFoundError
+    from app.modules.docs.models import DocPage
+    from app.modules.docs.service import lifecycle_permissions
+    page = (await db.execute(select(DocPage).where(DocPage.source_attachment_id == attachment_id))).scalar_one_or_none()
+    if page is None:
+        raise NotFoundError("Documentation page", attachment_id)
+    return await lifecycle_permissions(db, current_user, page.id)

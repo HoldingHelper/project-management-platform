@@ -1,4 +1,6 @@
 "use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 import { FormEvent, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -15,6 +17,8 @@ const TYPES = [
 ];
 
 export function OrgAdmin() {
+  const { t: translateUI } = useI18n();
+
   const queryClient = useQueryClient();
   const nodes = useQuery({ queryKey: ["org", "nodes"], queryFn: () => listOrgNodes() });
   const [name, setName] = useState("");
@@ -32,13 +36,13 @@ export function OrgAdmin() {
     mutation.mutate({ type, parent_id: parentId || null, name, confidentiality });
   }
 
-  if (nodes.isLoading) return <div style={PAGE_STYLE}><Spinner label="Loading organization graph…" /></div>;
+  if (nodes.isLoading) return <div style={PAGE_STYLE}><Spinner label={translateUI("Loading organization graph…")} /></div>;
   return (
     <div style={{ ...PAGE_STYLE, maxWidth: 1450, gap: 20 }}>
-      <PageHeader title="Organization graph" subtitle="Edit holding scopes, confidentiality boundaries, and the hierarchy that drives access and roll-ups." badge={<span className="scope-badge">ADMIN</span>} />
-      {mutation.error && <Alert kind="critical" title="Scope not created" description={mutation.error.message} />}
+      <PageHeader title={translateUI("Organization graph")} subtitle={translateUI("Edit holding scopes, confidentiality boundaries, and the hierarchy that drives access and roll-ups.")} badge={<span className="scope-badge"><LocalizedText message={"ADMIN"} /></span>} />
+      {mutation.error && <Alert kind="critical" title={translateUI("Scope not created")} description={mutation.error.message} />}
       <div className="org-admin-grid">
-        <Card title="Scope hierarchy" subtitle={`${ordered.length} visible nodes`}>
+        <Card title={translateUI("Scope hierarchy")} subtitle={`${ordered.length} visible nodes`}>
           <div className="org-tree-list">
             {ordered.map((node) => {
               const depth = node.path.split(".").length - 1;
@@ -53,13 +57,13 @@ export function OrgAdmin() {
             })}
           </div>
         </Card>
-        <Card title="Create scope" subtitle="Parent rules and inherited confidentiality are enforced by the server.">
+        <Card title={translateUI("Create scope")} subtitle={translateUI("Parent rules and inherited confidentiality are enforced by the server.")}>
           <form className="org-create-form" onSubmit={submit}>
-            <label>Name<TextInput value={name} onChange={(event) => setName(event.target.value)} required placeholder="e.g. Group Marketing" /></label>
-            <label>Type<Select value={type} onChange={(event) => setType(event.target.value)} options={TYPES} /></label>
-            <label>Parent<Select value={parentId} onChange={(event) => setParentId(event.target.value)} placeholder="Select a parent" options={ordered.map((node) => ({ value: node.id, label: `${node.name} · ${node.type}` }))} /></label>
-            <label>Confidentiality<Select value={confidentiality} onChange={(event) => setConfidentiality(event.target.value)} options={[{ value: "standard", label: "Standard" }, { value: "restricted", label: "Restricted" }, { value: "board", label: "Board" }]} /></label>
-            <Button type="submit" disabled={!name || !parentId || mutation.isPending}><Plus size={15} />{mutation.isPending ? "Creating…" : "Create scope"}</Button>
+            <label><LocalizedText message={"Name"} /><TextInput value={name} onChange={(event) => setName(event.target.value)} required placeholder={translateUI("e.g. Group Marketing")} /></label>
+            <label><LocalizedText message={"Type"} /><Select translateOptions value={type} onChange={(event) => setType(event.target.value)} options={TYPES} /></label>
+            <label><LocalizedText message={"Parent"} /><Select value={parentId} onChange={(event) => setParentId(event.target.value)} placeholder={translateUI("Select a parent")} options={ordered.map((node) => ({ value: node.id, label: `${node.name} · ${node.type}` }))} /></label>
+            <label><LocalizedText message={"Confidentiality"} /><Select translateOptions value={confidentiality} onChange={(event) => setConfidentiality(event.target.value)} options={[{ value: "standard", label: "Standard" }, { value: "restricted", label: "Restricted" }, { value: "board", label: "Board" }]} /></label>
+            <Button type="submit" disabled={!name || !parentId || mutation.isPending}><Plus size={15} />{mutation.isPending ? <LocalizedText message={"Creating…"} /> : <LocalizedText message={"Create scope"} />}</Button>
           </form>
         </Card>
       </div>

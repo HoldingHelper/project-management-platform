@@ -1,4 +1,5 @@
 "use client";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 import { useState } from "react";
 import {
@@ -120,12 +121,10 @@ export function InteractiveWorkflow() {
       <div className="public-container">
         <div className="public-section-heading">
           <div>
-            <span className="public-kicker">Operating Rhythm</span>
-            <h2 id="workflow-heading">From initial idea to verified delivery.</h2>
+            <span className="public-kicker"><LocalizedText message={"Operating Rhythm"} /></span>
+            <h2 id="workflow-heading"><LocalizedText message={"From initial idea to verified delivery."} /></h2>
           </div>
-          <p>
-            A repeatable 5-step lifecycle that eliminates tool switching, aligns engineering with product, and protects institutional knowledge.
-          </p>
+          <p>{" "}<LocalizedText message={"A repeatable 5-step lifecycle that eliminates tool switching, aligns engineering with product, and protects institutional knowledge."} />{" "}</p>
         </div>
 
         {/* Step Navigation Pill Bar */}
@@ -149,7 +148,7 @@ export function InteractiveWorkflow() {
         <div className="workflow-display-card animate-fade-in" key={activeStep.id}>
           <div className="workflow-card-left">
             <div className="workflow-meta-pill">
-              <Icon size={14} /> Step {activeStep.stepNumber} · {activeStep.role}
+              <Icon size={14} />{" "}<LocalizedText message={"Step"} />{" "}{activeStep.stepNumber} · {activeStep.role}
             </div>
 
             <h3>{activeStep.title}</h3>
@@ -166,7 +165,7 @@ export function InteractiveWorkflow() {
             </ul>
 
             <div className="workflow-foot-deliverable">
-              <span className="deliverable-label">Key Output:</span>
+              <span className="deliverable-label"><LocalizedText message={"Key Output:"} /></span>
               <span className="deliverable-val">{activeStep.deliverable}</span>
             </div>
           </div>
@@ -185,10 +184,9 @@ export function InteractiveWorkflow() {
                   <Icon size={24} />
                 </div>
                 <div className="mock-heading">{activeStep.deliverable}</div>
-                <p className="mock-sub">Synchronized across Project Management Platform ecosystem</p>
+                <p className="mock-sub"><LocalizedText message={"Synchronized across Project Management Platform ecosystem"} /></p>
                 <div className="mock-status-pill">
-                  <span className="pulse-green" /> Status: Verified Ready
-                </div>
+                  <span className="pulse-green" />{" "}<LocalizedText message={"Status: Verified Ready"} />{" "}</div>
               </div>
             </div>
           </div>

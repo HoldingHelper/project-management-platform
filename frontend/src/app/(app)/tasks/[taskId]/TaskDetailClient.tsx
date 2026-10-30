@@ -1,4 +1,8 @@
 "use client";
+import { LocalizedRelativeTime, LocalizedDate } from "@/lib/i18n/I18nProvider";
+
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -41,6 +45,7 @@ import {
   listTasks,
   updateTask,
   updateTaskStatus,
+  getTaskAssignmentCandidates,
 } from "@/lib/api/projects";
 import { addComment, listComments } from "@/lib/api/collaboration";
 import { GitHubMentionPicker } from "@/components/github/GitHubMentionPicker";
@@ -111,6 +116,8 @@ export default function TaskDetailPage({
   embedded = false,
   onClose,
 }: TaskDetailClientProps = {}) {
+  const { t: translateUI } = useI18n();
+
   const { taskId: exportedTaskId } = useParams<{ taskId?: string }>();
   const [routeTaskId] = useStaticExportParams([exportedTaskId ?? "_"], ["tasks"]);
   const taskId = providedTaskId ?? routeTaskId;
@@ -296,7 +303,9 @@ export default function TaskDetailPage({
     }
   };
 
-  if (!taskId || task.isLoading) return <Spinner label="Loading task details..." />;
+  const assignmentCandidates = useQuery({ queryKey: ["assignment-candidates", taskId], queryFn: () => getTaskAssignmentCandidates(taskId as UUID) , enabled: !!taskId });
+
+  if (!taskId || task.isLoading) return <Spinner label={translateUI("Loading task details...")} />;
 
   if (task.isError || !task.data) {
     return (
@@ -315,9 +324,11 @@ export default function TaskDetailPage({
     "tasks.manage_testing",
     "tasks.manage_design",
   );
+  const eligibleAssignees = assignmentCandidates.data ?? [];
+  const assignmentOptions = [...eligibleAssignees, ...(assignmentCandidates.data ? (task.data?.assignee_user_ids ?? []).filter((id) => !eligibleAssignees.some((u) => u.id === id)).map((id) => ({ id, full_name: nameOf(id) })) : [])];
   const canManageAssignees = isSuperAdmin() || hasPermission("tasks.assign");
   const canEdit = canManageTask || isAssignedToCurrentUser;
-  const canSelfAssign = Boolean(currentUser && hasPermission("tasks.edit_assigned"));
+  const canSelfAssign = Boolean(currentUser && hasPermission("tasks.edit_assigned") && eligibleAssignees.some((person) => person.id === currentUser.id));
 
   // Subtask Calculations
   const subtaskList = subtasks.data?.items ?? [];
@@ -335,8 +346,7 @@ export default function TaskDetailPage({
         <div className="task-nav-left">
           {embedded ? (
             <button type="button" onClick={onClose} className="task-back-btn">
-              <X size={13} /> Close
-            </button>
+              <X size={13} />{" "}<LocalizedText message={"Close"} />{" "}</button>
           ) : (
             <BackLink router={router} />
           )}
@@ -344,29 +354,29 @@ export default function TaskDetailPage({
           {row.parent_task_id ? (
             <Link href={`/tasks/${row.parent_task_id}`} className="task-parent-badge">
               <GitBranch size={12} />
-              <span>Parent Task</span>
+              <span><LocalizedText message={"Parent Task"} /></span>
             </Link>
           ) : (
-            <span className="task-key-tag">TASK-{row.id.slice(0, 8).toUpperCase()}</span>
+            <span className="task-key-tag"><LocalizedText message={"TASK-"} />{row.id.slice(0, 8).toUpperCase()}</span>
           )}
         </div>
 
         <div className="task-nav-actions">
-          <button type="button" onClick={copyTaskLink} className="task-action-btn" title="Copy task link">
+          <button type="button" onClick={copyTaskLink} className="task-action-btn" title={translateUI("Copy task link")}>
             <Share2 size={13} />
-            <span>Share</span>
+            <span><LocalizedText message={"Share"} /></span>
           </button>
           {row.github_url && (
-            <a href={row.github_url} target="_blank" rel="noreferrer" className="task-action-btn" title="Open GitHub">
+            <a href={row.github_url} target="_blank" rel="noreferrer" className="task-action-btn" title={translateUI("Open GitHub")}>
               <ExternalLink size={13} />
-              <span>GitHub</span>
+              <span><LocalizedText message={"GitHub"} /></span>
             </a>
           )}
           {canEdit && (
             <>
               <button type="button" onClick={() => setEditOpen(true)} className="task-action-btn">
                 <Edit3 size={13} />
-                <span>Full Edit</span>
+                <span><LocalizedText message={"Full Edit"} /></span>
               </button>
               <button
                 type="button"
@@ -375,7 +385,7 @@ export default function TaskDetailPage({
                 className="task-action-btn danger"
               >
                 <Trash2 size={13} />
-                <span>Delete</span>
+                <span><LocalizedText message={"Delete"} /></span>
               </button>
               {row.status !== "Done" ? (
                 <button
@@ -385,7 +395,7 @@ export default function TaskDetailPage({
                   className="task-action-btn primary"
                 >
                   <CheckCircle2 size={13} />
-                  <span>Mark Done</span>
+                  <span><LocalizedText message={"Mark Done"} /></span>
                 </button>
               ) : (
                 <button
@@ -395,7 +405,7 @@ export default function TaskDetailPage({
                   className="task-action-btn reopen"
                 >
                   <AlertCircle size={13} />
-                  <span>Reopen</span>
+                  <span><LocalizedText message={"Reopen"} /></span>
                 </button>
               )}
             </>
@@ -434,18 +444,14 @@ export default function TaskDetailPage({
                 }
                 setIsEditingTitle(false);
               }}
-            >
-              Save
-            </Button>
-            <Button variant="secondary" size="sm" onClick={() => setIsEditingTitle(false)}>
-              Cancel
-            </Button>
+            >{" "}<LocalizedText message={"Save"} />{" "}</Button>
+            <Button variant="secondary" size="sm" onClick={() => setIsEditingTitle(false)}>{" "}<LocalizedText message={"Cancel"} />{" "}</Button>
           </div>
         ) : (
           <div className="task-title-display-row" onClick={() => canEdit && setIsEditingTitle(true)}>
             <h1 className="task-title-heading">{row.title}</h1>
             {canEdit && (
-              <button type="button" className="task-title-pencil" aria-label="Edit title">
+              <button type="button" className="task-title-pencil" aria-label={translateUI("Edit title")}>
                 <Edit3 size={15} />
               </button>
             )}
@@ -503,14 +509,14 @@ export default function TaskDetailPage({
                     <Avatar name={nameOf(id)} size={20} />
                   </span>
                 ))}
-                {row.assignee_user_ids.length === 0 && <span className="unassigned-text">Unassigned</span>}
+                {row.assignee_user_ids.length === 0 && <span className="unassigned-text"><LocalizedText message={"Unassigned"} /></span>}
               </div>
-              <span className="prop-label">Assignee</span>
+              <span className="prop-label"><LocalizedText message={"Assignee"} /></span>
             </button>
             {assigneeMenuOpen && (
               <div className="quick-popover-menu assignee-menu animate-fade-in">
-                <div className="popover-heading">Assign Teammate</div>
-                {!isAssignedToCurrentUser && currentUser && (
+                <div className="popover-heading"><LocalizedText message={"Assign Teammate"} /></div>
+                {!isAssignedToCurrentUser && canSelfAssign && currentUser && (
                   <button
                     type="button"
                     onClick={() => {
@@ -520,10 +526,11 @@ export default function TaskDetailPage({
                     className="popover-item highlight-btn"
                   >
                     <User size={13} />
-                    <span>Assign to me</span>
+                    <span><LocalizedText message={"Assign to me"} /></span>
                   </button>
                 )}
-                {canManageAssignees && users.map((u) => {
+                {assignmentCandidates.isError && <button type="button" onClick={() => assignmentCandidates.refetch()}>{translateUI("Retry loading members")}</button>}
+                {canManageAssignees && assignmentOptions.map((u) => {
                   const isAssigned = row.assignee_user_ids.includes(u.id as UUID);
                   return (
                     <button
@@ -544,9 +551,9 @@ export default function TaskDetailPage({
 
           {/* Story Points Pill */}
           {row.story_points != null && (
-            <div className="quick-prop-pill points-pill" title="Story Points">
+            <div className="quick-prop-pill points-pill" title={translateUI("Story Points")}>
               <Flame size={12} className="text-amber-400" />
-              <span>{row.story_points} pts</span>
+              <span>{row.story_points}{" "}<LocalizedText message={"pts"} /></span>
             </div>
           )}
 
@@ -554,7 +561,7 @@ export default function TaskDetailPage({
           {row.due_date && (
             <div className="quick-prop-pill date-pill" title={`Due on ${row.due_date}`}>
               <Calendar size={12} />
-              <span>Due {row.due_date}</span>
+              <span><LocalizedText message={"Due"} />{" "}{row.due_date}</span>
             </div>
           )}
         </div>
@@ -567,11 +574,10 @@ export default function TaskDetailPage({
           {/* DESCRIPTION BOX */}
           <div className="task-content-card">
             <div className="card-top-bar">
-              <span className="card-title">Description</span>
+              <span className="card-title"><LocalizedText message={"Description"} /></span>
               {canEdit && !isEditingDesc && (
                 <button type="button" onClick={() => setIsEditingDesc(true)} className="card-edit-btn">
-                  <Edit3 size={13} /> Edit
-                </button>
+                  <Edit3 size={13} />{" "}<LocalizedText message={"Edit"} />{" "}</button>
               )}
             </div>
 
@@ -580,15 +586,13 @@ export default function TaskDetailPage({
                 <TextArea
                   value={descDraft}
                   onChange={(e) => setDescDraft(e.target.value)}
-                  placeholder="Add a detailed description in Markdown..."
+                  placeholder={translateUI("Add a detailed description in Markdown...")}
                   style={{ minHeight: 140, fontSize: 13.5 }}
                 />
                 <div className="desc-editor-actions">
-                  <span className="text-xs text-neutral-400">Markdown supported</span>
+                  <span className="text-xs text-neutral-400"><LocalizedText message={"Markdown supported"} /></span>
                   <div className="flex gap-2">
-                    <Button variant="secondary" size="sm" onClick={() => setIsEditingDesc(false)}>
-                      Cancel
-                    </Button>
+                    <Button variant="secondary" size="sm" onClick={() => setIsEditingDesc(false)}>{" "}<LocalizedText message={"Cancel"} />{" "}</Button>
                     <Button
                       variant="primary"
                       size="sm"
@@ -596,9 +600,7 @@ export default function TaskDetailPage({
                         updateTaskFields.mutate({ description: descDraft });
                         setIsEditingDesc(false);
                       }}
-                    >
-                      Save description
-                    </Button>
+                    >{" "}<LocalizedText message={"Save description"} />{" "}</Button>
                   </div>
                 </div>
               </div>
@@ -610,7 +612,7 @@ export default function TaskDetailPage({
           </div>
 
           <div className="task-content-card">
-            <div className="card-top-bar"><span className="card-title">Uploaded documentation</span></div>
+            <div className="card-top-bar"><span className="card-title"><LocalizedText message={"Uploaded documentation"} /></span></div>
             <div style={{ padding: 16 }}><DocumentationFiles entityType="task" entityId={row.id} /></div>
           </div>
 
@@ -621,7 +623,7 @@ export default function TaskDetailPage({
             <div className="card-top-bar">
               <div className="flex items-center gap-2">
                 <GitBranch size={15} className="text-emerald-400" />
-                <span className="card-title">Subtasks</span>
+                <span className="card-title"><LocalizedText message={"Subtasks"} /></span>
                 {subtaskTotal > 0 && (
                   <span className="progress-fraction">
                     {subtaskCompleted}/{subtaskTotal} ({subtaskPercent}%)
@@ -638,9 +640,9 @@ export default function TaskDetailPage({
 
             <div className="subtasks-list">
               {subtasks.isLoading ? (
-                <span className="text-xs text-neutral-500">Loading subtasks…</span>
+                <span className="text-xs text-neutral-500"><LocalizedText message={"Loading subtasks…"} /></span>
               ) : subtaskList.length === 0 ? (
-                <span className="text-xs text-neutral-500">No subtasks created yet.</span>
+                <span className="text-xs text-neutral-500"><LocalizedText message={"No subtasks created yet."} /></span>
               ) : (
                 subtaskList.map((sub) => (
                   <Link key={sub.id} href={`/tasks/${sub.id}`} className="subtask-item-card">
@@ -674,14 +676,14 @@ export default function TaskDetailPage({
                   className="subtask-add-form"
                 >
                   <TextInput
-                    aria-label="New subtask title"
-                    placeholder="Add a new subtask…"
+                    aria-label={translateUI("New subtask title")}
+                    placeholder={translateUI("Add a new subtask…")}
                     value={subtaskTitle}
                     onChange={(event) => setSubtaskTitle(event.target.value)}
                     style={{ flex: 1 }}
                   />
                   <Button type="submit" size="sm" disabled={!subtaskTitle.trim() || addSubtask.isPending}>
-                    <Plus size={14} /> {addSubtask.isPending ? "Adding…" : "Add Subtask"}
+                    <Plus size={14} /> {addSubtask.isPending ? <LocalizedText message={"Adding…"} /> : <LocalizedText message={"Add Subtask"} />}
                   </Button>
                 </form>
               )}
@@ -698,7 +700,7 @@ export default function TaskDetailPage({
                   onClick={() => setActiveTab("comments")}
                 >
                   <MessageSquare size={13} />
-                  <span>Comments ({(comments.data?.length ?? 0)})</span>
+                  <span><LocalizedText message={"Comments ("} />{(comments.data?.length ?? 0)})</span>
                 </button>
                 <button
                   type="button"
@@ -706,7 +708,7 @@ export default function TaskDetailPage({
                   onClick={() => setActiveTab("history")}
                 >
                   <Clock size={13} />
-                  <span>History &amp; Changes</span>
+                  <span><LocalizedText message={"History & Changes"} /></span>
                 </button>
               </div>
             </div>
@@ -720,14 +722,14 @@ export default function TaskDetailPage({
                     <TextArea
                       value={newComment}
                       onChange={(e) => setNewComment(e.target.value)}
-                      placeholder="Add a comment… Type @name to mention a teammate"
+                      placeholder={translateUI("Add a comment… Type @name to mention a teammate")}
                       style={{ minHeight: 76, fontSize: 13.5 }}
                     />
 
                     {/* Mentions Dropdown */}
                     {mentionSuggestions.length > 0 && (
                       <div className="mentions-dropdown animate-fade-in">
-                        <div className="mentions-header">Mention Teammate</div>
+                        <div className="mentions-header"><LocalizedText message={"Mention Teammate"} /></div>
                         {mentionSuggestions.map((u) => {
                           const handle =
                             u.username ?? u.email.split("@")[0] ?? u.full_name.replace(/\s+/g, "");
@@ -768,26 +770,21 @@ export default function TaskDetailPage({
                           variant="secondary"
                           size="sm"
                           onClick={() => setShowGitHubPicker((v) => !v)}
-                          title="Mention GitHub Issue or Pull Request"
+                          title={translateUI("Mention GitHub Issue or Pull Request")}
                         >
-                          <Github size={12} /> Mention Issue/PR
-                        </Button>
-                        <span className="mention-tip">
-                          Tip: Type <strong className="text-emerald-400">@user</strong> to notify teammates.
-                        </span>
+                          <Github size={12} />{" "}<LocalizedText message={"Mention Issue/PR"} />{" "}</Button>
+                        <span className="mention-tip">{" "}<LocalizedText message={"Tip: Type"} />{" "}<strong className="text-emerald-400"><LocalizedText message={"@user"} /></strong>{" "}<LocalizedText message={"to notify teammates."} />{" "}</span>
                       </div>
                       {newComment.trim() && (
                         <div className="flex gap-2">
-                          <Button variant="secondary" size="sm" onClick={() => setNewComment("")}>
-                            Cancel
-                          </Button>
+                          <Button variant="secondary" size="sm" onClick={() => setNewComment("")}>{" "}<LocalizedText message={"Cancel"} />{" "}</Button>
                           <Button
                             variant="primary"
                             size="sm"
                             disabled={!newComment.trim() || postComment.isPending}
                             onClick={() => postComment.mutate(newComment.trim())}
                           >
-                            <Send size={12} /> {postComment.isPending ? "Posting…" : "Save comment"}
+                            <Send size={12} /> {postComment.isPending ? <LocalizedText message={"Posting…"} /> : <LocalizedText message={"Save comment"} />}
                           </Button>
                         </div>
                       )}
@@ -798,11 +795,11 @@ export default function TaskDetailPage({
                 {/* Comments List */}
                 <div className="comments-list">
                   {comments.isLoading ? (
-                    <span className="text-xs text-neutral-500">Loading comments…</span>
+                    <span className="text-xs text-neutral-500"><LocalizedText message={"Loading comments…"} /></span>
                   ) : (comments.data?.length ?? 0) === 0 ? (
                     <div className="empty-comments-state">
                       <MessageSquareText size={24} className="text-neutral-500 mb-2" />
-                      <p>No comments yet. Start the conversation!</p>
+                      <p><LocalizedText message={"No comments yet. Start the conversation!"} /></p>
                     </div>
                   ) : (
                     comments.data!.map((c) => (
@@ -811,7 +808,7 @@ export default function TaskDetailPage({
                         <div className="comment-bubble-content">
                           <div className="comment-header">
                             <span className="comment-author">{nameOf(c.author_user_id)}</span>
-                            <span className="comment-time">{relativeTime(c.created_at)}</span>
+                            <span className="comment-time">{<LocalizedRelativeTime value={c.created_at} />}</span>
                           </div>
                           <div className="comment-body">
                             <MarkdownPreview value={c.body} />
@@ -827,21 +824,21 @@ export default function TaskDetailPage({
                 <div className="history-row">
                   <span className="history-dot" />
                   <div className="history-text">
-                    <b>Task created</b> on {new Date(row.created_at).toLocaleDateString()} by{" "}
-                    {row.created_by ? nameOf(row.created_by) || row.created_by : "System"}
+                    <b><LocalizedText message={"Task created"} /></b>{" "}<LocalizedText message={"on"} />{" "}<LocalizedDate value={row.created_at} />{" "}<LocalizedText message={"by"} />{" "}
+                    {row.created_by ? nameOf(row.created_by) || row.created_by : <LocalizedText message={"System"} />}
                   </div>
                 </div>
                 <div className="history-row">
                   <span className="history-dot" />
                   <div className="history-text">
-                    <b>Last modified</b> on {new Date(row.updated_at).toLocaleDateString()}
+                    <b><LocalizedText message={"Last modified"} /></b>{" "}<LocalizedText message={"on"} />{" "}<LocalizedDate value={row.updated_at} />
                   </div>
                 </div>
                 {row.completed_at && (
                   <div className="history-row">
                     <span className="history-dot green" />
                     <div className="history-text">
-                      <b>Completed</b> on {new Date(row.completed_at).toLocaleDateString()}
+                      <b><LocalizedText message={"Completed"} /></b>{" "}<LocalizedText message={"on"} />{" "}<LocalizedDate value={row.completed_at} />
                     </div>
                   </div>
                 )}
@@ -854,10 +851,10 @@ export default function TaskDetailPage({
         <aside className="task-inspector-panel">
           {/* Card: Workflow & Status */}
           <div className="inspector-card">
-            <span className="inspector-heading">Workflow &amp; Status</span>
+            <span className="inspector-heading"><LocalizedText message={"Workflow & Status"} /></span>
             {canEdit && (
-              <Field label="Status">
-                <Select
+              <Field label={translateUI("Status")}>
+                <Select translateOptions
                   value={String(row.status)}
                   onChange={(event) => changeStatus.mutate(event.target.value as TaskStatus)}
                   disabled={changeStatus.isPending}
@@ -869,8 +866,8 @@ export default function TaskDetailPage({
               </Field>
             )}
 
-            <Field label="Priority">
-              <Select
+            <Field label={translateUI("Priority")}>
+              <Select translateOptions
                 value={String(row.priority)}
                 onChange={(event) => updateTaskFields.mutate({ priority: event.target.value })}
                 disabled={!canEdit || updateTaskFields.isPending}
@@ -885,24 +882,22 @@ export default function TaskDetailPage({
           {/* Card: People & Ownership */}
           <div className="inspector-card">
             <div className="flex items-center justify-between">
-              <span className="inspector-heading">Ownership</span>
-              {!isAssignedToCurrentUser && currentUser && (
+              <span className="inspector-heading"><LocalizedText message={"Ownership"} /></span>
+              {!isAssignedToCurrentUser && canSelfAssign && currentUser && (
                 <button
                   type="button"
                   onClick={() => assignToMe.mutate()}
                   disabled={assignToMe.isPending}
                   className="quick-assign-btn"
-                >
-                  Assign to me
-                </button>
+                >{" "}<LocalizedText message={"Assign to me"} />{" "}</button>
               )}
             </div>
 
             <div className="people-field">
-              <span className="field-label">Assignees</span>
+              <span className="field-label"><LocalizedText message={"Assignees"} /></span>
               <div className="people-list">
                 {row.assignee_user_ids.length === 0 ? (
-                  <span className="unassigned-muted">Unassigned</span>
+                  <span className="unassigned-muted"><LocalizedText message={"Unassigned"} /></span>
                 ) : (
                   row.assignee_user_ids.map((id) => (
                     <div key={id} className="person-row">
@@ -915,7 +910,7 @@ export default function TaskDetailPage({
             </div>
 
             <div className="people-field">
-              <span className="field-label">Reporter</span>
+              <span className="field-label"><LocalizedText message={"Reporter"} /></span>
               <div className="person-row">
                 <Avatar name={nameOf(row.created_by) || "System"} size={22} />
                 <span className="person-name">{nameOf(row.created_by) || row.created_by || "System"}</span>
@@ -923,7 +918,7 @@ export default function TaskDetailPage({
             </div>
 
             <div className="people-field">
-              <span className="field-label">Reviewer</span>
+              <span className="field-label"><LocalizedText message={"Reviewer"} /></span>
               <div className="person-row">
                 {row.reviewer_user_id ? (
                   <>
@@ -931,7 +926,7 @@ export default function TaskDetailPage({
                     <span className="person-name">{nameOf(row.reviewer_user_id)}</span>
                   </>
                 ) : (
-                  <span className="unassigned-muted">No reviewer assigned</span>
+                  <span className="unassigned-muted"><LocalizedText message={"No reviewer assigned"} /></span>
                 )}
               </div>
             </div>
@@ -939,28 +934,28 @@ export default function TaskDetailPage({
 
           {/* Card: Planning & Time Tracking */}
           <div className="inspector-card">
-            <span className="inspector-heading">Planning &amp; Estimates</span>
+            <span className="inspector-heading"><LocalizedText message={"Planning & Estimates"} /></span>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <span className="field-label">Story Points</span>
+                <span className="field-label"><LocalizedText message={"Story Points"} /></span>
                 <span className="field-val">{row.story_points != null ? `${row.story_points} pts` : "—"}</span>
               </div>
               <div>
-                <span className="field-label">Est. Hours</span>
+                <span className="field-label"><LocalizedText message={"Est. Hours"} /></span>
                 <span className="field-val">{row.estimated_hours != null ? `${row.estimated_hours}h` : "—"}</span>
               </div>
             </div>
 
             <div>
-              <span className="field-label">Partition / Level</span>
-              <span className="field-val capitalize">{row.partition ? row.partition : "Tech"}</span>
+              <span className="field-label"><LocalizedText message={"Partition / Level"} /></span>
+              <span className="field-val capitalize">{row.partition ? row.partition : <LocalizedText message={"Tech"} />}</span>
             </div>
 
             <div>
-              <span className="field-label">Task Type</span>
+              <span className="field-label"><LocalizedText message={"Task Type"} /></span>
               <span className="field-val" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                {row.is_ticket && <><Ticket size={13} /> Ticket · </>}
+                {row.is_ticket && <><Ticket size={13} />{" "}<LocalizedText message={"Ticket ·"} />{" "}</>}
                 {String(row.task_type)}
               </span>
             </div>
@@ -968,37 +963,37 @@ export default function TaskDetailPage({
 
           {/* Card: Dates & Metadata */}
           <div className="inspector-card">
-            <span className="inspector-heading">Dates &amp; Schedule</span>
+            <span className="inspector-heading"><LocalizedText message={"Dates & Schedule"} /></span>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <span className="field-label">Start Date</span>
+                <span className="field-label"><LocalizedText message={"Start Date"} /></span>
                 <span className="field-val">{row.start_date ?? "—"}</span>
               </div>
               <div>
-                <span className="field-label">Due Date</span>
+                <span className="field-label"><LocalizedText message={"Due Date"} /></span>
                 <span className="field-val">{row.due_date ?? "—"}</span>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <span className="field-label">Created</span>
-                <span className="field-val text-xs text-neutral-400">{row.created_at.slice(0, 10)}</span>
+                <span className="field-label"><LocalizedText message={"Created"} /></span>
+                <span className="field-val text-xs text-neutral-400">{<LocalizedDate value={row.created_at} />}</span>
               </div>
               <div>
-                <span className="field-label">Updated</span>
-                <span className="field-val text-xs text-neutral-400">{row.updated_at.slice(0, 10)}</span>
+                <span className="field-label"><LocalizedText message={"Updated"} /></span>
+                <span className="field-val text-xs text-neutral-400">{<LocalizedDate value={row.updated_at} />}</span>
               </div>
             </div>
           </div>
 
           {/* Card: Labels */}
           <div className="inspector-card">
-            <span className="inspector-heading">Labels</span>
+            <span className="inspector-heading"><LocalizedText message={"Labels"} /></span>
             <div className="labels-wrap">
               {row.labels.length === 0 ? (
-                <span className="unassigned-muted">No labels</span>
+                <span className="unassigned-muted"><LocalizedText message={"No labels"} /></span>
               ) : (
                 row.labels.map((label) => (
                   <span key={label} className="task-label-tag">
@@ -1027,7 +1022,6 @@ export default function TaskDetailPage({
 function BackLink({ router }: { router: ReturnType<typeof useRouter> }) {
   return (
     <button type="button" onClick={() => goBack("/tasks")} className="task-back-btn">
-      <ArrowLeft size={13} /> Back
-    </button>
+      <ArrowLeft size={13} />{" "}<LocalizedText message={"Back"} />{" "}</button>
   );
 }

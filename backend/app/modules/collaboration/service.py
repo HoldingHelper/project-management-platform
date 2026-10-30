@@ -195,7 +195,24 @@ async def upload_file(
         storage_key=storage_key,
         uploaded_by_user_id=current_user.user_id,
     )
-    attachment = await repo.create_file_attachment(db, attachment)
+    if entity_type in {"product", "project", "task"}:
+        from app.modules.docs.upload_library import index_upload
+        import asyncio
+        try:
+            db.add(attachment)
+            await db.flush()
+            await index_upload(db, attachment)
+            await db.commit()
+        except Exception:
+            await db.rollback()
+            try:
+                await asyncio.to_thread(file_storage_service.delete, storage_key)
+            except Exception:
+                pass
+            raise
+        await db.refresh(attachment)
+    else:
+        attachment = await repo.create_file_attachment(db, attachment)
     return FileAttachmentRead.model_validate(attachment)
 
 
@@ -207,7 +224,8 @@ async def list_files(
 ) -> List[FileAttachmentRead]:
     await authorize_entity_access(db, current_user, entity_type, entity_id)
     files = await repo.list_file_attachments(db, entity_type, entity_id)
-    return [FileAttachmentRead.model_validate(f) for f in files]
+    from app.modules.docs.lifecycle import visible_upload
+    return [FileAttachmentRead.model_validate(f) for f in files if await visible_upload(db, current_user, f.id)]
 
 
 async def get_file_download_url(
@@ -219,9 +237,11 @@ async def get_file_download_url(
     await authorize_entity_access(
         db, current_user, attachment.entity_type, attachment.entity_id
     )
-    return file_storage_service.presigned_url(
-        attachment.storage_key, filename=attachment.file_name
-    )
+    from app.modules.docs.lifecycle import require_visible_upload
+    await require_visible_upload(db, current_user, attachment.id)
+    if attachment.entity_type in {"product", "project", "task"}:
+        return f"/api/v1/files/{attachment.id}/download"
+    return file_storage_service.presigned_url(attachment.storage_key, filename=attachment.file_name)
 
 
 

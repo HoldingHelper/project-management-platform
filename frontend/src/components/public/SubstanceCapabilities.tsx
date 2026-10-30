@@ -1,4 +1,5 @@
 "use client";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 import { useState } from "react";
 import Link from "next/link";
@@ -56,13 +57,12 @@ export function SubstanceCapabilities() {
     <section id="capabilities" className="substance-capabilities-section">
       <div className="public-container">
         <div className="capabilities-header">
-          <p className="substance-kicker">Capabilities</p>
+          <p className="substance-kicker"><LocalizedText message={"Capabilities"} /></p>
           <div className="capabilities-title-row">
-            <h2>
-              The full operating system for{" "}
-              <em className="font-instrument italic">high-velocity engineering.</em>
+            <h2>{" "}<LocalizedText message={"The full operating system for"} />{" "}
+              <em className="font-instrument italic"><LocalizedText message={"high-velocity engineering."} /></em>
             </h2>
-            <span className="capabilities-count">06 Core Engines</span>
+            <span className="capabilities-count"><LocalizedText message={"06 Core Engines"} /></span>
           </div>
         </div>
 

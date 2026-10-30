@@ -1,3 +1,4 @@
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 import React from 'react';
 import { Task, Project, Person } from '../types';
 import { Icon } from '../icons';
@@ -129,18 +130,14 @@ export function HomeView({
           }}
         >
           <div>
-            <h4 style={{ margin: 0 }}>My open tasks</h4>
-            <div className="text-muted" style={{ fontSize: 13 }}>
-              Assigned to you, soonest due first.
-            </div>
+            <h4 style={{ margin: 0 }}><LocalizedText message={"My open tasks"} /></h4>
+            <div className="text-muted" style={{ fontSize: 13 }}>{" "}<LocalizedText message={"Assigned to you, soonest due first."} />{" "}</div>
           </div>
           <button
             type="button"
             className="btn btn-ghost"
             onClick={handleGoTasks}
-          >
-            Task browser
-            <Icon name="right" size={14} />
+          >{" "}<LocalizedText message={"Task browser"} />{" "}<Icon name="right" size={14} />
           </button>
         </div>
 
@@ -189,7 +186,7 @@ export function HomeView({
                   }}
                 >
                   <Icon
-                    name={t.type === 'Feature' ? 'check' : t.type === 'Bug' ? 'target' : 'sparkles'}
+                    name={t.type === 'Feature' ? "check" : t.type === 'Bug' ? 'target' : 'sparkles'}
                     size={10}
                     strokeWidth={3}
                   />
@@ -199,7 +196,7 @@ export function HomeView({
               <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                 <span style={{ fontWeight: 600, fontSize: 14 }}>{t.title}</span>
                 <span className="text-muted" style={{ fontSize: 12 }}>
-                  {t.project || '—'} · due {t.e == null ? 'No date' : dayStr(t.e)}
+                  {t.project || '—'}{" "}<LocalizedText message={"· due"} />{" "}{t.e == null ? <LocalizedText message={"No date"} /> : dayStr(t.e)}
                 </span>
               </span>
               <span
@@ -227,10 +224,8 @@ export function HomeView({
       {/* Column 2: My KPI pulse */}
       <section style={{ display: 'flex', flexDirection: 'column' }}>
         <div style={{ paddingBottom: 12, borderBottom: '2px solid var(--color-divider)' }}>
-          <h4 style={{ margin: 0 }}>My KPI pulse</h4>
-          <div className="text-muted" style={{ fontSize: 13 }}>
-            Only your personal delivery signals are shown here.
-          </div>
+          <h4 style={{ margin: 0 }}><LocalizedText message={"My KPI pulse"} /></h4>
+          <div className="text-muted" style={{ fontSize: 13 }}>{" "}<LocalizedText message={"Only your personal delivery signals are shown here."} />{" "}</div>
         </div>
         {kpis.map((k) => (
           <div
@@ -266,10 +261,8 @@ export function HomeView({
       {/* Column 3 (Full width): Executive dashboard with person zoom */}
       <section style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: 20 }}>
         <div style={{ paddingBottom: 12, borderBottom: '2px solid var(--color-divider)' }}>
-          <h4 style={{ margin: 0 }}>Executive dashboard</h4>
-          <div className="text-muted" style={{ fontSize: 13 }}>
-            Org-wide KPIs with one-person zoom. Pick a person on the left.
-          </div>
+          <h4 style={{ margin: 0 }}><LocalizedText message={"Executive dashboard"} /></h4>
+          <div className="text-muted" style={{ fontSize: 13 }}>{" "}<LocalizedText message={"Org-wide KPIs with one-person zoom. Pick a person on the left."} />{" "}</div>
         </div>
 
         {/* 4 Mini KPI cards */}
@@ -317,9 +310,7 @@ export function HomeView({
         >
           {/* Workload list */}
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <h6 className="text-muted" style={{ marginBottom: 8 }}>
-              Open work by person
-            </h6>
+            <h6 className="text-muted" style={{ marginBottom: 8 }}>{" "}<LocalizedText message={"Open work by person"} />{" "}</h6>
             {wl.map(([name, n]) => {
               const on = zp?.name === name;
               const pct = `${(n / wmax) * 100}%`;
@@ -388,8 +379,7 @@ export function HomeView({
                 <div>
                   <div style={{ fontWeight: 800, fontSize: 16 }}>{zp.name}</div>
                   <div className="text-muted" style={{ fontSize: 12 }}>
-                    {zp.role} · 8-week KPI zoom
-                  </div>
+                    {zp.role}{" "}<LocalizedText message={"· 8-week KPI zoom"} />{" "}</div>
                 </div>
               </div>
 
@@ -462,8 +452,7 @@ export function HomeView({
                     key={i}
                     className="text-muted"
                     style={{ flex: 1, fontSize: 10 }}
-                  >
-                    W{32 + i}
+                  >{" "}<LocalizedText message={"W"} />{32 + i}
                   </span>
                 ))}
               </div>

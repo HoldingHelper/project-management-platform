@@ -1,5 +1,8 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
+
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { GitBranch, Link2, ListChecks, Search, Ticket, UsersRound, X } from "lucide-react";
@@ -11,6 +14,7 @@ import {
   listTasks,
   updateTask,
   updateTaskStatus,
+  getProjectAssignmentCandidates, getTaskAssignmentCandidates,
 } from "@/lib/api/projects";
 import {
   addDocLink,
@@ -107,11 +111,15 @@ const emptyForm = {
 };
 
 export function TaskEditorModal({ open, onClose, task, projectId, phaseId, onCreated, onSaved, canManageAssignees }: Props) {
+  const { t: localizeAttribute } = useI18n();
+
+  const { t: translateUI } = useI18n();
+
   const toast = useToast();
   const qc = useQueryClient();
   const { user: currentUser, hasPermission, isSuperAdmin } = useAuth();
   const canAssignAnyone = canManageAssignees ?? (isSuperAdmin() || hasPermission("tasks.assign"));
-  const { users, nameOf } = useUserMap();
+  const { nameOf } = useUserMap();
   const { partitions } = useTaskPartitions();
   const [selectedProjectId, setSelectedProjectId] = useState<UUID | "">(projectId ?? "");
   const [selectedPhaseId, setSelectedPhaseId] = useState<UUID | "">(phaseId ?? "");
@@ -161,6 +169,14 @@ export function TaskEditorModal({ open, onClose, task, projectId, phaseId, onCre
         : emptyForm,
     );
   }, [open, projectId, phaseId, task]);
+
+  const candidates = useQuery({
+    queryKey: ["assignment-candidates", selectedProjectId || task?.id],
+    queryFn: () => selectedProjectId ? getProjectAssignmentCandidates(selectedProjectId) : getTaskAssignmentCandidates(task!.id),
+    enabled: open && (!!selectedProjectId || !!task?.id),
+  });
+  const eligiblePeople = candidates.data ?? [];
+  const legacyAssignees = candidates.data ? form.assignee_user_ids.filter((id) => !eligiblePeople.some((person) => person.id === id)) : [];
 
   const projects = useQuery({
     queryKey: ["projects", "task-editor"],
@@ -221,19 +237,8 @@ export function TaskEditorModal({ open, onClose, task, projectId, phaseId, onCre
 
   const assignmentUsers = useMemo(() => {
     const query = assigneeSearch.trim().toLocaleLowerCase();
-    if (!query) return users;
-    return users.filter((user) => {
-      const searchable = [
-        user.full_name,
-        user.email,
-        user.username ?? "",
-        ...user.roles,
-      ].join(" ").toLocaleLowerCase();
-      return searchable.includes(query)
-        || form.assignee_user_ids.includes(user.id)
-        || form.reviewer_user_id === user.id;
-    });
-  }, [assigneeSearch, form.assignee_user_ids, form.reviewer_user_id, users]);
+    return eligiblePeople.filter((person) => !query || [person.full_name, person.email].join(" ").toLocaleLowerCase().includes(query) || form.assignee_user_ids.includes(person.id));
+  }, [assigneeSearch, form.assignee_user_ids, candidates.data]);
 
   const toggleAssignee = (id: UUID) => {
     if (!canAssignAnyone && id !== currentUser?.id) return;
@@ -284,6 +289,8 @@ export function TaskEditorModal({ open, onClose, task, projectId, phaseId, onCre
         docLinkFailures ? "error" : "success",
       );
       qc.invalidateQueries({ queryKey: ["tasks"] });
+      qc.invalidateQueries({ queryKey: ["doc-pages"] });
+      qc.invalidateQueries({ queryKey: ["doc-spaces"] });
       qc.invalidateQueries({ queryKey: ["phase-tasks"] });
       qc.invalidateQueries({ queryKey: ["phase-progress"] });
       qc.invalidateQueries({ queryKey: ["project-overview"] });
@@ -339,6 +346,8 @@ export function TaskEditorModal({ open, onClose, task, projectId, phaseId, onCre
     onSuccess: (saved) => {
       toast.push("Task updated.", "success");
       qc.invalidateQueries({ queryKey: ["tasks"] });
+      qc.invalidateQueries({ queryKey: ["doc-pages"] });
+      qc.invalidateQueries({ queryKey: ["doc-spaces"] });
       qc.invalidateQueries({ queryKey: ["task", saved.id] });
       qc.invalidateQueries({ queryKey: ["phase-tasks"] });
       qc.invalidateQueries({ queryKey: ["phase-progress"] });
@@ -354,11 +363,11 @@ export function TaskEditorModal({ open, onClose, task, projectId, phaseId, onCre
     <Modal
       open={open}
       onClose={onClose}
-      title={isEdit ? "Edit task" : "New task"}
+      title={isEdit ? localizeAttribute("Edit task") : localizeAttribute("New task")}
       width={980}
       footer={
         <>
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button variant="secondary" onClick={onClose}><LocalizedText message={"Cancel"} /></Button>
           <Button
             disabled={
               !form.title.trim()
@@ -369,69 +378,71 @@ export function TaskEditorModal({ open, onClose, task, projectId, phaseId, onCre
             }
             onClick={() => (isEdit ? save.mutate() : create.mutate())}
           >
-            {isEdit ? (save.isPending ? "Saving..." : "Save changes") : create.isPending ? "Creating..." : "Create task"}
+            {isEdit ? (save.isPending ? "Saving..." : "Save changes") : create.isPending ? <LocalizedText message={"Creating..."} /> : <LocalizedText message={"Create task"} />}
           </Button>
         </>
       }
     >
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 340px), 1fr))", gap: 18 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <h2 style={sectionHeading}>Required</h2>
-          <Field label="Title">
-            <TextInput value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} placeholder="Short, action-oriented task title" />
+          <h2 style={sectionHeading}><LocalizedText message={"Required"} /></h2>
+          <Field label={translateUI("Title")}>
+            <TextInput value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} placeholder={translateUI("Short, action-oriented task title")} />
           </Field>
-          <Field label="Description (Markdown)">
+          <Field label={translateUI("Description (Markdown)")}>
             <TextArea
               value={form.description}
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-              placeholder={"## What\n\n## Acceptance criteria\n- \n\n## Notes / links"}
+              placeholder={translateUI("## What\n\n## Acceptance criteria\n- \n\n## Notes / links")}
               style={{ minHeight: 170 }}
             />
           </Field>
+          <h2 style={sectionHeading}><LocalizedText message={"Checklist"} /></h2>
+          <ChecklistEditor items={form.checklist} onChange={(checklist) => setForm((current) => ({ ...current, checklist }))} disabled={create.isPending || save.isPending} />
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 10 }}>
-            <Field label="Status">
-              <Select value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))} options={TASK_STATUSES.map((s) => ({ value: s, label: TASK_STATUS_LABELS[s] ?? s }))} />
+            <Field label={translateUI("Status")}>
+              <Select translateOptions value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))} options={TASK_STATUSES.map((s) => ({ value: s, label: TASK_STATUS_LABELS[s] ?? s }))} />
             </Field>
-            <Field label="Type">
-              <Select value={form.task_type} onChange={(e) => setForm((f) => ({ ...f, task_type: e.target.value }))} options={TASK_TYPES.map((s) => ({ value: s, label: s }))} />
+            <Field label={translateUI("Type")}>
+              <Select translateOptions value={form.task_type} onChange={(e) => setForm((f) => ({ ...f, task_type: e.target.value }))} options={TASK_TYPES.map((s) => ({ value: s, label: s }))} />
             </Field>
-            <Field label="Priority">
-              <Select value={form.priority} onChange={(e) => setForm((f) => ({ ...f, priority: e.target.value }))} options={["P0", "P1", "P2", "P3"].map((s) => ({ value: s, label: s }))} />
+            <Field label={translateUI("Priority")}>
+              <Select translateOptions value={form.priority} onChange={(e) => setForm((f) => ({ ...f, priority: e.target.value }))} options={["P0", "P1", "P2", "P3"].map((s) => ({ value: s, label: s }))} />
             </Field>
-            <Field label="Partition">
+            <Field label={translateUI("Partition")}>
               <Select value={form.partition} onChange={(e) => setForm((f) => ({ ...f, partition: e.target.value }))} options={partitionOptions} />
             </Field>
           </div>
-          <h2 style={sectionHeading}>Scheduling</h2>
+          <h2 style={sectionHeading}><LocalizedText message={"Scheduling"} /></h2>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 10 }}>
-            <Field label="Start">
+            <Field label={translateUI("Start")}>
               <TextInput type="date" value={form.start_date} onChange={(e) => setForm((f) => ({ ...f, start_date: e.target.value }))} />
             </Field>
-            <Field label="Due / end">
+            <Field label={translateUI("Due / end")}>
               <TextInput type="date" value={form.due_date} onChange={(e) => setForm((f) => ({ ...f, due_date: e.target.value }))} />
             </Field>
-            <Field label="Story points">
+            <Field label={translateUI("Story points")}>
               <TextInput type="number" min={0} value={form.story_points} onChange={(e) => setForm((f) => ({ ...f, story_points: e.target.value }))} />
             </Field>
-            <Field label="Estimated hours">
+            <Field label={translateUI("Estimated hours")}>
               <TextInput type="number" min={0} value={form.estimated_hours} onChange={(e) => setForm((f) => ({ ...f, estimated_hours: e.target.value }))} />
             </Field>
-            <Field label="Actual hours">
+            <Field label={translateUI("Actual hours")}>
               <TextInput type="number" min={0} value={form.actual_hours} onChange={(e) => setForm((f) => ({ ...f, actual_hours: e.target.value }))} />
             </Field>
           </div>
-          <h2 style={sectionHeading}>GitHub / metadata</h2>
-          <Field label="GitHub issue URL">
+          <h2 style={sectionHeading}><LocalizedText message={"GitHub / metadata"} /></h2>
+          <Field label={translateUI("GitHub issue URL")}>
             <TextInput
               value={form.github_url}
               onChange={(e) => setForm((f) => ({ ...f, github_url: e.target.value }))}
-              placeholder="https://github.com/org/repo/issues/123"
+              placeholder={translateUI("https://github.com/org/repo/issues/123")}
             />
           </Field>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <h2 style={sectionHeading}>Assignment</h2>
+          <h2 style={sectionHeading}><LocalizedText message={"Assignment"} /></h2>
           {!isEdit && (
             <div
               style={{
@@ -453,11 +464,8 @@ export function TaskEditorModal({ open, onClose, task, projectId, phaseId, onCre
                 />
                 <span>
                   <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 750 }}>
-                    <Ticket size={14} /> Send as a ticket
-                  </span>
-                  <span style={{ display: "block", marginTop: 2, fontSize: 11.5, color: "var(--text-tertiary)" }}>
-                    Notify selected people or every active member of a team and add it to their dashboard.
-                  </span>
+                    <Ticket size={14} />{" "}<LocalizedText message={"Send as a ticket"} />{" "}</span>
+                  <span style={{ display: "block", marginTop: 2, fontSize: 11.5, color: "var(--text-tertiary)" }}>{" "}<LocalizedText message={"Notify selected people or every active member of a team and add it to their dashboard."} />{" "}</span>
                 </span>
               </label>
               {form.is_ticket && (
@@ -465,7 +473,7 @@ export function TaskEditorModal({ open, onClose, task, projectId, phaseId, onCre
                   <SearchSuggestionInput
                     value={ticketRecipientSearch}
                     options={[
-                      ...users
+                      ...eligiblePeople
                         .filter((person) => person.id !== currentUser?.id && !ticketRecipientUserIds.includes(person.id))
                         .map((person) => ({
                           id: `user:${person.id}`,
@@ -480,8 +488,8 @@ export function TaskEditorModal({ open, onClose, task, projectId, phaseId, onCre
                           detail: `${team.member_count ?? 0} team member(s)`,
                         })),
                     ]}
-                    placeholder="Search people or teams…"
-                    ariaLabel="Search ticket recipients"
+                    placeholder={translateUI("Search people or teams…")}
+                    ariaLabel={localizeAttribute("Search ticket recipients")}
                     onChange={setTicketRecipientSearch}
                     onSelect={(option) => {
                       const [kind, id] = option.id.split(":") as ["user" | "team", UUID];
@@ -518,9 +526,7 @@ export function TaskEditorModal({ open, onClose, task, projectId, phaseId, onCre
                     })}
                   </div>
                   {ticketRecipientUserIds.length === 0 && ticketRecipientTeamIds.length === 0 && (
-                    <span style={{ fontSize: 11.5, color: "var(--status-delayed)" }}>
-                      Select at least one person or team.
-                    </span>
+                    <span style={{ fontSize: 11.5, color: "var(--status-delayed)" }}>{" "}<LocalizedText message={"Select at least one person or team."} />{" "}</span>
                   )}
                 </>
               )}
@@ -528,56 +534,59 @@ export function TaskEditorModal({ open, onClose, task, projectId, phaseId, onCre
           )}
           {isEdit && task?.is_ticket && (
             <span style={{ ...metaPill, alignSelf: "flex-start", color: "var(--primary)" }}>
-              <Ticket size={12} /> Ticket
-            </span>
+              <Ticket size={12} />{" "}<LocalizedText message={"Ticket"} />{" "}</span>
           )}
           <div style={{ display: "grid", gridTemplateColumns: projectId ? "1fr" : "1fr 1fr", gap: 10 }}>
             {!projectId && (
-              <Field label="Project">
+              <Field label={translateUI("Project")}>
                 <Select
                   value={selectedProjectId}
                   onChange={(e) => {
                     setSelectedProjectId(e.target.value as UUID);
                     setSelectedPhaseId("");
                   }}
-                  placeholder="Backlog or project..."
+                  placeholder={translateUI("Backlog or project...")}
                   options={(projects.data?.items ?? []).map((p) => ({ value: p.id, label: p.name }))}
                 />
               </Field>
             )}
-            <Field label="Sprint">
+            <Field label={translateUI("Sprint")}>
               <Select
                 value={selectedPhaseId}
                 onChange={(e) => setSelectedPhaseId(e.target.value as UUID)}
-                placeholder={selectedProjectId ? "Choose sprint..." : "Backlog task"}
+                placeholder={selectedProjectId ? localizeAttribute("Choose sprint...") : localizeAttribute("Backlog task")}
                 options={(phases.data ?? []).map((ph) => ({ value: ph.id, label: ph.name }))}
               />
             </Field>
           </div>
-          <Field label="Parent task">
+          <Field label={translateUI("Parent task")}>
             <Select
               value={form.parent_task_id}
               onChange={(e) => setForm((f) => ({ ...f, parent_task_id: e.target.value }))}
-              placeholder="Top-level task"
+              placeholder={translateUI("Top-level task")}
               options={parentOptions}
             />
           </Field>
-          <Field label="Reviewer">
+          <Field label={translateUI("Reviewer")}>
             <Select
               value={form.reviewer_user_id}
               onChange={(e) => setForm((f) => ({ ...f, reviewer_user_id: e.target.value }))}
-              placeholder="No reviewer"
-              options={assignmentUsers.map((u) => ({ value: u.id, label: u.full_name }))}
+              placeholder={translateUI("No reviewer")}
+              options={[...eligiblePeople.map((u) => ({ value: u.id, label: u.full_name })), ...(form.reviewer_user_id && !eligiblePeople.some((u) => u.id === form.reviewer_user_id) ? [{ value: form.reviewer_user_id, label: nameOf(form.reviewer_user_id as UUID) }] : [])]}
             />
           </Field>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <div style={sideLabel}>Assignees</div>
+            <div style={sideLabel}><LocalizedText message={"Assignees"} /></div>
+            <small>{translateUI("Only project members can be assigned. Choose a project and sprint first.")}</small>
+            {candidates.isError && <Button type="button" variant="secondary" onClick={() => candidates.refetch()}>{translateUI("Retry loading members")}</Button>}
+            {candidates.isFetching && <span role="status">{translateUI("Loading members…")}</span>}
+            {legacyAssignees.map((id) => <Button key={id} type="button" variant="tertiary" size="sm" disabled={!canAssignAnyone && id !== currentUser?.id} onClick={() => toggleAssignee(id)}>{nameOf(id)} · {translateUI("Remove assignment")} <X size={12} /></Button>)}
             <TextInput
               icon={<Search size={14} />}
-              aria-label="Search people to assign"
+              aria-label={translateUI("Search people to assign")}
               value={assigneeSearch}
               onChange={(event) => setAssigneeSearch(event.target.value)}
-              placeholder="Search assignees…"
+              placeholder={translateUI("Search assignees…")}
               style={{ minHeight: 36, fontSize: 12.5 }}
             />
             <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 150, overflowY: "auto" }}>
@@ -589,27 +598,25 @@ export function TaskEditorModal({ open, onClose, task, projectId, phaseId, onCre
                 </label>
               ))}
               {assignmentUsers.length === 0 && (
-                <div style={{ padding: "10px 8px", color: "var(--text-tertiary)", fontSize: 12.5 }}>
-                  No matching people.
-                </div>
+                <div style={{ padding: "10px 8px", color: "var(--text-tertiary)", fontSize: 12.5 }}>{" "}<LocalizedText message={"No matching people."} />{" "}</div>
               )}
             </div>
           </div>
-          <Field label="Labels">
+          <Field label={translateUI("Labels")}>
             <TextInput
               value={form.labels}
               onChange={(e) => setForm((f) => ({ ...f, labels: e.target.value }))}
-              placeholder="Backend, Frontend, API, Urgent"
+              placeholder={translateUI("Backend, Frontend, API, Urgent")}
             />
           </Field>
-          <h2 style={sectionHeading}>Connected documents</h2>
+          <h2 style={sectionHeading}><LocalizedText message={"Connected documents"} /></h2>
           <SearchSuggestionInput
             value={docSearch}
             options={(docs.data ?? [])
               .filter((doc) => !selectedDocs.some((selected) => selected.id === doc.id))
               .map((doc) => ({ id: doc.id, label: doc.title, detail: doc.excerpt ?? "Internal Docs" }))}
-            placeholder="Search documents…"
-            ariaLabel="Search documents to connect to task"
+            placeholder={translateUI("Search documents…")}
+            ariaLabel={localizeAttribute("Search documents to connect to task")}
             onChange={setDocSearch}
             onSelect={(option) => {
               setSelectedDocs((current) => [...current, { id: option.id, title: option.label }]);
@@ -630,17 +637,15 @@ export function TaskEditorModal({ open, onClose, task, projectId, phaseId, onCre
             ))}
           </div>
           <DocumentationUpload files={documentationFiles} onChange={setDocumentationFiles} disabled={create.isPending || save.isPending} entityType="task" entityId={task?.id} />
-          <h2 style={sectionHeading}>Checklist</h2>
-          <ChecklistEditor items={form.checklist} onChange={(checklist) => setForm((current) => ({ ...current, checklist }))} disabled={create.isPending || save.isPending} />
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
             <StatusChip status={form.status} label={TASK_STATUS_LABELS[form.status] ?? form.status} />
             <PriorityBadge level={form.priority} compact />
-            <span style={metaPill}><GitBranch size={12} /> {form.parent_task_id ? "Subtask" : "Top-level"}</span>
+            <span style={metaPill}><GitBranch size={12} /> {form.parent_task_id ? <LocalizedText message={"Subtask"} /> : <LocalizedText message={"Top-level"} />}</span>
             {form.checklist.length > 0 && <span style={metaPill}><ListChecks size={12} /> {form.checklist.length}</span>}
           </div>
           <div style={{ borderTop: "1px solid var(--border-subtle)", paddingTop: 10 }}>
-            <div style={sideLabel}>Preview</div>
-            <MarkdownPreview value={form.description} empty="Description preview appears here." />
+            <div style={sideLabel}><LocalizedText message={"Preview"} /></div>
+            <MarkdownPreview value={form.description} empty={translateUI("Description preview appears here.")} />
           </div>
         </div>
       </div>

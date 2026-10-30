@@ -30,6 +30,7 @@ from app.core.exceptions import NotFoundError, ValidationAppError
 from app.core.storage import file_storage_service
 from app.modules.identity.models import User
 from app.modules.projects import repository as repo
+from app.modules.projects import membership
 from app.modules.projects.ai_schemas import (
     GenerationChange,
     GenerationDraftResponse,
@@ -718,6 +719,7 @@ async def create_generation_job(
             raise NotFoundError("Project", existing_project_id)
     else:
         product = await _ensure_ai_product(db, user_id)
+        await membership.require_product_members(db, product.id, [user_id])
         attrs = _initial_project_attrs(raw_input)
         project = Project(
             product_id=product.id,
@@ -948,6 +950,7 @@ async def _create_generated_tasks_batch(
     label_cache: dict[str, UUID] = {}
     now = datetime.now(timezone.utc)
 
+    await membership.require_project_assignees(db, sprints[0].id, [item.assignee_user_id for item in draft.tasks if item.assignee_user_id])
     for item in draft.tasks:
         sprint = next(
             (

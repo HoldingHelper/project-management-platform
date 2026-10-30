@@ -661,7 +661,7 @@ async def seed_internal_documentation(db: AsyncSession) -> None:
                     updated_by=author_id,
                 )
                 db.add(page)
-            else:
+            elif page.status in {"draft", "internal"}:
                 page.title = page_data["title"]
                 page.excerpt = page_data.get("excerpt")
                 page.content = content

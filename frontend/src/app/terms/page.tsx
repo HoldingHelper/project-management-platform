@@ -1,3 +1,4 @@
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 import type { Metadata } from "next";
 import { PublicShell } from "@/components/public/PublicShell";
 import { Scale, CheckCircle2, AlertCircle, FileCheck } from "lucide-react";
@@ -38,8 +39,7 @@ export default function TermsPage() {
               marginBottom: "16px",
             }}
           >
-            <Scale size={14} /> Agreement
-          </div>
+            <Scale size={14} />{" "}<LocalizedText message={"Agreement"} />{" "}</div>
           <h1
             style={{
               fontSize: "36px",
@@ -50,18 +50,14 @@ export default function TermsPage() {
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
             }}
-          >
-            Terms of Service
-          </h1>
+          >{" "}<LocalizedText message={"Terms of Service"} />{" "}</h1>
           <p
             style={{
               fontSize: "15px",
               color: "var(--text-secondary, #94a3b8)",
               margin: 0,
             }}
-          >
-            Effective date: September 25, 2026 · Version 2.1
-          </p>
+          >{" "}<LocalizedText message={"Effective date: September 25, 2026 · Version 2.1"} />{" "}</p>
         </div>
 
         <div
@@ -93,11 +89,8 @@ export default function TermsPage() {
                 gap: "10px",
               }}
             >
-              <CheckCircle2 size={18} color="var(--accent-primary, #6366f1)" /> 1. Acceptance of Terms
-            </h2>
-            <p style={{ margin: 0 }}>
-              By accessing or using the Project Management Platform services, you agree to be bound by these Terms of Service and all incorporated policies. If you are entering into this agreement on behalf of an organization or company, you represent that you have authority to bind that entity.
-            </p>
+              <CheckCircle2 size={18} color="var(--accent-primary, #6366f1)" />{" "}<LocalizedText message={"1. Acceptance of Terms"} />{" "}</h2>
+            <p style={{ margin: 0 }}>{" "}<LocalizedText message={"By accessing or using the Project Management Platform services, you agree to be bound by these Terms of Service and all incorporated policies. If you are entering into this agreement on behalf of an organization or company, you represent that you have authority to bind that entity."} />{" "}</p>
           </section>
 
           <section
@@ -119,15 +112,12 @@ export default function TermsPage() {
                 gap: "10px",
               }}
             >
-              <FileCheck size={18} color="var(--accent-primary, #6366f1)" /> 2. Workspace Access & Account Safety
-            </h2>
-            <p style={{ margin: "0 0 12px 0" }}>
-              Organizations are responsible for maintaining the confidentiality of their account credentials and configuring role assignments appropriately. You agree to:
-            </p>
+              <FileCheck size={18} color="var(--accent-primary, #6366f1)" />{" "}<LocalizedText message={"2. Workspace Access & Account Safety"} />{" "}</h2>
+            <p style={{ margin: "0 0 12px 0" }}>{" "}<LocalizedText message={"Organizations are responsible for maintaining the confidentiality of their account credentials and configuring role assignments appropriately. You agree to:"} />{" "}</p>
             <ul style={{ margin: "0 0 0 20px", padding: 0 }}>
-              <li>Refrain from reverse-engineering, probing vulnerabilities, or bypassing authorization boundaries.</li>
-              <li>Ensure all team member invitations are sent to legitimate authorized recipients.</li>
-              <li>Comply with applicable data governance, privacy laws, and export regulations.</li>
+              <li><LocalizedText message={"Refrain from reverse-engineering, probing vulnerabilities, or bypassing authorization boundaries."} /></li>
+              <li><LocalizedText message={"Ensure all team member invitations are sent to legitimate authorized recipients."} /></li>
+              <li><LocalizedText message={"Comply with applicable data governance, privacy laws, and export regulations."} /></li>
             </ul>
           </section>
 
@@ -150,11 +140,8 @@ export default function TermsPage() {
                 gap: "10px",
               }}
             >
-              <AlertCircle size={18} color="var(--accent-primary, #6366f1)" /> 3. Service Level & Support
-            </h2>
-            <p style={{ margin: 0 }}>
-              The platform is provided on high-availability cloud infrastructure with continuous health monitoring and zero-downtime rolling updates. We strive for 99.9% uptime for core collaboration and task tracking services.
-            </p>
+              <AlertCircle size={18} color="var(--accent-primary, #6366f1)" />{" "}<LocalizedText message={"3. Service Level & Support"} />{" "}</h2>
+            <p style={{ margin: 0 }}>{" "}<LocalizedText message={"The platform is provided on high-availability cloud infrastructure with continuous health monitoring and zero-downtime rolling updates. We strive for 99.9% uptime for core collaboration and task tracking services."} />{" "}</p>
           </section>
         </div>
       </div>

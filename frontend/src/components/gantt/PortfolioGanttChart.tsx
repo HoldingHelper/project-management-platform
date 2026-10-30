@@ -1,4 +1,6 @@
 "use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 /* Project-level Gantt: one row per project, date-scaled bars with progress
    fill, milestone diamonds, cross-project dependency arrows (SVG overlay),
@@ -59,6 +61,8 @@ export function PortfolioGanttChart({
   editable?: boolean;
   onSchedule?: (id: string, dates: { start_date: string; end_date: string }) => void;
 }) {
+  const { t: translateUI, date: displayDate } = useI18n();
+
   const router = useRouter();
   const [zoom, setZoom] = useState(1);
   const [offsetDays, setOffsetDays] = useState(0);
@@ -113,9 +117,7 @@ export function PortfolioGanttChart({
 
   if (dated.length === 0) {
     return (
-      <div style={{ padding: 32, fontSize: 13, color: "var(--text-tertiary)", textAlign: "center", background: "var(--surface-2)", borderRadius: "var(--radius-3)", border: "1px solid var(--border-subtle)" }}>
-        No projects have start dates scheduled. Set start and due dates to view them on the interactive timeline.
-      </div>
+      <div style={{ padding: 32, fontSize: 13, color: "var(--text-tertiary)", textAlign: "center", background: "var(--surface-2)", borderRadius: "var(--radius-3)", border: "1px solid var(--border-subtle)" }}>{" "}<LocalizedText message={"No projects have start dates scheduled. Set start and due dates to view them on the interactive timeline."} />{" "}</div>
     );
   }
 
@@ -171,7 +173,7 @@ export function PortfolioGanttChart({
           name: m.name,
           x: x(m.due_date!),
           done: !!m.completed_at,
-          date: new Date(m.due_date!).toLocaleDateString([], { month: "short", day: "numeric" }),
+          date: displayDate(m.due_date!, { year: undefined, month: "short", day: "numeric" }),
         })),
     };
   });
@@ -185,7 +187,7 @@ export function PortfolioGanttChart({
     const next = new Date(cursor);
     next.setMonth(cursor.getMonth() + 1);
     months.push({
-      label: cursor.toLocaleDateString([], { month: "short", year: "numeric" }),
+      label: displayDate(cursor, { day: undefined, month: "short", year: "numeric" }),
       x: ((cursor.getTime() - min) / DAY_MS) * dayWidth,
       width: Math.max(72, ((next.getTime() - cursor.getTime()) / DAY_MS) * dayWidth),
     });
@@ -201,7 +203,7 @@ export function PortfolioGanttChart({
   tickCursor.setHours(0, 0, 0, 0);
   while (tickCursor.getTime() < max) {
     dayTicks.push({
-      label: tickCursor.toLocaleDateString([], { month: "short", day: "numeric" }),
+      label: displayDate(tickCursor, { year: undefined, month: "short", day: "numeric" }),
       x: ((tickCursor.getTime() - min) / DAY_MS) * dayWidth,
     });
     tickCursor.setDate(tickCursor.getDate() + stepDays);
@@ -230,24 +232,24 @@ export function PortfolioGanttChart({
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--text-tertiary)", fontSize: 12.5 }}>
-          <GripHorizontal size={15} /> Drag the timeline or use controls
-        </div>
+          <GripHorizontal size={15} />{" "}<LocalizedText message={"Drag the timeline or use controls"} />{" "}</div>
         <div style={{ display: "flex", gap: 6 }}>
-          <button type="button" title="Earlier dates" aria-label="Pan earlier" onClick={() => panBy(-14)} style={toolButton}>
+          <button type="button" title={translateUI("Earlier dates")} aria-label={translateUI("Pan earlier")} onClick={() => panBy(-14)} style={toolButton}>
             <ChevronLeft size={15} />
           </button>
-          <button type="button" title="Later dates" aria-label="Pan later" onClick={() => panBy(14)} style={toolButton}>
+          <button type="button" title={translateUI("Later dates")} aria-label={translateUI("Pan later")} onClick={() => panBy(14)} style={toolButton}>
             <ChevronRight size={15} />
           </button>
-          <button type="button" title="Zoom out" aria-label="Zoom out" onClick={() => setZoom((value) => Math.max(0.55, Number((value - 0.2).toFixed(2))))} style={toolButton}>
+          <button type="button" title={translateUI("Zoom out")} aria-label={translateUI("Zoom out")} onClick={() => setZoom((value) => Math.max(0.55, Number((value - 0.2).toFixed(2))))} style={toolButton}>
             <ZoomOut size={15} />
           </button>
-          <button type="button" title="Zoom in" aria-label="Zoom in" onClick={() => setZoom((value) => Math.min(2.8, Number((value + 0.2).toFixed(2))))} style={toolButton}>
+          <button type="button" title={translateUI("Zoom in")} aria-label={translateUI("Zoom in")} onClick={() => setZoom((value) => Math.min(2.8, Number((value + 0.2).toFixed(2))))} style={toolButton}>
             <ZoomIn size={15} />
           </button>
         </div>
       </div>
       <div
+        className="pmp-chart-time-axis"
         style={{ overflowX: "auto", cursor: "grab" }}
         onPointerDown={(event) => {
           dragRef.current = { x: event.clientX, offset: offsetDays };
@@ -391,9 +393,7 @@ export function PortfolioGanttChart({
                     zIndex: 4,
                     whiteSpace: "nowrap",
                   }}
-                >
-                  Today
-                </div>
+                >{" "}<LocalizedText message={"Today"} />{" "}</div>
               </>
             )}
 
@@ -463,12 +463,12 @@ export function PortfolioGanttChart({
                     <>
                       <div
                         onPointerDown={(e) => beginBarDrag(e, r, "start")}
-                        title="Drag project start"
+                        title={translateUI("Drag project start")}
                         style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 9, cursor: "ew-resize" }}
                       />
                       <div
                         onPointerDown={(e) => beginBarDrag(e, r, "end")}
-                        title="Drag project end"
+                        title={translateUI("Drag project end")}
                         style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 9, cursor: "ew-resize" }}
                       />
                     </>
@@ -511,8 +511,7 @@ export function PortfolioGanttChart({
 
         {undated.length > 0 && (
           <div style={{ padding: "10px 0 0", fontSize: 11.5, color: "var(--text-tertiary)" }}>
-            {undated.length} project(s) without dates are hidden from the timeline.
-          </div>
+            {undated.length}{" "}<LocalizedText message={"project(s) without dates are hidden from the timeline."} />{" "}</div>
         )}
       </div>
     </div>

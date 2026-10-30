@@ -1,4 +1,7 @@
 "use client";
+import { LocalizedDate } from "@/lib/i18n/I18nProvider";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -48,6 +51,8 @@ const ACTION_OPTIONS = [
 ];
 
 export default function AutomationsPage() {
+  const { t: translateUI } = useI18n();
+
   const toast = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useUrlView("view", AUTOMATION_VIEWS, "rules");
@@ -112,12 +117,11 @@ export default function AutomationsPage() {
     <div style={PAGE_STYLE}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
         <PageHeader
-          title="Workflow Automations"
-          subtitle="Build reactive triggers, GitHub PR automations, WhatsApp notifications, and diagram generators."
+          title={translateUI("Workflow Automations")}
+          subtitle={translateUI("Build reactive triggers, GitHub PR automations, WhatsApp notifications, and diagram generators.")}
         />
         <Button onClick={() => setShowModal(true)}>
-          <Plus size={15} /> Create Automation Rule
-        </Button>
+          <Plus size={15} />{" "}<LocalizedText message={"Create Automation Rule"} />{" "}</Button>
       </div>
 
       {/* Tabs */}
@@ -138,7 +142,7 @@ export default function AutomationsPage() {
             cursor: "pointer",
           }}
         >
-          <Workflow size={15} /> Active Rules ({rules?.length ?? 0})
+          <Workflow size={15} />{" "}<LocalizedText message={"Active Rules ("} />{rules?.length ?? 0})
         </button>
         <button
           onClick={() => {
@@ -159,8 +163,7 @@ export default function AutomationsPage() {
             cursor: "pointer",
           }}
         >
-          <History size={15} /> Execution Audit Logs
-        </button>
+          <History size={15} />{" "}<LocalizedText message={"Execution Audit Logs"} />{" "}</button>
       </div>
 
       {/* RULES TAB */}
@@ -196,7 +199,7 @@ export default function AutomationsPage() {
                         fontWeight: 600,
                       }}
                     >
-                      {rule.is_active ? "Active" : "Paused"}
+                      {rule.is_active ? <LocalizedText message={"Active"} /> : <LocalizedText message={"Paused"} />}
                     </span>
                   </div>
 
@@ -249,8 +252,7 @@ export default function AutomationsPage() {
                     onClick={() => testRuleMutation.mutate(rule.id)}
                     disabled={testRuleMutation.isPending}
                   >
-                    <Play size={13} /> Test
-                  </Button>
+                    <Play size={13} />{" "}<LocalizedText message={"Test"} />{" "}</Button>
                   <Switch
                     checked={rule.is_active}
                     onChange={(val) => toggleRuleMutation.mutate({ id: rule.id, is_active: val })}
@@ -267,7 +269,7 @@ export default function AutomationsPage() {
                       display: "flex",
                       alignItems: "center",
                     }}
-                    title="Delete Rule"
+                    title={translateUI("Delete Rule")}
                   >
                     <Trash2 size={16} />
                   </button>
@@ -286,15 +288,10 @@ export default function AutomationsPage() {
               }}
             >
               <Workflow size={36} style={{ marginBottom: 12, opacity: 0.5 }} />
-              <div style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)", marginBottom: 4 }}>
-                No Automation Rules Created Yet
-              </div>
-              <div style={{ fontSize: 13, marginBottom: 16 }}>
-                Create automated rules to connect GitHub pull requests, WhatsApp alerts, and docs diagrams.
-              </div>
+              <div style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)", marginBottom: 4 }}>{" "}<LocalizedText message={"No Automation Rules Created Yet"} />{" "}</div>
+              <div style={{ fontSize: 13, marginBottom: 16 }}>{" "}<LocalizedText message={"Create automated rules to connect GitHub pull requests, WhatsApp alerts, and docs diagrams."} />{" "}</div>
               <Button onClick={() => setShowModal(true)}>
-                <Plus size={15} /> Create First Rule
-              </Button>
+                <Plus size={15} />{" "}<LocalizedText message={"Create First Rule"} />{" "}</Button>
             </div>
           )}
         </div>
@@ -305,8 +302,7 @@ export default function AutomationsPage() {
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <div style={{ display: "flex", justifyContent: "flex-end" }}>
             <Button size="sm" variant="secondary" onClick={() => refetchLogs()}>
-              <RefreshCw size={13} className={loadingLogs ? "animate-spin" : ""} /> Refresh Logs
-            </Button>
+              <RefreshCw size={13} className={loadingLogs ? "animate-spin" : ""} />{" "}<LocalizedText message={"Refresh Logs"} />{" "}</Button>
           </div>
 
           {logs && logs.length > 0 ? (
@@ -321,11 +317,11 @@ export default function AutomationsPage() {
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                 <thead>
                   <tr style={{ background: "var(--surface-2)", borderBottom: "1px solid var(--border-subtle)", textAlign: "left" }}>
-                    <th style={{ padding: "10px 14px", fontWeight: 600, color: "var(--text-secondary)" }}>Status</th>
-                    <th style={{ padding: "10px 14px", fontWeight: 600, color: "var(--text-secondary)" }}>Rule Name</th>
-                    <th style={{ padding: "10px 14px", fontWeight: 600, color: "var(--text-secondary)" }}>Trigger Event</th>
-                    <th style={{ padding: "10px 14px", fontWeight: 600, color: "var(--text-secondary)" }}>Result Summary</th>
-                    <th style={{ padding: "10px 14px", fontWeight: 600, color: "var(--text-secondary)" }}>Executed At</th>
+                    <th style={{ padding: "10px 14px", fontWeight: 600, color: "var(--text-secondary)" }}><LocalizedText message={"Status"} /></th>
+                    <th style={{ padding: "10px 14px", fontWeight: 600, color: "var(--text-secondary)" }}><LocalizedText message={"Rule Name"} /></th>
+                    <th style={{ padding: "10px 14px", fontWeight: 600, color: "var(--text-secondary)" }}><LocalizedText message={"Trigger Event"} /></th>
+                    <th style={{ padding: "10px 14px", fontWeight: 600, color: "var(--text-secondary)" }}><LocalizedText message={"Result Summary"} /></th>
+                    <th style={{ padding: "10px 14px", fontWeight: 600, color: "var(--text-secondary)" }}><LocalizedText message={"Executed At"} /></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -355,7 +351,7 @@ export default function AutomationsPage() {
                         {log.result_summary}
                       </td>
                       <td style={{ padding: "10px 14px", color: "var(--text-tertiary)", fontSize: 12 }}>
-                        {new Date(log.executed_at).toLocaleString()}
+                        <LocalizedDate value={log.executed_at} options={{ hour: "2-digit", minute: "2-digit" }} />
                       </td>
                     </tr>
                   ))}
@@ -363,9 +359,7 @@ export default function AutomationsPage() {
               </table>
             </div>
           ) : (
-            <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--text-tertiary)" }}>
-              No execution logs recorded yet.
-            </div>
+            <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--text-tertiary)" }}>{" "}<LocalizedText message={"No execution logs recorded yet."} />{" "}</div>
           )}
         </div>
       )}
@@ -373,23 +367,21 @@ export default function AutomationsPage() {
       {/* CREATE RULE MODAL */}
       {showModal && (
         <Modal
-          title="Create New Automation Rule"
+          title={translateUI("Create New Automation Rule")}
           open={showModal}
           onClose={() => setShowModal(false)}
         >
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <Field label="Rule Name" hint="e.g. Auto-Complete Tasks on PR Merge">
-              <TextInput value={name} onChange={(e) => setName(e.target.value)} placeholder="Rule Name" />
+            <Field label={translateUI("Rule Name")} hint={translateUI("e.g. Auto-Complete Tasks on PR Merge")}>
+              <TextInput value={name} onChange={(e) => setName(e.target.value)} placeholder={translateUI("Rule Name")} />
             </Field>
 
-            <Field label="Description (Optional)">
-              <TextInput value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" />
+            <Field label={translateUI("Description (Optional)")}>
+              <TextInput value={description} onChange={(e) => setDescription(e.target.value)} placeholder={translateUI("Description")} />
             </Field>
 
             <div>
-              <label style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-secondary)", display: "block", marginBottom: 6 }}>
-                1. When This Event Occurs (Trigger):
-              </label>
+              <label style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-secondary)", display: "block", marginBottom: 6 }}>{" "}<LocalizedText message={"1. When This Event Occurs (Trigger):"} />{" "}</label>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                 {TRIGGER_OPTIONS.map((trig) => (
                   <button
@@ -419,9 +411,7 @@ export default function AutomationsPage() {
             </div>
 
             <div>
-              <label style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-secondary)", display: "block", marginBottom: 6 }}>
-                2. Then Automatically Execute (Action):
-              </label>
+              <label style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-secondary)", display: "block", marginBottom: 6 }}>{" "}<LocalizedText message={"2. Then Automatically Execute (Action):"} />{" "}</label>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                 {ACTION_OPTIONS.map((act) => (
                   <button
@@ -451,9 +441,7 @@ export default function AutomationsPage() {
             </div>
 
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 10 }}>
-              <Button variant="secondary" onClick={() => setShowModal(false)}>
-                Cancel
-              </Button>
+              <Button variant="secondary" onClick={() => setShowModal(false)}>{" "}<LocalizedText message={"Cancel"} />{" "}</Button>
               <Button
                 onClick={() =>
                   createRuleMutation.mutate({
@@ -464,9 +452,7 @@ export default function AutomationsPage() {
                   })
                 }
                 disabled={!name || createRuleMutation.isPending}
-              >
-                Create Rule
-              </Button>
+              >{" "}<LocalizedText message={"Create Rule"} />{" "}</Button>
             </div>
           </div>
         </Modal>

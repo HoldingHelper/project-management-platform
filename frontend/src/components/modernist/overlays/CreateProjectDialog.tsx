@@ -1,3 +1,6 @@
+"use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 import React, { useState } from 'react';
 import { Project, Team, ProjectLevel, TaskPriority } from '../types';
 import { Icon } from '../icons';
@@ -55,6 +58,8 @@ export function CreateProjectDialog({
   onClose,
   onCreateProject,
 }: CreateProjectDialogProps) {
+  const { t: translateUI } = useI18n();
+
   const [step, setStep] = useState(1);
   const [name, setName] = useState('');
   const [key, setKey] = useState(nextKey);
@@ -182,15 +187,13 @@ export function CreateProjectDialog({
           }}
         >
           <div>
-            <h6 style={{ color: 'var(--color-accent)', marginBottom: 6 }}>
-              New project · step {step} of 4
-            </h6>
-            <h3 style={{ margin: 0 }}>Create project</h3>
+            <h6 style={{ color: 'var(--color-accent)', marginBottom: 6 }}>{" "}<LocalizedText message={"New project · step"} />{" "}{step}{" "}<LocalizedText message={"of 4"} />{" "}</h6>
+            <h3 style={{ margin: 0 }}><LocalizedText message={"Create project"} /></h3>
           </div>
           <button
             type="button"
             className="btn btn-icon"
-            aria-label="Close"
+            aria-label={translateUI("Close")}
             onClick={onClose}
           >
             <Icon name="x" size={16} />
@@ -271,14 +274,13 @@ export function CreateProjectDialog({
             <>
               <div data-m1="1" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 150px', gap: 16 }}>
                 <div className="field">
-                  <label htmlFor="cp-name">
-                    Project name <span style={{ color: 'var(--color-accent)' }}>*</span>
+                  <label htmlFor="cp-name">{" "}<LocalizedText message={"Project name"} />{" "}<span style={{ color: 'var(--color-accent)' }}>*</span>
                   </label>
                   <input
                     id="cp-name"
                     className="input"
                     style={{ minHeight: 44, fontSize: 15 }}
-                    placeholder="e.g. Customer feedback portal"
+                    placeholder={translateUI("e.g. Customer feedback portal")}
                     value={name}
                     onChange={(e) => {
                       setName(e.target.value);
@@ -288,7 +290,7 @@ export function CreateProjectDialog({
                   />
                 </div>
                 <div className="field">
-                  <label htmlFor="cp-key">Key</label>
+                  <label htmlFor="cp-key"><LocalizedText message={"Key"} /></label>
                   <input
                     id="cp-key"
                     className="input"
@@ -300,19 +302,19 @@ export function CreateProjectDialog({
               </div>
 
               <div className="field">
-                <label htmlFor="cp-desc">Description</label>
+                <label htmlFor="cp-desc"><LocalizedText message={"Description"} /></label>
                 <textarea
                   id="cp-desc"
                   className="input"
                   style={{ minHeight: 88 }}
-                  placeholder="What will this project deliver, and for whom?"
+                  placeholder={translateUI("What will this project deliver, and for whom?")}
                   value={desc}
                   onChange={(e) => setDesc(e.target.value)}
                 />
               </div>
 
               <div className="field">
-                <label>Color</label>
+                <label><LocalizedText message={"Color"} /></label>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   {['blue', 'teal', 'green', 'orange', 'magenta', 'purple', 'indigo'].map((cKey) => {
                     const cVal = OK(0.52, 0.14, HUES[cKey]);
@@ -369,8 +371,7 @@ export function CreateProjectDialog({
                   <span
                     className="text-muted"
                     style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' }}
-                  >
-                    Preview · {key}
+                  >{" "}<LocalizedText message={"Preview ·"} />{" "}{key}
                   </span>
                   <span style={{ fontWeight: 800, fontSize: 17 }}>
                     {name.trim() || 'Untitled project'}
@@ -383,7 +384,7 @@ export function CreateProjectDialog({
           {step === 2 && (
             <>
               <div className="field">
-                <label>Partition</label>
+                <label><LocalizedText message={"Partition"} /></label>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                   {partitions.map((p) => {
                     const on = partition === p;
@@ -417,7 +418,7 @@ export function CreateProjectDialog({
               </div>
 
               <div className="field">
-                <label>Level</label>
+                <label><LocalizedText message={"Level"} /></label>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10 }}>
                   {LEVELS.map(([n, d]) => {
                     const on = level === n;
@@ -450,7 +451,7 @@ export function CreateProjectDialog({
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
                 <div className="field">
-                  <label htmlFor="cp-team">Team</label>
+                  <label htmlFor="cp-team"><LocalizedText message={"Team"} /></label>
                   <select
                     id="cp-team"
                     className="input"
@@ -470,7 +471,7 @@ export function CreateProjectDialog({
                   </select>
                 </div>
                 <div className="field">
-                  <label htmlFor="cp-owner">Owner</label>
+                  <label htmlFor="cp-owner"><LocalizedText message={"Owner"} /></label>
                   <select
                     id="cp-owner"
                     className="input"
@@ -488,7 +489,7 @@ export function CreateProjectDialog({
               </div>
 
               <div className="field">
-                <label>Priority</label>
+                <label><LocalizedText message={"Priority"} /></label>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                   {(['Critical', 'High', 'Medium', 'Low'] as TaskPriority[]).map((priKey) => {
                     const on = priority === priKey;
@@ -525,7 +526,7 @@ export function CreateProjectDialog({
             <>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
                 <div className="field">
-                  <label htmlFor="cp-s">Start date</label>
+                  <label htmlFor="cp-s"><LocalizedText message={"Start date"} /></label>
                   <input
                     id="cp-s"
                     type="date"
@@ -536,7 +537,7 @@ export function CreateProjectDialog({
                   />
                 </div>
                 <div className="field">
-                  <label htmlFor="cp-e">Target date</label>
+                  <label htmlFor="cp-e"><LocalizedText message={"Target date"} /></label>
                   <input
                     id="cp-e"
                     type="date"
@@ -547,7 +548,7 @@ export function CreateProjectDialog({
                   />
                 </div>
                 <div className="field">
-                  <label htmlFor="cp-m">Key milestone</label>
+                  <label htmlFor="cp-m"><LocalizedText message={"Key milestone"} /></label>
                   <input
                     id="cp-m"
                     type="date"
@@ -560,7 +561,7 @@ export function CreateProjectDialog({
               </div>
 
               <div className="field">
-                <label htmlFor="cp-dep">Depends on</label>
+                <label htmlFor="cp-dep"><LocalizedText message={"Depends on"} /></label>
                 <select
                   id="cp-dep"
                   className="input"
@@ -568,7 +569,7 @@ export function CreateProjectDialog({
                   value={dep}
                   onChange={(e) => setDep(e.target.value)}
                 >
-                  <option value="">No dependency</option>
+                  <option value=""><LocalizedText message={"No dependency"} /></option>
                   {existingProjects
                     .filter((x) => x.status !== 'Done')
                     .map((x) => (
@@ -581,9 +582,7 @@ export function CreateProjectDialog({
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-                  <h6 className="text-muted" style={{ margin: 0 }}>
-                    Schedule preview
-                  </h6>
+                  <h6 className="text-muted" style={{ margin: 0 }}>{" "}<LocalizedText message={"Schedule preview"} />{" "}</h6>
                   <span style={{ fontSize: 13, fontWeight: 700 }}>{durLabel}</span>
                 </div>
                 <div
@@ -605,9 +604,7 @@ export function CreateProjectDialog({
                       fontWeight: 800,
                       letterSpacing: '.08em',
                     }}
-                  >
-                    SEP
-                  </span>
+                  >{" "}<LocalizedText message={"SEP"} />{" "}</span>
                   <span
                     style={{
                       position: 'absolute',
@@ -620,9 +617,7 @@ export function CreateProjectDialog({
                       fontWeight: 800,
                       letterSpacing: '.08em',
                     }}
-                  >
-                    OCT
-                  </span>
+                  >{" "}<LocalizedText message={"OCT"} />{" "}</span>
                   <span
                     style={{
                       position: 'absolute',
@@ -635,9 +630,7 @@ export function CreateProjectDialog({
                       fontWeight: 800,
                       letterSpacing: '.08em',
                     }}
-                  >
-                    NOV
-                  </span>
+                  >{" "}<LocalizedText message={"NOV"} />{" "}</span>
                   <span
                     style={{
                       position: 'absolute',
@@ -769,10 +762,8 @@ export function CreateProjectDialog({
                     }}
                   />
                   <span>
-                    <b>Add starter tasks</b>
-                    <span className="text-muted" style={{ display: 'block', fontSize: 12 }}>
-                      Kickoff meeting, scope sign-off and delivery review, assigned to the owner.
-                    </span>
+                    <b><LocalizedText message={"Add starter tasks"} /></b>
+                    <span className="text-muted" style={{ display: 'block', fontSize: 12 }}>{" "}<LocalizedText message={"Kickoff meeting, scope sign-off and delivery review, assigned to the owner."} />{" "}</span>
                   </span>
                 </label>
                 <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 14, cursor: 'pointer' }}>
@@ -788,10 +779,8 @@ export function CreateProjectDialog({
                     }}
                   />
                   <span>
-                    <b>Create a project channel</b>
-                    <span className="text-muted" style={{ display: 'block', fontSize: 12 }}>
-                      Appears in team chat for everyone on the team.
-                    </span>
+                    <b><LocalizedText message={"Create a project channel"} /></b>
+                    <span className="text-muted" style={{ display: 'block', fontSize: 12 }}>{" "}<LocalizedText message={"Appears in team chat for everyone on the team."} />{" "}</span>
                   </span>
                 </label>
               </div>
@@ -838,23 +827,17 @@ export function CreateProjectDialog({
               }}
               style={{ minHeight: 40, borderRadius: 'var(--r-sm)' }}
             >
-              <Icon name="back" size={16} />
-              Back
-            </button>
+              <Icon name="back" size={16} />{" "}<LocalizedText message={"Back"} />{" "}</button>
           )}
           <span style={{ marginLeft: 'auto' }} />
-          <button type="button" className="btn btn-ghost" onClick={onClose}>
-            Cancel
-          </button>
+          <button type="button" className="btn btn-ghost" onClick={onClose}>{" "}<LocalizedText message={"Cancel"} />{" "}</button>
           {step < 4 ? (
             <button
               type="button"
               className="btn btn-primary"
               onClick={handleNext}
               style={{ minHeight: 40, minWidth: 140, borderRadius: 'var(--r-sm)' }}
-            >
-              Continue
-              <Icon name="right" size={16} style={{ marginLeft: 'auto' }} />
+            >{" "}<LocalizedText message={"Continue"} />{" "}<Icon name="right" size={16} style={{ marginLeft: 'auto' }} />
             </button>
           ) : (
             <button
@@ -863,9 +846,7 @@ export function CreateProjectDialog({
               onClick={handleCreate}
               style={{ minHeight: 40, minWidth: 160, borderRadius: 'var(--r-sm)' }}
             >
-              <Icon name="check" size={16} />
-              Create project
-            </button>
+              <Icon name="check" size={16} />{" "}<LocalizedText message={"Create project"} />{" "}</button>
           )}
         </div>
       </div>

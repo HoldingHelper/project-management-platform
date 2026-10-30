@@ -1,4 +1,6 @@
 "use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 /* Executive dashboard: AI-driven narrative, DORA delivery metrics,
    Flow framework investment mix, Cumulative Flow Diagram (CFD),
@@ -93,6 +95,8 @@ const CATEGORY_OPTIONS = [
 ];
 
 export default function ExecutiveDashboardPage() {
+  const { t: translateUI } = useI18n();
+
   const { hasPermission, isSuperAdmin } = useAuth();
   const { nameOf } = useUserMap();
   const router = useRouter();
@@ -144,8 +148,8 @@ export default function ExecutiveDashboardPage() {
   if (!canView) {
     return (
       <div style={PAGE_STYLE}>
-        <PageHeader title="Executive Dashboard" />
-        <Alert kind="warning" title="No access" description="This dashboard is for executives and managers (analytics access required)." />
+        <PageHeader title={translateUI("Executive Dashboard")} />
+        <Alert kind="warning" title={translateUI("No access")} description={translateUI("This dashboard is for executives and managers (analytics access required).")} />
       </div>
     );
   }
@@ -158,16 +162,14 @@ export default function ExecutiveDashboardPage() {
   return (
     <div style={{ ...PAGE_STYLE, maxWidth: 1560, gap: 20 }}>
       <PageHeader
-        title="Executive KPI & Value Stream Analytics"
-        subtitle="Enterprise delivery speed, DORA benchmarks, Flow investment mix, and predictability."
+        title={translateUI("Executive KPI & Value Stream Analytics")}
+        subtitle={translateUI("Enterprise delivery speed, DORA benchmarks, Flow investment mix, and predictability.")}
         badge={
-          <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: 1, color: "var(--accent-gold-bright)", border: "1px solid var(--accent-gold)", borderRadius: "var(--radius-full)", padding: "2px 10px" }}>
-            EXECUTIVE SUITE
-          </span>
+          <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: 1, color: "var(--accent-gold-bright)", border: "1px solid var(--accent-gold)", borderRadius: "var(--radius-full)", padding: "2px 10px" }}>{" "}<LocalizedText message={"EXECUTIVE SUITE"} />{" "}</span>
         }
         actions={
           <span className="no-print" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <Select
+            <Select translateOptions
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               options={CATEGORY_OPTIONS}
@@ -175,23 +177,20 @@ export default function ExecutiveDashboardPage() {
             <Select
               value={projectId}
               onChange={(e) => setProjectId(e.target.value as UUID)}
-              placeholder="All projects"
+              placeholder={translateUI("All projects")}
               options={(projects.data?.items ?? []).map((p) => ({ value: p.id, label: p.name }))}
             />
-            <Select
+            <Select translateOptions
               value={rangeDays}
               onChange={(e) => setRangeDays(e.target.value)}
               options={RANGE_OPTIONS}
             />
             <Button variant="secondary" onClick={() => downloadExport("velocity", "csv", { weeks: String(weeks) })}>
-              <Download size={14} /> CSV
-            </Button>
+              <Download size={14} />{" "}<LocalizedText message={"CSV"} />{" "}</Button>
             <Button variant="secondary" onClick={() => downloadExport("workload", "xlsx")}>
-              <Download size={14} /> Excel
-            </Button>
+              <Download size={14} />{" "}<LocalizedText message={"Excel"} />{" "}</Button>
             <Button variant="secondary" onClick={() => window.print()}>
-              <Printer size={14} /> PDF
-            </Button>
+              <Printer size={14} />{" "}<LocalizedText message={"PDF"} />{" "}</Button>
           </span>
         }
       />
@@ -215,13 +214,10 @@ export default function ExecutiveDashboardPage() {
               <div style={{ padding: 6, borderRadius: 6, background: "rgba(0, 226, 97, 0.15)", color: "#00E261" }}>
                 <Sparkles size={18} />
               </div>
-              <span style={{ fontSize: 14.5, fontWeight: 800, color: "var(--text-primary)" }}>
-                AI Executive Health &amp; Strategic Narrative
-              </span>
+              <span style={{ fontSize: 14.5, fontWeight: 800, color: "var(--text-primary)" }}>{" "}<LocalizedText message={"AI Executive Health & Strategic Narrative"} />{" "}</span>
             </div>
             {dora && (
-              <span style={{ fontSize: 11.5, fontWeight: 800, padding: "3px 10px", borderRadius: 12, background: "rgba(0, 226, 97, 0.15)", color: "#00E261" }}>
-                DORA: {dora.overall_rating.toUpperCase()}
+              <span style={{ fontSize: 11.5, fontWeight: 800, padding: "3px 10px", borderRadius: 12, background: "rgba(0, 226, 97, 0.15)", color: "#00E261" }}>{" "}<LocalizedText message={"DORA:"} />{" "}{dora.overall_rating.toUpperCase()}
               </span>
             )}
           </div>
@@ -232,21 +228,19 @@ export default function ExecutiveDashboardPage() {
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12, fontSize: 12.5, color: "var(--text-secondary)" }}>
             <div style={{ padding: "8px 12px", background: "var(--surface-2)", borderRadius: 6, border: "1px solid var(--border-subtle)" }}>
-              <strong style={{ color: "var(--text-primary)" }}>Velocity Momentum:</strong> {summary.velocity_trend}
+              <strong style={{ color: "var(--text-primary)" }}><LocalizedText message={"Velocity Momentum:"} /></strong> {summary.velocity_trend}
             </div>
             <div style={{ padding: "8px 12px", background: "var(--surface-2)", borderRadius: 6, border: "1px solid var(--border-subtle)" }}>
-              <strong style={{ color: "var(--text-primary)" }}>Investment Mix:</strong> {summary.investment_mix_summary}
+              <strong style={{ color: "var(--text-primary)" }}><LocalizedText message={"Investment Mix:"} /></strong> {summary.investment_mix_summary}
             </div>
             <div style={{ padding: "8px 12px", background: "var(--surface-2)", borderRadius: 6, border: "1px solid var(--border-subtle)" }}>
-              <strong style={{ color: "var(--text-primary)" }}>Quality &amp; MTTR:</strong> {summary.bottlenecks_summary}
+              <strong style={{ color: "var(--text-primary)" }}><LocalizedText message={"Quality & MTTR:"} /></strong> {summary.bottlenecks_summary}
             </div>
           </div>
 
           {/* Actionable Recommendations */}
           <div style={{ borderTop: "1px solid rgba(255, 255, 255, 0.08)", paddingTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
-            <div style={{ fontSize: 11.5, fontWeight: 700, textTransform: "uppercase", color: "var(--accent-primary)", letterSpacing: "0.05em" }}>
-              Actionable Executive Recommendations
-            </div>
+            <div style={{ fontSize: 11.5, fontWeight: 700, textTransform: "uppercase", color: "var(--accent-primary)", letterSpacing: "0.05em" }}>{" "}<LocalizedText message={"Actionable Executive Recommendations"} />{" "}</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
               {summary.recommendations.map((rec, i) => (
                 <div
@@ -275,25 +269,25 @@ export default function ExecutiveDashboardPage() {
       {/* Top Headline Metric Cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 12 }}>
         <MetricCard
-          label="DORA Rating"
+          label={translateUI("DORA Rating")}
           value={dora?.overall_rating ?? "High"}
           tone="completed"
           trend={`${dora?.deployment_frequency.display_value || "3.5/wk"} deploys`}
         />
         <MetricCard
-          label="Lead Time (Cycle)"
+          label={translateUI("Lead Time (Cycle)")}
           value={dora?.lead_time_for_changes.display_value ?? "28.5 hrs"}
           tone="in-progress"
           trend="commit to done"
         />
         <MetricCard
-          label="Predictability"
+          label={translateUI("Predictability")}
           value={`${predictability?.predictability_score_percent ?? 88}%`}
           tone="completed"
           trend={`${predictability?.on_time_delivery_rate_percent ?? 88.5}% on-time`}
         />
         <MetricCard
-          label="Flow Efficiency"
+          label={translateUI("Flow Efficiency")}
           value={`${flow?.flow_efficiency_percentage ?? 54}%`}
           tone="in-progress"
           trend="active vs wait time"
@@ -305,7 +299,7 @@ export default function ExecutiveDashboardPage() {
           trend={`${flow?.velocity_tasks_completed ?? Math.round(kpis.doneThisRange)} tasks completed`}
         />
         <MetricCard
-          label="Active Blockers"
+          label={translateUI("Active Blockers")}
           value={`${kpis.h?.blocked.length ?? 0}`}
           tone={(kpis.h?.blocked.length ?? 0) > 0 ? "delayed" : "default"}
           trend={`MTTR: ${dora?.mean_time_to_recovery.display_value || "8.5 hrs"}`}
@@ -337,8 +331,8 @@ export default function ExecutiveDashboardPage() {
         <FocusCard
           title={
             <div>
-              <div style={{ fontSize: 14, fontWeight: 700 }}>Google Cloud DORA Delivery Metrics</div>
-              <div style={{ fontSize: 12, color: "var(--text-tertiary)", fontWeight: 400 }}>Industry benchmark standards for delivery speed and stability</div>
+              <div style={{ fontSize: 14, fontWeight: 700 }}><LocalizedText message={"Google Cloud DORA Delivery Metrics"} /></div>
+              <div style={{ fontSize: 12, color: "var(--text-tertiary)", fontWeight: 400 }}><LocalizedText message={"Industry benchmark standards for delivery speed and stability"} /></div>
             </div>
           }
         >
@@ -351,8 +345,8 @@ export default function ExecutiveDashboardPage() {
         <FocusCard
           title={
             <div>
-              <div style={{ fontSize: 14, fontWeight: 700 }}>Flow Framework &amp; Category Allocation</div>
-              <div style={{ fontSize: 12, color: "var(--text-tertiary)", fontWeight: 400 }}>Value stream throughput and distribution across the 6 platform categories</div>
+              <div style={{ fontSize: 14, fontWeight: 700 }}><LocalizedText message={"Flow Framework & Category Allocation"} /></div>
+              <div style={{ fontSize: 12, color: "var(--text-tertiary)", fontWeight: 400 }}><LocalizedText message={"Value stream throughput and distribution across the 6 platform categories"} /></div>
             </div>
           }
         >
@@ -365,8 +359,8 @@ export default function ExecutiveDashboardPage() {
         <FocusCard
           title={
             <div>
-              <div style={{ fontSize: 14, fontWeight: 700 }}>Cumulative Flow Diagram (CFD)</div>
-              <div style={{ fontSize: 12, color: "var(--text-tertiary)", fontWeight: 400 }}>Visualizing work-in-progress, queue states, and delivery flow over time</div>
+              <div style={{ fontSize: 14, fontWeight: 700 }}><LocalizedText message={"Cumulative Flow Diagram (CFD)"} /></div>
+              <div style={{ fontSize: 12, color: "var(--text-tertiary)", fontWeight: 400 }}><LocalizedText message={"Visualizing work-in-progress, queue states, and delivery flow over time"} /></div>
             </div>
           }
         >
@@ -381,8 +375,8 @@ export default function ExecutiveDashboardPage() {
             <FocusCard
               title={
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 700 }}>Cumulative Flow Diagram (CFD)</div>
-                  <div style={{ fontSize: 12, color: "var(--text-tertiary)", fontWeight: 400 }}>Work distribution across Backlog, In Progress, In Review, and Done over time</div>
+                  <div style={{ fontSize: 14, fontWeight: 700 }}><LocalizedText message={"Cumulative Flow Diagram (CFD)"} /></div>
+                  <div style={{ fontSize: 12, color: "var(--text-tertiary)", fontWeight: 400 }}><LocalizedText message={"Work distribution across Backlog, In Progress, In Review, and Done over time"} /></div>
                 </div>
               }
             >
@@ -396,8 +390,8 @@ export default function ExecutiveDashboardPage() {
             <FocusCard
               title={
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 700 }}>Category &amp; Work Type Investment</div>
-                  <div style={{ fontSize: 12, color: "var(--text-tertiary)", fontWeight: 400 }}>Effort allocation across platform categories</div>
+                  <div style={{ fontSize: 14, fontWeight: 700 }}><LocalizedText message={"Category & Work Type Investment"} /></div>
+                  <div style={{ fontSize: 12, color: "var(--text-tertiary)", fontWeight: 400 }}><LocalizedText message={"Effort allocation across platform categories"} /></div>
                 </div>
               }
             >
@@ -412,13 +406,13 @@ export default function ExecutiveDashboardPage() {
 
       {/* Bottom Grid: Heatmap & Bottlenecks */}
       <div className="pmp-two-col-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18, alignItems: "start" }}>
-        <Card title="Activity heatmap (4 weeks · status changes)" padded>
+        <Card title={translateUI("Activity heatmap (4 weeks · status changes)")} padded>
           <HeatmapGrid cells={heatmap.data ?? []} nameOf={nameOf} />
         </Card>
 
-        <Card title="Bottlenecks & Blockers — Needs Attention" padded={false}>
+        <Card title={translateUI("Bottlenecks & Blockers — Needs Attention")} padded={false}>
           {(bottlenecks.data ?? []).length === 0 && (
-            <div style={{ padding: 18, fontSize: 12.5, color: "var(--text-tertiary)" }}>No bottlenecks right now.</div>
+            <div style={{ padding: 18, fontSize: 12.5, color: "var(--text-tertiary)" }}><LocalizedText message={"No bottlenecks right now."} /></div>
           )}
           {(bottlenecks.data ?? []).slice(0, 10).map((b) => (
             <Link
@@ -447,7 +441,7 @@ export default function ExecutiveDashboardPage() {
                 </div>
                 <div style={{ fontSize: 11.5, color: "var(--text-secondary)" }}>{b.detail}</div>
               </div>
-              <span style={{ fontSize: 11.5, color: "var(--text-tertiary)" }}>{b.age_days}d</span>
+              <span style={{ fontSize: 11.5, color: "var(--text-tertiary)" }}>{b.age_days}<LocalizedText message={"d"} /></span>
             </Link>
           ))}
         </Card>
@@ -476,12 +470,12 @@ function WorkloadPanel({
     <FocusCard
       title={
         <div>
-          <div style={{ fontSize: 14, fontWeight: 700 }}>Team Workload Distribution</div>
-          <div style={{ fontSize: 12, color: "var(--text-tertiary)", fontWeight: 400 }}>Active in-progress tasks and open blockers across contributors</div>
+          <div style={{ fontSize: 14, fontWeight: 700 }}><LocalizedText message={"Team Workload Distribution"} /></div>
+          <div style={{ fontSize: 12, color: "var(--text-tertiary)", fontWeight: 400 }}><LocalizedText message={"Active in-progress tasks and open blockers across contributors"} /></div>
         </div>
       }
       right={
-        <Select
+        <Select translateOptions
           value={partition}
           onChange={(e) => setPartition(e.target.value)}
           options={CATEGORY_OPTIONS}
@@ -504,7 +498,7 @@ function HeatmapGrid({ cells, nameOf }: { cells: any[]; nameOf: (id: string) => 
 
   const userIds = Object.keys(byUser).slice(0, 10);
   if (userIds.length === 0) {
-    return <div style={{ fontSize: 12.5, color: "var(--text-tertiary)", padding: 12 }}>No activity recorded in the last 4 weeks.</div>;
+    return <div style={{ fontSize: 12.5, color: "var(--text-tertiary)", padding: 12 }}><LocalizedText message={"No activity recorded in the last 4 weeks."} /></div>;
   }
 
   return (

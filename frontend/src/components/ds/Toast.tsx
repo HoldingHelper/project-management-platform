@@ -1,4 +1,5 @@
 "use client";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 /* Minimal toast system: `useToast().push("message", "error")`. */
 
@@ -97,7 +98,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               }}
             >
               <Icon size={15} style={{ color: COLORS[t.kind], flexShrink: 0 }} />
-              <span>{t.message}</span>
+              <span>{<LocalizedText message={t.message} />}</span>
             </div>
           );
         })}

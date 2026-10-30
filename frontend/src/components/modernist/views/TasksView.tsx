@@ -1,3 +1,6 @@
+"use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 import React, { useState } from 'react';
 import { Task, Project, Person, TaskStatus } from '../types';
 import { Icon } from '../icons';
@@ -62,6 +65,8 @@ export function TasksView({
   onUpdateTask,
   onOpenCreateTask,
 }: TasksViewProps) {
+  const { t: translateUI } = useI18n();
+
   const [localActiveTab, setLocalActiveTab] = useState('all');
   const activeTab = propActiveTab !== undefined ? propActiveTab : localActiveTab;
   const onTabChange = propOnTabChange || setLocalActiveTab;
@@ -257,9 +262,7 @@ export function TasksView({
         <span
           className="text-muted"
           style={{ fontSize: 12, letterSpacing: '.06em', textTransform: 'uppercase', marginRight: 4 }}
-        >
-          Saved filters
-        </span>
+        >{" "}<LocalizedText message={"Saved filters"} />{" "}</span>
         {Object.keys(SAVED_FILTERS).map((sk) => {
           const on = savedFilter === sk;
           return (
@@ -298,13 +301,13 @@ export function TasksView({
           <input
             className="input"
             style={{ minHeight: 44, paddingLeft: 36 }}
-            placeholder="Search title…"
+            placeholder={translateUI("Search title…")}
             value={q}
             onChange={(e) => {
               setQ(e.target.value);
               setPage(0);
             }}
-            aria-label="Search tasks"
+            aria-label={translateUI("Search tasks")}
           />
         </div>
 
@@ -374,7 +377,7 @@ export function TasksView({
                       borderRadius: 'var(--r-sm)',
                     }}
                   >
-                    <span>Any {label.toLowerCase()}</span>
+                    <span><LocalizedText message={"Any"} />{" "}{label.toLowerCase()}</span>
                     {!on && <span style={{ color: 'var(--color-accent)' }}>✓</span>}
                   </button>
                   {opts.map((opt) => (
@@ -414,7 +417,7 @@ export function TasksView({
         <input
           type="date"
           className="input"
-          aria-label="Due from"
+          aria-label={translateUI("Due from")}
           style={{ width: 'auto', minHeight: 44 }}
           value={fFrom}
           onChange={(e) => {
@@ -425,7 +428,7 @@ export function TasksView({
         <input
           type="date"
           className="input"
-          aria-label="Due to"
+          aria-label={translateUI("Due to")}
           style={{ width: 'auto', minHeight: 44 }}
           value={fTo}
           onChange={(e) => {
@@ -451,13 +454,9 @@ export function TasksView({
               height: 16,
               margin: 0,
             }}
-          />
-          Backlog only (no project)
-        </label>
+          />{" "}<LocalizedText message={"Backlog only (no project)"} />{" "}</label>
         {hasAnyFilter && (
-          <button type="button" className="btn btn-ghost" onClick={clearAllFilters}>
-            Clear all filters
-          </button>
+          <button type="button" className="btn btn-ghost" onClick={clearAllFilters}>{" "}<LocalizedText message={"Clear all filters"} />{" "}</button>
         )}
       </div>
 
@@ -480,15 +479,15 @@ export function TasksView({
                   color: 'color-mix(in srgb, var(--color-text) 60%, transparent)',
                 }}
               >
-                <span>Task</span>
-                <span>Partition</span>
-                <span>Labels</span>
-                <span>Status</span>
-                <span>Type</span>
-                <span>Priority</span>
-                <span>Assignees</span>
-                <span>Dates</span>
-                <span>Project</span>
+                <span><LocalizedText message={"Task"} /></span>
+                <span><LocalizedText message={"Partition"} /></span>
+                <span><LocalizedText message={"Labels"} /></span>
+                <span><LocalizedText message={"Status"} /></span>
+                <span><LocalizedText message={"Type"} /></span>
+                <span><LocalizedText message={"Priority"} /></span>
+                <span><LocalizedText message={"Assignees"} /></span>
+                <span><LocalizedText message={"Dates"} /></span>
+                <span><LocalizedText message={"Project"} /></span>
               </div>
 
               {paginatedTasks.map((t) => {
@@ -541,7 +540,7 @@ export function TasksView({
                           }}
                         >
                           <Icon
-                            name={t.type === 'Feature' ? 'check' : t.type === 'Bug' ? 'target' : 'sparkles'}
+                            name={t.type === 'Feature' ? "check" : t.type === 'Bug' ? 'target' : 'sparkles'}
                             size={10}
                             strokeWidth={3}
                           />
@@ -617,9 +616,7 @@ export function TasksView({
                         </span>
                       ))}
                       {t.assignees.length === 0 && (
-                        <span className="text-muted" style={{ fontSize: 12 }}>
-                          Unassigned
-                        </span>
+                        <span className="text-muted" style={{ fontSize: 12 }}>{" "}<LocalizedText message={"Unassigned"} />{" "}</span>
                       )}
                     </span>
 
@@ -638,10 +635,8 @@ export function TasksView({
 
           {tabMatchedTasks.length === 0 && (
             <div style={{ padding: '32px 8px' }}>
-              <h4 style={{ margin: '0 0 4px' }}>No tasks match</h4>
-              <p className="text-muted" style={{ margin: 0, fontSize: 14 }}>
-                Change the tab, saved filter or filters above.
-              </p>
+              <h4 style={{ margin: '0 0 4px' }}><LocalizedText message={"No tasks match"} /></h4>
+              <p className="text-muted" style={{ margin: 0, fontSize: 14 }}>{" "}<LocalizedText message={"Change the tab, saved filter or filters above."} />{" "}</p>
             </div>
           )}
 
@@ -652,24 +647,20 @@ export function TasksView({
                     tabMatchedTasks.length,
                     currentPage * PS + PS
                   )} of ${tabMatchedTasks.length}`
-                : '0 tasks'}
+                : <LocalizedText message={"0 tasks"} />}
             </span>
             <button
               type="button"
               className="btn btn-secondary"
               disabled={currentPage === 0}
               onClick={() => setPage(currentPage - 1)}
-            >
-              Previous
-            </button>
+            >{" "}<LocalizedText message={"Previous"} />{" "}</button>
             <button
               type="button"
               className="btn btn-secondary"
               disabled={currentPage >= totalPages - 1}
               onClick={() => setPage(currentPage + 1)}
-            >
-              Next
-            </button>
+            >{" "}<LocalizedText message={"Next"} />{" "}</button>
           </div>
         </>
       )}
@@ -707,9 +698,7 @@ export function TasksView({
                 </button>
               ))}
             </div>
-            <span className="text-muted" style={{ fontSize: 13 }}>
-              Tasks placed on their due date.
-            </span>
+            <span className="text-muted" style={{ fontSize: 13 }}>{" "}<LocalizedText message={"Tasks placed on their due date."} />{" "}</span>
           </div>
 
           <div style={{ overflowX: 'auto' }}>

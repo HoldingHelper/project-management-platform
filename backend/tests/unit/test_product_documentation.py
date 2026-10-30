@@ -36,7 +36,8 @@ def test_document_reference_cannot_read_another_products_attachment():
         asyncio.run(docs.get_document(db, product_id))
 
 
-def test_failed_database_save_cleans_storage_and_keeps_prior_reference_uncommitted():
+@patch("app.modules.docs.upload_library.index_upload", new_callable=AsyncMock)
+def test_failed_database_save_cleans_storage_and_keeps_prior_reference_uncommitted(index_upload):
     db = MagicMock()
     db.execute = AsyncMock()
     product = SimpleNamespace(documentation_link="https://example.com/old")

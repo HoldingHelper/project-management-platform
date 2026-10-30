@@ -1,3 +1,6 @@
+"use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 import React, { useState } from 'react';
 import { Person, Team } from '../types';
 import { Icon } from '../icons';
@@ -56,6 +59,8 @@ export function AdminView({
   onAddPart,
   onOpenPerson,
 }: AdminViewProps) {
+  const { t: translateUI } = useI18n();
+
   const activePartitions = partitions || partsList;
   const activePermissions = perms || permissions || {};
   const handleRoleUpdate = onSetRole || onUpdateRole || (() => {});
@@ -174,10 +179,10 @@ export function AdminView({
               <input
                 className="input"
                 style={{ minHeight: 40, paddingLeft: 36 }}
-                placeholder="Search users…"
+                placeholder={translateUI("Search users…")}
                 value={searchQ}
                 onChange={(e) => setSearchQ(e.target.value)}
-                aria-label="Search users…"
+                aria-label={translateUI("Search users…")}
               />
             </div>
           </div>
@@ -197,10 +202,10 @@ export function AdminView({
                   color: 'color-mix(in srgb, var(--color-text) 60%, transparent)',
                 }}
               >
-                <span>User</span>
-                <span>Team</span>
-                <span>Role</span>
-                <span>Status</span>
+                <span><LocalizedText message={"User"} /></span>
+                <span><LocalizedText message={"Team"} /></span>
+                <span><LocalizedText message={"Role"} /></span>
+                <span><LocalizedText message={"Status"} /></span>
               </div>
 
               {visiblePeople.map((u) => {
@@ -274,7 +279,7 @@ export function AdminView({
                           borderRadius: 'var(--r-av)',
                         }}
                       />
-                      {tm ? tm.name : 'Leadership'}
+                      {tm ? tm.name : <LocalizedText message={"Leadership"} />}
                     </span>
 
                     <select
@@ -339,9 +344,7 @@ export function AdminView({
                   textTransform: 'uppercase',
                   color: 'color-mix(in srgb, var(--color-text) 60%, transparent)',
                 }}
-              >
-                Permission
-              </span>
+              >{" "}<LocalizedText message={"Permission"} />{" "}</span>
               {ROLES.map((r) => {
                 const tn = TN[RC[r] || 'gray'] || TN.gray;
                 return (
@@ -404,9 +407,7 @@ export function AdminView({
                 })}
               </div>
             ))}
-            <p className="text-muted" style={{ fontSize: 12, margin: '12px 0 0' }}>
-              Admin always has every permission.
-            </p>
+            <p className="text-muted" style={{ fontSize: 12, margin: '12px 0 0' }}>{" "}<LocalizedText message={"Admin always has every permission."} />{" "}</p>
           </div>
         </div>
       )}
@@ -481,7 +482,7 @@ export function AdminView({
                   onClick={() => onToggleIntegration(g.id)}
                   style={{ alignSelf: 'flex-start', minHeight: 38, borderRadius: 'var(--r-sm)' }}
                 >
-                  {on ? 'Disconnect' : 'Connect'}
+                  {on ? <LocalizedText message={"Disconnect"} /> : <LocalizedText message={"Connect"} />}
                 </button>
               </div>
             );
@@ -508,9 +509,7 @@ export function AdminView({
               >
                 <span style={{ width: 14, height: 14, background: tn.solid }} />
                 <span style={{ fontWeight: 700 }}>{p}</span>
-                <span className="text-muted" style={{ fontSize: 13 }}>
-                  Active partition
-                </span>
+                <span className="text-muted" style={{ fontSize: 13 }}>{" "}<LocalizedText message={"Active partition"} />{" "}</span>
                 <span className="tag" style={{ background: tn.bg, color: tn.fg, fontWeight: 700 }}>
                   {p}
                 </span>
@@ -522,18 +521,16 @@ export function AdminView({
             <input
               className="input"
               style={{ minHeight: 40 }}
-              placeholder="New partition name"
+              placeholder={translateUI("New partition name")}
               value={newPartName}
               onChange={(e) => setNewPartName(e.target.value)}
-              aria-label="New partition name"
+              aria-label={translateUI("New partition name")}
             />
             <button
               type="submit"
               className="btn btn-primary"
               style={{ minHeight: 40, flex: 'none', borderRadius: 'var(--r-sm)' }}
-            >
-              Add partition
-            </button>
+            >{" "}<LocalizedText message={"Add partition"} />{" "}</button>
           </form>
         </div>
       )}

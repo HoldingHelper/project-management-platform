@@ -1,4 +1,6 @@
 "use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 import { useState } from "react";
 import {
@@ -30,6 +32,7 @@ import {
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getDocPage, listDocComments, type DocComment } from "@/lib/api/docs";
+import { DocumentComments } from "../DocumentComments";
 import { Avatar } from "@/components/ds";
 
 interface Props {
@@ -39,6 +42,8 @@ interface Props {
 type TabType = "outline" | "comments" | "backlinks" | "ai";
 
 export function ContextInspector({ activePageId }: Props) {
+  const { t: translateUI } = useI18n();
+
   const [activeTab, setActiveTab] = useState<TabType>("outline");
   const [helpfulFeedback, setHelpfulFeedback] = useState<boolean | null>(null);
   const [commentFilter, setCommentFilter] = useState<"all" | "unresolved" | "resolved">("all");
@@ -96,9 +101,7 @@ export function ContextInspector({ activePageId }: Props) {
             cursor: "pointer",
             transition: "all var(--duration-fast) var(--ease-spring)",
           }}
-        >
-          Outline
-        </button>
+        >{" "}<LocalizedText message={"Outline"} />{" "}</button>
 
         <button
           type="button"
@@ -115,8 +118,7 @@ export function ContextInspector({ activePageId }: Props) {
             cursor: "pointer",
             transition: "all var(--duration-fast) var(--ease-spring)",
           }}
-        >
-          Comments <span style={{ fontSize: 10, padding: "1px 5px", borderRadius: 8, background: "var(--accent-primary-soft)", color: "var(--accent-primary)", fontWeight: 700 }}>3</span>
+        >{" "}<LocalizedText message={"Comments"} />{" "}<span style={{ fontSize: 10, padding: "1px 5px", borderRadius: 8, background: "var(--accent-primary-soft)", color: "var(--accent-primary)", fontWeight: 700 }}>{comments.length}</span>
         </button>
 
         <button
@@ -134,9 +136,7 @@ export function ContextInspector({ activePageId }: Props) {
             cursor: "pointer",
             transition: "all var(--duration-fast) var(--ease-spring)",
           }}
-        >
-          Backlinks
-        </button>
+        >{" "}<LocalizedText message={"Backlinks"} />{" "}</button>
 
         <button
           type="button"
@@ -155,8 +155,7 @@ export function ContextInspector({ activePageId }: Props) {
           }}
         >
           <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-            <Sparkles size={12} /> AI
-          </span>
+            <Sparkles size={12} />{" "}<LocalizedText message={"AI"} />{" "}</span>
         </button>
       </div>
 
@@ -167,9 +166,7 @@ export function ContextInspector({ activePageId }: Props) {
           <>
             {/* Table of Contents */}
             <div>
-              <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-tertiary)", marginBottom: 12 }}>
-                Table of Contents
-              </div>
+              <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-tertiary)", marginBottom: 12 }}>{" "}<LocalizedText message={"Table of Contents"} />{" "}</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 3, borderLeft: "2px solid var(--border-subtle)", paddingLeft: 10 }}>
                 <a
                   href="#signing-in"
@@ -180,25 +177,13 @@ export function ContextInspector({ activePageId }: Props) {
                     textDecoration: "none",
                     padding: "4px 0",
                   }}
-                >
-                  Signing In & Profile Management
-                </a>
+                >{" "}<LocalizedText message={"Signing In & Profile Management"} />{" "}</a>
                 <div style={{ paddingLeft: 10, display: "flex", flexDirection: "column", gap: 4 }}>
-                  <a href="#authentication" style={{ fontSize: 12, color: "var(--text-secondary)", textDecoration: "none" }}>
-                    Authentication & Security
-                  </a>
-                  <a href="#sign-in" style={{ fontSize: 12, color: "var(--text-tertiary)", textDecoration: "none", paddingLeft: 8 }}>
-                    Sign in to NexFellas
-                  </a>
-                  <a href="#theme-preferences" style={{ fontSize: 12, color: "var(--text-secondary)", textDecoration: "none" }}>
-                    Theme Preferences
-                  </a>
-                  <a href="#password-management" style={{ fontSize: 12, color: "var(--text-secondary)", textDecoration: "none" }}>
-                    Password Management
-                  </a>
-                  <a href="#admin-password-reset" style={{ fontSize: 12, color: "var(--text-secondary)", textDecoration: "none" }}>
-                    Admin Password Reset
-                  </a>
+                  <a href="#authentication" style={{ fontSize: 12, color: "var(--text-secondary)", textDecoration: "none" }}>{" "}<LocalizedText message={"Authentication & Security"} />{" "}</a>
+                  <a href="#sign-in" style={{ fontSize: 12, color: "var(--text-tertiary)", textDecoration: "none", paddingLeft: 8 }}>{" "}<LocalizedText message={"Sign in to NexFellas"} />{" "}</a>
+                  <a href="#theme-preferences" style={{ fontSize: 12, color: "var(--text-secondary)", textDecoration: "none" }}>{" "}<LocalizedText message={"Theme Preferences"} />{" "}</a>
+                  <a href="#password-management" style={{ fontSize: 12, color: "var(--text-secondary)", textDecoration: "none" }}>{" "}<LocalizedText message={"Password Management"} />{" "}</a>
+                  <a href="#admin-password-reset" style={{ fontSize: 12, color: "var(--text-secondary)", textDecoration: "none" }}>{" "}<LocalizedText message={"Admin Password Reset"} />{" "}</a>
                 </div>
               </div>
             </div>
@@ -216,18 +201,18 @@ export function ContextInspector({ activePageId }: Props) {
             >
               <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>
                 <Keyboard size={14} style={{ color: "var(--accent-primary)" }} />
-                <span>Keyboard shortcuts</span>
+                <span><LocalizedText message={"Keyboard shortcuts"} /></span>
               </div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <span style={{ fontSize: 11.5, color: "var(--text-secondary)" }}>Next section</span>
-                <kbd style={{ padding: "2px 6px", borderRadius: 4, background: "var(--surface-3)", border: "1px solid var(--border-subtle)", fontSize: 10, fontFamily: "var(--font-mono)" }}>J</kbd>
+                <span style={{ fontSize: 11.5, color: "var(--text-secondary)" }}><LocalizedText message={"Next section"} /></span>
+                <kbd style={{ padding: "2px 6px", borderRadius: 4, background: "var(--surface-3)", border: "1px solid var(--border-subtle)", fontSize: 10, fontFamily: "var(--font-mono)" }}><LocalizedText message={"J"} /></kbd>
               </div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <span style={{ fontSize: 11.5, color: "var(--text-secondary)" }}>Previous section</span>
-                <kbd style={{ padding: "2px 6px", borderRadius: 4, background: "var(--surface-3)", border: "1px solid var(--border-subtle)", fontSize: 10, fontFamily: "var(--font-mono)" }}>K</kbd>
+                <span style={{ fontSize: 11.5, color: "var(--text-secondary)" }}><LocalizedText message={"Previous section"} /></span>
+                <kbd style={{ padding: "2px 6px", borderRadius: 4, background: "var(--surface-3)", border: "1px solid var(--border-subtle)", fontSize: 10, fontFamily: "var(--font-mono)" }}><LocalizedText message={"K"} /></kbd>
               </div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <span style={{ fontSize: 11.5, color: "var(--text-secondary)" }}>Search docs</span>
+                <span style={{ fontSize: 11.5, color: "var(--text-secondary)" }}><LocalizedText message={"Search docs"} /></span>
                 <kbd style={{ padding: "2px 6px", borderRadius: 4, background: "var(--surface-3)", border: "1px solid var(--border-subtle)", fontSize: 10, fontFamily: "var(--font-mono)" }}>/</kbd>
               </div>
             </div>
@@ -245,7 +230,7 @@ export function ContextInspector({ activePageId }: Props) {
             >
               <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>
                 <BookOpen size={14} style={{ color: "var(--accent-primary)" }} />
-                <span>Related Articles</span>
+                <span><LocalizedText message={"Related Articles"} /></span>
               </div>
               {[
                 "Account Security Best Practices",
@@ -261,7 +246,7 @@ export function ContextInspector({ activePageId }: Props) {
             </div>
 
             {/* Was this helpful? Card */}
-            <div
+            <div className="knowledge-helpful-card"
               style={{
                 padding: "12px 14px",
                 borderRadius: "var(--radius-2)",
@@ -275,13 +260,15 @@ export function ContextInspector({ activePageId }: Props) {
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <Lightbulb size={16} style={{ color: "#F59E0B" }} />
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>Was this helpful?</div>
-                  <div style={{ fontSize: 10.5, color: "var(--text-tertiary)" }}>Help us improve this doc.</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}><LocalizedText message={"Was this helpful?"} /></div>
+                  <div style={{ fontSize: 10.5, color: "var(--text-tertiary)" }}><LocalizedText message={"Help us improve this doc."} /></div>
                 </div>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <button
                   type="button"
+                  aria-label={translateUI("This document was helpful")}
+                  aria-pressed={helpfulFeedback === true}
                   onClick={() => setHelpfulFeedback(true)}
                   className="pmp-icon-btn"
                   style={{
@@ -297,6 +284,8 @@ export function ContextInspector({ activePageId }: Props) {
                 </button>
                 <button
                   type="button"
+                  aria-label={translateUI("This document was not helpful")}
+                  aria-pressed={helpfulFeedback === false}
                   onClick={() => setHelpfulFeedback(false)}
                   className="pmp-icon-btn"
                   style={{
@@ -315,251 +304,15 @@ export function ContextInspector({ activePageId }: Props) {
           </>
         )}
 
-        {/* ================= COMMENTS & REVIEW TAB (Image 3) ================= */}
-        {activeTab === "comments" && (
-          <>
-            {/* Review Status Widget */}
-            <div
-              style={{
-                padding: "14px",
-                borderRadius: "var(--radius-2)",
-                background: "var(--surface-2)",
-                border: "1px solid var(--border-subtle)",
-                display: "grid",
-                gap: 12,
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>Review Status</div>
-                <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "2px 8px", borderRadius: 10, background: "rgba(245, 158, 11, 0.12)", color: "#F59E0B", fontSize: 11, fontWeight: 700 }}>
-                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#F59E0B" }} />
-                  <span>In Review</span>
-                </div>
-              </div>
-
-              <div style={{ fontSize: 11, color: "var(--text-tertiary)" }}>
-                2 of 4 approvals • Due Apr 25, 2026
-              </div>
-
-              {/* Reviewers List */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6, textAlign: "center" }}>
-                {[
-                  { name: "Sarah Chen", initials: "SC", status: "Approved", color: "#10B981" },
-                  { name: "Mike Chen", initials: "MK", status: "Pending", color: "#F59E0B" },
-                  { name: "Priya Shah", initials: "PS", status: "Approved", color: "#10B981" },
-                  { name: "Alex Rivera", initials: "AR", status: "Pending", color: "#F59E0B" },
-                ].map((rev) => (
-                  <div key={rev.name} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                    <div
-                      style={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: "50%",
-                        background: "var(--surface-3)",
-                        border: `2px solid ${rev.color}`,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontWeight: 700,
-                        fontSize: 11,
-                        color: "var(--text-primary)",
-                      }}
-                    >
-                      {rev.initials}
-                    </div>
-                    <span style={{ fontSize: 10, color: "var(--text-primary)", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%" }}>
-                      {rev.name.split(" ")[0]}
-                    </span>
-                    <span style={{ fontSize: 9, color: rev.color, fontWeight: 700 }}>{rev.status}</span>
-                  </div>
-                ))}
-              </div>
-
-              <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
-                <button
-                  type="button"
-                  style={{
-                    flex: 1,
-                    padding: "6px 8px",
-                    borderRadius: "var(--radius-1)",
-                    background: "var(--surface-3)",
-                    border: "1px solid var(--border-subtle)",
-                    color: "var(--text-primary)",
-                    fontSize: 11.5,
-                    fontWeight: 650,
-                    cursor: "pointer",
-                  }}
-                >
-                  Request approval
-                </button>
-                <button
-                  type="button"
-                  style={{
-                    flex: 1,
-                    padding: "6px 8px",
-                    borderRadius: "var(--radius-1)",
-                    background: "var(--accent-primary)",
-                    border: "none",
-                    color: "#fff",
-                    fontSize: 11.5,
-                    fontWeight: 700,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 4,
-                    cursor: "pointer",
-                  }}
-                >
-                  <UserPlus size={12} /> Add reviewers
-                </button>
-              </div>
-            </div>
-
-            {/* Comment Threads */}
-            <div style={{ display: "grid", gap: 10 }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>Comments</span>
-                <select
-                  value={commentFilter}
-                  onChange={(e) => setCommentFilter(e.target.value as any)}
-                  style={{ padding: "2px 6px", borderRadius: 4, background: "var(--surface-2)", border: "1px solid var(--border-subtle)", fontSize: 11, color: "var(--text-secondary)" }}
-                >
-                  <option value="all">All comments</option>
-                  <option value="unresolved">Unresolved (2)</option>
-                  <option value="resolved">Resolved (1)</option>
-                </select>
-              </div>
-
-              {[
-                {
-                  id: "1",
-                  author: "Daniel Kim",
-                  time: "2m ago",
-                  text: "Should we mention SAML as well? Some enterprise customers use SAML instead of OAuth.",
-                  status: "unresolved",
-                  section: "# Authentication & Security",
-                },
-                {
-                  id: "2",
-                  author: "Priya Shah",
-                  time: "10m ago",
-                  text: "Consider linking to a short guide on choosing a theme. This could help new users.",
-                  status: "unresolved",
-                  section: "# Theme Preferences",
-                },
-                {
-                  id: "3",
-                  author: "Alex Rivera",
-                  time: "1h ago",
-                  text: "Let's simplify this wording for clarity.",
-                  status: "resolved",
-                  section: "# Sign in to NexFellas",
-                },
-              ].map((c) => (
-                <div
-                  key={c.id}
-                  style={{
-                    padding: "10px 12px",
-                    borderRadius: "var(--radius-2)",
-                    background: "var(--surface-2)",
-                    border: "1px solid var(--border-subtle)",
-                    display: "grid",
-                    gap: 6,
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <span style={{ fontWeight: 700, color: "var(--text-primary)" }}>{c.author}</span>
-                      <span style={{ fontSize: 10.5, color: "var(--text-tertiary)" }}>{c.time}</span>
-                    </div>
-                    <span
-                      style={{
-                        fontSize: 10,
-                        fontWeight: 700,
-                        color: c.status === "resolved" ? "var(--status-completed)" : "var(--accent-primary)",
-                      }}
-                    >
-                      ● {c.status === "resolved" ? "Resolved" : "Unresolved"}
-                    </span>
-                  </div>
-                  <p style={{ margin: 0, fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.45 }}>{c.text}</p>
-                  <div style={{ fontSize: 10, color: "var(--text-tertiary)" }}>{c.section}</div>
-                </div>
-              ))}
-            </div>
-
-            {/* Suggested Edits Card (Image 3) */}
-            <div
-              style={{
-                padding: "12px 14px",
-                borderRadius: "var(--radius-2)",
-                background: "var(--surface-2)",
-                border: "1px solid var(--border-subtle)",
-                display: "grid",
-                gap: 10,
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>Suggested edits</span>
-                <span style={{ fontSize: 10, padding: "1px 5px", borderRadius: 8, background: "var(--accent-primary-soft)", color: "var(--accent-primary)", fontWeight: 700 }}>2</span>
-              </div>
-
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-                <span style={{ fontSize: 11.5, color: "var(--text-secondary)" }}>
-                  Replace &quot;company&apos;s&quot; with &quot;organization&apos;s&quot;
-                </span>
-                <button
-                  type="button"
-                  style={{
-                    padding: "3px 8px",
-                    borderRadius: 4,
-                    background: "var(--accent-primary)",
-                    border: "none",
-                    color: "#fff",
-                    fontSize: 11,
-                    fontWeight: 700,
-                    cursor: "pointer",
-                  }}
-                >
-                  Apply
-                </button>
-              </div>
-
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-                <span style={{ fontSize: 11.5, color: "var(--text-secondary)" }}>
-                  Add link to theme guide
-                </span>
-                <button
-                  type="button"
-                  style={{
-                    padding: "3px 8px",
-                    borderRadius: 4,
-                    background: "var(--accent-primary)",
-                    border: "none",
-                    color: "#fff",
-                    fontSize: 11,
-                    fontWeight: 700,
-                    cursor: "pointer",
-                  }}
-                >
-                  Apply
-                </button>
-              </div>
-            </div>
-          </>
-        )}
+        {activeTab === "comments" && activePageId && <DocumentComments key={activePageId} pageId={activePageId} />}
 
         {/* ================= BACKLINKS & METADATA TAB (Image 4) ================= */}
         {activeTab === "backlinks" && (
           <>
             {/* Linked From */}
             <div style={{ display: "grid", gap: 8 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>
-                Linked from (12)
-              </div>
-              <div style={{ fontSize: 11, color: "var(--text-tertiary)" }}>
-                Documents that reference this page.
-              </div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{" "}<LocalizedText message={"Linked from (12)"} />{" "}</div>
+              <div style={{ fontSize: 11, color: "var(--text-tertiary)" }}>{" "}<LocalizedText message={"Documents that reference this page."} />{" "}</div>
 
               {[
                 { title: "Authentication & Security", space: "Security & Compliance" },
@@ -588,9 +341,7 @@ export function ContextInspector({ activePageId }: Props) {
 
             {/* Related Concepts (8) Tags */}
             <div style={{ display: "grid", gap: 8 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>
-                Related Concepts (8)
-              </div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{" "}<LocalizedText message={"Related Concepts (8)"} />{" "}</div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                 {[
                   "Authentication",
@@ -630,28 +381,26 @@ export function ContextInspector({ activePageId }: Props) {
                 gap: 8,
               }}
             >
-              <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>
-                Document Metadata
+              <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{" "}<LocalizedText message={"Document Metadata"} />{" "}</div>
+              <div style={{ display: "flex", justifyContent: "space-between", color: "var(--text-secondary)" }}>
+                <span style={{ color: "var(--text-tertiary)" }}><LocalizedText message={"Type"} /></span>
+                <b><LocalizedText message={"Guide"} /></b>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", color: "var(--text-secondary)" }}>
-                <span style={{ color: "var(--text-tertiary)" }}>Type</span>
-                <b>Guide</b>
+                <span style={{ color: "var(--text-tertiary)" }}><LocalizedText message={"Last updated"} /></span>
+                <span><LocalizedText message={"2 days ago"} /></span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", color: "var(--text-secondary)" }}>
-                <span style={{ color: "var(--text-tertiary)" }}>Last updated</span>
-                <span>2 days ago</span>
+                <span style={{ color: "var(--text-tertiary)" }}><LocalizedText message={"Owner"} /></span>
+                <span><LocalizedText message={"NexFellas Team"} /></span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", color: "var(--text-secondary)" }}>
-                <span style={{ color: "var(--text-tertiary)" }}>Owner</span>
-                <span>NexFellas Team</span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", color: "var(--text-secondary)" }}>
-                <span style={{ color: "var(--text-tertiary)" }}>Total views</span>
+                <span style={{ color: "var(--text-tertiary)" }}><LocalizedText message={"Total views"} /></span>
                 <span>1,284</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", color: "var(--text-secondary)" }}>
-                <span style={{ color: "var(--text-tertiary)" }}>Language</span>
-                <span>English</span>
+                <span style={{ color: "var(--text-tertiary)" }}><LocalizedText message={"Language"} /></span>
+                <span><LocalizedText message={"English"} /></span>
               </div>
             </div>
           </>
@@ -664,11 +413,9 @@ export function ContextInspector({ activePageId }: Props) {
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                 <Sparkles size={16} style={{ color: "var(--accent-primary)" }} />
-                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>NexFellas AI</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}><LocalizedText message={"NexFellas AI"} /></div>
               </div>
-              <div style={{ fontSize: 11.5, color: "var(--text-tertiary)", lineHeight: 1.4 }}>
-                Your AI writing partner for better documentation.
-              </div>
+              <div style={{ fontSize: 11.5, color: "var(--text-tertiary)", lineHeight: 1.4 }}>{" "}<LocalizedText message={"Your AI writing partner for better documentation."} />{" "}</div>
             </div>
 
             {/* Quick Actions 2x3 Grid */}
@@ -709,9 +456,7 @@ export function ContextInspector({ activePageId }: Props) {
 
             {/* Chat Input */}
             <div>
-              <div style={{ fontSize: 11.5, fontWeight: 700, color: "var(--text-primary)", marginBottom: 6 }}>
-                Ask about this document
-              </div>
+              <div style={{ fontSize: 11.5, fontWeight: 700, color: "var(--text-primary)", marginBottom: 6 }}>{" "}<LocalizedText message={"Ask about this document"} />{" "}</div>
               <div
                 style={{
                   display: "flex",
@@ -727,7 +472,7 @@ export function ContextInspector({ activePageId }: Props) {
                   type="text"
                   value={aiPrompt}
                   onChange={(e) => setAiPrompt(e.target.value)}
-                  placeholder="Ask a question about this document…"
+                  placeholder={translateUI("Ask a question about this document…")}
                   style={{
                     flex: 1,
                     background: "transparent",
@@ -792,9 +537,7 @@ export function ContextInspector({ activePageId }: Props) {
               ))}
             </div>
 
-            <div style={{ fontSize: 10, color: "var(--text-tertiary)", textAlign: "center", marginTop: "auto" }}>
-              AI can make mistakes. Always review important information.
-            </div>
+            <div style={{ fontSize: 10, color: "var(--text-tertiary)", textAlign: "center", marginTop: "auto" }}>{" "}<LocalizedText message={"AI can make mistakes. Always review important information."} />{" "}</div>
           </>
         )}
       </div>

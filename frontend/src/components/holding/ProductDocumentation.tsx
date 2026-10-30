@@ -1,4 +1,5 @@
 "use client";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -6,6 +7,7 @@ import { Download, FileText } from "lucide-react";
 import { Button, useToast } from "@/components/ds";
 import { downloadProductDocumentation, getProductDocumentation } from "@/lib/api/projects";
 import type { ProductRead } from "@/lib/types";
+import { DocumentLifecycleControls } from "@/components/docs/DocumentLifecycleControls";
 
 export function ProductDocumentation({ product }: { product: ProductRead }) {
   const uploaded = product.documentation_link?.startsWith("attachment:");
@@ -13,7 +15,8 @@ export function ProductDocumentation({ product }: { product: ProductRead }) {
   const [downloading, setDownloading] = useState(false);
   const toast = useToast();
   if (!uploaded) return product.documentation_link && /^https?:\/\//i.test(product.documentation_link)
-    ? <a href={product.documentation_link} target="_blank" rel="noreferrer">Documentation</a> : null;
+    ? <a href={product.documentation_link} target="_blank" rel="noreferrer"><LocalizedText message={"Documentation"} /></a> : null;
+  if (document.isError) return null;
   async function download() {
     setDownloading(true);
     try {
@@ -32,7 +35,8 @@ export function ProductDocumentation({ product }: { product: ProductRead }) {
   return (
     <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, marginTop: 12, fontSize: 12, color: "var(--text-secondary)" }}>
       <FileText size={15} aria-hidden /><span>{document.data?.file_name ?? "Documentation"}</span>
-      <Button variant="tertiary" size="sm" disabled={downloading} onClick={download}><Download size={14} aria-hidden />{downloading ? "Downloading…" : "Download"}</Button>
+      <Button variant="tertiary" size="sm" disabled={downloading} onClick={download}><Download size={14} aria-hidden />{downloading ? <LocalizedText message={"Downloading…"} /> : <LocalizedText message={"Download"} />}</Button>
+      {document.data && <DocumentLifecycleControls attachmentId={document.data.id} fileName={document.data.file_name} />}
     </div>
   );
 }

@@ -5,6 +5,7 @@
 */
 
 import type { ProblemDetails, TokenResponse } from "@/lib/types";
+import { localizeProblem } from "@/lib/i18n/core";
 import {
   clearSession,
   getAccessToken,
@@ -103,7 +104,9 @@ async function parseError(res: Response): Promise<AppError> {
     /* non-JSON error body */
   }
   const title = problem?.title ?? res.statusText ?? "Request failed";
-  return new AppError(title, res.status, problem?.type ?? "error", problem);
+  const type = problem?.type ?? "error";
+  const locale = typeof document !== "undefined" && document.documentElement.lang === "fa" ? "fa" : "en";
+  return new AppError(localizeProblem(locale, type, title), res.status, type, problem);
 }
 
 async function doFetch(path: string, opts: Options): Promise<Response> {

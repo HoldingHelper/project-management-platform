@@ -1,3 +1,7 @@
+"use client";
+
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 import React, { useState } from 'react';
 import { LoginLayout } from '../types';
 import { Icon } from '../icons';
@@ -8,6 +12,10 @@ interface LoginViewProps {
 }
 
 export function LoginView({ layout = 'poster', onLoginSuccess }: LoginViewProps) {
+  const { t: localizeAttribute } = useI18n();
+
+  const { t: translateUI } = useI18n();
+
   const [username, setUsername] = useState('admin');
   const [password, setPassword] = useState('password');
   const [showPw, setShowPw] = useState(false);
@@ -66,12 +74,8 @@ export function LoginView({ layout = 'poster', onLoginSuccess }: LoginViewProps)
                 fontSize: 13,
                 borderRadius: 'var(--r-sm)',
               }}
-            >
-              PP
-            </div>
-            <div style={{ fontWeight: 800, fontSize: 15, lineHeight: 1.2 }}>
-              Project Platform
-              <br />
+            >{" "}<LocalizedText message={"PP"} />{" "}</div>
+            <div style={{ fontWeight: 800, fontSize: 15, lineHeight: 1.2 }}>{" "}<LocalizedText message={"Project Platform"} />{" "}<br />
               <span
                 style={{
                   fontSize: 10,
@@ -79,9 +83,7 @@ export function LoginView({ layout = 'poster', onLoginSuccess }: LoginViewProps)
                   textTransform: 'uppercase',
                   fontWeight: 600,
                 }}
-              >
-                Management workspace
-              </span>
+              >{" "}<LocalizedText message={"Management workspace"} />{" "}</span>
             </div>
           </div>
 
@@ -95,9 +97,7 @@ export function LoginView({ layout = 'poster', onLoginSuccess }: LoginViewProps)
                 letterSpacing: '-.035em',
                 textWrap: 'balance',
               }}
-            >
-              Teams Management Platform
-            </div>
+            >{" "}<LocalizedText message={"Teams Management Platform"} />{" "}</div>
             <div
               style={{
                 height: 2,
@@ -117,12 +117,12 @@ export function LoginView({ layout = 'poster', onLoginSuccess }: LoginViewProps)
               }}
             >
               <div>
-                <div style={{ fontWeight: 800, marginBottom: 4 }}>01 — Docs</div>
-                <div>Processes, runbooks and policies for every team.</div>
+                <div style={{ fontWeight: 800, marginBottom: 4 }}><LocalizedText message={"01 — Docs"} /></div>
+                <div><LocalizedText message={"Processes, runbooks and policies for every team."} /></div>
               </div>
               <div>
-                <div style={{ fontWeight: 800, marginBottom: 4 }}>02 — Teams</div>
-                <div>Projects, tasks, people and delivery health.</div>
+                <div style={{ fontWeight: 800, marginBottom: 4 }}><LocalizedText message={"02 — Teams"} /></div>
+                <div><LocalizedText message={"Projects, tasks, people and delivery health."} /></div>
               </div>
             </div>
           </div>
@@ -151,15 +151,13 @@ export function LoginView({ layout = 'poster', onLoginSuccess }: LoginViewProps)
           }}
         >
           <div>
-            <h6 style={{ color: 'var(--color-accent)', marginBottom: 10 }}>Sign in</h6>
-            <h2 style={{ margin: '0 0 6px' }}>Welcome back</h2>
-            <p className="text-muted" style={{ fontSize: 14, margin: 0 }}>
-              Use your workspace account to continue.
-            </p>
+            <h6 style={{ color: 'var(--color-accent)', marginBottom: 10 }}><LocalizedText message={"Sign in"} /></h6>
+            <h2 style={{ margin: '0 0 6px' }}><LocalizedText message={"Welcome back"} /></h2>
+            <p className="text-muted" style={{ fontSize: 14, margin: 0 }}>{" "}<LocalizedText message={"Use your workspace account to continue."} />{" "}</p>
           </div>
 
           <div className="field">
-            <label htmlFor="tmp-user">Email or username</label>
+            <label htmlFor="tmp-user"><LocalizedText message={"Email or username"} /></label>
             <input
               id="tmp-user"
               className="input"
@@ -169,7 +167,7 @@ export function LoginView({ layout = 'poster', onLoginSuccess }: LoginViewProps)
                 setUsername(e.target.value);
                 if (error) setError('');
               }}
-              placeholder="e.g. admin"
+              placeholder={translateUI("e.g. admin")}
             />
           </div>
 
@@ -189,35 +187,31 @@ export function LoginView({ layout = 'poster', onLoginSuccess }: LoginViewProps)
                   marginBottom: 5,
                   color: 'color-mix(in srgb, var(--color-text) 70%, transparent)',
                 }}
-              >
-                Password
-              </label>
+              >{" "}<LocalizedText message={"Password"} />{" "}</label>
               <a
                 href="#forgot"
                 onClick={(e) => e.preventDefault()}
                 style={{ fontSize: 12 }}
-              >
-                Forgot password?
-              </a>
+              >{" "}<LocalizedText message={"Forgot password?"} />{" "}</a>
             </div>
             <div style={{ position: 'relative' }}>
               <input
                 id="tmp-pass"
                 className="input"
-                type={showPw ? 'text' : 'password'}
+                type={showPw ? "text" : "password"}
                 style={{ minHeight: 44, paddingRight: 48 }}
                 value={password}
                 onChange={(e) => {
                   setPassword(e.target.value);
                   if (error) setError('');
                 }}
-                placeholder="Enter your password"
+                placeholder={translateUI("Enter your password")}
               />
               <button
                 type="button"
                 className="btn btn-icon"
-                aria-label={showPw ? 'Hide password' : 'Show password'}
-                title={showPw ? 'Hide password' : 'Show password'}
+                aria-label={showPw ? localizeAttribute("Hide password") : localizeAttribute("Show password")}
+                title={showPw ? localizeAttribute("Hide password") : localizeAttribute("Show password")}
                 onClick={() => setShowPw(!showPw)}
                 style={{
                   position: 'absolute',
@@ -256,16 +250,14 @@ export function LoginView({ layout = 'poster', onLoginSuccess }: LoginViewProps)
             disabled={loading}
             style={{ minHeight: 48, fontSize: 15, borderRadius: 'var(--r-sm)' }}
           >
-            <span>{loading ? 'Signing in…' : 'Sign in'}</span>
+            <span>{loading ? <LocalizedText message={"Signing in…"} /> : <LocalizedText message={"Sign in"} />}</span>
             <svg width="18" height="18" viewBox="0 0 24 24" style={{ marginLeft: 'auto', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
               <path d="M5 12h14" />
               <path d="m12 5 7 7-7 7" />
             </svg>
           </button>
 
-          <p className="text-muted" style={{ fontSize: 12, margin: '8px 0 0' }}>
-            Need access? Contact your workspace admin.
-          </p>
+          <p className="text-muted" style={{ fontSize: 12, margin: '8px 0 0' }}>{" "}<LocalizedText message={"Need access? Contact your workspace admin."} />{" "}</p>
         </form>
       </div>
     </div>

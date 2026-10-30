@@ -1,4 +1,6 @@
 "use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
@@ -17,6 +19,8 @@ import { EmptyState, PAGE_STYLE, PageHeader, Spinner } from "@/components/ui/Sta
 import type { UUID } from "@/lib/types";
 
 export default function PerformancePage() {
+  const { t: translateUI } = useI18n();
+
   const { hasPermission } = useAuth();
   const canView = hasPermission("reports.view_executive");
   const [showAllBlockerLoad, setShowAllBlockerLoad] = useState(false);
@@ -42,8 +46,8 @@ export default function PerformancePage() {
   if (!canView) {
     return (
       <div style={PAGE_STYLE}>
-        <PageHeader title="Team Performance" />
-        <Alert kind="warning" title="Admin access required" description="This view needs the reports.view_executive permission." />
+        <PageHeader title={translateUI("Team Performance")} />
+        <Alert kind="warning" title={translateUI("Admin access required")} description={translateUI("This view needs the reports.view_executive permission.")} />
       </div>
     );
   }
@@ -58,22 +62,20 @@ export default function PerformancePage() {
   return (
     <div style={{ ...PAGE_STYLE, gap: 20 }}>
       <PageHeader
-        title="Team Performance"
+        title={translateUI("Team Performance")}
         subtitle={`${userList.length} contributors · organization-wide visibility.`}
         badge={
-          <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.04em", color: "var(--accent-primary)", background: "var(--status-in-progress-bg)", border: "1px solid color-mix(in srgb, var(--accent-primary) 40%, transparent)", borderRadius: "var(--radius-full)", padding: "2px 10px" }}>
-            ADMIN
-          </span>
+          <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.04em", color: "var(--accent-primary)", background: "var(--status-in-progress-bg)", border: "1px solid color-mix(in srgb, var(--accent-primary) 40%, transparent)", borderRadius: "var(--radius-full)", padding: "2px 10px" }}>{" "}<LocalizedText message={"ADMIN"} />{" "}</span>
         }
       />
 
       <div className="pmp-kpi-grid" style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 16 }}>
-        <MetricCard label="Contributors" value={userList.length || "—"} trend="all departments" />
-        <MetricCard label="Active Blockers" value={activeBlockers} tone="blocked" trend="open across org" />
-        <MetricCard label="Active Projects" value={exec.data?.active_projects ?? "—"} trend="in flight" />
-        <MetricCard label="Completed Projects" value={exec.data?.completed_projects ?? "—"} tone="completed" trend="delivered" />
+        <MetricCard label={translateUI("Contributors")} value={userList.length || "—"} trend="all departments" />
+        <MetricCard label={translateUI("Active Blockers")} value={activeBlockers} tone="blocked" trend="open across org" />
+        <MetricCard label={translateUI("Active Projects")} value={exec.data?.active_projects ?? "—"} trend="in flight" />
+        <MetricCard label={translateUI("Completed Projects")} value={exec.data?.completed_projects ?? "—"} tone="completed" trend="delivered" />
         <MetricCard
-          label="Velocity (4 wks)"
+          label={translateUI("Velocity (4 wks)")}
           value={Math.round((velocity.data?.weeks ?? []).reduce((s, p) => s + p.value, 0))}
           tone="in-progress"
           trend="story points"
@@ -82,11 +84,11 @@ export default function PerformancePage() {
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 20 }}>
         <FocusCard
-          title="Blocker Load by Contributor"
+          title={translateUI("Blocker Load by Contributor")}
           right={
             activeBlockers > 0 ? (
               <Button variant="tertiary" onClick={() => setShowAllBlockerLoad((value) => !value)}>
-                {showAllBlockerLoad ? "Show active only" : "Show all"}
+                {showAllBlockerLoad ? <LocalizedText message={"Show active only"} /> : <LocalizedText message={"Show all"} />}
               </Button>
             ) : undefined
           }
@@ -95,7 +97,7 @@ export default function PerformancePage() {
             {users.isLoading ? (
               <Spinner />
             ) : blockerLoadUsers.length === 0 ? (
-              <EmptyState title="No active blocker load" hint="No contributors are currently waiting on open blockers." />
+              <EmptyState title={translateUI("No active blocker load")} hint={translateUI("No contributors are currently waiting on open blockers.")} />
             ) : (
               <BlockerLoadBars userList={blockerLoadUsers} loadByUser={loadByUser} maxLoad={maxLoad} focused />
             )}
@@ -104,17 +106,17 @@ export default function PerformancePage() {
           {users.isLoading ? (
             <Spinner />
           ) : blockerLoadUsers.length === 0 ? (
-            <EmptyState title="No active blocker load" hint="No contributors are currently waiting on open blockers." />
+            <EmptyState title={translateUI("No active blocker load")} hint={translateUI("No contributors are currently waiting on open blockers.")} />
           ) : (
             <BlockerLoadBars userList={blockerLoadUsers} loadByUser={loadByUser} maxLoad={maxLoad} />
           )}
         </FocusCard>
 
         <FocusCard
-          title="Open Task Load & Contributions (4 weeks)"
+          title={translateUI("Open Task Load & Contributions (4 weeks)")}
           right={
             <Link href="/dashboards/executive">
-              <Button variant="tertiary">Full executive dashboard →</Button>
+              <Button variant="tertiary"><LocalizedText message={"Full executive dashboard →"} /></Button>
             </Link>
           }
           focusChildren={
@@ -167,7 +169,7 @@ function BlockerLoadBars({
               <div style={{ width: `${(load / maxLoad) * 100}%`, height: "100%", background: load >= maxLoad && load > 0 ? "var(--status-delayed)" : "var(--accent-primary)" }} />
             </div>
             <span style={{ width: 100, textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 12.5, color: "var(--text-secondary)", flexShrink: 0 }}>
-              {load} blocker{load === 1 ? "" : "s"}
+              {load}{" "}<LocalizedText message={"blocker"} />{load === 1 ? "" : <LocalizedText message={"s"} />}
             </span>
           </div>
         );
@@ -187,7 +189,9 @@ function WorkloadContributionBars({
   userList: import("@/lib/types").UserRead[];
   focused?: boolean;
 }) {
-  if (workload.length === 0) return <EmptyState title="No workload data yet" />;
+  const { t: translateUI } = useI18n();
+
+  if (workload.length === 0) return <EmptyState title={translateUI("No workload data yet")} />;
   const maxOpen = Math.max(1, ...workload.map((x) => x.open_tasks));
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: focused ? 16 : 12, minHeight: focused ? 520 : undefined }}>
@@ -206,8 +210,7 @@ function WorkloadContributionBars({
               <div style={{ width: `${(w.open_tasks / maxOpen) * 100}%`, height: "100%", background: "var(--chart-1)" }} />
             </div>
             <span style={{ width: focused ? 190 : 170, textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--text-secondary)", flexShrink: 0 }}>
-              {w.open_tasks} open · {contrib?.tasks_completed ?? 0} done
-            </span>
+              {w.open_tasks}{" "}<LocalizedText message={"open ·"} />{" "}{contrib?.tasks_completed ?? 0}{" "}<LocalizedText message={"done"} />{" "}</span>
           </div>
         );
       })}

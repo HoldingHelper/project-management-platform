@@ -302,14 +302,7 @@ async def mark_read(
 async def delete_message(
     db: AsyncSession, message_id: UUID, user_id: UUID
 ) -> None:
-    message = await repo.get_message(db, message_id)
-    if message is None:
-        raise NotFoundError("Message", message_id)
-    if message.sender_user_id != user_id:
-        raise ForbiddenError("Only the author can delete a message.")
-    message.deleted_at = utcnow()
-    message.body = ""
-    await db.commit()
+    raise ForbiddenError("Messages cannot be deleted by any user.")
 
 
 async def add_reaction(

@@ -1,4 +1,10 @@
 "use client";
+import { sprintSchedule, SPRINT_DURATIONS } from "@/lib/sprint-schedule";
+
+import { LocalizedRelativeTime } from "@/lib/i18n/I18nProvider";
+
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
@@ -91,10 +97,11 @@ function tagsWithTaxonomy(rawTags: string, level: ProjectLevel, partition: strin
 }
 
 function ProjectLevelBadge({ level }: { level: ProjectLevel }) {
+  const { t } = useI18n();
   const meta = PROJECT_LEVELS.find((item) => item.value === level)!;
   return (
     <span
-      title={meta.detail}
+      title={t(meta.detail)}
       style={{
         display: "inline-flex",
         alignItems: "center",
@@ -110,12 +117,16 @@ function ProjectLevelBadge({ level }: { level: ProjectLevel }) {
       }}
     >
       <Layers3 size={12} />
-      {meta.label}
+      {t(meta.label)}
     </span>
   );
 }
 
 export default function PortfolioPage() {
+  const { t: localizeAttribute } = useI18n();
+
+  const { t: translateUI } = useI18n();
+
   const [search, setSearch] = useViewState("portfolio-search", "");
   const [createOpen, setCreateOpen] = useState(false);
   const [productLine, setProductLine] = useViewState<string>("portfolio-product-line", "all");
@@ -151,6 +162,10 @@ export default function PortfolioPage() {
     for (const p of products.data ?? []) m.set(p.id, p.owner_user_id);
     return m;
   }, [products.data]);
+  const productNameById = useMemo(
+    () => new Map((products.data ?? []).map((product) => [product.id, product.name])),
+    [products.data],
+  );
   const items = projects.data?.items ?? [];
   const q = search.trim().toLowerCase();
   const filtered = items.filter((project) =>
@@ -174,7 +189,7 @@ export default function PortfolioPage() {
   return (
     <div style={{ ...PAGE_STYLE, gap: 18 }}>
       <PageHeader
-        title="Project Portfolio"
+        title={translateUI("Project Portfolio")}
         subtitle={`${items.length} projects · organization-wide.`}
         actions={
           canCreate || canGenerate ? (
@@ -182,14 +197,12 @@ export default function PortfolioPage() {
               {canGenerate && (
                 <Link href="/projects/ai-generator" style={{ textDecoration: "none" }}>
                   <Button variant="secondary">
-                    <Bot size={14} /> AI project
-                  </Button>
+                    <Bot size={14} />{" "}<LocalizedText message={"AI project"} />{" "}</Button>
                 </Link>
               )}
               {canCreate && (
                 <Button onClick={() => setCreateOpen(true)}>
-                  <Plus size={14} /> New project
-                </Button>
+                  <Plus size={14} />{" "}<LocalizedText message={"New project"} />{" "}</Button>
               )}
             </div>
           ) : undefined
@@ -197,21 +210,21 @@ export default function PortfolioPage() {
       />
 
       <div style={{ display: "flex", alignItems: "flex-end", gap: 10, flexWrap: "wrap" }}>
-        <Field label="Product line">
+        <Field label={translateUI("Product line")}>
           <Select
-            aria-label="Filter projects by product line"
+            aria-label={translateUI("Filter projects by product line")}
             value={productLine}
             onChange={(event) => setProductLine(event.target.value)}
-            options={[{ value: "all", label: "All product lines" }, ...(products.data ?? []).map((product) => ({ value: product.id, label: product.name }))]}
+            options={[{ translateLabel: true, value: "all", label: "All product lines" }, ...(products.data ?? []).map((product) => ({ value: product.id, label: product.name }))]}
             disabled={products.isLoading || !!products.error}
             style={{ minWidth: 220 }}
           />
         </Field>
-        {productLine !== "all" && <Button variant="tertiary" onClick={() => setProductLine("all")}><X size={14} aria-hidden />Clear product line</Button>}
+        {productLine !== "all" && <Button variant="tertiary" onClick={() => setProductLine("all")}><X size={14} aria-hidden /><LocalizedText message={"Clear product line"} /></Button>}
       </div>
 
       <FocusCard
-        title="Portfolio timeline"
+        title={translateUI("Portfolio timeline")}
         focusChildren={
           <TimelinePanel
             timelinePartition={timelinePartition}
@@ -239,7 +252,7 @@ export default function PortfolioPage() {
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
         <TextInput
           icon={<Search size={15} />}
-          placeholder="Filter by name or ID…"
+          placeholder={translateUI("Filter by name or ID…")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           style={{ flex: 1, minWidth: 220, maxWidth: 380 }}
@@ -247,16 +260,16 @@ export default function PortfolioPage() {
       </div>
 
       <section style={{ background: "var(--surface-2)", border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-3)", overflowX: "auto", overflowY: "hidden" }}>
-        <div style={{ minWidth: 1060 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "minmax(220px,1.35fr) 150px 120px 150px 260px 140px 90px 110px", padding: "11px 18px", fontSize: 11, fontWeight: 600, color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "0.04em", borderBottom: "1px solid var(--border-subtle)", background: "var(--surface-1)" }}>
-          <span>Project</span><span>Owner</span><span>Partition</span><span>Level</span><span>Progress & team</span><span>Status</span><span>Priority</span><span style={{ textAlign: "right" }}>Updated</span>
+        <div style={{ minWidth: 1436 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(220px,1.35fr) 160px 150px 120px 150px 260px 140px 90px 110px", padding: "11px 18px", fontSize: 11, fontWeight: 600, color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "0.04em", borderBottom: "1px solid var(--border-subtle)", background: "var(--surface-1)" }}>
+          <span><LocalizedText message={"Project"} /></span><span><LocalizedText message={"Product line"} /></span><span><LocalizedText message={"Owner"} /></span><span><LocalizedText message={"Partition"} /></span><span><LocalizedText message={"Level"} /></span><span><LocalizedText message={"Progress & team"} /></span><span><LocalizedText message={"Status"} /></span><span><LocalizedText message={"Priority"} /></span><span style={{ textAlign: "right" }}><LocalizedText message={"Updated"} /></span>
         </div>
 
         {projects.isLoading ? (
-          <Spinner label="Loading projects…" />
+          <Spinner label={translateUI("Loading projects…")} />
         ) : filtered.length === 0 ? (
           <EmptyState
-            title={items.length === 0 ? "No projects yet" : "No projects match the current filters"}
+            title={items.length === 0 ? localizeAttribute("No projects yet") : localizeAttribute("No projects match the current filters")}
             hint={items.length === 0 ? (canCreate ? "Create the first project to group imported tasks." : "An administrator creates projects here.") : undefined}
           />
         ) : (
@@ -270,11 +283,14 @@ export default function PortfolioPage() {
                 key={p.id}
                 href={`/projects/${p.id}`}
                 className="pmp-row"
-                style={{ display: "grid", gridTemplateColumns: "minmax(220px,1.35fr) 150px 120px 150px 260px 140px 90px 110px", alignItems: "center", padding: "13px 18px", borderBottom: "1px solid var(--border-subtle)", opacity: archived ? 0.68 : 1 }}
+                style={{ display: "grid", gridTemplateColumns: "minmax(220px,1.35fr) 160px 150px 120px 150px 260px 140px 90px 110px", alignItems: "center", padding: "13px 18px", borderBottom: "1px solid var(--border-subtle)", opacity: archived ? 0.68 : 1 }}
               >
                 <span style={{ minWidth: 0 }}>
                   <span style={{ display: "block", fontWeight: 700, fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</span>
                   <span style={{ fontSize: 11, color: "var(--text-tertiary)", fontFamily: "var(--font-mono)" }}>{p.id.slice(0, 8)}</span>
+                </span>
+                <span title={productNameById.get(p.product_id)} style={{ paddingInlineEnd: 16, fontSize: 12.5, color: "var(--text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {productNameById.get(p.product_id) ?? "—"}
                 </span>
                 <span style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
                   <Avatar name={owner} size={24} />
@@ -286,7 +302,7 @@ export default function PortfolioPage() {
                   <span style={{ flex: 1, minWidth: 120 }}>
                     <ProgressBar percent={Number(p.progress_percentage)} blocks={14} />
                   </span>
-                  <span title="Owner accountable for this progress" style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "var(--text-tertiary)", fontSize: 11.5 }}>
+                  <span title={translateUI("Owner accountable for this progress")} style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "var(--text-tertiary)", fontSize: 11.5 }}>
                     <UsersRound size={13} />
                     <Avatar name={owner} size={20} />
                   </span>
@@ -294,11 +310,11 @@ export default function PortfolioPage() {
                 <span>
                   <StatusChip
                     status={String(p.status === "in-progress" ? p.health_status : p.status)}
-                    label={p.status === "archived" ? "Archived" : undefined}
+                    label={p.status === "archived" ? localizeAttribute("Archived") : undefined}
                   />
                 </span>
                 <span><PriorityBadge level={String(p.priority)} compact /></span>
-                <span style={{ textAlign: "right", fontSize: 12, color: "var(--text-tertiary)" }}>{relativeTime(p.updated_at)}</span>
+                <span style={{ textAlign: "right", fontSize: 12, color: "var(--text-tertiary)" }}>{<LocalizedRelativeTime value={p.updated_at} />}</span>
               </Link>
             );
           })
@@ -330,6 +346,8 @@ function TimelinePanel({
   partitions: { value: string; label: string }[];
   focused?: boolean;
 }) {
+  const { t: translateUI } = useI18n();
+
   return (
     <div style={{ minHeight: focused ? 560 : undefined }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
@@ -343,20 +361,20 @@ function TimelinePanel({
           onClick={() => setShowArchived(!showArchived)}
           style={{ height: 32 }}
         >
-          <Archive size={14} /> {showArchived ? "Hide archives" : "Show archives"}
+          <Archive size={14} /> {showArchived ? <LocalizedText message={"Hide archives"} /> : <LocalizedText message={"Show archives"} />}
         </Button>
       </div>
       {loading ? (
-        <Spinner label="Loading timeline…" />
+        <Spinner label={translateUI("Loading timeline…")} />
       ) : (
         <PortfolioGanttChart data={data} />
       )}
       <div style={{ display: "flex", gap: 18, marginTop: 12, fontSize: 11.5, color: "var(--text-tertiary)", flexWrap: "wrap" }}>
-        <span>Filtered by project partition</span>
-        <span>◆ milestone (gold = open, green = done)</span>
-        <span style={{ color: "var(--accent-secondary)" }}>┄→ cross-project dependency</span>
-        <span style={{ color: "var(--status-delayed)" }}>│ today</span>
-        <span>pulsing bar = blocked / delayed</span>
+        <span><LocalizedText message={"Filtered by project partition"} /></span>
+        <span><LocalizedText message={"◆ milestone (gold = open, green = done)"} /></span>
+        <span style={{ color: "var(--accent-secondary)" }}><LocalizedText message={"┄→ cross-project dependency"} /></span>
+        <span style={{ color: "var(--status-delayed)" }}><LocalizedText message={"│ today"} /></span>
+        <span><LocalizedText message={"pulsing bar = blocked / delayed"} /></span>
       </div>
     </div>
   );
@@ -387,6 +405,10 @@ const HEALTH_STATUSES = [
 ];
 
 function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onClose: () => void; partitions: { value: string; label: string }[] }) {
+  const { t: localizeAttribute } = useI18n();
+
+  const { t: translateUI } = useI18n();
+
   const toast = useToast();
   const queryClient = useQueryClient();
   const { user, hasPermission, isSuperAdmin } = useAuth();
@@ -405,9 +427,11 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
     risk_level: "Medium",
     status: "not-started",
     health_status: "on-track",
-    start_date: "",
+    start_date: new Date().toISOString().slice(0, 10),
     end_date: "",
     actual_completion_date: "",
+    sprint_duration: "14",
+    sprint_durations: DEFAULT_SPRINTS.map(() => 14),
     sprint_count: "4",
     sprint_names: [...DEFAULT_SPRINTS],
     project_manager_id: "",
@@ -417,6 +441,8 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
     partition: "tech",
     tags: "",
   });
+  const schedule = sprintSchedule(form.start_date, form.sprint_durations);
+  const plannedEnd = schedule.at(-1)?.end_date ?? "";
   const [docSearch, setDocSearch] = useState("");
   const [selectedDocs, setSelectedDocs] = useState<{ id: string; title: string }[]>([]);
   const [documentationFiles, setDocumentationFiles] = useState<File[]>([]);
@@ -442,7 +468,6 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
 
       const count = Math.max(1, Math.min(52, Number(form.sprint_count) || 1));
       const sprintNames = form.sprint_names.map((name) => name.trim());
-      const sprintStart = form.start_date || new Date().toISOString().slice(0, 10);
 
       const project = await createProject({
         product_id: productId as UUID,
@@ -454,16 +479,15 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
         status: form.status,
         health_status: form.health_status,
         start_date: form.start_date || undefined,
-        end_date: form.end_date || undefined,
-        estimated_completion_date: form.end_date || undefined,
+        end_date: plannedEnd || undefined,
+        estimated_completion_date: plannedEnd || undefined,
         actual_completion_date: form.actual_completion_date || undefined,
         tags: tagsWithTaxonomy(form.tags, form.level, form.partition),
         sprints: Array.from({ length: count }, (_, index) => {
-          const start = addDaysIso(sprintStart, index * 14);
+          const window = schedule[index];
           return {
             name: sprintNames[index],
-            start_date: start,
-            end_date: addDaysIso(start, 13),
+            ...window,
             lead_assignee_user_id: form.lead_ids[index % Math.max(form.lead_ids.length, 1)],
           };
         }),
@@ -510,6 +534,8 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
       );
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["doc-pages"] });
+      queryClient.invalidateQueries({ queryKey: ["doc-spaces"] });
       queryClient.invalidateQueries({ queryKey: ["portfolio-gantt"] });
       queryClient.invalidateQueries({ queryKey: ["chat-channels"] });
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
@@ -545,20 +571,22 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
         while (names.includes(`Sprint ${number}`)) number++;
         names.push(`Sprint ${number}`);
       }
-      return { ...current, sprint_count: String(count), sprint_names: names };
+      return { ...current, sprint_count: String(count), sprint_names: names, sprint_durations: Array.from({ length: count }, (_, index) => current.sprint_durations[index] ?? Number(current.sprint_duration)) };
     });
   }
 
-  const datesPaired = Boolean(form.start_date) === Boolean(form.end_date);
-  const datesOrdered = !form.start_date || !form.end_date || form.end_date >= form.start_date;
+  const datesPaired = Boolean(form.start_date) === Boolean(plannedEnd);
+  const datesOrdered = !form.start_date || !plannedEnd || plannedEnd >= form.start_date;
   const valid = checklist.every((item) => item.text.trim()) && form.name.trim().length > 0
     && availableProductLines.includes(form.product_line)
     && availableProductLines.length > 0
     && Number(form.sprint_count) === form.sprint_names.length
     && form.sprint_names.every((name) => name.trim().length > 0)
+    && schedule.length === form.sprint_names.length
+    && !!form.start_date
     && datesPaired
     && datesOrdered
-    && (!form.actual_completion_date || Boolean(form.start_date && form.end_date));
+    && (!form.actual_completion_date || Boolean(form.start_date && plannedEnd));
   const unattachedTasks = backlog.data?.items ?? [];
 
   return (
@@ -566,22 +594,21 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
       open={open}
       onClose={() => { if (!submitting.current) onClose(); }}
       closeOnBackdrop={!create.isPending}
-      title="New project"
+      title={translateUI("New project")}
       width={900}
       footer={
         <>
           <Link href="/projects/ai-generator" style={{ textDecoration: "none" }} onClick={onClose}>
             <Button variant="secondary">
-              <Bot size={14} /> Use AI generator
-            </Button>
+              <Bot size={14} />{" "}<LocalizedText message={"Use AI generator"} />{" "}</Button>
           </Link>
-          <Button variant="secondary" disabled={create.isPending} onClick={onClose}>Cancel</Button>
+          <Button variant="secondary" disabled={create.isPending} onClick={onClose}><LocalizedText message={"Cancel"} /></Button>
           <Button disabled={!valid || create.isPending} onClick={() => {
             if (!valid || submitting.current) return;
             submitting.current = true;
             create.mutate();
           }}>
-            {create.isPending ? "Creating…" : "Create project"}
+            {create.isPending ? <LocalizedText message={"Creating…"} /> : <LocalizedText message={"Create project"} />}
           </Button>
         </>
       }
@@ -589,29 +616,23 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
       <div style={aiGeneratorHint}>
         <Bot size={16} style={{ color: "var(--accent-primary)", flexShrink: 0 }} />
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontWeight: 800, color: "var(--text-primary)", fontSize: 13 }}>
-            Want AI to create the full project and task plan?
-          </div>
-          <div style={{ color: "var(--text-secondary)", fontSize: 12.5, marginTop: 2 }}>
-            Use the AI generator to upload a brief, include Google Sheets links, review the draft, then commit it.
-          </div>
+          <div style={{ fontWeight: 800, color: "var(--text-primary)", fontSize: 13 }}>{" "}<LocalizedText message={"Want AI to create the full project and task plan?"} />{" "}</div>
+          <div style={{ color: "var(--text-secondary)", fontSize: 12.5, marginTop: 2 }}>{" "}<LocalizedText message={"Use the AI generator to upload a brief, include Google Sheets links, review the draft, then commit it."} />{" "}</div>
         </div>
         <Link href="/projects/ai-generator" style={{ textDecoration: "none" }} onClick={onClose}>
-          <Button variant="secondary" style={{ height: 32 }}>
-            Open
-          </Button>
+          <Button variant="secondary" style={{ height: 32 }}>{" "}<LocalizedText message={"Open"} />{" "}</Button>
         </Link>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.15fr) minmax(280px, 0.85fr)", gap: 18 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <Field label="Project name">
-            <TextInput value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="e.g. GMall Rebuild" />
+          <Field label={translateUI("Project name")}>
+            <TextInput value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder={translateUI("e.g. GMall Rebuild")} />
           </Field>
-          <Field label="Product line (required)" hint="Choose one product line for this project.">
+          <Field label={translateUI("Product line (required)")} hint={translateUI("Choose one product line for this project.")}>
             <Select
-              aria-label="Product line"
+              aria-label={translateUI("Product line")}
               required
-              placeholder="Select a product line…"
+              placeholder={translateUI("Select a product line…")}
               disabled={products.isLoading || !!products.error}
               value={form.product_line}
               onChange={(e) => setForm((f) => ({ ...f, product_line: e.target.value }))}
@@ -619,40 +640,39 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
             />
           </Field>
           {!products.isLoading && availableProductLines.length === 0 && (
-            <span style={{ fontSize: 11.5, color: "var(--status-delayed)" }}>
-              Add a product line in Holding before creating a project.
-            </span>
+            <span style={{ fontSize: 11.5, color: "var(--status-delayed)" }}>{" "}<LocalizedText message={"Add a product line in Holding before creating a project."} />{" "}</span>
           )}
-          <Field label="Project level">
-            <Select
+          <Field label={translateUI("Project level")}>
+            <Select translateOptions
               value={form.level}
               onChange={(e) => setForm((f) => ({ ...f, level: e.target.value as ProjectLevel }))}
-              options={PROJECT_LEVELS.map((level) => ({ value: level.value, label: `${level.label} · ${level.detail}` }))}
+              options={PROJECT_LEVELS.map((level) => ({ value: level.value, label: `${translateUI(level.label)} · ${translateUI(level.detail)}` }))}
             />
           </Field>
-          <Field label="Project partition">
+          <Field label={translateUI("Project partition")}>
             <Select
               value={form.partition}
               onChange={(e) => setForm((f) => ({ ...f, partition: e.target.value }))}
               options={partitions.filter((partition) => partition.value !== "all")}
             />
           </Field>
-          <Field label="Description (Markdown)">
+          <Field label={translateUI("Description (Markdown)")}>
             <TextArea
               value={form.description}
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-              placeholder={"## Goal\n- What changes?\n- Who is involved?\n- Links, risks, decisions..."}
+              placeholder={translateUI("## Goal\n- What changes?\n- Who is involved?\n- Links, risks, decisions...")}
             />
           </Field>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}><div style={sectionLabel}><LocalizedText message={"Checklist"} /></div><ChecklistEditor items={checklist} onChange={setChecklist} disabled={create.isPending} entity="project" /></div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 10 }}>
-            <Field label="Status">
-              <Select value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))} options={PROJECT_STATUSES} />
+            <Field label={translateUI("Status")}>
+              <Select translateOptions value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))} options={PROJECT_STATUSES} />
             </Field>
-            <Field label="Health">
-              <Select value={form.health_status} onChange={(e) => setForm((f) => ({ ...f, health_status: e.target.value }))} options={HEALTH_STATUSES} />
+            <Field label={translateUI("Health")}>
+              <Select translateOptions value={form.health_status} onChange={(e) => setForm((f) => ({ ...f, health_status: e.target.value }))} options={HEALTH_STATUSES} />
             </Field>
-            <Field label="Priority">
-              <Select
+            <Field label={translateUI("Priority")}>
+              <Select translateOptions
                 value={form.priority}
                 onChange={(e) => setForm((f) => ({ ...f, priority: e.target.value }))}
                 options={["P0", "P1", "P2", "P3"].map((p) => ({ value: p, label: p }))}
@@ -660,35 +680,38 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
             </Field>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 10 }}>
-            <Field label="Planned start">
+            <Field label={translateUI("Sprint start date")}>
               <TextInput type="date" value={form.start_date} onChange={(e) => setForm((f) => ({ ...f, start_date: e.target.value }))} />
             </Field>
-            <Field label="Planned end">
-              <TextInput type="date" value={form.end_date} onChange={(e) => setForm((f) => ({ ...f, end_date: e.target.value }))} />
+            <Field label={translateUI("Planned end")}>
+              <TextInput type="date" value={plannedEnd} readOnly aria-readonly="true" />
             </Field>
-            <Field label="Actual end date">
+            <Field label={translateUI("Actual end date")}>
               <TextInput
                 type="date"
                 value={form.actual_completion_date}
                 onChange={(e) => setForm((f) => ({ ...f, actual_completion_date: e.target.value }))}
-                disabled={!form.start_date || !form.end_date}
-                title={!form.start_date || !form.end_date ? "Set both planned dates first." : undefined}
+                disabled={!form.start_date || !plannedEnd}
+                title={!form.start_date || !plannedEnd ? localizeAttribute("Set both planned dates first.") : undefined}
               />
             </Field>
           </div>
-          {!datesPaired && <div style={{ fontSize: 11.5, color: "var(--status-delayed)" }}>Set both planned dates or leave both empty.</div>}
-          {!datesOrdered && <div style={{ fontSize: 11.5, color: "var(--status-delayed)" }}>Planned end must be on or after planned start.</div>}
-          <Field label="Tags">
-            <TextInput value={form.tags} onChange={(e) => setForm((f) => ({ ...f, tags: e.target.value }))} placeholder="planning, migration, customer-facing" />
+          {!datesPaired && <div style={{ fontSize: 11.5, color: "var(--status-delayed)" }}><LocalizedText message={"Set both planned dates or leave both empty."} /></div>}
+          {!datesOrdered && <div style={{ fontSize: 11.5, color: "var(--status-delayed)" }}><LocalizedText message={"Planned end must be on or after planned start."} /></div>}
+          <Field label={translateUI("Tags")}>
+            <TextInput value={form.tags} onChange={(e) => setForm((f) => ({ ...f, tags: e.target.value }))} placeholder={translateUI("planning, migration, customer-facing")} />
           </Field>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <Card title="Markdown preview" padded>
+          <Card title={translateUI("Markdown preview")} padded>
             <MarkdownPreview value={form.description} />
           </Card>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <Field label="Number of sprints" hint="Changing this count updates the sprint list below.">
+            <Field label={translateUI("Sprint duration")} hint={translateUI("Applies to all sprints. Individual durations can be changed below.")}>
+              <Select value={form.sprint_duration} options={SPRINT_DURATIONS.map((days) => ({ value: String(days), label: translateUI("{days} days", { days }) }))} onChange={(e) => setForm((current) => ({ ...current, sprint_duration: e.target.value, sprint_durations: current.sprint_names.map(() => Number(e.target.value)) }))} />
+            </Field>
+            <Field label={translateUI("Number of sprints")} hint={translateUI("Changing this count updates the sprint list below.")}>
               <TextInput
                 type="number"
                 min={1}
@@ -700,9 +723,9 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
                 onBlur={() => { if (!form.sprint_count) resizeSprints(String(form.sprint_names.length)); }}
               />
             </Field>
-            <div role="group" aria-label="Sprint names" style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 260, overflowY: "auto", padding: 3 }}>
+            <div role="group" aria-label={translateUI("Sprint names")} style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 260, overflowY: "auto", padding: 3 }}>
               {form.sprint_names.map((name, index) => (
-                <div key={index} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div key={index} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
                   <span style={{ width: 22, flexShrink: 0, fontSize: 12, color: "var(--text-tertiary)" }}>{index + 1}.</span>
                   <TextInput
                     aria-label={`Sprint ${index + 1} name`}
@@ -712,31 +735,31 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
                     onChange={(event) => setForm((current) => ({ ...current, sprint_names: current.sprint_names.map((item, itemIndex) => itemIndex === index ? event.target.value : item) }))}
                     style={{ flex: 1, minWidth: 0 }}
                   />
+                  <Select aria-label={translateUI("Sprint {number} duration", { number: index + 1 })} value={String(form.sprint_durations[index])} options={SPRINT_DURATIONS.map((days) => ({ value: String(days), label: translateUI("{days} days", { days }) }))} onChange={(e) => setForm((current) => ({ ...current, sprint_durations: current.sprint_durations.map((days, itemIndex) => itemIndex === index ? Number(e.target.value) : days) }))} style={{ width: 110 }} />
+                  <small style={{ color: "var(--text-secondary)", flexBasis: "100%", order: 1 }}>{schedule[index] ? `${schedule[index].start_date} → ${schedule[index].end_date}` : ""}</small>
                   <Button
                     variant="ghost"
                     aria-label={`Remove sprint ${index + 1}`}
-                    title={form.sprint_names.length === 1 ? "At least one sprint is required" : `Remove sprint ${index + 1}`}
+                    title={form.sprint_names.length === 1 ? localizeAttribute("At least one sprint is required") : `Remove sprint ${index + 1}`}
                     disabled={form.sprint_names.length === 1}
-                    onClick={() => setForm((current) => ({ ...current, sprint_names: current.sprint_names.filter((_, itemIndex) => itemIndex !== index), sprint_count: String(current.sprint_names.length - 1) }))}
+                    onClick={() => setForm((current) => ({ ...current, sprint_names: current.sprint_names.filter((_, itemIndex) => itemIndex !== index), sprint_durations: current.sprint_durations.filter((_, itemIndex) => itemIndex !== index), sprint_count: String(current.sprint_names.length - 1) }))}
                     style={{ padding: "0 10px" }}
                   ><X size={16} aria-hidden /></Button>
                 </div>
               ))}
             </div>
-            <Button variant="tertiary" disabled={form.sprint_names.length >= 52} onClick={() => resizeSprints(String(form.sprint_names.length + 1))}><Plus size={14} aria-hidden />Add sprint</Button>
+            <Button variant="tertiary" disabled={form.sprint_names.length >= 52} onClick={() => resizeSprints(String(form.sprint_names.length + 1))}><Plus size={14} aria-hidden /><LocalizedText message={"Add sprint"} /></Button>
           </div>
-          <div style={{ fontSize: 11.5, color: "var(--text-tertiary)", marginTop: -6 }}>
-            Every sprint is scheduled as an exact 14-day window. New projects always include at least one sprint.
-          </div>
+          <div style={{ fontSize: 11.5, color: "var(--text-tertiary)", marginTop: -6 }}>{" "}<LocalizedText message={"Choose 3, 7, or 14 days per sprint. End dates are calculated automatically."} />{" "}</div>
           <div>
-            <div style={sectionLabel}>Connected documents</div>
+            <div style={sectionLabel}><LocalizedText message={"Connected documents"} /></div>
             <SearchSuggestionInput
               value={docSearch}
               options={(docs.data ?? [])
                 .filter((doc) => !selectedDocs.some((selected) => selected.id === doc.id))
                 .map((doc) => ({ id: doc.id, label: doc.title, detail: doc.excerpt ?? "Internal Docs" }))}
-              placeholder="Search documents…"
-              ariaLabel="Search documents to connect to project"
+              placeholder={translateUI("Search documents…")}
+              ariaLabel={localizeAttribute("Search documents to connect to project")}
               onChange={setDocSearch}
               onSelect={(option) => {
                 setSelectedDocs((current) => [...current, { id: option.id, title: option.label }]);
@@ -760,17 +783,16 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
             )}
           </div>
           <DocumentationUpload files={documentationFiles} onChange={setDocumentationFiles} disabled={create.isPending} entityType="project" />
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}><div style={sectionLabel}>Checklist</div><ChecklistEditor items={checklist} onChange={setChecklist} disabled={create.isPending} entity="project" /></div>
-          <Field label="Project manager">
+          <Field label={translateUI("Project manager")}>
             <Select
               value={form.project_manager_id}
               onChange={(e) => setForm((f) => ({ ...f, project_manager_id: e.target.value }))}
-              placeholder={user ? `Creator: ${user.full_name}` : "Choose a manager..."}
+              placeholder={user ? `Creator: ${user.full_name}` : localizeAttribute("Choose a manager...")}
               options={users.map((u) => ({ value: u.id, label: u.full_name }))}
             />
           </Field>
           <div>
-            <div style={sectionLabel}>Leads to add and notify</div>
+            <div style={sectionLabel}><LocalizedText message={"Leads to add and notify"} /></div>
             <div style={pickerGrid}>
               {users.slice(0, 12).map((u) => (
                 <label key={u.id} style={checkRow} title={`${u.full_name}${u.job_title ? ` - ${u.job_title}` : ""}`}>
@@ -782,9 +804,9 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
             </div>
           </div>
           <div>
-            <div style={sectionLabel}>Attach existing standalone tasks</div>
+            <div style={sectionLabel}><LocalizedText message={"Attach existing standalone tasks"} /></div>
             <div style={pickerGrid}>
-              {unattachedTasks.length === 0 && <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>No unattached tasks found.</span>}
+              {unattachedTasks.length === 0 && <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}><LocalizedText message={"No unattached tasks found."} /></span>}
               {unattachedTasks.map((task: TaskRead) => (
                 <label key={task.id} style={checkRow} title={task.title}>
                   <input type="checkbox" checked={form.task_ids.includes(task.id)} onChange={() => toggleTask(task.id)} />
@@ -795,13 +817,10 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
             </div>
             {form.task_ids.length > 0 && (
               <div style={{ marginTop: 6, fontSize: 11.5, color: "var(--text-tertiary)" }}>
-                {form.task_ids.length} task(s) will land in the first sprint.
-              </div>
+                {form.task_ids.length}{" "}<LocalizedText message={"task(s) will land in the first sprint."} />{" "}</div>
             )}
           </div>
-          <div style={{ fontSize: 11.5, color: "var(--text-tertiary)" }}>
-            Creator: {nameOf(user?.id)}. Added members join the project channel automatically.
-          </div>
+          <div style={{ fontSize: 11.5, color: "var(--text-tertiary)" }}>{" "}<LocalizedText message={"Creator:"} />{" "}{nameOf(user?.id)}<LocalizedText message={". Added members join the project channel automatically."} />{" "}</div>
         </div>
       </div>
     </Modal>

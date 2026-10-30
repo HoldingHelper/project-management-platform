@@ -150,6 +150,9 @@ export interface CustomStatusUpdateRequest {
 }
 
 export interface UserRead {
+  locale?: "en" | "fa" | null;
+  calendar?: "gregory" | "persian";
+  numbering_system?: "latn" | "arabext";
   id: UUID;
   email: string;
   username?: string | null;
@@ -327,6 +330,7 @@ export interface OrgTreeResponse {
 
 // ---- Projects domain ----
 export interface ProductRead {
+  member_user_ids?: UUID[];
   id: UUID;
   name: string;
   description?: string | null;
@@ -369,6 +373,7 @@ export interface ProjectRead {
 }
 
 export interface PhaseRead {
+  duration_days?: number;
   id: UUID;
   project_id: UUID;
   name: string;

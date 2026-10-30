@@ -1,6 +1,9 @@
 import { apiFetch } from "./client";
 export type DocCategory = "Technical" | "Marketing" | "Operations" | "Platform" | "Business" | "Designs";
 export type DocSpace = {
+  can_create_pages?: boolean;
+  product_id?: string | null;
+  task_id?: string | null;
   id: string;
   name: string;
   slug: string;
@@ -14,6 +17,9 @@ export type DocSpace = {
   updated_at: string;
 };
 export type DocPageSummary = {
+  source_attachment_id?: string | null;
+  source_entity_type?: string | null;
+  source_entity_id?: string | null;
   id: string;
   space_id: string;
   parent_page_id?: string | null;
@@ -162,8 +168,8 @@ export const moveDocPage = (
   pageId: string,
   body: { parent_page_id?: string | null; before_page_id?: string | null }
 ) => apiFetch<DocPage>(`/docs/pages/${pageId}/move`, { method: "POST", body });
-export const publishDocPage = (pageId: string, published = true) =>
-  apiFetch<DocPage>(`/docs/pages/${pageId}/${published ? "publish" : "unpublish"}`, { method: "POST" });
+export const publishDocPage = (pageId: string) =>
+  apiFetch<DocPage>(`/docs/pages/${pageId}/publish`, { method: "POST" });
 export const favoriteDocPage = (pageId: string, enabled = true) =>
   apiFetch<void>(`/docs/pages/${pageId}/favorite?enabled=${enabled}`, { method: "PUT" });
 export const listDocRevisions = (pageId: string) =>
@@ -380,8 +386,7 @@ export const createDocSource = (body: {
   meta_info?: Record<string, unknown>;
 }) => apiFetch<DocSource>("/docs/sources", { method: "POST", body });
 
-export const deleteDocSource = (sourceId: string) =>
-  apiFetch<void>(`/docs/sources/${sourceId}`, { method: "DELETE" });
+
 
 export const listDocTags = () =>
   apiFetch<DocTag[]>("/docs/tags");

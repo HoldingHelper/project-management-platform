@@ -1,4 +1,6 @@
 "use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 import { useState } from "react";
 import {
@@ -25,6 +27,8 @@ import {
 type TabKey = "docs" | "board" | "timeline" | "chat";
 
 export function WorkspaceMap() {
+  const { t: translateUI } = useI18n();
+
   const [activeTab, setActiveTab] = useState<TabKey>("board");
 
   // Interactive Checklist in Docs Tab
@@ -93,7 +97,7 @@ export function WorkspaceMap() {
   };
 
   return (
-    <div className="workspace-hero-showcase" aria-label="Interactive Workspace Preview">
+    <div className="workspace-hero-showcase" aria-label={translateUI("Interactive Workspace Preview")}>
       {/* Top Window Header */}
       <div className="hero-showcase-bar">
         <div className="hero-showcase-dots">
@@ -112,7 +116,7 @@ export function WorkspaceMap() {
             onClick={() => setActiveTab("board")}
           >
             <FolderKanban size={13} />
-            <span>Execution Board</span>
+            <span><LocalizedText message={"Execution Board"} /></span>
           </button>
           <button
             type="button"
@@ -122,7 +126,7 @@ export function WorkspaceMap() {
             onClick={() => setActiveTab("docs")}
           >
             <BookOpenText size={13} />
-            <span>Knowledge Hub</span>
+            <span><LocalizedText message={"Knowledge Hub"} /></span>
           </button>
           <button
             type="button"
@@ -132,7 +136,7 @@ export function WorkspaceMap() {
             onClick={() => setActiveTab("timeline")}
           >
             <Calendar size={13} />
-            <span>Roadmap</span>
+            <span><LocalizedText message={"Roadmap"} /></span>
           </button>
           <button
             type="button"
@@ -142,13 +146,13 @@ export function WorkspaceMap() {
             onClick={() => setActiveTab("chat")}
           >
             <Sparkles size={13} />
-            <span>AI Copilot & Chat</span>
+            <span><LocalizedText message={"AI Copilot & Chat"} /></span>
           </button>
         </div>
 
         <div className="hero-showcase-status">
           <span className="live-pulsing-dot" />
-          <span className="hero-live-text">Live Sync</span>
+          <span className="hero-live-text"><LocalizedText message={"Live Sync"} /></span>
         </div>
       </div>
 
@@ -159,19 +163,18 @@ export function WorkspaceMap() {
           <div className="hero-board-view animate-fade-in">
             <div className="hero-view-top">
               <div>
-                <div className="hero-view-kicker">Sprint 14 · Active Delivery</div>
-                <div className="hero-view-heading">Platform Infrastructure & Launch</div>
+                <div className="hero-view-kicker"><LocalizedText message={"Sprint 14 · Active Delivery"} /></div>
+                <div className="hero-view-heading"><LocalizedText message={"Platform Infrastructure & Launch"} /></div>
               </div>
               <span className="hero-badge-pill">
-                <Flame size={12} /> 85% Velocity
-              </span>
+                <Flame size={12} />{" "}<LocalizedText message={"85% Velocity"} />{" "}</span>
             </div>
 
             <div className="hero-kanban-cols">
               {/* Col: Todo */}
               <div className="hero-kanban-col">
                 <div className="hero-col-title">
-                  <span>To Do</span>
+                  <span><LocalizedText message={"To Do"} /></span>
                   <small>{tasks.filter((t) => t.col === "todo").length}</small>
                 </div>
                 {tasks
@@ -181,13 +184,13 @@ export function WorkspaceMap() {
                       key={task.id}
                       className="hero-task-card"
                       onClick={() => cycleTaskCol(task.id)}
-                      title="Click to advance status"
+                      title={translateUI("Click to advance status")}
                     >
                       <div className="hero-task-badge">{task.team}</div>
                       <div className="hero-task-name">{task.title}</div>
                       <div className="hero-task-meta">
                         <span className={`priority-tag ${task.priority.toLowerCase()}`}>{task.priority}</span>
-                        <span className="click-advance-hint">Click → In Progress</span>
+                        <span className="click-advance-hint"><LocalizedText message={"Click → In Progress"} /></span>
                       </div>
                     </div>
                   ))}
@@ -196,7 +199,7 @@ export function WorkspaceMap() {
               {/* Col: In Progress */}
               <div className="hero-kanban-col in-progress">
                 <div className="hero-col-title">
-                  <span>In Progress</span>
+                  <span><LocalizedText message={"In Progress"} /></span>
                   <small>{tasks.filter((t) => t.col === "progress").length}</small>
                 </div>
                 {tasks
@@ -206,13 +209,13 @@ export function WorkspaceMap() {
                       key={task.id}
                       className="hero-task-card active-card"
                       onClick={() => cycleTaskCol(task.id)}
-                      title="Click to advance status"
+                      title={translateUI("Click to advance status")}
                     >
                       <div className="hero-task-badge">{task.team}</div>
                       <div className="hero-task-name">{task.title}</div>
                       <div className="hero-task-meta">
                         <span className={`priority-tag ${task.priority.toLowerCase()}`}>{task.priority}</span>
-                        <span className="click-advance-hint">Click → Done</span>
+                        <span className="click-advance-hint"><LocalizedText message={"Click → Done"} /></span>
                       </div>
                     </div>
                   ))}
@@ -221,7 +224,7 @@ export function WorkspaceMap() {
               {/* Col: Done */}
               <div className="hero-kanban-col done">
                 <div className="hero-col-title">
-                  <span>Done</span>
+                  <span><LocalizedText message={"Done"} /></span>
                   <small>{tasks.filter((t) => t.col === "done").length}</small>
                 </div>
                 {tasks
@@ -231,7 +234,7 @@ export function WorkspaceMap() {
                       key={task.id}
                       className="hero-task-card done-card"
                       onClick={() => cycleTaskCol(task.id)}
-                      title="Click to reset"
+                      title={translateUI("Click to reset")}
                     >
                       <div className="hero-task-badge">{task.team}</div>
                       <div className="hero-task-name">
@@ -239,8 +242,8 @@ export function WorkspaceMap() {
                         {task.title}
                       </div>
                       <div className="hero-task-meta">
-                        <span className="priority-tag done">Resolved</span>
-                        <span className="click-advance-hint">Click to reset</span>
+                        <span className="priority-tag done"><LocalizedText message={"Resolved"} /></span>
+                        <span className="click-advance-hint"><LocalizedText message={"Click to reset"} /></span>
                       </div>
                     </div>
                   ))}
@@ -257,46 +260,44 @@ export function WorkspaceMap() {
                 <BookOpenText size={18} />
               </div>
               <div className="hero-doc-title-block">
-                <span className="hero-doc-crumbs">Knowledge / Engineering / Launch Specs</span>
-                <h3>Production Readiness & Deployment Standard</h3>
+                <span className="hero-doc-crumbs"><LocalizedText message={"Knowledge / Engineering / Launch Specs"} /></span>
+                <h3><LocalizedText message={"Production Readiness & Deployment Standard"} /></h3>
               </div>
               <div className="hero-doc-presence">
-                <span className="avatar-chip dot-online">MB</span>
-                <span className="avatar-chip">HA</span>
+                <span className="avatar-chip dot-online"><LocalizedText message={"MB"} /></span>
+                <span className="avatar-chip"><LocalizedText message={"HA"} /></span>
                 <span className="avatar-chip">+3</span>
               </div>
             </div>
 
             <div className="hero-doc-body">
-              <p className="hero-doc-lead">
-                This specification outlines the decoupled S3/CloudFront and EC2 containerized stack for Project Management Platform ecosystem apps.
-              </p>
+              <p className="hero-doc-lead">{" "}<LocalizedText message={"This specification outlines the decoupled S3/CloudFront and EC2 containerized stack for Project Management Platform ecosystem apps."} />{" "}</p>
 
               <div className="hero-interactive-checklist">
-                <div className="checklist-heading">Pre-flight Checklist (Click to toggle)</div>
+                <div className="checklist-heading"><LocalizedText message={"Pre-flight Checklist (Click to toggle)"} /></div>
                 <label className="check-item" onClick={() => toggleCheck("arch")}>
                   <span className={`custom-checkbox ${docChecks.arch ? "checked" : ""}`}>
                     {docChecks.arch && <Check size={12} />}
                   </span>
-                  <span className={docChecks.arch ? "line-done" : ""}>Decoupled S3 static asset delivery with CloudFront TLS</span>
+                  <span className={docChecks.arch ? "line-done" : ""}><LocalizedText message={"Decoupled S3 static asset delivery with CloudFront TLS"} /></span>
                 </label>
                 <label className="check-item" onClick={() => toggleCheck("auth")}>
                   <span className={`custom-checkbox ${docChecks.auth ? "checked" : ""}`}>
                     {docChecks.auth && <Check size={12} />}
                   </span>
-                  <span className={docChecks.auth ? "line-done" : ""}>Dual JWT access/refresh token rotation & RBAC matrix</span>
+                  <span className={docChecks.auth ? "line-done" : ""}><LocalizedText message={"Dual JWT access/refresh token rotation & RBAC matrix"} /></span>
                 </label>
                 <label className="check-item" onClick={() => toggleCheck("s3")}>
                   <span className={`custom-checkbox ${docChecks.s3 ? "checked" : ""}`}>
                     {docChecks.s3 && <Check size={12} />}
                   </span>
-                  <span className={docChecks.s3 ? "line-done" : ""}>Asset bucket integration: project-managment-assests</span>
+                  <span className={docChecks.s3 ? "line-done" : ""}><LocalizedText message={"Asset bucket integration: project-managment-assests"} /></span>
                 </label>
                 <label className="check-item" onClick={() => toggleCheck("deploy")}>
                   <span className={`custom-checkbox ${docChecks.deploy ? "checked" : ""}`}>
                     {docChecks.deploy && <Check size={12} />}
                   </span>
-                  <span className={docChecks.deploy ? "line-done" : ""}>Release dispatch to production EC2 target</span>
+                  <span className={docChecks.deploy ? "line-done" : ""}><LocalizedText message={"Release dispatch to production EC2 target"} /></span>
                 </label>
               </div>
             </div>
@@ -308,42 +309,42 @@ export function WorkspaceMap() {
           <div className="hero-timeline-view animate-fade-in">
             <div className="hero-view-top">
               <div>
-                <div className="hero-view-kicker">Quarterly Roadmap</div>
-                <div className="hero-view-heading">Engineering Milestones & Delivery</div>
+                <div className="hero-view-kicker"><LocalizedText message={"Quarterly Roadmap"} /></div>
+                <div className="hero-view-heading"><LocalizedText message={"Engineering Milestones & Delivery"} /></div>
               </div>
-              <span className="hero-badge-pill">On Schedule</span>
+              <span className="hero-badge-pill"><LocalizedText message={"On Schedule"} /></span>
             </div>
 
             <div className="hero-gantt-bars">
               <div className="gantt-row">
-                <div className="gantt-label">Sprint 1: Architecture & RBAC</div>
+                <div className="gantt-label"><LocalizedText message={"Sprint 1: Architecture & RBAC"} /></div>
                 <div className="gantt-track">
                   <div className="gantt-fill fill-100" style={{ width: "100%" }}>
-                    <span>100% Completed</span>
+                    <span><LocalizedText message={"100% Completed"} /></span>
                   </div>
                 </div>
               </div>
               <div className="gantt-row">
-                <div className="gantt-label">Sprint 2: Realtime WebSocket Bus</div>
+                <div className="gantt-label"><LocalizedText message={"Sprint 2: Realtime WebSocket Bus"} /></div>
                 <div className="gantt-track">
                   <div className="gantt-fill fill-80" style={{ width: "85%" }}>
-                    <span>85% In Progress</span>
+                    <span><LocalizedText message={"85% In Progress"} /></span>
                   </div>
                 </div>
               </div>
               <div className="gantt-row">
-                <div className="gantt-label">Sprint 3: S3/CloudFront & CI/CD</div>
+                <div className="gantt-label"><LocalizedText message={"Sprint 3: S3/CloudFront & CI/CD"} /></div>
                 <div className="gantt-track">
                   <div className="gantt-fill fill-90" style={{ width: "90%" }}>
-                    <span>90% Staging Testing</span>
+                    <span><LocalizedText message={"90% Staging Testing"} /></span>
                   </div>
                 </div>
               </div>
               <div className="gantt-row">
-                <div className="gantt-label">Sprint 4: Global Production Launch</div>
+                <div className="gantt-label"><LocalizedText message={"Sprint 4: Global Production Launch"} /></div>
                 <div className="gantt-track">
                   <div className="gantt-fill fill-30" style={{ width: "35%" }}>
-                    <span>Scheduled Next</span>
+                    <span><LocalizedText message={"Scheduled Next"} /></span>
                   </div>
                 </div>
               </div>
@@ -371,11 +372,11 @@ export function WorkspaceMap() {
             <form onSubmit={handleSendChat} className="hero-chat-input-bar">
               <input
                 type="text"
-                placeholder="Ask Platform Copilot or send a team message…"
+                placeholder={translateUI("Ask Platform Copilot or send a team message…")}
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
               />
-              <button type="submit" aria-label="Send message">
+              <button type="submit" aria-label={translateUI("Send message")}>
                 <Send size={14} />
               </button>
             </form>
@@ -386,19 +387,19 @@ export function WorkspaceMap() {
       {/* Showcase Bottom Status Footer */}
       <div className="hero-showcase-foot">
         <div className="foot-metric">
-          <span className="metric-label">Latency</span>
-          <span className="metric-val">&lt; 14ms</span>
+          <span className="metric-label"><LocalizedText message={"Latency"} /></span>
+          <span className="metric-val"><LocalizedText message={"< 14ms"} /></span>
         </div>
         <div className="foot-metric">
-          <span className="metric-label">Knowledge Sync</span>
-          <span className="metric-val">Continuous</span>
+          <span className="metric-label"><LocalizedText message={"Knowledge Sync"} /></span>
+          <span className="metric-val"><LocalizedText message={"Continuous"} /></span>
         </div>
         <div className="foot-metric">
-          <span className="metric-label">Security</span>
-          <span className="metric-val">Enterprise RBAC & Audit</span>
+          <span className="metric-label"><LocalizedText message={"Security"} /></span>
+          <span className="metric-val"><LocalizedText message={"Enterprise RBAC & Audit"} /></span>
         </div>
         <div className="foot-interactive-tip">
-          <span>✨ Click any tab or task card to interact live</span>
+          <span><LocalizedText message={"✨ Click any tab or task card to interact live"} /></span>
         </div>
       </div>
     </div>

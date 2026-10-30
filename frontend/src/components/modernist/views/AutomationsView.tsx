@@ -1,3 +1,4 @@
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 import React from 'react';
 import { AutomationRule } from '../types';
 import { TN } from '../tokens';
@@ -48,9 +49,7 @@ export function AutomationsView({ rules, autos, onToggleRule, onToggleAuto }: Au
                   color: 'var(--color-accent)',
                   paddingTop: 2,
                 }}
-              >
-                WHEN
-              </span>
+              >{" "}<LocalizedText message={"WHEN"} />{" "}</span>
               <span>{a.when}</span>
               <span
                 style={{
@@ -59,13 +58,11 @@ export function AutomationsView({ rules, autos, onToggleRule, onToggleAuto }: Au
                   letterSpacing: '.08em',
                   paddingTop: 2,
                 }}
-              >
-                THEN
-              </span>
+              >{" "}<LocalizedText message={"THEN"} />{" "}</span>
               <span>{a.then}</span>
             </div>
             <span className="text-muted" style={{ fontSize: 12 }}>
-              {a.runs} runs · last run {a.last}
+              {a.runs}{" "}<LocalizedText message={"runs · last run"} />{" "}{a.last}
             </span>
           </div>
 

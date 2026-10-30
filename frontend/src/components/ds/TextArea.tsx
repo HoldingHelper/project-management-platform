@@ -3,6 +3,7 @@ import type { TextareaHTMLAttributes } from "react";
 export function TextArea({ style, ...rest }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
     <textarea
+      dir="auto"
       {...rest}
       style={{
         width: "100%",

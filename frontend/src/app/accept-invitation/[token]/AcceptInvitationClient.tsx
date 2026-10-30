@@ -1,4 +1,6 @@
 "use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 import { use, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -13,6 +15,8 @@ import { AccessShell } from "@/components/ui/AccessShell";
 import { useStaticExportParams } from "@/lib/static-export-route";
 
 export function AcceptInvitationClient({ token: exportedToken }: { token: string }) {
+  const { t: translateUI } = useI18n();
+
   const [token] = useStaticExportParams([exportedToken], ["accept-invitation"]);
   const router = useRouter();
   const { adoptSession } = useAuth();
@@ -58,7 +62,7 @@ export function AcceptInvitationClient({ token: exportedToken }: { token: string
 
   if (!token || isLoading) {
     return (
-      <AccessShell title="Verifying invitation..." description="Please wait while we validate your invite token">
+      <AccessShell title={translateUI("Verifying invitation...")} description={translateUI("Please wait while we validate your invite token")}>
         <div style={{ display: "flex", justifyContent: "center", padding: "2rem" }}>
           <Spinner />
         </div>
@@ -68,14 +72,10 @@ export function AcceptInvitationClient({ token: exportedToken }: { token: string
 
   if (verifyError || !invite) {
     return (
-      <AccessShell title="Invalid or expired invite" description="This invitation link is no longer valid">
+      <AccessShell title={translateUI("Invalid or expired invite")} description={translateUI("This invitation link is no longer valid")}>
         <div style={{ textAlign: "center", padding: "1rem" }}>
-          <p style={{ color: "var(--color-text-secondary)", marginBottom: "1.5rem" }}>
-            The invitation link may have expired or already been used. Please contact your workspace administrator for a new invite.
-          </p>
-          <Button variant="secondary" onClick={() => router.push("/login")}>
-            Go to Login
-          </Button>
+          <p style={{ color: "var(--color-text-secondary)", marginBottom: "1.5rem" }}>{" "}<LocalizedText message={"The invitation link may have expired or already been used. Please contact your workspace administrator for a new invite."} />{" "}</p>
+          <Button variant="secondary" onClick={() => router.push("/login")}>{" "}<LocalizedText message={"Go to Login"} />{" "}</Button>
         </div>
       </AccessShell>
     );
@@ -83,7 +83,7 @@ export function AcceptInvitationClient({ token: exportedToken }: { token: string
 
   return (
     <AccessShell
-      title="Complete your account"
+      title={translateUI("Complete your account")}
       description={`You've been invited as ${invite.email}${invite.role_name ? ` (${invite.role_name})` : ""}`}
     >
       <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
@@ -99,45 +99,45 @@ export function AcceptInvitationClient({ token: exportedToken }: { token: string
             flexDirection: "column",
             gap: "0.25rem"
           }}>
-            <div style={{ fontWeight: 600, color: "var(--color-primary, #3b82f6)", marginBottom: "0.15rem" }}>Pre-assigned Organization Details:</div>
-            {invite.department_name && <div>🏢 <strong>Department:</strong> {invite.department_name}</div>}
-            {invite.team_name && <div>👥 <strong>Team:</strong> {invite.team_name}</div>}
-            {invite.manager_name && <div>👤 <strong>Reporting to:</strong> {invite.manager_name}</div>}
+            <div style={{ fontWeight: 600, color: "var(--color-primary, #3b82f6)", marginBottom: "0.15rem" }}><LocalizedText message={"Pre-assigned Organization Details:"} /></div>
+            {invite.department_name && <div>🏢 <strong><LocalizedText message={"Department:"} /></strong> {invite.department_name}</div>}
+            {invite.team_name && <div>👥 <strong><LocalizedText message={"Team:"} /></strong> {invite.team_name}</div>}
+            {invite.manager_name && <div>👤 <strong><LocalizedText message={"Reporting to:"} /></strong> {invite.manager_name}</div>}
           </div>
         )}
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
-          <Field label="First Name">
+          <Field label={translateUI("First Name")}>
             <TextInput
               value={form.first_name}
               onChange={(e) => setForm({ ...form, first_name: e.target.value })}
-              placeholder="First name"
+              placeholder={translateUI("First name")}
             />
           </Field>
-          <Field label="Last Name">
+          <Field label={translateUI("Last Name")}>
             <TextInput
               value={form.last_name}
               onChange={(e) => setForm({ ...form, last_name: e.target.value })}
-              placeholder="Last name"
+              placeholder={translateUI("Last name")}
             />
           </Field>
         </div>
 
-        <Field label="Username (Optional)">
+        <Field label={translateUI("Username (Optional)")}>
           <TextInput
             value={form.username}
             onChange={(e) => setForm({ ...form, username: e.target.value })}
-            placeholder="Choose a username"
+            placeholder={translateUI("Choose a username")}
           />
         </Field>
 
-        <Field label="Set Password *">
+        <Field label={translateUI("Set Password *")}>
           <div style={{ position: "relative" }}>
             <TextInput
               type={showPassword ? "text" : "password"}
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
-              placeholder="Min. 8 characters"
+              placeholder={translateUI("Min. 8 characters")}
               required
             />
             <button
@@ -161,7 +161,7 @@ export function AcceptInvitationClient({ token: exportedToken }: { token: string
         </Field>
 
         <Button type="submit" variant="primary" disabled={submitting}>
-          <UserPlus size={16} /> {submitting ? "Setting up..." : "Join Workspace"}
+          <UserPlus size={16} /> {submitting ? <LocalizedText message={"Setting up..."} /> : <LocalizedText message={"Join Workspace"} />}
         </Button>
       </form>
     </AccessShell>

@@ -1,3 +1,4 @@
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 import { PRIORITY_COLOR, PRIORITY_GLYPH } from "@/lib/format";
 
 interface Props {
@@ -26,7 +27,7 @@ export function PriorityBadge({ level, compact = false }: Props) {
     >
       <span style={{ fontSize: 9 }}>{glyph}</span>
       {level}
-      {!compact && <span style={{ color: "var(--text-tertiary)", fontWeight: 500 }}>priority</span>}
+      {!compact && <span style={{ color: "var(--text-tertiary)", fontWeight: 500 }}><LocalizedText message={"priority"} /></span>}
     </span>
   );
 }

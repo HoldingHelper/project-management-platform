@@ -104,6 +104,7 @@ async def test_project_admin_can_transfer_admin_role(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_last_project_admin_must_be_transferred_before_removal(monkeypatch):
+    monkeypatch.setattr(service.membership, "require_no_assignments", AsyncMock())
     project_id = uuid4()
     admin_id = uuid4()
     monkeypatch.setattr(

@@ -1,3 +1,5 @@
+"use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 import React from "react";
 import type { PresenceStatus } from "@/lib/types";
 
@@ -36,11 +38,12 @@ interface Props {
 }
 
 export function PresenceDot({ status, size = 10, overlay = false, glow = true, className }: Props) {
+  const { t } = useI18n();
   const isOffline = status === "offline";
 
   return (
     <span
-      title={PRESENCE_LABELS[status] || "Offline"}
+      title={t(PRESENCE_LABELS[status] || "Offline")}
       className={className}
       style={{
         width: size,

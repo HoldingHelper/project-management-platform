@@ -1,4 +1,5 @@
 "use client";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 /* Voice-message playback bubble: fetches a presigned URL for the attachment
    on first play. */
@@ -27,7 +28,7 @@ export function VoiceBubble({ attachmentId }: { attachmentId: UUID }) {
   }
 
   if (error) {
-    return <span style={{ fontSize: 12, color: "var(--status-delayed)" }}>Voice message unavailable.</span>;
+    return <span style={{ fontSize: 12, color: "var(--status-delayed)" }}><LocalizedText message={"Voice message unavailable."} /></span>;
   }
 
   if (!url) {
@@ -50,7 +51,7 @@ export function VoiceBubble({ attachmentId }: { attachmentId: UUID }) {
         }}
       >
         <Mic size={13} style={{ color: "var(--accent-secondary)" }} />
-        {loading ? "Loading…" : "Play voice message"}
+        {loading ? <LocalizedText message={"Loading…"} /> : <LocalizedText message={"Play voice message"} />}
       </button>
     );
   }

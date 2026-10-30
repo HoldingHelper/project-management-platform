@@ -1,4 +1,5 @@
 "use client";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
@@ -10,6 +11,7 @@ export function PublishedWorkspaceDocs() {
     queryKey: ["public-workspace-docs"],
     queryFn: listPublicDocNavigation,
     retry: 1,
+    refetchInterval: 15000,
   });
   const pages = (navigation.data ?? []).flatMap((space) =>
     space.pages.map((page) => ({ ...page, space: space.name })),
@@ -18,7 +20,7 @@ export function PublishedWorkspaceDocs() {
 
   return (
     <section className="docs-category-grid" aria-labelledby="workspace-published-docs">
-      <h2 id="workspace-published-docs">Published from the workspace</h2>
+      <h2 id="workspace-published-docs"><LocalizedText message={"Published from the workspace"} /></h2>
       <div>
         {pages.map((page) => (
           <Link href={`/docs/shared/${page.id}`} key={page.id}>

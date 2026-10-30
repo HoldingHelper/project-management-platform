@@ -26,7 +26,7 @@ export type PublishedCategory = {
 async function publicFetch<T>(path: string): Promise<T | null> {
   try {
     const response = await fetch(`${API_ORIGIN}/api/v1/docs/public${path}`, {
-      next: { revalidate: 60 },
+      cache: "no-store",
     });
     return response.ok ? (await response.json()) as T : null;
   } catch {

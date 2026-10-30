@@ -1,5 +1,8 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
+
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -92,6 +95,8 @@ const smallAction: React.CSSProperties = {
 };
 
 export function AdminManagementPage({ section = "users" }: { section?: AdminTab }) {
+  const { t: translateUI } = useI18n();
+
   const { user: currentUser, hasPermission, isSuperAdmin } = useAuth();
   const queryClient = useQueryClient();
   const toast = useToast();
@@ -328,7 +333,7 @@ export function AdminManagementPage({ section = "users" }: { section?: AdminTab 
             color: u.is_active ? "var(--emerald-500)" : "var(--status-delayed)",
           }}
         >
-          {u.is_active ? "Active" : "Deactivated"}
+          {u.is_active ? <LocalizedText message={"Active"} /> : <LocalizedText message={"Deactivated"} />}
         </span>
       ),
     },
@@ -356,8 +361,7 @@ export function AdminManagementPage({ section = "users" }: { section?: AdminTab 
                 }}
                 className="pmp-row"
               >
-                <Edit3 size={12} /> Edit
-              </button>
+                <Edit3 size={12} />{" "}<LocalizedText message={"Edit"} />{" "}</button>
               <button
                 type="button"
                 onClick={() => setRoleEditUser(u)}
@@ -371,7 +375,7 @@ export function AdminManagementPage({ section = "users" }: { section?: AdminTab 
                   cursor: "pointer",
                 }}
                 className="pmp-row"
-                title="Edit Roles"
+                title={translateUI("Edit Roles")}
               >
                 <UserCog size={13} />
               </button>
@@ -388,7 +392,7 @@ export function AdminManagementPage({ section = "users" }: { section?: AdminTab 
                   cursor: "pointer",
                 }}
                 className="pmp-row"
-                title="Reset Password"
+                title={translateUI("Reset Password")}
               >
                 <KeyRound size={13} />
               </button>
@@ -406,7 +410,7 @@ export function AdminManagementPage({ section = "users" }: { section?: AdminTab 
                     cursor: "pointer",
                   }}
                   className="pmp-row"
-                  title="Delete User"
+                  title={translateUI("Delete User")}
                 >
                   <Trash2 size={13} />
                 </button>
@@ -437,7 +441,7 @@ export function AdminManagementPage({ section = "users" }: { section?: AdminTab 
       key: "head",
       header: "Department Head",
       render: (d) => {
-        if (!d.head_of_department_name) return <span style={{ color: "var(--text-tertiary)", fontSize: 12 }}>Unassigned</span>;
+        if (!d.head_of_department_name) return <span style={{ color: "var(--text-tertiary)", fontSize: 12 }}><LocalizedText message={"Unassigned"} /></span>;
         return (
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 600 }}>
             <Avatar name={d.head_of_department_name} size={22} />
@@ -451,8 +455,7 @@ export function AdminManagementPage({ section = "users" }: { section?: AdminTab 
       header: "Teams",
       render: (d) => (
         <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)" }}>
-          {d.teams_count ?? 0} teams
-        </span>
+          {d.teams_count ?? 0}{" "}<LocalizedText message={"teams"} />{" "}</span>
       ),
     },
     {
@@ -460,8 +463,7 @@ export function AdminManagementPage({ section = "users" }: { section?: AdminTab 
       header: "Members",
       render: (d) => (
         <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)" }}>
-          {d.members_count ?? 0} members
-        </span>
+          {d.members_count ?? 0}{" "}<LocalizedText message={"members"} />{" "}</span>
       ),
     },
     {
@@ -488,8 +490,7 @@ export function AdminManagementPage({ section = "users" }: { section?: AdminTab 
                 }}
                 className="pmp-row"
               >
-                <Edit3 size={12} /> Edit
-              </button>
+                <Edit3 size={12} />{" "}<LocalizedText message={"Edit"} />{" "}</button>
               <button
                 type="button"
                 onClick={() => setDeleteDeptTarget(d)}
@@ -520,11 +521,11 @@ export function AdminManagementPage({ section = "users" }: { section?: AdminTab 
       sortValue: (item) => item.name.toLowerCase(),
       render: (item) => <div><div style={{ fontWeight: 700 }}>{item.name}</div><div style={{ fontSize: 11.5, color: "var(--text-tertiary)" }}>{item.description || item.slug}</div></div>,
     },
-    { key: "usage", header: "Used by", render: (item) => <span style={{ fontSize: 12 }}>{item.task_count} tasks · {item.project_count} projects</span> },
+    { key: "usage", header: "Used by", render: (item) => <span style={{ fontSize: 12 }}>{item.task_count}{" "}<LocalizedText message={"tasks ·"} />{" "}{item.project_count}{" "}<LocalizedText message={"projects"} /></span> },
     { key: "order", header: "Order", render: (item) => <span style={{ fontSize: 12 }}>{item.display_order}</span> },
     {
       key: "actions", header: "", render: (item) => canManagePartitions ? <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
-        <button type="button" className="pmp-row" onClick={() => setEditPartitionTarget(item)} style={smallAction}><Edit3 size={12} /> Edit</button>
+        <button type="button" className="pmp-row" onClick={() => setEditPartitionTarget(item)} style={smallAction}><Edit3 size={12} />{" "}<LocalizedText message={"Edit"} /></button>
         <button type="button" className="pmp-row" onClick={() => setDeletePartitionTarget(item)} style={{ ...smallAction, color: "var(--status-delayed)" }}><Trash2 size={13} /></button>
       </div> : null,
     },
@@ -568,7 +569,7 @@ export function AdminManagementPage({ section = "users" }: { section?: AdminTab 
       key: "lead",
       header: "Team Lead / Manager",
       render: (t) => {
-        if (!t.lead_user_name) return <span style={{ color: "var(--text-tertiary)", fontSize: 12 }}>Unassigned</span>;
+        if (!t.lead_user_name) return <span style={{ color: "var(--text-tertiary)", fontSize: 12 }}><LocalizedText message={"Unassigned"} /></span>;
         return (
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 600 }}>
             <Avatar name={t.lead_user_name} size={22} />
@@ -582,8 +583,7 @@ export function AdminManagementPage({ section = "users" }: { section?: AdminTab 
       header: "Members",
       render: (t) => (
         <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)" }}>
-          {t.member_count ?? 0} members
-        </span>
+          {t.member_count ?? 0}{" "}<LocalizedText message={"members"} />{" "}</span>
       ),
     },
     {
@@ -610,8 +610,7 @@ export function AdminManagementPage({ section = "users" }: { section?: AdminTab 
                 }}
                 className="pmp-row"
               >
-                <Edit3 size={12} /> Edit
-              </button>
+                <Edit3 size={12} />{" "}<LocalizedText message={"Edit"} />{" "}</button>
               <button
                 type="button"
                 onClick={() => setDeleteTeamTarget(t)}
@@ -643,7 +642,7 @@ export function AdminManagementPage({ section = "users" }: { section?: AdminTab 
       render: (inv) => (
         <div>
           <div style={{ fontWeight: 600, fontSize: 13, color: "var(--text-primary)" }}>{inv.email}</div>
-          <div style={{ fontSize: 11, color: "var(--text-tertiary)" }}>Role: {inv.role_name}</div>
+          <div style={{ fontSize: 11, color: "var(--text-tertiary)" }}><LocalizedText message={"Role:"} />{" "}{inv.role_name}</div>
         </div>
       ),
     },
@@ -663,8 +662,7 @@ export function AdminManagementPage({ section = "users" }: { section?: AdminTab 
             </span>
           )}
           {inv.manager_name && (
-            <span style={{ fontSize: 11, color: "var(--text-tertiary)" }}>
-              Mgr: {inv.manager_name}
+            <span style={{ fontSize: 11, color: "var(--text-tertiary)" }}>{" "}<LocalizedText message={"Mgr:"} />{" "}{inv.manager_name}
             </span>
           )}
           {!inv.department_name && !inv.team_name && <span style={{ color: "var(--text-tertiary)", fontSize: 12 }}>—</span>}
@@ -719,8 +717,7 @@ export function AdminManagementPage({ section = "users" }: { section?: AdminTab 
               }}
               className="pmp-row"
             >
-              <Copy size={12} /> Copy Link
-            </button>
+              <Copy size={12} />{" "}<LocalizedText message={"Copy Link"} />{" "}</button>
             <button
               type="button"
               onClick={async () => {
@@ -742,9 +739,7 @@ export function AdminManagementPage({ section = "users" }: { section?: AdminTab 
                 cursor: "pointer",
               }}
               className="pmp-row"
-            >
-              Revoke
-            </button>
+            >{" "}<LocalizedText message={"Revoke"} />{" "}</button>
           </div>
         );
       },
@@ -764,37 +759,30 @@ export function AdminManagementPage({ section = "users" }: { section?: AdminTab 
                 window.location.href = "/organization";
               }}
             >
-              <Building2 size={14} style={{ marginRight: 6 }} /> Visual Org Tree
-            </Button>
+              <Building2 size={14} style={{ marginRight: 6 }} />{" "}<LocalizedText message={"Visual Org Tree"} />{" "}</Button>
             {canManage && (
               <>
                 <Button variant="secondary" onClick={() => setInviteOpen(true)}>
-                  <MailPlus size={14} style={{ marginRight: 6 }} /> Invite Teammate
-                </Button>
+                  <MailPlus size={14} style={{ marginRight: 6 }} />{" "}<LocalizedText message={"Invite Teammate"} />{" "}</Button>
                 {activeTab === "departments" && (
                   <Button onClick={() => setDeptModalOpen(true)}>
-                    <Plus size={14} style={{ marginRight: 6 }} /> New Department
-                  </Button>
+                    <Plus size={14} style={{ marginRight: 6 }} />{" "}<LocalizedText message={"New Department"} />{" "}</Button>
                 )}
                 {activeTab === "teams" && (
                   <Button onClick={() => setTeamModalOpen(true)}>
-                    <Plus size={14} style={{ marginRight: 6 }} /> New Team
-                  </Button>
+                    <Plus size={14} style={{ marginRight: 6 }} />{" "}<LocalizedText message={"New Team"} />{" "}</Button>
                 )}
                 {activeTab === "partitions" && canManagePartitions && (
                   <Button onClick={() => setPartitionModalOpen(true)}>
-                    <Plus size={14} style={{ marginRight: 6 }} /> New Partition
-                  </Button>
+                    <Plus size={14} style={{ marginRight: 6 }} />{" "}<LocalizedText message={"New Partition"} />{" "}</Button>
                 )}
                 {activeTab === "users" && (
                   <Button onClick={() => setAddOpen(true)}>
-                    <UserPlus size={14} style={{ marginRight: 6 }} /> Add User
-                  </Button>
+                    <UserPlus size={14} style={{ marginRight: 6 }} />{" "}<LocalizedText message={"Add User"} />{" "}</Button>
                 )}
                 {activeTab === "roles" && canManageRoles && (
                   <Button onClick={() => setRoleModalOpen(true)}>
-                    <Plus size={14} style={{ marginRight: 6 }} /> New Role
-                  </Button>
+                    <Plus size={14} style={{ marginRight: 6 }} />{" "}<LocalizedText message={"New Role"} />{" "}</Button>
                 )}
               </>
             )}
@@ -862,7 +850,7 @@ export function AdminManagementPage({ section = "users" }: { section?: AdminTab 
             <div style={{ position: "relative", minWidth: 260 }}>
               <Search size={15} style={{ position: "absolute", left: 10, top: 10, color: "var(--text-tertiary)" }} />
               <TextInput
-                placeholder="Search teammates by name or email…"
+                placeholder={translateUI("Search teammates by name or email…")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 style={{ paddingLeft: 32, height: 34, fontSize: 13 }}
@@ -873,7 +861,7 @@ export function AdminManagementPage({ section = "users" }: { section?: AdminTab 
               value={departmentFilter}
               onChange={(e) => setDepartmentFilter(e.target.value)}
               options={[
-                { value: "all", label: "All Departments" },
+                { translateLabel: true, value: "all", label: "All Departments" },
                 ...(departments ?? []).map((d) => ({ value: d.id, label: d.name })),
               ]}
               style={{ width: 200, height: 34 }}
@@ -882,14 +870,14 @@ export function AdminManagementPage({ section = "users" }: { section?: AdminTab 
 
           {usersLoading ? (
             <div style={{ padding: "60px 0", display: "flex", justifyContent: "center" }}>
-              <Spinner label="Loading teammates…" />
+              <Spinner label={translateUI("Loading teammates…")} />
             </div>
           ) : (
             <DataTable<UserRead>
               rows={filteredUsers}
               columns={userColumns}
               rowKey={(u) => u.id}
-              emptyText="No teammates found matching your criteria."
+              emptyText={translateUI("No teammates found matching your criteria.")}
             />
           )}
         </div>
@@ -900,14 +888,14 @@ export function AdminManagementPage({ section = "users" }: { section?: AdminTab 
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           {deptsLoading ? (
             <div style={{ padding: "60px 0", display: "flex", justifyContent: "center" }}>
-              <Spinner label="Loading departments…" />
+              <Spinner label={translateUI("Loading departments…")} />
             </div>
           ) : (
             <DataTable<DepartmentRead>
               rows={departments ?? []}
               columns={departmentColumns}
               rowKey={(d) => d.id}
-              emptyText="No departments configured yet. Click 'New Department' to create one."
+              emptyText={translateUI("No departments configured yet. Click 'New Department' to create one.")}
             />
           )}
         </div>
@@ -918,14 +906,14 @@ export function AdminManagementPage({ section = "users" }: { section?: AdminTab 
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           {teamsLoading ? (
             <div style={{ padding: "60px 0", display: "flex", justifyContent: "center" }}>
-              <Spinner label="Loading teams…" />
+              <Spinner label={translateUI("Loading teams…")} />
             </div>
           ) : (
             <DataTable<TeamRead>
               rows={teams ?? []}
               columns={teamColumns}
               rowKey={(t) => t.id}
-              emptyText="No teams configured yet. Click 'New Team' to create one."
+              emptyText={translateUI("No teams configured yet. Click 'New Team' to create one.")}
             />
           )}
         </div>
@@ -952,8 +940,8 @@ export function AdminManagementPage({ section = "users" }: { section?: AdminTab 
       )}
 
       {activeTab === "partitions" && canManagePartitions && (
-        partitionsLoading ? <div style={{ padding: "60px 0", display: "flex", justifyContent: "center" }}><Spinner label="Loading partitions…" /></div> :
-          <DataTable<TaskPartitionRead> rows={partitions ?? []} columns={partitionColumns} rowKey={(item) => item.id} emptyText="No partitions configured yet." />
+        partitionsLoading ? <div style={{ padding: "60px 0", display: "flex", justifyContent: "center" }}><Spinner label={translateUI("Loading partitions…")} /></div> :
+          <DataTable<TaskPartitionRead> rows={partitions ?? []} columns={partitionColumns} rowKey={(item) => item.id} emptyText={translateUI("No partitions configured yet.")} />
       )}
 
       {/* Tab: Invitations */}
@@ -961,14 +949,14 @@ export function AdminManagementPage({ section = "users" }: { section?: AdminTab 
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           {invitesLoading ? (
             <div style={{ padding: "60px 0", display: "flex", justifyContent: "center" }}>
-              <Spinner label="Loading invitations…" />
+              <Spinner label={translateUI("Loading invitations…")} />
             </div>
           ) : (
             <DataTable<InvitationRead>
               rows={invitations ?? []}
               columns={invitationColumns}
               rowKey={(i) => i.id}
-              emptyText="No pending invitations."
+              emptyText={translateUI("No pending invitations.")}
             />
           )}
         </div>
@@ -1178,6 +1166,10 @@ export default function AdminUsersPage() {
 }
 
 function PartitionModal({ open, partition, onClose, onDone }: { open: boolean; partition: TaskPartitionRead | null; onClose: () => void; onDone: () => void }) {
+  const { t: localizeAttribute } = useI18n();
+
+  const { t: translateUI } = useI18n();
+
   const [form, setForm] = useState({ name: "", description: "", display_order: "0" });
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
@@ -1193,17 +1185,19 @@ function PartitionModal({ open, partition, onClose, onDone }: { open: boolean; p
     onSuccess: onDone,
     onError: (e) => setError(e instanceof AppError ? e.message : "Could not save partition."),
   });
-  return <Modal open={open} onClose={onClose} title={partition ? "Edit Partition" : "New Partition"} footer={<><Button variant="secondary" onClick={onClose}>Cancel</Button><Button disabled={!form.name.trim() || mutation.isPending} onClick={() => mutation.mutate()}>{mutation.isPending ? "Saving…" : "Save"}</Button></>}>
+  return <Modal open={open} onClose={onClose} title={partition ? localizeAttribute("Edit Partition") : localizeAttribute("New Partition")} footer={<><Button variant="secondary" onClick={onClose}><LocalizedText message={"Cancel"} /></Button><Button disabled={!form.name.trim() || mutation.isPending} onClick={() => mutation.mutate()}>{mutation.isPending ? <LocalizedText message={"Saving…"} /> : <LocalizedText message={"Save"} />}</Button></>}>
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      <Field label="Name"><TextInput value={form.name} onChange={(e) => setForm((current) => ({ ...current, name: e.target.value }))} placeholder="Design" /></Field>
-      <Field label="Description"><TextArea value={form.description} onChange={(e) => setForm((current) => ({ ...current, description: e.target.value }))} /></Field>
-      <Field label="Display order"><TextInput type="number" value={form.display_order} onChange={(e) => setForm((current) => ({ ...current, display_order: e.target.value }))} /></Field>
+      <Field label={translateUI("Name")}><TextInput value={form.name} onChange={(e) => setForm((current) => ({ ...current, name: e.target.value }))} placeholder={translateUI("Design")} /></Field>
+      <Field label={translateUI("Description")}><TextArea value={form.description} onChange={(e) => setForm((current) => ({ ...current, description: e.target.value }))} /></Field>
+      <Field label={translateUI("Display order")}><TextInput type="number" value={form.display_order} onChange={(e) => setForm((current) => ({ ...current, display_order: e.target.value }))} /></Field>
       {error && <div style={{ color: "var(--status-delayed)", fontSize: 12.5 }}>{error}</div>}
     </div>
   </Modal>;
 }
 
 function DeletePartitionModal({ partition, partitions, onClose, onDone }: { partition: TaskPartitionRead | null; partitions: TaskPartitionRead[]; onClose: () => void; onDone: () => void }) {
+  const { t: translateUI } = useI18n();
+
   const [replacement, setReplacement] = useState("");
   const [error, setError] = useState<string | null>(null);
   useEffect(() => { setReplacement(""); setError(null); }, [partition]);
@@ -1212,10 +1206,10 @@ function DeletePartitionModal({ partition, partitions, onClose, onDone }: { part
     onSuccess: onDone,
     onError: (e) => setError(e instanceof AppError ? e.message : "Could not delete partition."),
   });
-  return <Modal open={Boolean(partition)} onClose={onClose} title={`Delete ${partition?.name ?? "partition"}`} footer={<><Button variant="secondary" onClick={onClose}>Cancel</Button><Button variant="danger" disabled={mutation.isPending} onClick={() => mutation.mutate()}>{mutation.isPending ? "Deleting…" : "Delete"}</Button></>}>
+  return <Modal open={Boolean(partition)} onClose={onClose} title={`Delete ${partition?.name ?? "partition"}`} footer={<><Button variant="secondary" onClick={onClose}><LocalizedText message={"Cancel"} /></Button><Button variant="danger" disabled={mutation.isPending} onClick={() => mutation.mutate()}>{mutation.isPending ? <LocalizedText message={"Deleting…"} /> : <LocalizedText message={"Delete"} />}</Button></>}>
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      <p style={{ margin: 0, color: "var(--text-secondary)" }}>This partition is used by {partition?.task_count ?? 0} tasks and {partition?.project_count ?? 0} projects. Choose a replacement to preserve their classification, or leave them unpartitioned.</p>
-      <Field label="Replacement (optional)"><Select value={replacement} onChange={(e) => setReplacement(e.target.value)} placeholder="Leave items unpartitioned" options={partitions.filter((item) => item.id !== partition?.id).map((item) => ({ value: item.id, label: item.name }))} /></Field>
+      <p style={{ margin: 0, color: "var(--text-secondary)" }}><LocalizedText message={"This partition is used by"} />{" "}{partition?.task_count ?? 0}{" "}<LocalizedText message={"tasks and"} />{" "}{partition?.project_count ?? 0}{" "}<LocalizedText message={"projects. Choose a replacement to preserve their classification, or leave them unpartitioned."} /></p>
+      <Field label={translateUI("Replacement (optional)")}><Select value={replacement} onChange={(e) => setReplacement(e.target.value)} placeholder={translateUI("Leave items unpartitioned")} options={partitions.filter((item) => item.id !== partition?.id).map((item) => ({ value: item.id, label: item.name }))} /></Field>
       {error && <div style={{ color: "var(--status-delayed)", fontSize: 12.5 }}>{error}</div>}
     </div>
   </Modal>;
@@ -1242,6 +1236,8 @@ function AddUserModal({
   users: UserRead[];
   onDone: () => void;
 }) {
+  const { t: translateUI } = useI18n();
+
   const [form, setForm] = useState({
     email: "",
     username: "",
@@ -1289,48 +1285,46 @@ function AddUserModal({
     <Modal
       open={open}
       onClose={onClose}
-      title="Add Teammate Manually"
+      title={translateUI("Add Teammate Manually")}
       footer={
         <>
-          <Button variant="secondary" onClick={onClose}>
-            Cancel
-          </Button>
+          <Button variant="secondary" onClick={onClose}>{" "}<LocalizedText message={"Cancel"} />{" "}</Button>
           <Button disabled={!valid || mutation.isPending} onClick={() => mutation.mutate()}>
-            {mutation.isPending ? "Creating…" : "Create Teammate"}
+            {mutation.isPending ? <LocalizedText message={"Creating…"} /> : <LocalizedText message={"Create Teammate"} />}
           </Button>
         </>
       }
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          <Field label="First name">
+          <Field label={translateUI("First name")}>
             <TextInput value={form.first_name} onChange={(e) => set("first_name")(e.target.value)} />
           </Field>
-          <Field label="Last name">
+          <Field label={translateUI("Last name")}>
             <TextInput value={form.last_name} onChange={(e) => set("last_name")(e.target.value)} />
           </Field>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          <Field label="Email">
+          <Field label={translateUI("Email")}>
             <TextInput type="email" value={form.email} onChange={(e) => set("email")(e.target.value)} />
           </Field>
-          <Field label="Username (optional)">
+          <Field label={translateUI("Username (optional)")}>
             <TextInput value={form.username} onChange={(e) => set("username")(e.target.value)} />
           </Field>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          <Field label="Password (min 8 chars)">
+          <Field label={translateUI("Password (min 8 chars)")}>
             <TextInput
               type="password"
               value={form.password}
               onChange={(e) => set("password")(e.target.value)}
             />
           </Field>
-          <Field label="Job title">
+          <Field label={translateUI("Job title")}>
             <TextInput
-              placeholder="e.g. Lead Designer"
+              placeholder={translateUI("e.g. Lead Designer")}
               value={form.job_title}
               onChange={(e) => set("job_title")(e.target.value)}
             />
@@ -1338,37 +1332,37 @@ function AddUserModal({
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          <Field label="Department">
+          <Field label={translateUI("Department")}>
             <Select
               value={form.department_id}
               onChange={(e) => {
                 set("department_id")(e.target.value);
                 set("team_id")("");
               }}
-              placeholder="Choose department…"
+              placeholder={translateUI("Choose department…")}
               options={departments.map((d) => ({ value: d.id, label: d.name }))}
             />
           </Field>
-          <Field label="Team">
+          <Field label={translateUI("Team")}>
             <Select
               value={form.team_id}
               onChange={(e) => set("team_id")(e.target.value)}
-              placeholder="Choose team…"
+              placeholder={translateUI("Choose team…")}
               options={filteredTeams.map((team) => ({ value: team.id, label: team.name }))}
             />
           </Field>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          <Field label="Reports to (Manager)">
+          <Field label={translateUI("Reports to (Manager)")}>
             <Select
               value={form.manager_id}
               onChange={(e) => set("manager_id")(e.target.value)}
-              placeholder="Choose manager…"
+              placeholder={translateUI("Choose manager…")}
               options={users.map((u) => ({ value: u.id, label: u.full_name }))}
             />
           </Field>
-          <Field label="Role">
+          <Field label={translateUI("Role")}>
             <Select
               value={form.role}
               onChange={(e) => set("role")(e.target.value)}
@@ -1400,6 +1394,8 @@ function EditUserModal({
   users: UserRead[];
   onDone: () => void;
 }) {
+  const { t: translateUI } = useI18n();
+
   const [form, setForm] = useState({
     first_name: "",
     last_name: "",
@@ -1469,40 +1465,38 @@ function EditUserModal({
       title={`Edit Teammate — ${user?.full_name ?? ""}`}
       footer={
         <>
-          <Button variant="secondary" onClick={onClose}>
-            Cancel
-          </Button>
+          <Button variant="secondary" onClick={onClose}>{" "}<LocalizedText message={"Cancel"} />{" "}</Button>
           <Button disabled={!valid || mutation.isPending} onClick={() => mutation.mutate()}>
-            {mutation.isPending ? "Saving…" : "Save Changes"}
+            {mutation.isPending ? <LocalizedText message={"Saving…"} /> : <LocalizedText message={"Save Changes"} />}
           </Button>
         </>
       }
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          <Field label="First name">
+          <Field label={translateUI("First name")}>
             <TextInput value={form.first_name} onChange={(e) => set("first_name")(e.target.value)} />
           </Field>
-          <Field label="Last name">
+          <Field label={translateUI("Last name")}>
             <TextInput value={form.last_name} onChange={(e) => set("last_name")(e.target.value)} />
           </Field>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          <Field label="Username">
+          <Field label={translateUI("Username")}>
             <TextInput value={form.username} onChange={(e) => set("username")(e.target.value)} />
           </Field>
-          <Field label="Email address">
+          <Field label={translateUI("Email address")}>
             <TextInput value={form.email} onChange={(e) => set("email")(e.target.value)} />
           </Field>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          <Field label="Job title">
+          <Field label={translateUI("Job title")}>
             <TextInput value={form.job_title} onChange={(e) => set("job_title")(e.target.value)} />
           </Field>
-          <Field label="Account status">
-            <Select
+          <Field label={translateUI("Account status")}>
+            <Select translateOptions
               value={form.is_active ? "active" : "deactivated"}
               onChange={(e) => set("is_active")(e.target.value === "active")}
               options={[
@@ -1514,39 +1508,39 @@ function EditUserModal({
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          <Field label="Department">
+          <Field label={translateUI("Department")}>
             <Select
               value={form.department_id}
               onChange={(e) => {
                 set("department_id")(e.target.value);
                 set("team_id")("");
               }}
-              placeholder="Choose department…"
+              placeholder={translateUI("Choose department…")}
               options={departments.map((d) => ({ value: d.id, label: d.name }))}
             />
           </Field>
-          <Field label="Team">
+          <Field label={translateUI("Team")}>
             <Select
               value={form.team_id}
               onChange={(e) => set("team_id")(e.target.value)}
-              placeholder="Choose team…"
+              placeholder={translateUI("Choose team…")}
               options={filteredTeams.map((t) => ({ value: t.id, label: t.name }))}
             />
           </Field>
         </div>
 
-        <Field label="Reports to (Manager)">
+        <Field label={translateUI("Reports to (Manager)")}>
           <Select
             value={form.manager_id}
             onChange={(e) => set("manager_id")(e.target.value)}
-            placeholder="Choose manager…"
+            placeholder={translateUI("Choose manager…")}
             options={users.filter((u) => u.id !== user?.id).map((u) => ({ value: u.id, label: u.full_name }))}
           />
         </Field>
 
-        <Field label="Bio / About">
+        <Field label={translateUI("Bio / About")}>
           <TextInput
-            placeholder="Short bio or notes…"
+            placeholder={translateUI("Short bio or notes…")}
             value={form.bio}
             onChange={(e) => set("bio")(e.target.value)}
           />
@@ -1574,6 +1568,8 @@ function RoleCard({
   permissions: PermissionRead[];
   onEdit?: () => void;
 }) {
+  const { t: translateUI } = useI18n();
+
   const permissionByCode = new Map(permissions.map((permission) => [permission.code, permission]));
   return (
     <article
@@ -1606,8 +1602,7 @@ function RoleCard({
               background: "color-mix(in srgb, var(--primary) 12%, var(--surface-3))",
             }}
           >
-            {role.permission_codes.length} permissions
-          </span>
+            {role.permission_codes.length}{" "}<LocalizedText message={"permissions"} />{" "}</span>
           {onEdit ? (
             <button
               type="button"
@@ -1616,21 +1611,18 @@ function RoleCard({
               title={`Edit permissions for ${role.name}`}
               style={smallAction}
             >
-              <Edit3 size={12} /> Edit
-            </button>
+              <Edit3 size={12} />{" "}<LocalizedText message={"Edit"} />{" "}</button>
           ) : (
             <span
-              title="SuperAdmin always has every workspace permission"
+              title={translateUI("SuperAdmin always has every workspace permission")}
               style={{ padding: "3px 4px", fontSize: 11, color: "var(--text-tertiary)" }}
-            >
-              Fixed
-            </span>
+            >{" "}<LocalizedText message={"Fixed"} />{" "}</span>
           )}
         </div>
       </div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
         {role.permission_codes.length === 0 ? (
-          <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>No capabilities assigned.</span>
+          <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}><LocalizedText message={"No capabilities assigned."} /></span>
         ) : (
           role.permission_codes.slice(0, 8).map((code) => (
             <span
@@ -1651,8 +1643,7 @@ function RoleCard({
         )}
         {role.permission_codes.length > 8 && (
           <span style={{ padding: "3px 4px", fontSize: 11, color: "var(--text-tertiary)" }}>
-            +{role.permission_codes.length - 8} more
-          </span>
+            +{role.permission_codes.length - 8}{" "}<LocalizedText message={"more"} />{" "}</span>
         )}
       </div>
     </article>
@@ -1670,6 +1661,8 @@ function EditRolePermissionsModal({
   onClose: () => void;
   onDone: () => void;
 }) {
+  const { t: translateUI } = useI18n();
+
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
 
@@ -1700,23 +1693,21 @@ function EditRolePermissionsModal({
       title={`Edit ${role?.name ?? "role"} permissions`}
       footer={
         <>
-          <Button variant="secondary" onClick={close}>Cancel</Button>
+          <Button variant="secondary" onClick={close}><LocalizedText message={"Cancel"} /></Button>
           <Button disabled={mutation.isPending} onClick={() => mutation.mutate()}>
-            {mutation.isPending ? "Saving…" : "Save permissions"}
+            {mutation.isPending ? <LocalizedText message={"Saving…"} /> : <LocalizedText message={"Save permissions"} />}
           </Button>
         </>
       }
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        <div style={{ fontSize: 12.5, color: "var(--text-secondary)" }}>
-          Changes apply to every teammate assigned the <strong>{role?.name}</strong> role after their session refreshes.
-        </div>
+        <div style={{ fontSize: 12.5, color: "var(--text-secondary)" }}>{" "}<LocalizedText message={"Changes apply to every teammate assigned the"} />{" "}<strong>{role?.name}</strong>{" "}<LocalizedText message={"role after their session refreshes."} />{" "}</div>
         <Field label={`Permissions (${selected.length} selected)`}>
           <TextInput
             autoFocus
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search capabilities…"
+            placeholder={translateUI("Search capabilities…")}
           />
         </Field>
         <div style={{ display: "flex", gap: 8 }}>
@@ -1724,12 +1715,8 @@ function EditRolePermissionsModal({
             size="sm"
             variant="secondary"
             onClick={() => setSelected(permissions.map((permission) => permission.code))}
-          >
-            Select all
-          </Button>
-          <Button size="sm" variant="secondary" onClick={() => setSelected([])}>
-            Clear all
-          </Button>
+          >{" "}<LocalizedText message={"Select all"} />{" "}</Button>
+          <Button size="sm" variant="secondary" onClick={() => setSelected([])}>{" "}<LocalizedText message={"Clear all"} />{" "}</Button>
         </div>
         <div
           style={{
@@ -1774,14 +1761,12 @@ function EditRolePermissionsModal({
             );
           })}
           {filtered.length === 0 && (
-            <div style={{ padding: 18, textAlign: "center", color: "var(--text-tertiary)", fontSize: 12 }}>
-              No permissions match your search.
-            </div>
+            <div style={{ padding: 18, textAlign: "center", color: "var(--text-tertiary)", fontSize: 12 }}>{" "}<LocalizedText message={"No permissions match your search."} />{" "}</div>
           )}
         </div>
         {mutation.error && (
           <div style={{ fontSize: 12.5, color: "var(--status-delayed)" }}>
-            {mutation.error instanceof AppError ? mutation.error.message : "Could not update role permissions."}
+            {mutation.error instanceof AppError ? mutation.error.message : <LocalizedText message={"Could not update role permissions."} />}
           </div>
         )}
       </div>
@@ -1800,6 +1785,8 @@ function CreateRoleModal({
   onClose: () => void;
   onDone: () => void;
 }) {
+  const { t: translateUI } = useI18n();
+
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [search, setSearch] = useState("");
@@ -1833,34 +1820,34 @@ function CreateRoleModal({
     <Modal
       open={open}
       onClose={close}
-      title="Create workspace role"
+      title={translateUI("Create workspace role")}
       footer={
         <>
-          <Button variant="secondary" onClick={close}>Cancel</Button>
+          <Button variant="secondary" onClick={close}><LocalizedText message={"Cancel"} /></Button>
           <Button
             disabled={mutation.isPending || name.trim().length < 2}
             onClick={() => mutation.mutate()}
           >
-            {mutation.isPending ? "Creating…" : "Create role"}
+            {mutation.isPending ? <LocalizedText message={"Creating…"} /> : <LocalizedText message={"Create role"} />}
           </Button>
         </>
       }
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        <Field label="Role name">
+        <Field label={translateUI("Role name")}>
           <TextInput
             autoFocus
             value={name}
             onChange={(event) => setName(event.target.value)}
-            placeholder="e.g. Support Lead"
+            placeholder={translateUI("e.g. Support Lead")}
             maxLength={100}
           />
         </Field>
-        <Field label="Description">
+        <Field label={translateUI("Description")}>
           <TextArea
             value={description}
             onChange={(event) => setDescription(event.target.value)}
-            placeholder="Explain who should receive this role."
+            placeholder={translateUI("Explain who should receive this role.")}
             maxLength={500}
             style={{ minHeight: 72 }}
           />
@@ -1869,7 +1856,7 @@ function CreateRoleModal({
           <TextInput
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search capabilities…"
+            placeholder={translateUI("Search capabilities…")}
           />
         </Field>
         <div
@@ -1915,14 +1902,12 @@ function CreateRoleModal({
             );
           })}
           {filtered.length === 0 && (
-            <div style={{ padding: 18, textAlign: "center", color: "var(--text-tertiary)", fontSize: 12 }}>
-              No permissions match your search.
-            </div>
+            <div style={{ padding: 18, textAlign: "center", color: "var(--text-tertiary)", fontSize: 12 }}>{" "}<LocalizedText message={"No permissions match your search."} />{" "}</div>
           )}
         </div>
         {mutation.error && (
           <div style={{ fontSize: 12.5, color: "var(--status-delayed)" }}>
-            {mutation.error instanceof AppError ? mutation.error.message : "Could not create the role."}
+            {mutation.error instanceof AppError ? mutation.error.message : <LocalizedText message={"Could not create the role."} />}
           </div>
         )}
       </div>
@@ -1965,14 +1950,12 @@ function EditRolesModal({
       title={`Roles — ${user?.full_name ?? ""}`}
       footer={
         <>
-          <Button variant="secondary" onClick={onClose}>
-            Cancel
-          </Button>
+          <Button variant="secondary" onClick={onClose}>{" "}<LocalizedText message={"Cancel"} />{" "}</Button>
           <Button
             disabled={mutation.isPending || current.length === 0}
             onClick={() => mutation.mutate()}
           >
-            {mutation.isPending ? "Saving…" : "Save roles"}
+            {mutation.isPending ? <LocalizedText message={"Saving…"} /> : <LocalizedText message={"Save roles"} />}
           </Button>
         </>
       }
@@ -2013,6 +1996,8 @@ function AdminResetPasswordModal({
   onClose: () => void;
   onDone: () => void;
 }) {
+  const { t: translateUI } = useI18n();
+
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const toast = useToast();
@@ -2038,22 +2023,20 @@ function AdminResetPasswordModal({
       title={`Reset Password — ${user?.full_name ?? ""}`}
       footer={
         <>
-          <Button variant="secondary" onClick={onClose}>
-            Cancel
-          </Button>
+          <Button variant="secondary" onClick={onClose}>{" "}<LocalizedText message={"Cancel"} />{" "}</Button>
           <Button disabled={password.length < 8 || mutation.isPending} onClick={() => mutation.mutate()}>
-            {mutation.isPending ? "Updating…" : "Set New Password"}
+            {mutation.isPending ? <LocalizedText message={"Updating…"} /> : <LocalizedText message={"Set New Password"} />}
           </Button>
         </>
       }
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <Field label="New Password (min 8 characters)">
+        <Field label={translateUI("New Password (min 8 characters)")}>
           <TextInput
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="Enter new password…"
+            placeholder={translateUI("Enter new password…")}
             autoFocus
           />
         </Field>
@@ -2072,6 +2055,8 @@ function DeleteUserModal({
   onClose: () => void;
   onDone: () => void;
 }) {
+  const { t: translateUI } = useI18n();
+
   const toast = useToast();
   const mutation = useMutation({
     mutationFn: () => deleteUser(user!.id),
@@ -2085,21 +2070,17 @@ function DeleteUserModal({
     <Modal
       open={!!user}
       onClose={onClose}
-      title="Delete User"
+      title={translateUI("Delete User")}
       footer={
         <>
-          <Button variant="secondary" onClick={onClose}>
-            Cancel
-          </Button>
+          <Button variant="secondary" onClick={onClose}>{" "}<LocalizedText message={"Cancel"} />{" "}</Button>
           <Button variant="danger" disabled={mutation.isPending} onClick={() => mutation.mutate()}>
-            {mutation.isPending ? "Deleting…" : "Delete User"}
+            {mutation.isPending ? <LocalizedText message={"Deleting…"} /> : <LocalizedText message={"Delete User"} />}
           </Button>
         </>
       }
     >
-      <p style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--text-secondary)" }}>
-        Are you sure you want to delete <strong>{user?.full_name}</strong>? This action cannot be undone.
-      </p>
+      <p style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--text-secondary)" }}>{" "}<LocalizedText message={"Are you sure you want to delete"} />{" "}<strong>{user?.full_name}</strong><LocalizedText message={"? This action cannot be undone."} />{" "}</p>
     </Modal>
   );
 }
@@ -2119,6 +2100,10 @@ function DepartmentModal({
   onClose: () => void;
   onDone: () => void;
 }) {
+  const { t: localizeAttribute } = useI18n();
+
+  const { t: translateUI } = useI18n();
+
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [headId, setHeadId] = useState("");
@@ -2162,41 +2147,39 @@ function DepartmentModal({
     <Modal
       open={open}
       onClose={onClose}
-      title={department ? `Edit Department — ${department.name}` : "New Department"}
+      title={department ? `Edit Department — ${department.name}` : localizeAttribute("New Department")}
       footer={
         <>
-          <Button variant="secondary" onClick={onClose}>
-            Cancel
-          </Button>
+          <Button variant="secondary" onClick={onClose}>{" "}<LocalizedText message={"Cancel"} />{" "}</Button>
           <Button disabled={!name.trim() || mutation.isPending} onClick={() => mutation.mutate()}>
-            {mutation.isPending ? "Saving…" : department ? "Save Changes" : "Create Department"}
+            {mutation.isPending ? <LocalizedText message={"Saving…"} /> : department ? <LocalizedText message={"Save Changes"} /> : <LocalizedText message={"Create Department"} />}
           </Button>
         </>
       }
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <Field label="Department Name">
+        <Field label={translateUI("Department Name")}>
           <TextInput
-            placeholder="e.g. Technical, Marketing, Operations…"
+            placeholder={translateUI("e.g. Technical, Marketing, Operations…")}
             value={name}
             onChange={(e) => setName(e.target.value)}
             autoFocus
           />
         </Field>
 
-        <Field label="Description (optional)">
+        <Field label={translateUI("Description (optional)")}>
           <TextInput
-            placeholder="What does this department do?"
+            placeholder={translateUI("What does this department do?")}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
         </Field>
 
-        <Field label="Head of Department">
+        <Field label={translateUI("Head of Department")}>
           <Select
             value={headId}
             onChange={(e) => setHeadId(e.target.value)}
-            placeholder="Choose leader…"
+            placeholder={translateUI("Choose leader…")}
             options={users.map((u) => ({ value: u.id, label: u.full_name }))}
           />
         </Field>
@@ -2216,6 +2199,8 @@ function DeleteDepartmentModal({
   onClose: () => void;
   onDone: () => void;
 }) {
+  const { t: translateUI } = useI18n();
+
   const toast = useToast();
   const mutation = useMutation({
     mutationFn: () => deleteDepartment(department!.id),
@@ -2229,20 +2214,17 @@ function DeleteDepartmentModal({
     <Modal
       open={!!department}
       onClose={onClose}
-      title="Delete Department"
+      title={translateUI("Delete Department")}
       footer={
         <>
-          <Button variant="secondary" onClick={onClose}>
-            Cancel
-          </Button>
+          <Button variant="secondary" onClick={onClose}>{" "}<LocalizedText message={"Cancel"} />{" "}</Button>
           <Button variant="danger" disabled={mutation.isPending} onClick={() => mutation.mutate()}>
-            {mutation.isPending ? "Deleting…" : "Delete Department"}
+            {mutation.isPending ? <LocalizedText message={"Deleting…"} /> : <LocalizedText message={"Delete Department"} />}
           </Button>
         </>
       }
     >
-      <p style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--text-secondary)" }}>
-        Are you sure you want to delete department <strong>{department?.name}</strong>?
+      <p style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--text-secondary)" }}>{" "}<LocalizedText message={"Are you sure you want to delete department"} />{" "}<strong>{department?.name}</strong>?
       </p>
     </Modal>
   );
@@ -2265,6 +2247,10 @@ function TeamModal({
   onClose: () => void;
   onDone: () => void;
 }) {
+  const { t: localizeAttribute } = useI18n();
+
+  const { t: translateUI } = useI18n();
+
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [departmentId, setDepartmentId] = useState("");
@@ -2313,49 +2299,47 @@ function TeamModal({
     <Modal
       open={open}
       onClose={onClose}
-      title={team ? `Edit Team — ${team.name}` : "New Team"}
+      title={team ? `Edit Team — ${team.name}` : localizeAttribute("New Team")}
       footer={
         <>
-          <Button variant="secondary" onClick={onClose}>
-            Cancel
-          </Button>
+          <Button variant="secondary" onClick={onClose}>{" "}<LocalizedText message={"Cancel"} />{" "}</Button>
           <Button disabled={!name.trim() || !departmentId || mutation.isPending} onClick={() => mutation.mutate()}>
-            {mutation.isPending ? "Saving…" : team ? "Save Changes" : "Create Team"}
+            {mutation.isPending ? <LocalizedText message={"Saving…"} /> : team ? <LocalizedText message={"Save Changes"} /> : <LocalizedText message={"Create Team"} />}
           </Button>
         </>
       }
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <Field label="Team Name">
+        <Field label={translateUI("Team Name")}>
           <TextInput
-            placeholder="e.g. Core Engine, Growth Squad, DevOps…"
+            placeholder={translateUI("e.g. Core Engine, Growth Squad, DevOps…")}
             value={name}
             onChange={(e) => setName(e.target.value)}
             autoFocus
           />
         </Field>
 
-        <Field label="Department">
+        <Field label={translateUI("Department")}>
           <Select
             value={departmentId}
             onChange={(e) => setDepartmentId(e.target.value)}
-            placeholder="Choose department…"
+            placeholder={translateUI("Choose department…")}
             options={departments.map((d) => ({ value: d.id, label: d.name }))}
           />
         </Field>
 
-        <Field label="Team Lead / Manager">
+        <Field label={translateUI("Team Lead / Manager")}>
           <Select
             value={leadId}
             onChange={(e) => setLeadId(e.target.value)}
-            placeholder="Choose team lead…"
+            placeholder={translateUI("Choose team lead…")}
             options={users.map((u) => ({ value: u.id, label: u.full_name }))}
           />
         </Field>
 
-        <Field label="Description (optional)">
+        <Field label={translateUI("Description (optional)")}>
           <TextInput
-            placeholder="Team purpose and focus…"
+            placeholder={translateUI("Team purpose and focus…")}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
@@ -2376,6 +2360,8 @@ function DeleteTeamModal({
   onClose: () => void;
   onDone: () => void;
 }) {
+  const { t: translateUI } = useI18n();
+
   const toast = useToast();
   const mutation = useMutation({
     mutationFn: () => deleteTeam(team!.id),
@@ -2389,20 +2375,17 @@ function DeleteTeamModal({
     <Modal
       open={!!team}
       onClose={onClose}
-      title="Delete Team"
+      title={translateUI("Delete Team")}
       footer={
         <>
-          <Button variant="secondary" onClick={onClose}>
-            Cancel
-          </Button>
+          <Button variant="secondary" onClick={onClose}>{" "}<LocalizedText message={"Cancel"} />{" "}</Button>
           <Button variant="danger" disabled={mutation.isPending} onClick={() => mutation.mutate()}>
-            {mutation.isPending ? "Deleting…" : "Delete Team"}
+            {mutation.isPending ? <LocalizedText message={"Deleting…"} /> : <LocalizedText message={"Delete Team"} />}
           </Button>
         </>
       }
     >
-      <p style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--text-secondary)" }}>
-        Are you sure you want to delete team <strong>{team?.name}</strong>?
+      <p style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--text-secondary)" }}>{" "}<LocalizedText message={"Are you sure you want to delete team"} />{" "}<strong>{team?.name}</strong>?
       </p>
     </Modal>
   );

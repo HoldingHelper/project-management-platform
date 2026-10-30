@@ -1,5 +1,8 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
+
 import { useState, type ReactNode } from "react";
 import { Download, Maximize2, Minimize2 } from "lucide-react";
 
@@ -18,6 +21,10 @@ function sanitizeSvg(svgStr: string): string {
 }
 
 function SvgDiagramViewer({ svg }: { svg: string }) {
+  const { t: localizeAttribute } = useI18n();
+
+  const { t: translateUI } = useI18n();
+
   const [expanded, setExpanded] = useState(false);
   const clean = sanitizeSvg(svg);
 
@@ -68,14 +75,12 @@ function SvgDiagramViewer({ svg }: { svg: string }) {
               background: "var(--accent-primary, #6366f1)",
               display: "inline-block",
             }}
-          />
-          Interactive Diagram
-        </span>
+          />{" "}<LocalizedText message={"Interactive Diagram"} />{" "}</span>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <button
             type="button"
             onClick={downloadSvg}
-            title="Download SVG"
+            title={translateUI("Download SVG")}
             style={{
               background: "transparent",
               border: 0,
@@ -92,7 +97,7 @@ function SvgDiagramViewer({ svg }: { svg: string }) {
           <button
             type="button"
             onClick={() => setExpanded((v) => !v)}
-            title={expanded ? "Collapse" : "Expand Full Width"}
+            title={expanded ? localizeAttribute("Collapse") : localizeAttribute("Expand Full Width")}
             style={{
               background: "transparent",
               border: 0,
@@ -269,7 +274,7 @@ function inline(text: string, highlights: TextHighlight[] = []): ReactNode[] {
 
 export function MarkdownPreview({ value, empty = "No description yet.", highlights = [] }: { value?: string | null; empty?: string; highlights?: TextHighlight[] }) {
   if (!value || !value.trim()) {
-    return <div style={{ color: "var(--text-tertiary)", fontSize: 13 }}>{empty}</div>;
+    return <div style={{ color: "var(--text-tertiary)", fontSize: 13 }}><LocalizedText message={empty} /></div>;
   }
 
   // Pre-process raw SVG blocks that are not inside code fences
@@ -384,7 +389,7 @@ export function MarkdownPreview({ value, empty = "No description yet.", highligh
             marginLeft: -16,
           }}
         >
-          <input type="checkbox" checked={checked} readOnly style={{ accentColor: "var(--accent-primary)" }} />
+          <input type="checkbox" checked={checked} disabled readOnly style={{ accentColor: "var(--accent-primary)" }} />
           <span style={{ textDecoration: checked ? "line-through" : "none", color: checked ? "var(--text-tertiary)" : "inherit" }}>
             {inline(checklistItem[2], highlights)}
           </span>
@@ -450,7 +455,7 @@ export function MarkdownPreview({ value, empty = "No description yet.", highligh
   }
 
   if (!nodes.length) {
-    return <div style={{ color: "var(--text-tertiary)", fontSize: 13 }}>{empty}</div>;
+    return <div style={{ color: "var(--text-tertiary)", fontSize: 13 }}><LocalizedText message={empty} /></div>;
   }
   return <div style={{ color: "var(--text-secondary)", fontSize: 14, lineHeight: "22px" }}>{nodes}</div>;
 }

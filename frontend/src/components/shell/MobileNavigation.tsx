@@ -1,4 +1,7 @@
 "use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
@@ -13,6 +16,8 @@ import { usePresence } from "@/lib/stores/presence";
 import { MOBILE_PRIMARY_HREFS, NAV_GROUPS, PERSONAL_NAV, type AppNavItem } from "./navigation";
 
 export function MobileNavigation() {
+  const { t: translateUI } = useI18n();
+
   const pathname = usePathname();
   const { user, hasPermission, isSuperAdmin } = useAuth();
   const { unreadCount } = useNotifications();
@@ -65,7 +70,7 @@ export function MobileNavigation() {
 
   return (
     <>
-      <nav className="pmp-mobile-bottom-nav no-print" aria-label="Mobile primary navigation">
+      <nav className="pmp-mobile-bottom-nav no-print" aria-label={translateUI("Mobile primary navigation")}>
         {primary.map((item) => <MobileNavLink key={item.href} item={item} pathname={pathname} badge={badgeFor(item)} />)}
         <button
           ref={moreButtonRef}
@@ -76,7 +81,7 @@ export function MobileNavigation() {
           aria-controls="mobile-more-sheet"
         >
           <MoreHorizontal size={20} />
-          <span>More</span>
+          <span><LocalizedText message={"More"} /></span>
         </button>
       </nav>
 
@@ -88,7 +93,7 @@ export function MobileNavigation() {
             className="pmp-mobile-more-sheet"
             role="dialog"
             aria-modal="true"
-            aria-label="More navigation"
+            aria-label={translateUI("More navigation")}
             tabIndex={-1}
             onMouseDown={(event) => event.stopPropagation()}
           >
@@ -104,7 +109,7 @@ export function MobileNavigation() {
                   <small>{user?.job_title ?? user?.roles[0] ?? "View profile"}</small>
                 </span>
               </Link>
-              <button className="pmp-icon-btn pmp-touch-target" onClick={() => setMoreOpen(false)} aria-label="Close more navigation"><X size={18} /></button>
+              <button className="pmp-icon-btn pmp-touch-target" onClick={() => setMoreOpen(false)} aria-label={translateUI("Close more navigation")}><X size={18} /></button>
             </div>
 
             <button
@@ -116,18 +121,18 @@ export function MobileNavigation() {
               }}
             >
               <span className="pmp-mobile-nav-icon"><MessageSquare size={19} /></span>
-              <span><strong>Team communication</strong><small>Channels, direct messages and music rooms</small></span>
+              <span><strong><LocalizedText message={"Team communication"} /></strong><small><LocalizedText message={"Channels, direct messages and music rooms"} /></small></span>
             </button>
 
             <div className="pmp-mobile-more-scroll">
               {secondaryGroups.map((group) => (
                 <div key={group.label} className="pmp-mobile-more-group">
-                  <div className="pmp-eyebrow">{group.label}</div>
+                  <div className="pmp-eyebrow">{<LocalizedText message={group.label} />}</div>
                   {group.items.map((item) => <MoreLink key={item.href} item={item} pathname={pathname} badge={badgeFor(item)} close={() => setMoreOpen(false)} />)}
                 </div>
               ))}
               <div className="pmp-mobile-more-group">
-                <div className="pmp-eyebrow">Personal</div>
+                <div className="pmp-eyebrow"><LocalizedText message={"Personal"} /></div>
                 {PERSONAL_NAV.map((item) => <MoreLink key={item.href} item={item} pathname={pathname} badge={0} close={() => setMoreOpen(false)} />)}
               </div>
             </div>
@@ -144,7 +149,7 @@ function MobileNavLink({ item, pathname, badge }: { item: AppNavItem; pathname: 
   return (
     <Link href={item.href} className={`pmp-mobile-bottom-item ${active ? "is-active" : ""}`} aria-current={active ? "page" : undefined}>
       <span className="pmp-mobile-bottom-icon"><Icon size={20} />{badge > 0 && <Badge count={badge} />}</span>
-      <span>{item.label}</span>
+      <span>{<LocalizedText message={item.label} />}</span>
     </Link>
   );
 }
@@ -155,12 +160,13 @@ function MoreLink({ item, pathname, badge, close }: { item: AppNavItem; pathname
   return (
     <Link href={item.href} className={`pmp-mobile-more-link ${active ? "is-active" : ""}`} onClick={close} aria-current={active ? "page" : undefined}>
       <span className="pmp-mobile-nav-icon"><Icon size={18} /></span>
-      <span>{item.label}</span>
+      <span>{<LocalizedText message={item.label} />}</span>
       {badge > 0 && <Badge count={badge} />}
     </Link>
   );
 }
 
 function Badge({ count }: { count: number }) {
-  return <span className="pmp-nav-badge" aria-label={`${count} pending`}>{count > 99 ? "99+" : count}</span>;
+  const { t, number } = useI18n();
+  return <span className="pmp-nav-badge" aria-label={t("{count} pending", { count })}>{count > 99 ? `${number(99)}+` : number(count)}</span>;
 }

@@ -1,3 +1,6 @@
+"use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 import React, { useState } from 'react';
 import { Person, Department, Team } from '../types';
 import { Icon } from '../icons';
@@ -26,6 +29,8 @@ const PRES: Record<string, string> = {
 };
 
 export function OrgChartView({ people, depts = DEPTS, teams = TEAMS, onOpenPerson }: OrgChartViewProps) {
+  const { t: translateUI } = useI18n();
+
   const [orgQ, setOrgQ] = useState('');
   const [orgDept, setOrgDept] = useState('All');
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
@@ -62,10 +67,10 @@ export function OrgChartView({ people, depts = DEPTS, teams = TEAMS, onOpenPerso
           <input
             className="input"
             style={{ minHeight: 40, paddingLeft: 36 }}
-            placeholder="Find a person or team…"
+            placeholder={translateUI("Find a person or team…")}
             value={orgQ}
             onChange={(e) => setOrgQ(e.target.value)}
-            aria-label="Find a person or team…"
+            aria-label={translateUI("Find a person or team…")}
           />
         </div>
 
@@ -119,7 +124,7 @@ export function OrgChartView({ people, depts = DEPTS, teams = TEAMS, onOpenPerso
           style={{ marginLeft: 'auto', borderRadius: 'var(--r-sm)' }}
           onClick={toggleAll}
         >
-          {anyOpen ? 'Collapse all teams' : 'Expand all teams'}
+          {anyOpen ? <LocalizedText message={"Collapse all teams"} /> : <LocalizedText message={"Expand all teams"} />}
         </button>
       </div>
 
@@ -163,8 +168,7 @@ export function OrgChartView({ people, depts = DEPTS, teams = TEAMS, onOpenPerso
           <span style={{ display: 'flex', flexDirection: 'column' }}>
             <span style={{ fontWeight: 800, fontSize: 16 }}>{ceoPerson.name}</span>
             <span className="text-muted" style={{ fontSize: 12 }}>
-              {ceoPerson.role} · {depts.length} direct reports
-            </span>
+              {ceoPerson.role} · {depts.length}{" "}<LocalizedText message={"direct reports"} />{" "}</span>
           </span>
         </button>
       )}
@@ -208,8 +212,7 @@ export function OrgChartView({ people, depts = DEPTS, teams = TEAMS, onOpenPerso
                       borderRadius: 'var(--r-xs)',
                     }}
                   >
-                    {deptPeople.length} people
-                  </span>
+                    {deptPeople.length}{" "}<LocalizedText message={"people"} />{" "}</span>
                 </div>
 
                 {head && (

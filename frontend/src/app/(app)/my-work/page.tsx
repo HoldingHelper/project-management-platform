@@ -1,4 +1,6 @@
 "use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
@@ -16,6 +18,8 @@ import { toSemantic } from "@/lib/format";
 import type { UUID } from "@/lib/types";
 
 export default function HomePage() {
+  const { t: translateUI } = useI18n();
+
   const { user, hasPermission } = useAuth();
   const canExec = hasPermission("reports.view_executive");
 
@@ -58,16 +62,14 @@ export default function HomePage() {
   return (
     <div style={{ ...PAGE_STYLE, gap: 22 }}>
       <PageHeader
-        title={`Good day, ${firstName}`}
-        subtitle={`${pendingItems.length} item(s) need your action${
-          exec.data ? ` across ${exec.data.active_projects} active projects.` : "."
-        }`}
+        title={translateUI("Good day, {name}", { name: firstName })}
+        subtitle={exec.data ? translateUI("{count} items need your action across {projects} active projects.", { count: pendingItems.length, projects: exec.data.active_projects }) : translateUI("{count} items need your action.", { count: pendingItems.length })}
       />
 
       {atRisk.length > 0 && (
         <Alert
           kind="critical"
-          title={`${atRisk.length} project(s) are at risk of missing their window`}
+          title={translateUI("{count} projects are at risk of missing their window", { count: atRisk.length })}
           description={atRisk.slice(0, 3).map((p) => p.name).join(", ")}
           time="live"
         />
@@ -75,26 +77,26 @@ export default function HomePage() {
 
       {/* Metric cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 16 }}>
-        <MetricCard href="/tasks?view=my" label="My velocity" value={personalDone} trend="points completed" tone="completed" icon={<CheckCircle2 size={15} />} />
-        <MetricCard href="/notifications?filter=action_required" label="Needs me" value={pendingItems.length} tone={pendingItems.length > 0 ? "delayed" : "default"} trend="reviews and blockers" icon={<Zap size={15} />} />
-        <MetricCard href="/tasks?view=my" label="Upcoming" value={personalUpcoming} trend="next 7 days" icon={<CalendarClock size={15} />} />
-        <MetricCard href="/tasks?view=my-blocked" label="My late work" value={personalLate} tone={personalLate > 0 ? "blocked" : "default"} trend="past due tasks" icon={<Clock size={15} />} />
+        <MetricCard href="/tasks?view=my" label={translateUI("My velocity")} value={personalDone} trend="points completed" tone="completed" icon={<CheckCircle2 size={15} />} />
+        <MetricCard href="/notifications?filter=action_required" label={translateUI("Needs me")} value={pendingItems.length} tone={pendingItems.length > 0 ? "delayed" : "default"} trend="reviews and blockers" icon={<Zap size={15} />} />
+        <MetricCard href="/tasks?view=my" label={translateUI("Upcoming")} value={personalUpcoming} trend="next 7 days" icon={<CalendarClock size={15} />} />
+        <MetricCard href="/tasks?view=my-blocked" label={translateUI("My late work")} value={personalLate} tone={personalLate > 0 ? "blocked" : "default"} trend="past due tasks" icon={<Clock size={15} />} />
       </div>
 
       <section style={{ background: "var(--surface-2)", border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-3)", padding: 16 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, marginBottom: 14, flexWrap: "wrap" }}>
           <div>
-            <div style={{ fontSize: 15, fontWeight: 800 }}>My KPI Pulse</div>
-            <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 2 }}>Only your personal delivery signals are shown here.</div>
+            <div style={{ fontSize: 15, fontWeight: 800 }}><LocalizedText message={"My KPI Pulse"} /></div>
+            <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 2 }}><LocalizedText message={"Only your personal delivery signals are shown here."} /></div>
           </div>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 7, color: "var(--text-secondary)", fontSize: 12.5, fontWeight: 700 }}>
             <UserRound size={15} /> {user?.full_name ?? firstName}
           </span>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 14 }}>
-          <KpiBar icon={<TrendingUp size={15} />} label="Focus score" value={`${personalFocus}%`} percent={personalFocus} />
-          <KpiBar icon={<Activity size={15} />} label="Completion signal" value={`${personalDone} pts`} percent={Math.min(100, personalDone * 10)} />
-          <KpiBar icon={<Crosshair size={15} />} label="Action pressure" value={pendingItems.length + personalLate} percent={Math.min(100, (pendingItems.length + personalLate) * 18)} inverted />
+          <KpiBar icon={<TrendingUp size={15} />} label={translateUI("Focus score")} value={`${personalFocus}%`} percent={personalFocus} />
+          <KpiBar icon={<Activity size={15} />} label={translateUI("Completion signal")} value={`${personalDone} pts`} percent={Math.min(100, personalDone * 10)} />
+          <KpiBar icon={<Crosshair size={15} />} label={translateUI("Action pressure")} value={pendingItems.length + personalLate} percent={Math.min(100, (pendingItems.length + personalLate) * 18)} inverted />
         </div>
       </section>
 
@@ -102,26 +104,26 @@ export default function HomePage() {
         <section style={{ background: "var(--surface-2)", border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-3)", padding: 16 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 14 }}>
             <div>
-              <div style={{ fontSize: 15, fontWeight: 800 }}>Executive Dashboard</div>
-              <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 2 }}>Org-wide KPIs with one-person zoom.</div>
+              <div style={{ fontSize: 15, fontWeight: 800 }}><LocalizedText message={"Executive Dashboard"} /></div>
+              <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 2 }}><LocalizedText message={"Org-wide KPIs with one-person zoom."} /></div>
             </div>
             <Select
               value={selectedUser}
               onChange={(e) => setSelectedUserId(e.target.value as UUID)}
               options={users.map((u) => ({ value: u.id, label: u.full_name }))}
-              placeholder="Zoom on person"
+              placeholder={translateUI("Zoom on person")}
             />
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginBottom: 16 }}>
-            <MetricCard href="/dashboards/executive" label="Active projects" value={exec.data?.active_projects ?? "..."} tone="in-progress" />
-            <MetricCard href="/dashboards/executive" label="Completed" value={exec.data?.completed_projects ?? "..."} tone="completed" />
-            <MetricCard href="/dashboards/executive" label="Delayed" value={exec.data?.delayed_projects ?? "..."} tone="delayed" />
-            <MetricCard href="/dashboards/executive" label="Blocked" value={exec.data?.blocked_projects ?? "..."} tone="blocked" />
+            <MetricCard href="/dashboards/executive" label={translateUI("Active projects")} value={exec.data?.active_projects ?? "..."} tone="in-progress" />
+            <MetricCard href="/dashboards/executive" label={translateUI("Completed")} value={exec.data?.completed_projects ?? "..."} tone="completed" />
+            <MetricCard href="/dashboards/executive" label={translateUI("Delayed")} value={exec.data?.delayed_projects ?? "..."} tone="delayed" />
+            <MetricCard href="/dashboards/executive" label={translateUI("Blocked")} value={exec.data?.blocked_projects ?? "..."} tone="blocked" />
           </div>
           <div className="pmp-two-col-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "start" }}>
             <div style={{ border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-2)", overflow: "hidden" }}>
               {rankedPeople.length === 0 ? (
-                <EmptyState title="No workload data" hint="Assigned work will appear here." />
+                <EmptyState title={translateUI("No workload data")} hint={translateUI("Assigned work will appear here.")} />
               ) : (
                 rankedPeople.map((row) => (
                   <button
@@ -136,7 +138,7 @@ export default function HomePage() {
                       <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13, fontWeight: 700 }}>{nameOf(row.user_id)}</span>
                     </span>
                     <ProgressBar percent={Math.min(100, row.open_tasks * 8 + row.open_blockers * 14)} blocks={10} showLabel={false} />
-                    <span style={{ fontFamily: "var(--font-mono)", color: "var(--text-tertiary)", fontSize: 12 }}>{row.open_tasks} open</span>
+                    <span style={{ fontFamily: "var(--font-mono)", color: "var(--text-tertiary)", fontSize: 12 }}>{row.open_tasks}{" "}<LocalizedText message={"open"} /></span>
                   </button>
                 ))
               )}
@@ -146,16 +148,16 @@ export default function HomePage() {
                 <Avatar name={nameOf(selectedUser)} size={30} />
                 <div>
                   <div style={{ fontSize: 14, fontWeight: 800 }}>{nameOf(selectedUser)}</div>
-                  <div style={{ fontSize: 11.5, color: "var(--text-tertiary)" }}>8-week KPI zoom</div>
+                  <div style={{ fontSize: 11.5, color: "var(--text-tertiary)" }}><LocalizedText message={"8-week KPI zoom"} /></div>
                 </div>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
-                <Stat label="Open tasks" value={selectedWorkload?.open_tasks ?? "—"} />
-                <Stat label="In progress" value={selectedWorkload?.in_progress ?? "—"} />
-                <Stat label="Open blockers" value={selectedWorkload?.open_blockers ?? "—"} tone={(selectedWorkload?.open_blockers ?? 0) > 0 ? "delayed" : undefined} />
-                <Stat label="Tasks completed" value={selectedContribution?.tasks_completed ?? "—"} />
-                <Stat label="Status changes" value={selectedContribution?.status_changes ?? "—"} />
-                <Stat label="Estimated hours" value={selectedWorkload?.estimated_hours ?? "—"} />
+                <Stat label={translateUI("Open tasks")} value={selectedWorkload?.open_tasks ?? "—"} />
+                <Stat label={translateUI("In progress")} value={selectedWorkload?.in_progress ?? "—"} />
+                <Stat label={translateUI("Open blockers")} value={selectedWorkload?.open_blockers ?? "—"} tone={(selectedWorkload?.open_blockers ?? 0) > 0 ? "delayed" : undefined} />
+                <Stat label={translateUI("Tasks completed")} value={selectedContribution?.tasks_completed ?? "—"} />
+                <Stat label={translateUI("Status changes")} value={selectedContribution?.status_changes ?? "—"} />
+                <Stat label={translateUI("Estimated hours")} value={selectedWorkload?.estimated_hours ?? "—"} />
               </div>
             </div>
           </div>
@@ -166,7 +168,7 @@ export default function HomePage() {
         {/* Pending On Me */}
         <section style={{ background: "var(--surface-2)", border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-3)", padding: 16, display: "flex", flexDirection: "column" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-            <div style={{ fontSize: 15, fontWeight: 700 }}>Pending On Me</div>
+            <div style={{ fontSize: 15, fontWeight: 700 }}><LocalizedText message={"Pending On Me"} /></div>
             <span style={{ fontSize: 11, fontWeight: 700, color: "var(--status-delayed)", background: "var(--status-delayed-bg)", borderRadius: "var(--radius-full)", padding: "2px 9px" }}>
               {pendingItems.length}
             </span>
@@ -174,7 +176,7 @@ export default function HomePage() {
           {pending.isLoading ? (
             <Spinner />
           ) : pendingItems.length === 0 ? (
-            <EmptyState title="Nothing pending on you" hint="You're all caught up." />
+            <EmptyState title={translateUI("Nothing pending on you")} hint={translateUI("You're all caught up.")} />
           ) : (
             <div style={{ display: "flex", flexDirection: "column" }}>
               {pendingItems.map((p) => {
@@ -184,7 +186,7 @@ export default function HomePage() {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
                         <span style={{ fontFamily: "var(--font-mono)", fontSize: 11.5, color: "var(--text-tertiary)", flexShrink: 0 }}>
-                          {p.kind === "blocker" ? "BLOCK" : "TASK"}
+                          {p.kind === "blocker" ? <LocalizedText message={"BLOCK"} /> : <LocalizedText message={"TASK"} />}
                         </span>
                         <span style={{ fontSize: 13.5, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.title}</span>
                       </div>
@@ -210,36 +212,34 @@ export default function HomePage() {
 
         {/* Personal stats from the personal dashboard endpoint */}
         <section style={{ background: "var(--surface-2)", border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-3)", padding: 16 }}>
-          <div style={{ fontSize: 15, fontWeight: 700 }}>My Sprint</div>
-          <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginBottom: 16 }}>From your personal dashboard</div>
+          <div style={{ fontSize: 15, fontWeight: 700 }}><LocalizedText message={"My Sprint"} /></div>
+          <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginBottom: 16 }}><LocalizedText message={"From your personal dashboard"} /></div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 16 }}>
-            <Stat label="Velocity (points completed)" value={personal.data?.velocity_points_completed ?? "—"} />
-            <Stat label="Hours logged" value={personal.data?.hours_logged ?? "—"} />
-            <Stat label="Upcoming deadlines (7d)" value={personal.data?.upcoming_deadlines?.length ?? "—"} />
-            <Stat label="Late tasks" value={personal.data?.late_tasks?.length ?? "—"} tone="delayed" />
+            <Stat label={translateUI("Velocity (points completed)")} value={personal.data?.velocity_points_completed ?? "—"} />
+            <Stat label={translateUI("Hours logged")} value={personal.data?.hours_logged ?? "—"} />
+            <Stat label={translateUI("Upcoming deadlines (7d)")} value={personal.data?.upcoming_deadlines?.length ?? "—"} />
+            <Stat label={translateUI("Late tasks")} value={personal.data?.late_tasks?.length ?? "—"} tone="delayed" />
           </div>
-          <div style={{ fontSize: 11, color: "var(--text-tertiary)", marginTop: 14 }}>
-            Full burndown, velocity and trend charts live in the Executive dashboard.
-          </div>
+          <div style={{ fontSize: 11, color: "var(--text-tertiary)", marginTop: 14 }}>{" "}<LocalizedText message={"Full burndown, velocity and trend charts live in the Executive dashboard."} />{" "}</div>
         </section>
       </div>
 
       {/* At Risk / Blocked Projects */}
       <section style={{ background: "var(--surface-2)", border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-3)", overflow: "hidden" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", borderBottom: "1px solid var(--border-default)" }}>
-          <div style={{ fontSize: 15, fontWeight: 700 }}>At Risk / Blocked Projects</div>
-          <span style={{ fontSize: 12, color: "var(--text-tertiary)", fontFamily: "var(--font-mono)" }}>{atRisk.length} projects</span>
+          <div style={{ fontSize: 15, fontWeight: 700 }}><LocalizedText message={"At Risk / Blocked Projects"} /></div>
+          <span style={{ fontSize: 12, color: "var(--text-tertiary)", fontFamily: "var(--font-mono)" }}>{atRisk.length}{" "}<LocalizedText message={"projects"} /></span>
         </div>
         {projects.isLoading ? (
           <Spinner />
         ) : atRisk.length === 0 ? (
-          <EmptyState title="No at-risk projects" hint="All projects are on track." />
+          <EmptyState title={translateUI("No at-risk projects")} hint={translateUI("All projects are on track.")} />
         ) : (
           <>
             <div style={{ overflowX: "auto" }}>
               <div style={{ minWidth: 620 }}>
                 <div style={{ display: "grid", gridTemplateColumns: "minmax(200px,1.4fr) 150px 140px 90px", padding: "9px 18px", fontSize: 11, fontWeight: 600, color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "0.04em", borderBottom: "1px solid var(--border-subtle)" }}>
-                  <span>Project</span><span>Owner</span><span>Status</span><span>Priority</span>
+                  <span><LocalizedText message={"Project"} /></span><span><LocalizedText message={"Owner"} /></span><span><LocalizedText message={"Status"} /></span><span><LocalizedText message={"Priority"} /></span>
                 </div>
                 {atRisk.map((p) => (
                   <Link key={p.id} href={`/projects/${p.id}`} className="pmp-row" style={{ display: "grid", gridTemplateColumns: "minmax(200px,1.4fr) 150px 140px 90px", alignItems: "center", borderBottom: "1px solid var(--border-subtle)", padding: "12px 18px", color: "inherit" }}>

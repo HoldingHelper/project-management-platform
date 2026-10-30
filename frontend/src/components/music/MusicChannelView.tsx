@@ -1,5 +1,8 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
+
 /* Full music-room view rendered inside the chat drawer (parallel to
    ChannelConversation): now-playing card, transport (control-gated),
    playlist, members, and the owner's Google Drive folder picker. */
@@ -81,10 +84,9 @@ export function MusicChannelView({ item }: { item: MusicChannelListItem }) {
         </span>
         <div style={{ fontWeight: 800, fontSize: 15 }}>{item.channel.name}</div>
         <div style={{ fontSize: 12.5, color: "var(--text-tertiary)" }}>
-          {item.member_count} listener{item.member_count === 1 ? "" : "s"} · join to listen together in sync
-        </div>
+          {item.member_count}{" "}<LocalizedText message={"listener"} />{item.member_count === 1 ? "" : <LocalizedText message={"s"} />}{" "}<LocalizedText message={"· join to listen together in sync"} />{" "}</div>
         <Button onClick={join} disabled={joining}>
-          {joining ? "Joining…" : "Join & listen"}
+          {joining ? <LocalizedText message={"Joining…"} /> : <LocalizedText message={"Join & listen"} />}
         </Button>
       </div>
     );
@@ -106,9 +108,7 @@ export function MusicChannelView({ item }: { item: MusicChannelListItem }) {
             fontSize: 12.5,
             cursor: "pointer",
           }}
-        >
-          Tap to start listening (your browser blocked autoplay)
-        </button>
+        >{" "}<LocalizedText message={"Tap to start listening (your browser blocked autoplay)"} />{" "}</button>
       )}
       {errored && !blocked && (
         <button
@@ -123,15 +123,13 @@ export function MusicChannelView({ item }: { item: MusicChannelListItem }) {
             fontSize: 12.5,
             cursor: "pointer",
           }}
-        >
-          Stream lost — tap to reconnect
-        </button>
+        >{" "}<LocalizedText message={"Stream lost — tap to reconnect"} />{" "}</button>
       )}
       {(!state || state.playlist.length === 0) && (
         <div style={{ fontSize: 12.5, color: "var(--text-tertiary)", padding: "2px 4px" }}>
           {isOwner
-            ? "Pick a Google Drive folder below to build the playlist."
-            : "No playlist yet — the channel owner needs to pick a Drive folder."}
+            ? <LocalizedText message={"Pick a Google Drive folder below to build the playlist."} />
+            : <LocalizedText message={"No playlist yet — the channel owner needs to pick a Drive folder."} />}
         </div>
       )}
       {state && state.playlist.length > 0 && <Playlist item={item} />}
@@ -139,19 +137,21 @@ export function MusicChannelView({ item }: { item: MusicChannelListItem }) {
       <MembersSection item={item} isOwner={isOwner} />
       {isOwner && (
         <Button variant="secondary" onClick={removeChannel}>
-          <Trash2 size={14} /> Delete music channel
-        </Button>
+          <Trash2 size={14} />{" "}<LocalizedText message={"Delete music channel"} />{" "}</Button>
       )}
       {!canControl && (
         <div style={{ fontSize: 11.5, color: "var(--text-tertiary)", display: "flex", alignItems: "center", gap: 6 }}>
-          <Headphones size={13} /> Listening mode — the owner can grant you playback control.
-        </div>
+          <Headphones size={13} />{" "}<LocalizedText message={"Listening mode — the owner can grant you playback control."} />{" "}</div>
       )}
     </div>
   );
 }
 
 function NowPlayingCard({ item }: { item: MusicChannelListItem }) {
+  const { t: localizeAttribute } = useI18n();
+
+  const { t: translateUI } = useI18n();
+
   const {
     state,
     canControl,
@@ -207,7 +207,7 @@ function NowPlayingCard({ item }: { item: MusicChannelListItem }) {
         </span>
         <span style={{ flex: 1, minWidth: 0 }}>
           <span style={{ display: "block", fontWeight: 800, fontSize: 13.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {track ? track.name.replace(/\.[a-z0-9]+$/i, "") : "Nothing playing"}
+            {track ? track.name.replace(/\.[a-z0-9]+$/i, "") : <LocalizedText message={"Nothing playing"} />}
           </span>
           <span style={{ display: "block", fontSize: 11, color: "var(--text-tertiary)" }}>
             {state ? `Track ${state.track_index + 1} of ${state.playlist.length}` : "—"}
@@ -217,14 +217,14 @@ function NowPlayingCard({ item }: { item: MusicChannelListItem }) {
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
         <TransportButton
-          title="Previous"
+          title={translateUI("Previous")}
           disabled={!canControl || !track}
           onClick={() => void previous()}
         >
           <SkipBack size={16} />
         </TransportButton>
         <TransportButton
-          title={state?.is_playing ? "Pause for everyone" : "Play for everyone"}
+          title={state?.is_playing ? localizeAttribute("Pause for everyone") : localizeAttribute("Play for everyone")}
           disabled={!canControl || !track}
           primary
           accent={accent}
@@ -233,7 +233,7 @@ function NowPlayingCard({ item }: { item: MusicChannelListItem }) {
           {state?.is_playing ? <Pause size={18} /> : <Play size={18} style={{ marginLeft: 2 }} />}
         </TransportButton>
         <TransportButton
-          title="Next"
+          title={translateUI("Next")}
           disabled={!canControl || !track}
           onClick={() => void next()}
         >
@@ -251,7 +251,7 @@ function NowPlayingCard({ item }: { item: MusicChannelListItem }) {
           disabled={!canControl || !track || !durationKnown}
           onChange={(e) => void command("seek", { position_seconds: Number(e.target.value) })}
           style={{ flex: 1, accentColor: accent }}
-          aria-label="Seek"
+          aria-label={translateUI("Seek")}
         />
         <span style={{ minWidth: 32, textAlign: "right" }}>
           {duration ? formatClock(duration) : "--:--"}
@@ -260,7 +260,7 @@ function NowPlayingCard({ item }: { item: MusicChannelListItem }) {
 
       <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 10.5, color: "var(--text-tertiary)" }}>
         <TransportButton
-          title={shuffle ? "Shuffle on" : "Straight order"}
+          title={shuffle ? localizeAttribute("Shuffle on") : localizeAttribute("Straight order")}
           disabled={!canControl || !track}
           active={shuffle}
           accent={accent}
@@ -269,7 +269,7 @@ function NowPlayingCard({ item }: { item: MusicChannelListItem }) {
           <Shuffle size={14} />
         </TransportButton>
         <TransportButton
-          title={repeat ? "Repeat on" : "Repeat off"}
+          title={repeat ? localizeAttribute("Repeat on") : localizeAttribute("Repeat off")}
           disabled={!canControl || !track}
           active={repeat}
           accent={accent}
@@ -286,7 +286,7 @@ function NowPlayingCard({ item }: { item: MusicChannelListItem }) {
           value={Math.round(volume * 100)}
           onChange={(e) => setVolume(Number(e.target.value) / 100)}
           style={{ width: 64, accentColor: accent }}
-          aria-label="Volume"
+          aria-label={translateUI("Volume")}
         />
       </div>
     </div>
@@ -300,8 +300,7 @@ function Playlist({ item }: { item: MusicChannelListItem }) {
   return (
     <div style={{ borderRadius: "var(--radius-3)", border: "1px solid var(--border-subtle)", overflow: "hidden" }}>
       <div style={{ padding: "8px 12px", fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.7, color: "var(--text-tertiary)", display: "flex", alignItems: "center", gap: 6 }}>
-        <ListMusic size={12} /> Playlist · {state.playlist.length} tracks
-        {item.channel.drive_folder_name && <span style={{ fontWeight: 500, textTransform: "none", letterSpacing: 0 }}>({item.channel.drive_folder_name})</span>}
+        <ListMusic size={12} />{" "}<LocalizedText message={"Playlist ·"} />{" "}{state.playlist.length}{" "}<LocalizedText message={"tracks"} />{" "}{item.channel.drive_folder_name && <span style={{ fontWeight: 500, textTransform: "none", letterSpacing: 0 }}>({item.channel.drive_folder_name})</span>}
       </div>
       <div style={{ maxHeight: 220, overflowY: "auto" }}>
         {state.playlist.map((t, i) => {
@@ -342,6 +341,8 @@ function Playlist({ item }: { item: MusicChannelListItem }) {
 }
 
 function DriveSection({ item }: { item: MusicChannelListItem }) {
+  const { t: translateUI } = useI18n();
+
   const toast = useToast();
   const queryClient = useQueryClient();
   const player = useMusicPlayer();
@@ -390,45 +391,39 @@ function DriveSection({ item }: { item: MusicChannelListItem }) {
   return (
     <div style={{ borderRadius: "var(--radius-3)", border: "1px solid var(--border-subtle)", padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
       <div style={{ fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.7, color: "var(--text-tertiary)", display: "flex", alignItems: "center", gap: 6 }}>
-        <FolderOpen size={12} /> Google Drive source
-      </div>
-      <Field label="Public folder link">
+        <FolderOpen size={12} />{" "}<LocalizedText message={"Google Drive source"} />{" "}</div>
+      <Field label={translateUI("Public folder link")}>
         <TextInput
           value={folderInput}
           onChange={(e) => setFolderInput(e.target.value)}
-          placeholder="Paste a public Google Drive folder URL"
+          placeholder={translateUI("Paste a public Google Drive folder URL")}
         />
       </Field>
       <Button onClick={applyFolder} disabled={!(folderInput.trim() || folderId) || saving}>
-        {saving ? "Loading tracks…" : "Use folder as playlist"}
+        {saving ? <LocalizedText message={"Loading tracks…"} /> : <LocalizedText message={"Use folder as playlist"} />}
       </Button>
       {!drive?.connected ? (
         <>
-          <div style={{ fontSize: 12, color: "var(--text-tertiary)" }}>
-            Public folders work without connecting Drive. Connect only for private folders.
-          </div>
+          <div style={{ fontSize: 12, color: "var(--text-tertiary)" }}>{" "}<LocalizedText message={"Public folders work without connecting Drive. Connect only for private folders."} />{" "}</div>
           <Button variant="secondary" onClick={connect} disabled={drive ? !drive.configured : false}>
-            {drive && !drive.configured ? "Drive not configured on server" : "Connect Google Drive"}
+            {drive && !drive.configured ? <LocalizedText message={"Drive not configured on server"} /> : <LocalizedText message={"Connect Google Drive"} />}
           </Button>
           {drive?.configured && (
             <button
               onClick={() => queryClient.invalidateQueries({ queryKey: ["music-drive-status"] })}
               style={{ border: "none", background: "transparent", color: "var(--text-link)", fontSize: 11.5, cursor: "pointer", textAlign: "left", padding: 0 }}
-            >
-              I finished connecting — refresh
-            </button>
+            >{" "}<LocalizedText message={"I finished connecting — refresh"} />{" "}</button>
           )}
         </>
       ) : (
         <>
-          <div style={{ fontSize: 11.5, color: "var(--text-tertiary)" }}>
-            Connected{drive.email ? ` as ${drive.email}` : ""}
+          <div style={{ fontSize: 11.5, color: "var(--text-tertiary)" }}>{" "}<LocalizedText message={"Connected"} />{drive.email ? ` as ${drive.email}` : ""}
           </div>
-          <Field label="Playlist folder">
+          <Field label={translateUI("Playlist folder")}>
             <Select
               value={folderId}
               onChange={(e) => setFolderId(e.target.value)}
-              placeholder="Choose a folder…"
+              placeholder={translateUI("Choose a folder…")}
               options={(folders ?? []).map((f) => ({ value: f.id, label: f.name }))}
             />
           </Field>
@@ -439,6 +434,8 @@ function DriveSection({ item }: { item: MusicChannelListItem }) {
 }
 
 function MembersSection({ item, isOwner }: { item: MusicChannelListItem; isOwner: boolean }) {
+  const { t: translateUI } = useI18n();
+
   const { nameOf } = useUserMap();
   const toast = useToast();
   const accent = musicAccent(item.channel.color);
@@ -468,8 +465,7 @@ function MembersSection({ item, isOwner }: { item: MusicChannelListItem; isOwner
 
   return (
     <div style={{ borderRadius: "var(--radius-3)", border: "1px solid var(--border-subtle)", overflow: "hidden" }}>
-      <div style={{ padding: "8px 12px", fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.7, color: "var(--text-tertiary)" }}>
-        Listeners · {sorted.length}
+      <div style={{ padding: "8px 12px", fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.7, color: "var(--text-tertiary)" }}>{" "}<LocalizedText message={"Listeners ·"} />{" "}{sorted.length}
       </div>
       {sorted.map((m) => {
         const owner = m.user_id === item.channel.owner_user_id;
@@ -480,20 +476,18 @@ function MembersSection({ item, isOwner }: { item: MusicChannelListItem; isOwner
               {nameOf(m.user_id)}
             </span>
             {owner ? (
-              <span title="Channel owner" style={{ color: accent, display: "inline-flex" }}>
+              <span title={translateUI("Channel owner")} style={{ color: accent, display: "inline-flex" }}>
                 <Crown size={13} />
               </span>
             ) : m.can_control ? (
-              <span style={{ fontSize: 10, fontWeight: 700, color: accent, border: `1px solid ${accent}`, borderRadius: "var(--radius-full)", padding: "1px 7px" }}>
-                DJ
-              </span>
+              <span style={{ fontSize: 10, fontWeight: 700, color: accent, border: `1px solid ${accent}`, borderRadius: "var(--radius-full)", padding: "1px 7px" }}>{" "}<LocalizedText message={"DJ"} />{" "}</span>
             ) : null}
             {isOwner && !owner && (
               <button
                 onClick={() => void toggleControl(m.user_id, !m.can_control)}
                 style={{ border: "none", background: "transparent", color: "var(--text-link)", fontSize: 10.5, cursor: "pointer", padding: 0 }}
               >
-                {m.can_control ? "revoke" : "allow control"}
+                {m.can_control ? <LocalizedText message={"revoke"} /> : <LocalizedText message={"allow control"} />}
               </button>
             )}
           </div>
@@ -549,6 +543,8 @@ function TransportButton({
 
 /** Tiny animated three-bar equalizer (pure CSS). */
 function EqualizerIcon({ color, size = 14 }: { color: string; size?: number }) {
+  const { t: translateUI } = useI18n();
+
   const bar = (delay: string) => ({
     width: Math.max(2, Math.round(size / 5)),
     background: color,
@@ -556,7 +552,7 @@ function EqualizerIcon({ color, size = 14 }: { color: string; size?: number }) {
     animation: `pmp-eq 0.9s ease-in-out ${delay} infinite alternate`,
   });
   return (
-    <span style={{ display: "inline-flex", alignItems: "flex-end", gap: 2, height: size }} aria-label="Playing">
+    <span style={{ display: "inline-flex", alignItems: "flex-end", gap: 2, height: size }} aria-label={translateUI("Playing")}>
       <style>{`@keyframes pmp-eq { from { height: 25%; } to { height: 100%; } }`}</style>
       <span style={{ ...bar("0s"), height: "60%" }} />
       <span style={{ ...bar("0.25s"), height: "100%" }} />

@@ -1,4 +1,6 @@
 "use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
@@ -51,6 +53,8 @@ import { UserStatusPickerModal, UserStatusPill } from "@/components/status";
 import type { UserRead, UUID } from "@/lib/types";
 
 export default function ProfilePage({ profileId }: { profileId?: string } = {}) {
+  const { t: translateUI } = useI18n();
+
   const { userId: exportedUserId } = useParams<{ userId: string }>();
   const [routeUserId] = useStaticExportParams([exportedUserId ?? ""], ["profile"]);
   const userId = profileId ?? routeUserId;
@@ -126,7 +130,7 @@ export default function ProfilePage({ profileId }: { profileId?: string } = {}) 
   if (!userId || isLoading || !user) {
     return (
       <div style={PAGE_STYLE}>
-        <Spinner label="Loading profile…" />
+        <Spinner label={translateUI("Loading profile…")} />
       </div>
     );
   }
@@ -140,21 +144,18 @@ export default function ProfilePage({ profileId }: { profileId?: string } = {}) 
           <span style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {canManage && (
               <>
-                <Button variant="secondary" onClick={() => setAdminEditOpen(true)} title="Edit user name, username, email">
-                  <Edit3 size={14} /> Edit User
-                </Button>
-                <Button variant="secondary" onClick={() => setAdminPasswordOpen(true)} title="Set new password directly">
-                  <KeyRound size={14} /> Reset Password
-                </Button>
-                <Button variant="secondary" onClick={() => setAdminRolesOpen(true)} title="Change user roles">
-                  <ShieldCheck size={14} /> Roles
-                </Button>
+                <Button variant="secondary" onClick={() => setAdminEditOpen(true)} title={translateUI("Edit user name, username, email")}>
+                  <Edit3 size={14} />{" "}<LocalizedText message={"Edit User"} />{" "}</Button>
+                <Button variant="secondary" onClick={() => setAdminPasswordOpen(true)} title={translateUI("Set new password directly")}>
+                  <KeyRound size={14} />{" "}<LocalizedText message={"Reset Password"} />{" "}</Button>
+                <Button variant="secondary" onClick={() => setAdminRolesOpen(true)} title={translateUI("Change user roles")}>
+                  <ShieldCheck size={14} />{" "}<LocalizedText message={"Roles"} />{" "}</Button>
               </>
             )}
             {isMe ? (
               <>
                 <Link href="/settings">
-                  <Button variant="secondary">Settings</Button>
+                  <Button variant="secondary"><LocalizedText message={"Settings"} /></Button>
                 </Link>
                 <Button
                   onClick={() => {
@@ -167,7 +168,7 @@ export default function ProfilePage({ profileId }: { profileId?: string } = {}) 
                     setEditing((e) => !e);
                   }}
                 >
-                  {editing ? "Cancel" : "Edit profile"}
+                  {editing ? <LocalizedText message={"Cancel"} /> : <LocalizedText message={"Edit profile"} />}
                 </Button>
                 <Button variant="secondary" disabled={signingOut} onClick={async () => {
                   if (signingOut) return;
@@ -175,12 +176,12 @@ export default function ProfilePage({ profileId }: { profileId?: string } = {}) 
                   await logout();
                   router.replace("/login");
                 }}>
-                  <LogOut size={14} aria-hidden /> {signingOut ? "Logging out…" : "Log out"}
+                  <LogOut size={14} aria-hidden /> {signingOut ? <LocalizedText message={"Logging out…"} /> : <LocalizedText message={"Log out"} />}
                 </Button>
               </>
             ) : (
               <Button onClick={startDm} disabled={startingDm}>
-                <MessageSquare size={14} /> {startingDm ? "Opening…" : "Message"}
+                <MessageSquare size={14} /> {startingDm ? <LocalizedText message={"Opening…"} /> : <LocalizedText message={"Message"} />}
               </Button>
             )}
           </span>
@@ -220,9 +221,7 @@ export default function ProfilePage({ profileId }: { profileId?: string } = {}) 
                     cursor: "pointer",
                     padding: "2px 6px",
                   }}
-                >
-                  Edit status
-                </button>
+                >{" "}<LocalizedText message={"Edit status"} />{" "}</button>
               )}
             </div>
 
@@ -255,12 +254,12 @@ export default function ProfilePage({ profileId }: { profileId?: string } = {}) 
 
         <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
           {editing ? (
-            <Card title="Edit profile" padded>
+            <Card title={translateUI("Edit profile")} padded>
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                <Field label="Job title">
+                <Field label={translateUI("Job title")}>
                   <TextInput value={form.job_title} onChange={(e) => setForm((f) => ({ ...f, job_title: e.target.value }))} />
                 </Field>
-                <Field label="Bio">
+                <Field label={translateUI("Bio")}>
                   <textarea
                     value={form.bio}
                     onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))}
@@ -278,31 +277,31 @@ export default function ProfilePage({ profileId }: { profileId?: string } = {}) 
                   />
                 </Field>
                 <div className="pmp-form-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                  <Field label="Phone">
+                  <Field label={translateUI("Phone")}>
                     <TextInput value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} />
                   </Field>
-                  <Field label="Location">
+                  <Field label={translateUI("Location")}>
                     <TextInput value={form.location} onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))} />
                   </Field>
                 </div>
                 <div>
                   <Button onClick={() => save.mutate()} disabled={save.isPending}>
-                    <Save size={14} /> {save.isPending ? "Saving…" : "Save changes"}
+                    <Save size={14} /> {save.isPending ? <LocalizedText message={"Saving…"} /> : <LocalizedText message={"Save changes"} />}
                   </Button>
                 </div>
               </div>
             </Card>
           ) : (
-            <Card title="About" padded>
+            <Card title={translateUI("About")} padded>
               <div style={{ fontSize: 13.5, color: user.bio ? "var(--text-primary)" : "var(--text-tertiary)", lineHeight: 1.6 }}>
                 {user.bio || "No bio yet."}
               </div>
             </Card>
           )}
 
-          <Card title="Assigned tasks" padded={false}>
+          <Card title={translateUI("Assigned tasks")} padded={false}>
             {(tasks?.items ?? []).length === 0 && (
-              <div style={{ padding: 18, fontSize: 12.5, color: "var(--text-tertiary)" }}>No assigned tasks.</div>
+              <div style={{ padding: 18, fontSize: 12.5, color: "var(--text-tertiary)" }}><LocalizedText message={"No assigned tasks."} /></div>
             )}
             {(tasks?.items ?? []).map((t) => (
               <div
@@ -396,6 +395,8 @@ function EditUserModal({
   roleNames: string[];
   onDone: () => void;
 }) {
+  const { t: translateUI } = useI18n();
+
   const [form, setForm] = useState({
     first_name: "",
     last_name: "",
@@ -451,34 +452,32 @@ function EditUserModal({
       title={`Edit User — ${user?.full_name ?? ""}`}
       footer={
         <>
-          <Button variant="secondary" onClick={onClose}>
-            Cancel
-          </Button>
+          <Button variant="secondary" onClick={onClose}>{" "}<LocalizedText message={"Cancel"} />{" "}</Button>
           <Button disabled={!valid || mutation.isPending} onClick={() => mutation.mutate()}>
-            {mutation.isPending ? "Saving…" : "Save changes"}
+            {mutation.isPending ? <LocalizedText message={"Saving…"} /> : <LocalizedText message={"Save changes"} />}
           </Button>
         </>
       }
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          <Field label="First name">
+          <Field label={translateUI("First name")}>
             <TextInput value={form.first_name} onChange={(e) => set("first_name")(e.target.value)} />
           </Field>
-          <Field label="Last name">
+          <Field label={translateUI("Last name")}>
             <TextInput value={form.last_name} onChange={(e) => set("last_name")(e.target.value)} />
           </Field>
         </div>
 
-        <Field label="Username">
+        <Field label={translateUI("Username")}>
           <TextInput
-            placeholder="e.g. jdoe"
+            placeholder={translateUI("e.g. jdoe")}
             value={form.username}
             onChange={(e) => set("username")(e.target.value)}
           />
         </Field>
 
-        <Field label="Email address">
+        <Field label={translateUI("Email address")}>
           <TextInput
             type="email"
             value={form.email}
@@ -486,16 +485,16 @@ function EditUserModal({
           />
         </Field>
 
-        <Field label="Job title">
+        <Field label={translateUI("Job title")}>
           <TextInput
-            placeholder="e.g. Senior Frontend Engineer"
+            placeholder={translateUI("e.g. Senior Frontend Engineer")}
             value={form.job_title}
             onChange={(e) => set("job_title")(e.target.value)}
           />
         </Field>
 
-        <Field label="Account status">
-          <Select
+        <Field label={translateUI("Account status")}>
+          <Select translateOptions
             value={form.is_active ? "active" : "deactivated"}
             onChange={(e) => set("is_active")(e.target.value === "active")}
             options={[
@@ -520,6 +519,8 @@ function AdminResetPasswordModal({
   onClose: () => void;
   onDone: () => void;
 }) {
+  const { t: translateUI } = useI18n();
+
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -570,39 +571,34 @@ function AdminResetPasswordModal({
       title={`Reset Password — ${user?.full_name ?? ""}`}
       footer={
         <>
-          <Button variant="secondary" onClick={onClose}>
-            Cancel
-          </Button>
+          <Button variant="secondary" onClick={onClose}>{" "}<LocalizedText message={"Cancel"} />{" "}</Button>
           <Button
             variant="primary"
             disabled={password.length < 8 || mutation.isPending}
             onClick={() => mutation.mutate()}
           >
-            {mutation.isPending ? "Setting password…" : "Set new password"}
+            {mutation.isPending ? <LocalizedText message={"Setting password…"} /> : <LocalizedText message={"Set new password"} />}
           </Button>
         </>
       }
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        <p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.55 }}>
-          As administrator, you can directly override the password for <b>{user?.full_name}</b> ({user?.email}). Any active sessions for this user will be revoked.
-        </p>
+        <p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.55 }}>{" "}<LocalizedText message={"As administrator, you can directly override the password for"} />{" "}<b>{user?.full_name}</b> ({user?.email}<LocalizedText message={"). Any active sessions for this user will be revoked."} />{" "}</p>
 
-        <Field label="New Password (min 8 characters)">
+        <Field label={translateUI("New Password (min 8 characters)")}>
           <div style={{ display: "flex", gap: 8 }}>
             <TextInput
               type="text"
-              placeholder="Enter new secure password"
+              placeholder={translateUI("Enter new secure password")}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               style={{ flex: 1, fontFamily: "var(--font-mono)", fontSize: 13 }}
             />
-            <Button type="button" variant="secondary" size="sm" onClick={generatePassword} title="Generate random password">
-              <RefreshCw size={13} /> Generate
-            </Button>
+            <Button type="button" variant="secondary" size="sm" onClick={generatePassword} title={translateUI("Generate random password")}>
+              <RefreshCw size={13} />{" "}<LocalizedText message={"Generate"} />{" "}</Button>
             {password && (
-              <Button type="button" variant="secondary" size="sm" onClick={copyPassword} title="Copy password">
-                <Copy size={13} /> {copied ? "Copied" : "Copy"}
+              <Button type="button" variant="secondary" size="sm" onClick={copyPassword} title={translateUI("Copy password")}>
+                <Copy size={13} /> {copied ? <LocalizedText message={"Copied"} /> : <LocalizedText message={"Copy"} />}
               </Button>
             )}
           </div>
@@ -610,9 +606,7 @@ function AdminResetPasswordModal({
 
         {error && <div style={{ fontSize: 12.5, color: "var(--status-delayed)" }}>{error}</div>}
 
-        <div style={{ fontSize: 11.5, color: "var(--text-tertiary)" }}>
-          💡 Tip: Click <b>Generate</b> to create a secure password and <b>Copy</b> to share it securely with the user.
-        </div>
+        <div style={{ fontSize: 11.5, color: "var(--text-tertiary)" }}>{" "}<LocalizedText message={"💡 Tip: Click"} />{" "}<b><LocalizedText message={"Generate"} /></b>{" "}<LocalizedText message={"to create a secure password and"} />{" "}<b><LocalizedText message={"Copy"} /></b>{" "}<LocalizedText message={"to share it securely with the user."} />{" "}</div>
       </div>
     </Modal>
   );
@@ -653,14 +647,12 @@ function EditRolesModal({
       title={`Roles — ${user?.full_name ?? ""}`}
       footer={
         <>
-          <Button variant="secondary" onClick={onClose}>
-            Cancel
-          </Button>
+          <Button variant="secondary" onClick={onClose}>{" "}<LocalizedText message={"Cancel"} />{" "}</Button>
           <Button
             disabled={mutation.isPending || current.length === 0}
             onClick={() => mutation.mutate()}
           >
-            {mutation.isPending ? "Saving…" : "Save roles"}
+            {mutation.isPending ? <LocalizedText message={"Saving…"} /> : <LocalizedText message={"Save roles"} />}
           </Button>
         </>
       }

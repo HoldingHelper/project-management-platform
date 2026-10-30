@@ -31,6 +31,8 @@ class DocSpace(Base, UUIDPKMixin, TimestampMixin, AuditableMixin):
     created_by: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     node_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
     default_edit_role: Mapped[Optional[str]] = mapped_column(String(40), nullable=True)
+    product_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("projects.products.id", ondelete="CASCADE"), nullable=True, unique=True)
+    task_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("projects.tasks.id", ondelete="CASCADE"), nullable=True, unique=True)
 
     pages: Mapped[list["DocPage"]] = relationship(back_populates="space", cascade="all, delete-orphan")
     sources: Mapped[list["DocSource"]] = relationship(back_populates="space")
@@ -48,6 +50,7 @@ class DocPage(Base, UUIDPKMixin, TimestampMixin, AuditableMixin):
     content: Mapped[str] = mapped_column(Text, default="", nullable=False)
     content_json: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)
     status: Mapped[str] = mapped_column(String(24), default="draft", nullable=False, index=True)
+    archived_from_status: Mapped[Optional[str]] = mapped_column(String(24), nullable=True)
     visibility: Mapped[str] = mapped_column(String(24), default="inherit", nullable=False, index=True)
     responsible_user_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
     position: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
@@ -60,6 +63,9 @@ class DocPage(Base, UUIDPKMixin, TimestampMixin, AuditableMixin):
     confidentiality: Mapped[str] = mapped_column(String(16), default="inherit", nullable=False)
     publish_level: Mapped[str] = mapped_column(String(16), default="private", nullable=False)
     is_template: Mapped[bool] = mapped_column(default=False, nullable=False)
+    source_attachment_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("collaboration.file_attachments.id", ondelete="CASCADE"), nullable=True, unique=True)
+    source_entity_type: Mapped[Optional[str]] = mapped_column(String(24), nullable=True)
+    source_entity_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), nullable=True)
 
     space: Mapped[DocSpace] = relationship(back_populates="pages")
     parent: Mapped[Optional["DocPage"]] = relationship(remote_side="DocPage.id")

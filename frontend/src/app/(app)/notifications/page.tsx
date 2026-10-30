@@ -1,5 +1,10 @@
 "use client";
 
+import { LocalizedRelativeTime } from "@/lib/i18n/I18nProvider";
+
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -30,6 +35,10 @@ const TYPE_LABEL: Record<string, string> = {
 };
 
 export default function NotificationsPage() {
+  const { t: localizeAttribute } = useI18n();
+
+  const { t: translateUI } = useI18n();
+
   const [tab, setTab] = useState("all");
   const queryClient = useQueryClient();
   const toast = useToast();
@@ -48,11 +57,11 @@ export default function NotificationsPage() {
   return (
     <div style={PAGE_STYLE}>
       <PageHeader
-        title="Notification Center"
+        title={translateUI("Notification Center")}
         subtitle={
           actionRequiredCount > 0
             ? `${actionRequiredCount} item(s) waiting on you.`
-            : "Everything that needs your attention, in one place."
+            : localizeAttribute("Everything that needs your attention, in one place.")
         }
         actions={
           <Button
@@ -63,8 +72,7 @@ export default function NotificationsPage() {
               toast.push("All notifications marked read.", "success");
             }}
           >
-            <CheckCheck size={14} /> Mark all read
-          </Button>
+            <CheckCheck size={14} />{" "}<LocalizedText message={"Mark all read"} />{" "}</Button>
         }
       />
 
@@ -79,9 +87,9 @@ export default function NotificationsPage() {
       />
 
       <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 10 }}>
-        {isLoading && <Spinner label="Loading notifications…" />}
+        {isLoading && <Spinner label={translateUI("Loading notifications…")} />}
         {!isLoading && (data ?? []).length === 0 && (
-          <EmptyState title="You're all caught up" hint="New mentions, blockers and updates will appear here." />
+          <EmptyState title={translateUI("You're all caught up")} hint={translateUI("New mentions, blockers and updates will appear here.")} />
         )}
         {(data ?? []).map((n) => (
           <NotificationCard key={n.id} notification={n} onChange={invalidate} />
@@ -98,6 +106,8 @@ function NotificationCard({
   notification: NotificationRead;
   onChange: () => void;
 }) {
+  const { t: translateUI } = useI18n();
+
   const toast = useToast();
   const router = useRouter();
   const [replyOpen, setReplyOpen] = useState(false);
@@ -185,9 +195,9 @@ function NotificationCard({
             >
               {TYPE_LABEL[n.type] ?? n.type}
             </span>
-            <span style={{ fontSize: 11.5, color: "var(--text-tertiary)" }}>{relativeTime(n.created_at)}</span>
+            <span style={{ fontSize: 11.5, color: "var(--text-tertiary)" }}>{<LocalizedRelativeTime value={n.created_at} />}</span>
             {n.resolved_at && (
-              <span style={{ fontSize: 11.5, color: "var(--status-completed)" }}>Resolved</span>
+              <span style={{ fontSize: 11.5, color: "var(--status-completed)" }}><LocalizedText message={"Resolved"} /></span>
             )}
           </div>
           <div style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 4 }}>{formatNotificationBody(n.body)}</div>
@@ -201,19 +211,15 @@ function NotificationCard({
                   onChange();
                   router.push(n.link!);
                 }}
-              >
-                Open
-              </Button>
+              >{" "}<LocalizedText message={"Open"} />{" "}</Button>
             )}
             {canReply && (
               <Button variant="tertiary" onClick={() => setReplyOpen((o) => !o)}>
-                <Reply size={13} /> Reply
-              </Button>
+                <Reply size={13} />{" "}<LocalizedText message={"Reply"} />{" "}</Button>
             )}
             {actionable && (
               <Button variant="tertiary" onClick={() => resolve.mutate()} disabled={resolve.isPending}>
-                <CircleCheckBig size={13} /> Resolve
-              </Button>
+                <CircleCheckBig size={13} />{" "}<LocalizedText message={"Resolve"} />{" "}</Button>
             )}
             {!n.is_read && (
               <Button
@@ -222,9 +228,7 @@ function NotificationCard({
                   await markNotificationRead(n.id);
                   onChange();
                 }}
-              >
-                Mark read
-              </Button>
+              >{" "}<LocalizedText message={"Mark read"} />{" "}</Button>
             )}
           </div>
 
@@ -232,7 +236,7 @@ function NotificationCard({
             <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
               <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                 <TextInput
-                  placeholder="Write a reply… (text, voice, or both)"
+                  placeholder={translateUI("Write a reply… (text, voice, or both)")}
                   value={body}
                   onChange={(e) => setBody(e.target.value)}
                   onKeyDown={(e) => {
@@ -245,12 +249,10 @@ function NotificationCard({
                   disabled={(!body && !voiceBlob) || reply.isPending}
                   onClick={() => reply.mutate()}
                 >
-                  {reply.isPending ? "Sending…" : "Send"}
+                  {reply.isPending ? <LocalizedText message={"Sending…"} /> : <LocalizedText message={"Send"} />}
                 </Button>
               </div>
-              <div style={{ fontSize: 11.5, color: "var(--text-tertiary)" }}>
-                Replies are posted back to the source — a comment on the task/blocker, or a chat message.
-              </div>
+              <div style={{ fontSize: 11.5, color: "var(--text-tertiary)" }}>{" "}<LocalizedText message={"Replies are posted back to the source — a comment on the task/blocker, or a chat message."} />{" "}</div>
             </div>
           )}
         </div>

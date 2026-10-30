@@ -57,7 +57,7 @@ def test_new_sprints_are_exactly_fourteen_calendar_days():
         end_date=date(2026, 9, 14),
     )
     assert (sprint.end_date - sprint.start_date).days + 1 == 14
-    with pytest.raises(ValidationError, match="exactly 14"):
+    with pytest.raises(ValidationError, match="3, 7, or 14"):
         ProjectSprintCreate(
             name="Too long",
             start_date=date(2026, 9, 1),

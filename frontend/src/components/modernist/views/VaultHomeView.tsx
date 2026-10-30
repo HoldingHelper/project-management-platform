@@ -1,3 +1,7 @@
+"use client";
+
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 import React, { useState } from 'react';
 import { DocFile, PluginType, Person } from '../types';
 import { Icon } from '../icons';
@@ -30,6 +34,8 @@ export function VaultHomeView({
   onOpenCreateDialog,
   onOpenCreateDoc,
 }: VaultHomeProps) {
+  const { t: translateUI } = useI18n();
+
   const activeStarred = starred || starredMap || {};
   const activeTag = docTag || currentTagFilter;
   const handleOpenCreate = onOpenCreateDoc || onOpenCreateDialog || (() => {});
@@ -72,10 +78,8 @@ export function VaultHomeView({
       {/* Create plugin cards section */}
       <section style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
-          <h4 style={{ margin: 0 }}>Create</h4>
-          <span className="text-muted" style={{ fontSize: 13 }}>
-            Every file type lives in one vault, with links, tags, backlinks and search.
-          </span>
+          <h4 style={{ margin: 0 }}><LocalizedText message={"Create"} /></h4>
+          <span className="text-muted" style={{ fontSize: 13 }}>{" "}<LocalizedText message={"Every file type lives in one vault, with links, tags, backlinks and search."} />{" "}</span>
         </div>
 
         <div
@@ -116,7 +120,7 @@ export function VaultHomeView({
                     borderRadius: 'var(--r-sm)',
                   }}
                 >
-                  <Icon name={k === 'canvas' ? 'rect' : k === 'audio' ? 'music' : k} size={18} />
+                  <Icon name={k === 'canvas' ? "rect" : k === 'audio' ? 'music' : k} size={18} />
                 </span>
                 <span style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                   <span style={{ fontSize: 14, fontWeight: 700 }}>{p.l}</span>
@@ -146,7 +150,7 @@ export function VaultHomeView({
               ? `Tagged #${currentTagFilter}`
               : currentFolderFilter
               ? FOLDERS.find((f) => f[0] === currentFolderFilter)?.[1] || 'Folder files'
-              : 'All files'}
+              : <LocalizedText message={"All files"} />}
           </h4>
           <div style={{ position: 'relative', flex: '0 1 320px', minWidth: 200 }}>
             <Icon
@@ -162,10 +166,10 @@ export function VaultHomeView({
             <input
               className="input"
               style={{ minHeight: 40, paddingLeft: 36 }}
-              placeholder="Search the vault…"
+              placeholder={translateUI("Search the vault…")}
               value={docQuery}
               onChange={(e) => setDocQuery(e.target.value)}
-              aria-label="Search the vault"
+              aria-label={translateUI("Search the vault")}
             />
           </div>
         </div>
@@ -229,12 +233,12 @@ export function VaultHomeView({
                 color: 'color-mix(in srgb, var(--color-text) 60%, transparent)',
               }}
             >
-              <span>Name</span>
-              <span>Folder</span>
-              <span>Owner</span>
-              <span>Tags</span>
-              <span>Updated</span>
-              <span>Status</span>
+              <span><LocalizedText message={"Name"} /></span>
+              <span><LocalizedText message={"Folder"} /></span>
+              <span><LocalizedText message={"Owner"} /></span>
+              <span><LocalizedText message={"Tags"} /></span>
+              <span><LocalizedText message={"Updated"} /></span>
+              <span><LocalizedText message={"Status"} /></span>
             </div>
 
             {list.map((d) => {
@@ -278,7 +282,7 @@ export function VaultHomeView({
                         borderRadius: 'var(--r-sm)',
                       }}
                     >
-                      <Icon name={d.type === 'canvas' ? 'rect' : d.type === 'audio' ? 'music' : d.type} size={16} />
+                      <Icon name={d.type === 'canvas' ? "rect" : d.type === 'audio' ? 'music' : d.type} size={16} />
                     </span>
                     <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                       <span
@@ -410,10 +414,8 @@ export function VaultHomeView({
 
         {list.length === 0 && (
           <div style={{ padding: '24px 8px' }}>
-            <h4 style={{ margin: '0 0 4px' }}>Nothing here yet</h4>
-            <p className="text-muted" style={{ margin: 0, fontSize: 14 }}>
-              Change the search or type filter, or create a file above.
-            </p>
+            <h4 style={{ margin: '0 0 4px' }}><LocalizedText message={"Nothing here yet"} /></h4>
+            <p className="text-muted" style={{ margin: 0, fontSize: 14 }}>{" "}<LocalizedText message={"Change the search or type filter, or create a file above."} />{" "}</p>
           </div>
         )}
       </section>

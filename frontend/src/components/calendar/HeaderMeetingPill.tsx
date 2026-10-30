@@ -1,4 +1,7 @@
 "use client";
+import { LocalizedDate } from "@/lib/i18n/I18nProvider";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -15,6 +18,8 @@ import {
 import { getUpcomingMeetings, syncCalendar, type CalendarEvent } from "@/lib/api/calendar";
 
 export function HeaderMeetingPill() {
+  const { t: translateUI } = useI18n();
+
   const queryClient = useQueryClient();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -72,7 +77,7 @@ export function HeaderMeetingPill() {
           transition: "all 150ms ease",
         }}
         onClick={() => setDropdownOpen((prev) => !prev)}
-        title="Click to view today's Google Calendar agenda"
+        title={translateUI("Click to view today's Google Calendar agenda")}
       >
         {isImminent ? (
           <span
@@ -110,14 +115,14 @@ export function HeaderMeetingPill() {
               }}
             >
               {nextMeeting.is_now
-                ? "NOW"
+                ? <LocalizedText message={"NOW"} />
                 : nextMeeting.starts_in_minutes < 60
                 ? `${nextMeeting.starts_in_minutes}m`
                 : `${Math.floor(nextMeeting.starts_in_minutes / 60)}h`}
             </span>
           </span>
         ) : (
-          <span style={{ color: "var(--text-tertiary)", fontSize: 11.5 }}>No meetings</span>
+          <span style={{ color: "var(--text-tertiary)", fontSize: 11.5 }}><LocalizedText message={"No meetings"} /></span>
         )}
 
         {nextMeeting?.meet_url && (
@@ -139,10 +144,9 @@ export function HeaderMeetingPill() {
               textDecoration: "none",
               marginLeft: 2,
             }}
-            title="Join Google Meet / Video call in new tab"
+            title={translateUI("Join Google Meet / Video call in new tab")}
           >
-            <Video size={11} /> Join
-          </a>
+            <Video size={11} />{" "}<LocalizedText message={"Join"} />{" "}</a>
         )}
 
         <ChevronDown size={12} style={{ color: "var(--text-tertiary)", marginLeft: 2 }} />
@@ -169,7 +173,7 @@ export function HeaderMeetingPill() {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <Calendar size={15} style={{ color: "var(--accent-primary)" }} />
-              <span style={{ fontWeight: 700, fontSize: 13 }}>Today&apos;s Meetings</span>
+              <span style={{ fontWeight: 700, fontSize: 13 }}><LocalizedText message={"Today's Meetings"} /></span>
             </div>
             <button
               type="button"
@@ -186,18 +190,14 @@ export function HeaderMeetingPill() {
                 gap: 4,
                 fontSize: 11,
               }}
-              title="Force sync with Google Calendar"
+              title={translateUI("Force sync with Google Calendar")}
             >
-              <RefreshCw size={12} className={syncMutation.isPending ? "animate-spin" : ""} />
-              Sync
-            </button>
+              <RefreshCw size={12} className={syncMutation.isPending ? "animate-spin" : ""} />{" "}<LocalizedText message={"Sync"} />{" "}</button>
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 300, overflowY: "auto" }}>
             {data.meetings.length === 0 ? (
-              <p style={{ margin: 0, fontSize: 12, color: "var(--text-tertiary)", textAlign: "center", padding: "12px 0" }}>
-                No meetings scheduled for the next 24 hours.
-              </p>
+              <p style={{ margin: 0, fontSize: 12, color: "var(--text-tertiary)", textAlign: "center", padding: "12px 0" }}>{" "}<LocalizedText message={"No meetings scheduled for the next 24 hours."} />{" "}</p>
             ) : (
               data.meetings.map((meeting: CalendarEvent) => (
                 <div
@@ -229,16 +229,14 @@ export function HeaderMeetingPill() {
                           color: "#fff",
                           fontWeight: 700,
                         }}
-                      >
-                        LIVE
-                      </span>
+                      >{" "}<LocalizedText message={"LIVE"} />{" "}</span>
                     )}
                   </div>
 
                   <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 11, color: "var(--text-tertiary)" }}>
                     <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
                       <Clock3 size={11} />
-                      {new Date(meeting.start_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      <LocalizedDate value={meeting.start_time} options={{ year: undefined, month: undefined, day: undefined, hour: "2-digit", minute: "2-digit" }} />
                     </span>
                     {meeting.attendees?.length > 0 && (
                       <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
@@ -273,8 +271,7 @@ export function HeaderMeetingPill() {
                           textDecoration: "none",
                         }}
                       >
-                        <Video size={11} /> Join Meeting
-                      </a>
+                        <Video size={11} />{" "}<LocalizedText message={"Join Meeting"} />{" "}</a>
                     )}
                     {meeting.html_link && (
                       <a
@@ -289,8 +286,7 @@ export function HeaderMeetingPill() {
                           color: "var(--text-secondary)",
                           textDecoration: "none",
                         }}
-                      >
-                        Google Calendar <ExternalLink size={10} />
+                      >{" "}<LocalizedText message={"Google Calendar"} />{" "}<ExternalLink size={10} />
                       </a>
                     )}
                   </div>

@@ -1,4 +1,6 @@
 "use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 import { useEffect, useRef, useState } from "react";
 import { Search, FileText, BookOpen, Shield, Code, ArrowRight } from "lucide-react";
@@ -6,6 +8,8 @@ import { quickSearchDocs, type SearchResultItem } from "@/lib/api/docs";
 import { useKnowledgeWorkspace } from "@/lib/stores/knowledgeWorkspaceStore";
 
 export function QuickSwitcherModal() {
+  const { t: translateUI } = useI18n();
+
   const { quickSwitcherOpen, setQuickSwitcherOpen, openTab } = useKnowledgeWorkspace();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResultItem[]>([]);
@@ -84,13 +88,13 @@ export function QuickSwitcherModal() {
   const getDocTypeBadge = (docType: string) => {
     switch (docType) {
       case "adr":
-        return <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-purple-500/20 text-purple-400 border border-purple-500/30">ADR</span>;
+        return <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-purple-500/20 text-purple-400 border border-purple-500/30"><LocalizedText message={"ADR"} /></span>;
       case "runbook":
-        return <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">RUNBOOK</span>;
+        return <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"><LocalizedText message={"RUNBOOK"} /></span>;
       case "rfc":
-        return <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-500/20 text-amber-400 border border-amber-500/30">RFC</span>;
+        return <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-500/20 text-amber-400 border border-amber-500/30"><LocalizedText message={"RFC"} /></span>;
       default:
-        return <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-800 text-slate-400">DOC</span>;
+        return <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-800 text-slate-400"><LocalizedText message={"DOC"} /></span>;
     }
   };
 
@@ -113,17 +117,13 @@ export function QuickSwitcherModal() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Type page title, slug, or keyword..."
+            placeholder={translateUI("Type page title, slug, or keyword...")}
             className="flex-1 bg-transparent text-sm text-white placeholder-slate-500 outline-none"
           />
           {loading && (
-            <span className="text-[10px] text-indigo-400 animate-pulse font-mono">
-              SEARCHING...
-            </span>
+            <span className="text-[10px] text-indigo-400 animate-pulse font-mono">{" "}<LocalizedText message={"SEARCHING..."} />{" "}</span>
           )}
-          <span className="text-[10px] font-mono text-slate-500 bg-slate-800 px-1.5 py-0.5 rounded">
-            ESC
-          </span>
+          <span className="text-[10px] font-mono text-slate-500 bg-slate-800 px-1.5 py-0.5 rounded">{" "}<LocalizedText message={"ESC"} />{" "}</span>
         </div>
 
         {/* Results List */}
@@ -165,13 +165,10 @@ export function QuickSwitcherModal() {
               );
             })
           ) : query.trim() ? (
-            <div className="py-8 text-center text-xs text-slate-500">
-              No matching documents found for &quot;{query}&quot;.
+            <div className="py-8 text-center text-xs text-slate-500">{" "}<LocalizedText message={"No matching documents found for \""} />{query}&quot;.
             </div>
           ) : (
-            <div className="py-6 px-4 text-xs text-slate-500 text-center">
-              Type to search across documents, architecture decisions, and runbooks.
-            </div>
+            <div className="py-6 px-4 text-xs text-slate-500 text-center">{" "}<LocalizedText message={"Type to search across documents, architecture decisions, and runbooks."} />{" "}</div>
           )}
         </div>
 
@@ -179,13 +176,11 @@ export function QuickSwitcherModal() {
         <div className="px-4 py-2 border-t border-white/5 bg-slate-950/60 flex items-center justify-between text-[11px] text-slate-500">
           <div className="flex items-center gap-3">
             <span>
-              <kbd className="px-1 py-0.5 bg-slate-800 rounded text-slate-400">↑↓</kbd> Navigate
-            </span>
+              <kbd className="px-1 py-0.5 bg-slate-800 rounded text-slate-400">↑↓</kbd>{" "}<LocalizedText message={"Navigate"} />{" "}</span>
             <span>
-              <kbd className="px-1 py-0.5 bg-slate-800 rounded text-slate-400">↵</kbd> Open
-            </span>
+              <kbd className="px-1 py-0.5 bg-slate-800 rounded text-slate-400">↵</kbd>{" "}<LocalizedText message={"Open"} />{" "}</span>
           </div>
-          <span>Quick Switcher</span>
+          <span><LocalizedText message={"Quick Switcher"} /></span>
         </div>
       </div>
     </div>

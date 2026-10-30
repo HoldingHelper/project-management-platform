@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 import { PresenceDot } from "@/components/ds";
 import type { PresenceStatus } from "@/lib/types";
@@ -26,6 +27,7 @@ export function UserStatusPill({
   className = "",
   maxWidth = 180,
 }: Props) {
+  const { t } = useI18n();
   const isOnline = status === "online";
   const hasCustom = Boolean(emoji || text);
 
@@ -92,7 +94,7 @@ export function UserStatusPill({
       )}
       {showText && !text && (
         <span style={{ textTransform: "capitalize", color: "var(--text-secondary)" }}>
-          {status}
+          {t(status)}
         </span>
       )}
     </button>

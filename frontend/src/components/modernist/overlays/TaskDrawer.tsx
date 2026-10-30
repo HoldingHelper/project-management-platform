@@ -1,3 +1,6 @@
+"use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 import React, { useState } from 'react';
 import { Task, Project, TaskPriority, TaskStatus, TaskComment } from '../types';
 import { Icon } from '../icons';
@@ -22,6 +25,8 @@ export function TaskDrawer({
   onAddComment,
   onOpenProject,
 }: TaskDrawerProps) {
+  const { t: translateUI } = useI18n();
+
   const [commentDraft, setCommentDraft] = useState('');
   const [statusMenuOpen, setStatusMenuOpen] = useState(false);
   const [priMenuOpen, setPriMenuOpen] = useState(false);
@@ -53,7 +58,7 @@ export function TaskDrawer({
       />
       <aside
         role="dialog"
-        aria-label="Task details"
+        aria-label={translateUI("Task details")}
         data-screen-label="Task detail"
         style={{
           position: 'fixed',
@@ -126,14 +131,14 @@ export function TaskDrawer({
                 borderRadius: 'var(--r-xs)',
               }}
             >
-              <Icon name={task.type === 'Feature' ? 'check' : task.type === 'Bug' ? 'target' : 'sparkles'} size={10} strokeWidth={3} />
+              <Icon name={task.type === 'Feature' ? "check" : task.type === 'Bug' ? 'target' : 'sparkles'} size={10} strokeWidth={3} />
             </span>
             {task.id}
           </span>
           <button
             type="button"
             className="btn btn-icon"
-            aria-label="Close"
+            aria-label={translateUI("Close")}
             onClick={onClose}
             style={{ marginLeft: 'auto', borderRadius: 'var(--r-sm)' }}
           >
@@ -271,22 +276,19 @@ export function TaskDrawer({
                 style={{ minHeight: 36, borderRadius: 'var(--r-sm)' }}
               >
                 <Icon name="userplus" size={15} />
-                {isAssignedToMe ? 'Unassign me' : 'Assign to me'}
+                {isAssignedToMe ? <LocalizedText message={"Unassign me"} /> : <LocalizedText message={"Assign to me"} />}
               </button>
             </div>
 
             <div>
-              <h6 className="text-muted" style={{ marginBottom: 8 }}>
-                Description
-              </h6>
+              <h6 className="text-muted" style={{ marginBottom: 8 }}>{" "}<LocalizedText message={"Description"} />{" "}</h6>
               <p style={{ margin: 0, fontSize: 15, lineHeight: 1.6, textWrap: 'pretty' }}>
                 {task.desc || 'No description yet.'}
               </p>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <h6 className="text-muted" style={{ margin: 0 }}>
-                Comments · {comments.length}
+              <h6 className="text-muted" style={{ margin: 0 }}>{" "}<LocalizedText message={"Comments ·"} />{" "}{comments.length}
               </h6>
               <form onSubmit={handleCommentSubmit} style={{ display: 'grid', gridTemplateColumns: '32px minmax(0, 1fr)', gap: 10 }}>
                 <span
@@ -301,26 +303,22 @@ export function TaskDrawer({
                     fontWeight: 800,
                     borderRadius: 'var(--r-av)',
                   }}
-                >
-                  PA
-                </span>
+                >{" "}<LocalizedText message={"PA"} />{" "}</span>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <textarea
                     className="input"
                     style={{ minHeight: 72 }}
-                    placeholder="Add a comment…"
+                    placeholder={translateUI("Add a comment…")}
                     value={commentDraft}
                     onChange={(e) => setCommentDraft(e.target.value)}
-                    aria-label="Add a comment"
+                    aria-label={translateUI("Add a comment")}
                   />
                   <div>
                     <button
                       type="submit"
                       className="btn btn-primary"
                       disabled={!commentDraft.trim()}
-                    >
-                      Save comment
-                    </button>
+                    >{" "}<LocalizedText message={"Save comment"} />{" "}</button>
                   </div>
                 </div>
               </form>
@@ -370,9 +368,7 @@ export function TaskDrawer({
               flexDirection: 'column',
             }}
           >
-            <h6 className="text-muted" style={{ marginBottom: 8 }}>
-              Details
-            </h6>
+            <h6 className="text-muted" style={{ marginBottom: 8 }}>{" "}<LocalizedText message={"Details"} />{" "}</h6>
             <div style={{ borderTop: '2px solid var(--color-divider)' }}>
               <div
                 style={{
@@ -385,9 +381,7 @@ export function TaskDrawer({
                   alignItems: 'start',
                 }}
               >
-                <span className="text-muted" style={{ fontSize: 12, paddingTop: 4 }}>
-                  Assignees
-                </span>
+                <span className="text-muted" style={{ fontSize: 12, paddingTop: 4 }}>{" "}<LocalizedText message={"Assignees"} />{" "}</span>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {task.assignees.map((a) => (
                     <span key={a} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -412,7 +406,7 @@ export function TaskDrawer({
                     </span>
                   ))}
                   {task.assignees.length === 0 && (
-                    <span className="text-muted">Unassigned</span>
+                    <span className="text-muted"><LocalizedText message={"Unassigned"} /></span>
                   )}
                 </div>
               </div>
@@ -429,9 +423,7 @@ export function TaskDrawer({
                   fontSize: 13,
                 }}
               >
-                <span className="text-muted" style={{ fontSize: 12 }}>
-                  Priority
-                </span>
+                <span className="text-muted" style={{ fontSize: 12 }}>{" "}<LocalizedText message={"Priority"} />{" "}</span>
                 <div data-dd="1" style={{ position: 'relative' }}>
                   <button
                     type="button"
@@ -516,9 +508,7 @@ export function TaskDrawer({
                   fontSize: 13,
                 }}
               >
-                <span className="text-muted" style={{ fontSize: 12 }}>
-                  Type
-                </span>
+                <span className="text-muted" style={{ fontSize: 12 }}>{" "}<LocalizedText message={"Type"} />{" "}</span>
                 <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span
                     title={task.type}
@@ -533,7 +523,7 @@ export function TaskDrawer({
                       borderRadius: 'var(--r-xs)',
                     }}
                   >
-                    <Icon name={task.type === 'Feature' ? 'check' : task.type === 'Bug' ? 'target' : 'sparkles'} size={10} strokeWidth={3} />
+                    <Icon name={task.type === 'Feature' ? "check" : task.type === 'Bug' ? 'target' : 'sparkles'} size={10} strokeWidth={3} />
                   </span>
                   {task.type}
                 </span>
@@ -551,9 +541,7 @@ export function TaskDrawer({
                   fontSize: 13,
                 }}
               >
-                <span className="text-muted" style={{ fontSize: 12 }}>
-                  Partition
-                </span>
+                <span className="text-muted" style={{ fontSize: 12 }}>{" "}<LocalizedText message={"Partition"} />{" "}</span>
                 <span>
                   <span className="tag" style={{ background: TN.blue.bg, color: TN.blue.fg, fontWeight: 700 }}>
                     {task.partition}
@@ -573,9 +561,7 @@ export function TaskDrawer({
                   fontSize: 13,
                 }}
               >
-                <span className="text-muted" style={{ fontSize: 12 }}>
-                  Labels
-                </span>
+                <span className="text-muted" style={{ fontSize: 12 }}>{" "}<LocalizedText message={"Labels"} />{" "}</span>
                 <span style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                   {task.labels.map((l) => (
                     <span
@@ -606,9 +592,7 @@ export function TaskDrawer({
                   fontSize: 13,
                 }}
               >
-                <span className="text-muted" style={{ fontSize: 12 }}>
-                  Due
-                </span>
+                <span className="text-muted" style={{ fontSize: 12 }}>{" "}<LocalizedText message={"Due"} />{" "}</span>
                 <span>
                   <span
                     style={{
@@ -620,7 +604,7 @@ export function TaskDrawer({
                       borderRadius: 'var(--r-xs)',
                     }}
                   >
-                    {task.e == null ? 'No date' : dayStr(task.e)}
+                    {task.e == null ? <LocalizedText message={"No date"} /> : dayStr(task.e)}
                   </span>
                 </span>
               </div>
@@ -637,9 +621,7 @@ export function TaskDrawer({
                   fontSize: 13,
                 }}
               >
-                <span className="text-muted" style={{ fontSize: 12 }}>
-                  Start
-                </span>
+                <span className="text-muted" style={{ fontSize: 12 }}>{" "}<LocalizedText message={"Start"} />{" "}</span>
                 <span>{task.s == null ? '—' : dayStr(task.s)}</span>
               </div>
               <div
@@ -653,9 +635,7 @@ export function TaskDrawer({
                   fontSize: 13,
                 }}
               >
-                <span className="text-muted" style={{ fontSize: 12 }}>
-                  Source
-                </span>
+                <span className="text-muted" style={{ fontSize: 12 }}>{" "}<LocalizedText message={"Source"} />{" "}</span>
                 <span>{task.source}</span>
               </div>
             </div>

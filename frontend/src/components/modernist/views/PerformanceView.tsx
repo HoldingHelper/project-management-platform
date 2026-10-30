@@ -1,3 +1,4 @@
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 import React, { useState } from 'react';
 import { Team, Department, Person, Task } from '../types';
 import { TN, avBg, ini, st } from '../tokens';
@@ -85,9 +86,7 @@ export function PerformanceView({
             </button>
           ))}
         </div>
-        <span className="text-muted" style={{ fontSize: 13 }}>
-          Tasks completed per week, on-time delivery and cycle time.
-        </span>
+        <span className="text-muted" style={{ fontSize: 13 }}>{" "}<LocalizedText message={"Tasks completed per week, on-time delivery and cycle time."} />{" "}</span>
       </div>
 
       {/* Teams Table */}
@@ -106,13 +105,13 @@ export function PerformanceView({
               color: 'color-mix(in srgb, var(--color-text) 60%, transparent)',
             }}
           >
-            <span>Team</span>
-            <span>Lead</span>
-            <span>Throughput</span>
-            <span>Done</span>
-            <span>On-time</span>
-            <span>Cycle</span>
-            <span>Health</span>
+            <span><LocalizedText message={"Team"} /></span>
+            <span><LocalizedText message={"Lead"} /></span>
+            <span><LocalizedText message={"Throughput"} /></span>
+            <span><LocalizedText message={"Done"} /></span>
+            <span><LocalizedText message={"On-time"} /></span>
+            <span><LocalizedText message={"Cycle"} /></span>
+            <span><LocalizedText message={"Health"} /></span>
           </div>
 
           {teams.map((t) => {
@@ -223,7 +222,7 @@ export function PerformanceView({
                   </span>
                 </span>
 
-                <span style={{ fontSize: 13 }}>{t.cycle} days</span>
+                <span style={{ fontSize: 13 }}>{t.cycle}{" "}<LocalizedText message={"days"} /></span>
 
                 <span>
                   <span
@@ -272,8 +271,7 @@ export function PerformanceView({
             <div>
               <h4 style={{ margin: 0 }}>{selectedTeam.name}</h4>
               <div className="text-muted" style={{ fontSize: 13 }}>
-                {selectedDept?.name} · led by {selectedTeam.lead} · {teamMembers.length} people
-              </div>
+                {selectedDept?.name}{" "}<LocalizedText message={"· led by"} />{" "}{selectedTeam.lead} · {teamMembers.length}{" "}<LocalizedText message={"people"} />{" "}</div>
             </div>
           </div>
 
@@ -342,8 +340,7 @@ export function PerformanceView({
 
           <div style={{ display: 'flex', gap: 8, marginTop: -10 }}>
             {teamPf.map((_, i) => (
-              <span key={i} className="text-muted" style={{ flex: 1, fontSize: 10 }}>
-                W{40 - n + i + 1}
+              <span key={i} className="text-muted" style={{ flex: 1, fontSize: 10 }}>{" "}<LocalizedText message={"W"} />{40 - n + i + 1}
               </span>
             ))}
           </div>
@@ -351,9 +348,7 @@ export function PerformanceView({
 
         {/* Member workload breakdown */}
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <h6 className="text-muted" style={{ marginBottom: 8 }}>
-            Open tasks by member
-          </h6>
+          <h6 className="text-muted" style={{ marginBottom: 8 }}>{" "}<LocalizedText message={"Open tasks by member"} />{" "}</h6>
           {teamMembers.map((m) => {
             const count = openBy[m] || 0;
             const pct = `${(count / mmMax) * 100}%`;

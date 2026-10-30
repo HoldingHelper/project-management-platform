@@ -16,7 +16,7 @@ from app.core.storage import file_storage_service
 @pytest.mark.parametrize("entity_type", ["task", "project"])
 def test_download_denies_nonmembers_before_reading_storage(entity_type):
     db, actor, attachment_id = AsyncMock(), SimpleNamespace(), uuid4()
-    attachment = SimpleNamespace(entity_type=entity_type, entity_id=uuid4(), storage_key="private/document")
+    attachment = SimpleNamespace(id=attachment_id, entity_type=entity_type, entity_id=uuid4(), storage_key="private/document")
     with patch.object(repository, "get_file_attachment", AsyncMock(return_value=attachment)), patch("app.modules.collaboration.authorization.authorize_entity_access", AsyncMock(side_effect=ForbiddenError())), patch.object(file_storage_service, "download_async", AsyncMock()) as download:
         with pytest.raises(ForbiddenError):
             asyncio.run(router.download_file(attachment_id, actor, db))
@@ -26,8 +26,8 @@ def test_download_denies_nonmembers_before_reading_storage(entity_type):
 @pytest.mark.parametrize("entity_type", ["task", "project"])
 def test_authorized_download_streams_private_attachment_with_filename(entity_type):
     db, actor, attachment_id = AsyncMock(), SimpleNamespace(), uuid4()
-    attachment = SimpleNamespace(entity_type=entity_type, entity_id=uuid4(), storage_key="private/document", file_name="project guide.pdf")
-    with patch.object(repository, "get_file_attachment", AsyncMock(return_value=attachment)), patch("app.modules.collaboration.authorization.authorize_entity_access", AsyncMock()) as authorize, patch.object(file_storage_service, "download_async", AsyncMock(return_value=b"document")):
+    attachment = SimpleNamespace(id=attachment_id, entity_type=entity_type, entity_id=uuid4(), storage_key="private/document", file_name="project guide.pdf")
+    with patch("app.modules.docs.lifecycle.require_visible_upload", AsyncMock()), patch.object(repository, "get_file_attachment", AsyncMock(return_value=attachment)), patch("app.modules.collaboration.authorization.authorize_entity_access", AsyncMock()) as authorize, patch.object(file_storage_service, "download_async", AsyncMock(return_value=b"document")):
         response = asyncio.run(router.download_file(attachment_id, actor, db))
     authorize.assert_awaited_once_with(db, actor, entity_type, attachment.entity_id)
     assert response.body == b"document"

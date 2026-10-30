@@ -106,6 +106,18 @@ class Product(Base, UUIDPKMixin, TimestampMixin, AuditableMixin):
     projects: Mapped[List["Project"]] = relationship(
         back_populates="product", cascade="all, delete-orphan"
     )
+    members: Mapped[List["ProductMember"]] = relationship(cascade="all, delete-orphan", lazy="selectin")
+
+    @property
+    def member_user_ids(self) -> list[uuid.UUID]:
+        return list(dict.fromkeys([self.owner_user_id, *(member.user_id for member in self.members)]))
+
+
+class ProductMember(Base, TimestampMixin):
+    __tablename__ = "product_members"
+    __table_args__ = ({"schema": SCHEMA},)
+    product_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey(f"{SCHEMA}.products.id", ondelete="CASCADE"), primary_key=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("identity.users.id", ondelete="CASCADE"), primary_key=True)
 
 
 class Project(Base, UUIDPKMixin, TimestampMixin, AuditableMixin):
@@ -228,6 +240,10 @@ class Phase(Base, UUIDPKMixin, TimestampMixin, AuditableMixin):
         UUID(as_uuid=True), nullable=True
     )
     is_sprint: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+    @property
+    def duration_days(self) -> int:
+        return (self.end_date - self.start_date).days + 1 if self.start_date and self.end_date else 14
 
     project: Mapped["Project"] = relationship(back_populates="phases")
     tasks: Mapped[List["TaskItem"]] = relationship(

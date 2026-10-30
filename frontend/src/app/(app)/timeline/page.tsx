@@ -1,4 +1,6 @@
 "use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -27,6 +29,8 @@ function projectLevel(project: Pick<PortfolioGanttProject, "tags" | "level">): P
 const VALID_LEVELS = new Set<ProjectLevel>(["inter-team", "inter-partition", "organization"]);
 
 export default function TimelinePage() {
+  const { t: translateUI } = useI18n();
+
   const router = useRouter();
   const searchParams = useSearchParams();
   // Level lives in the URL so browser Back (from an opened project) restores the
@@ -91,11 +95,11 @@ export default function TimelinePage() {
   return (
     <div style={{ ...PAGE_STYLE, gap: 18, maxWidth: "none" }}>
       <PageHeader
-        title="Portfolio Timeline"
-        subtitle="Project-only Gantt filtered by required project level."
+        title={translateUI("Portfolio Timeline")}
+        subtitle={translateUI("Project-only Gantt filtered by required project level.")}
         actions={
           <Button variant={showArchived ? "primary" : "secondary"} onClick={() => setShowArchived((value) => !value)}>
-            <Archive size={14} /> {showArchived ? "Hide archives" : "Show archives"}
+            <Archive size={14} /> {showArchived ? <LocalizedText message={"Hide archives"} /> : <LocalizedText message={"Show archives"} />}
           </Button>
         }
       />
@@ -129,9 +133,9 @@ export default function TimelinePage() {
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
-        <MetricCard label="Projects in view" value={filtered.projects.length} />
-        <MetricCard label="Average progress" value={`${Math.round(avgProgress)}%`} tone="in-progress" />
-        <MetricCard label="At risk / blocked" value={blocked} tone={blocked > 0 ? "delayed" : "default"} />
+        <MetricCard label={translateUI("Projects in view")} value={filtered.projects.length} />
+        <MetricCard label={translateUI("Average progress")} value={`${Math.round(avgProgress)}%`} tone="in-progress" />
+        <MetricCard label={translateUI("At risk / blocked")} value={blocked} tone={blocked > 0 ? "delayed" : "default"} />
       </div>
 
       <FocusCard
@@ -142,11 +146,11 @@ export default function TimelinePage() {
         <TimelineBody loading={gantt.isLoading} data={filtered} editable={canSchedule} onSchedule={onSchedule} />
       </FocusCard>
 
-      <Card title="Projects in this level" padded={false}>
+      <Card title={translateUI("Projects in this level")} padded={false}>
         {gantt.isLoading ? (
           <Spinner />
         ) : filtered.projects.length === 0 ? (
-          <EmptyState title="No projects in this level" hint="Edit a project and set its level to place it here." />
+          <EmptyState title={translateUI("No projects in this level")} hint={translateUI("Edit a project and set its level to place it here.")} />
         ) : (
           filtered.projects.map((project) => (
             <div
@@ -157,7 +161,7 @@ export default function TimelinePage() {
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontSize: 13.5, fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{project.name}</div>
                 <div style={{ marginTop: 2, fontSize: 11.5, color: "var(--text-tertiary)" }}>
-                  {project.start_date ?? "No start"} to {project.end_date ?? "No end"}
+                  {project.start_date ?? "No start"}{" "}<LocalizedText message={"to"} />{" "}{project.end_date ?? "No end"}
                 </div>
               </div>
               <ProgressBar percent={Number(project.progress_percentage)} blocks={12} />
@@ -181,18 +185,20 @@ function TimelineBody({
   editable?: boolean;
   onSchedule?: (id: string, dates: { start_date: string; end_date: string }) => void;
 }) {
-  if (loading) return <Spinner label="Loading project timeline..." />;
-  if (data.projects.length === 0) return <EmptyState title="No projects to chart" hint="This level has no scheduled projects yet." />;
+  const { t: translateUI } = useI18n();
+
+  if (loading) return <Spinner label={translateUI("Loading project timeline...")} />;
+  if (data.projects.length === 0) return <EmptyState title={translateUI("No projects to chart")} hint={translateUI("This level has no scheduled projects yet.")} />;
   return <PortfolioGanttChart data={data} editable={editable} onSchedule={onSchedule} />;
 }
 
 function TimelineLegend() {
   return (
     <div style={{ display: "flex", gap: 14, flexWrap: "wrap", fontSize: 12, color: "var(--text-secondary)" }}>
-      <span>Project rows only</span>
-      <span>◆ milestone</span>
-      <span style={{ color: "var(--accent-secondary)" }}>dashed arrow = dependency</span>
-      <span style={{ color: "var(--status-delayed)" }}>today line</span>
+      <span><LocalizedText message={"Project rows only"} /></span>
+      <span><LocalizedText message={"◆ milestone"} /></span>
+      <span style={{ color: "var(--accent-secondary)" }}><LocalizedText message={"dashed arrow = dependency"} /></span>
+      <span style={{ color: "var(--status-delayed)" }}><LocalizedText message={"today line"} /></span>
     </div>
   );
 }

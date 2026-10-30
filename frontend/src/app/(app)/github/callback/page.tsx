@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -76,8 +77,10 @@ function GitHubCallbackInner() {
 }
 
 export default function GitHubCallbackPage() {
+  const { t: translateUI } = useI18n();
+
   return (
-    <Suspense fallback={<Spinner label="Loading GitHub authorization…" />}>
+    <Suspense fallback={<Spinner label={translateUI("Loading GitHub authorization…")} />}>
       <GitHubCallbackInner />
     </Suspense>
   );

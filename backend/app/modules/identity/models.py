@@ -45,6 +45,9 @@ class User(Base, UUIDPKMixin, TimestampMixin, AuditableMixin):
     status_emoji: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
     status_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    locale: Mapped[Optional[str]] = mapped_column(String(2), nullable=True)
+    calendar: Mapped[str] = mapped_column(String(8), default="gregory", server_default="gregory", nullable=False)
+    numbering_system: Mapped[str] = mapped_column(String(8), default="latn", server_default="latn", nullable=False)
     mfa_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     mfa_secret: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     home_function_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
@@ -300,3 +303,10 @@ class PasswordResetToken(Base, UUIDPKMixin):
     used_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+
+
+class PlatformLanguage(Base):
+    __tablename__ = "platform_language"
+    __table_args__ = {"schema": SCHEMA}
+    key: Mapped[str] = mapped_column(String(20), primary_key=True)
+    locale: Mapped[Optional[str]] = mapped_column(String(2), nullable=True)

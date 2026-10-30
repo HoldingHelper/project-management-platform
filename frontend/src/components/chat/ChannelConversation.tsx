@@ -1,5 +1,9 @@
 "use client";
 
+import { LocalizedDate } from "@/lib/i18n/I18nProvider";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
+
 /* Full conversation view for one channel: message list (day separators,
    threads, reactions, voice bubbles), composer with @mention hints, voice
    recording and live updates over the shared websocket. */
@@ -44,6 +48,8 @@ export function ChannelConversation({
   channelId: UUID;
   channelName: string;
 }) {
+  const { t: translateUI } = useI18n();
+
   const { user } = useAuth();
   const { nameOf, users } = useUserMap();
   const presence = usePresenceMap();
@@ -243,11 +249,11 @@ export function ChannelConversation({
               )}
             </span>
             <span style={{ fontSize: 10.5, color: "var(--text-tertiary)" }}>
-              {new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+              <LocalizedDate value={m.created_at} options={{ year: undefined, month: undefined, day: undefined, hour: "2-digit", minute: "2-digit" }} />
             </span>
           </div>
           {m.deleted_at ? (
-            <div style={{ fontSize: 13, color: "var(--text-tertiary)", fontStyle: "italic" }}>Message deleted</div>
+            <div style={{ fontSize: 13, color: "var(--text-tertiary)", fontStyle: "italic" }}><LocalizedText message={"Message deleted"} /></div>
           ) : (
             <>
               {m.body && (
@@ -282,7 +288,7 @@ export function ChannelConversation({
             <span style={{ position: "relative", display: "inline-flex" }}>
               <button
                 onClick={() => setEmojiFor(emojiFor === m.id ? null : m.id)}
-                title="Add reaction"
+                title={translateUI("Add reaction")}
                 aria-label={`Add reaction to message from ${nameOf(m.sender_user_id)}`}
                 style={{ border: "none", background: "transparent", color: "var(--text-tertiary)", cursor: "pointer", display: "flex", padding: 2 }}
               >
@@ -319,7 +325,7 @@ export function ChannelConversation({
                 style={{ border: "none", background: "transparent", color: "var(--text-tertiary)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, fontSize: 11.5 }}
               >
                 <CornerDownRight size={12} />
-                {m.reply_count > 0 ? `${m.reply_count} repl${m.reply_count === 1 ? "y" : "ies"}` : "Reply"}
+                {m.reply_count > 0 ? `${m.reply_count} repl${m.reply_count === 1 ? "y" : "ies"}` : <LocalizedText message={"Reply"} />}
               </button>
             )}
           </div>
@@ -363,9 +369,7 @@ export function ChannelConversation({
             );
           })}
           {ordered.length === 0 && (
-            <div style={{ padding: 24, textAlign: "center", fontSize: 12.5, color: "var(--text-tertiary)" }}>
-              No messages yet in #{channelName}. Say hello!
-            </div>
+            <div style={{ padding: 24, textAlign: "center", fontSize: 12.5, color: "var(--text-tertiary)" }}>{" "}<LocalizedText message={"No messages yet in #"} />{channelName}<LocalizedText message={". Say hello!"} />{" "}</div>
           )}
           <div ref={bottomRef} />
         </div>
@@ -395,9 +399,8 @@ export function ChannelConversation({
         >
           {threadOf && (
             <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "var(--text-secondary)", background: "var(--surface-2)", borderRadius: "var(--radius-2)", padding: "6px 10px" }}>
-              <CornerDownRight size={12} />
-              Replying in thread to <b>{nameOf(threadOf.sender_user_id)}</b>
-              <button onClick={() => setThreadOf(null)} aria-label="Cancel thread reply" style={{ marginLeft: "auto", border: "none", background: "transparent", color: "var(--text-tertiary)", cursor: "pointer", display: "flex" }}>
+              <CornerDownRight size={12} />{" "}<LocalizedText message={"Replying in thread to"} />{" "}<b>{nameOf(threadOf.sender_user_id)}</b>
+              <button onClick={() => setThreadOf(null)} aria-label={translateUI("Cancel thread reply")} style={{ marginLeft: "auto", border: "none", background: "transparent", color: "var(--text-tertiary)", cursor: "pointer", display: "flex" }}>
                 <X size={13} />
               </button>
             </div>
@@ -424,7 +427,7 @@ export function ChannelConversation({
                   <button
                     type="button"
                     onClick={() => setPendingFiles((current) => current.filter((_, i) => i !== index))}
-                    title="Remove attachment"
+                    title={translateUI("Remove attachment")}
                     aria-label={`Remove attachment ${file.name}`}
                     style={{ border: "none", background: "transparent", color: "var(--text-tertiary)", cursor: "pointer", display: "flex", padding: 0 }}
                   >
@@ -516,13 +519,13 @@ export function ChannelConversation({
                   e.currentTarget.value = "";
                 }}
               />
-              <button type="button" onClick={() => fileInputRef.current?.click()} title="Attach files" aria-label="Attach files" style={composerIconBtn}>
+              <button type="button" onClick={() => fileInputRef.current?.click()} title={translateUI("Attach files")} aria-label={translateUI("Attach files")} style={composerIconBtn}>
                 <Paperclip size={15} />
               </button>
-              <button type="button" onClick={() => setComposerPanel(composerPanel === "emoji" ? null : "emoji")} title="Emoji" aria-label="Open emoji picker" style={composerIconBtn}>
+              <button type="button" onClick={() => setComposerPanel(composerPanel === "emoji" ? null : "emoji")} title={translateUI("Emoji")} aria-label={translateUI("Open emoji picker")} style={composerIconBtn}>
                 <SmilePlus size={15} />
               </button>
-              <button type="button" onClick={() => setComposerPanel(composerPanel === "stickers" ? null : "stickers")} title="Stickers" aria-label="Open sticker picker" style={composerIconBtn}>
+              <button type="button" onClick={() => setComposerPanel(composerPanel === "stickers" ? null : "stickers")} title={translateUI("Stickers")} aria-label={translateUI("Open sticker picker")} style={composerIconBtn}>
                 <Sticker size={15} />
               </button>
               <VoiceRecorder key={voiceKey} onRecorded={setVoiceBlob} onClear={() => setVoiceBlob(null)} />
@@ -531,8 +534,8 @@ export function ChannelConversation({
                 className="pmp-send-button"
                 onClick={submit}
                 disabled={!canSend || sending}
-                title="Send"
-                aria-label="Send message"
+                title={translateUI("Send")}
+                aria-label={translateUI("Send message")}
                 style={{
                   width: 34,
                   height: 34,
@@ -558,8 +561,8 @@ export function ChannelConversation({
       {threadOf && (
         <div className="pmp-chat-thread" style={{ width: 300, maxWidth: "48%", borderLeft: "1px solid var(--border-default)", display: "flex", flexDirection: "column", minHeight: 0, minWidth: 220, flexShrink: 0 }}>
           <div style={{ padding: "10px 14px", borderBottom: "1px solid var(--border-default)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span style={{ fontSize: 13, fontWeight: 700 }}>Thread</span>
-            <button onClick={() => setThreadOf(null)} aria-label="Close thread" style={{ border: "none", background: "transparent", color: "var(--text-tertiary)", cursor: "pointer", display: "flex" }}>
+            <span style={{ fontSize: 13, fontWeight: 700 }}><LocalizedText message={"Thread"} /></span>
+            <button onClick={() => setThreadOf(null)} aria-label={translateUI("Close thread")} style={{ border: "none", background: "transparent", color: "var(--text-tertiary)", cursor: "pointer", display: "flex" }}>
               <X size={14} />
             </button>
           </div>
@@ -655,14 +658,14 @@ function MessageAttachment({
             {file?.file_name ?? "Attachment"}
           </span>
           <span style={{ display: "block", fontSize: 11.5, color: "var(--text-tertiary)" }}>
-            {file ? `${file.content_type || "file"} · ${formatBytes(file.size_bytes)}` : "Loading file details…"}
+            {file ? `${file.content_type || "file"} · ${formatBytes(file.size_bytes)}` : <LocalizedText message={"Loading file details…"} />}
           </span>
         </span>
         <span style={{ fontSize: 11.5, color: "var(--text-secondary)", flexShrink: 0 }}>
-          {loading ? "Loading" : kind === "file" ? "Open" : url ? "Loaded" : "Preview"}
+          {loading ? <LocalizedText message={"Loading"} /> : kind === "file" ? <LocalizedText message={"Open"} /> : url ? <LocalizedText message={"Loaded"} /> : <LocalizedText message={"Preview"} />}
         </span>
       </button>
-      {error && <div style={{ padding: "0 12px 10px", fontSize: 12, color: "var(--status-delayed)" }}>Attachment unavailable.</div>}
+      {error && <div style={{ padding: "0 12px 10px", fontSize: 12, color: "var(--status-delayed)" }}><LocalizedText message={"Attachment unavailable."} /></div>}
       {url && kind === "image" && (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={url} alt={file?.file_name ?? "Attachment preview"} style={{ display: "block", width: "100%", maxHeight: 260, objectFit: "contain", background: "var(--surface-deepest)" }} />

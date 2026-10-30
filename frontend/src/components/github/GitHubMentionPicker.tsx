@@ -1,4 +1,6 @@
 "use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 import React, { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -12,6 +14,8 @@ interface GitHubMentionPickerProps {
 }
 
 export function GitHubMentionPicker({ onSelect, onClose }: GitHubMentionPickerProps) {
+  const { t: translateUI } = useI18n();
+
   const [selectedRepo, setSelectedRepo] = useState<string>("");
   const [search, setSearch] = useState("");
 
@@ -76,10 +80,10 @@ export function GitHubMentionPicker({ onSelect, onClose }: GitHubMentionPickerPr
               maxWidth: 260,
             }}
           >
-            <option value="">Select a connected repository</option>
+            <option value=""><LocalizedText message={"Select a connected repository"} /></option>
             {repos?.map((r) => (
               <option key={r.id} value={r.full_name} style={{ background: "#18181b", color: "#fff" }}>
-                {r.full_name} {r.is_private ? "(Private)" : ""}
+                {r.full_name} {r.is_private ? <LocalizedText message={"(Private)"} /> : ""}
               </option>
             ))}
           </select>
@@ -96,7 +100,7 @@ export function GitHubMentionPicker({ onSelect, onClose }: GitHubMentionPickerPr
       <div style={{ padding: "8px 12px", borderBottom: "1px solid var(--border-subtle)" }}>
         <input
           type="text"
-          placeholder="Filter issue or PR by title or #number…"
+          placeholder={translateUI("Filter issue or PR by title or #number…")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           autoFocus
@@ -116,13 +120,9 @@ export function GitHubMentionPicker({ onSelect, onClose }: GitHubMentionPickerPr
       {/* Issues / PRs List */}
       <div style={{ flex: 1, overflowY: "auto", padding: 4 }}>
         {isLoading ? (
-          <div style={{ padding: 16, textAlign: "center", fontSize: 12, color: "var(--text-tertiary)" }}>
-            Loading GitHub issues and pull requests…
-          </div>
+          <div style={{ padding: 16, textAlign: "center", fontSize: 12, color: "var(--text-tertiary)" }}>{" "}<LocalizedText message={"Loading GitHub issues and pull requests…"} />{" "}</div>
         ) : !items || items.length === 0 ? (
-          <div style={{ padding: 16, textAlign: "center", fontSize: 12, color: "var(--text-tertiary)" }}>
-            No matching issues or PRs found in this repository.
-          </div>
+          <div style={{ padding: 16, textAlign: "center", fontSize: 12, color: "var(--text-tertiary)" }}>{" "}<LocalizedText message={"No matching issues or PRs found in this repository."} />{" "}</div>
         ) : (
           items.map((item) => {
             const isMerged = item.state === "merged";
@@ -161,8 +161,7 @@ export function GitHubMentionPicker({ onSelect, onClose }: GitHubMentionPickerPr
                       {item.title}
                     </span>
                   </div>
-                  <div style={{ fontSize: 11, color: "var(--text-tertiary)", marginTop: 2 }}>
-                    by {item.author} • {item.state}
+                  <div style={{ fontSize: 11, color: "var(--text-tertiary)", marginTop: 2 }}>{" "}<LocalizedText message={"by"} />{" "}{item.author} • {item.state}
                   </div>
                 </div>
               </div>

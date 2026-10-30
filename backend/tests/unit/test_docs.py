@@ -50,6 +50,7 @@ def test_inline_comment_anchor_requires_a_complete_forward_selection():
 
 @pytest.mark.asyncio
 async def test_only_creator_or_publisher_can_publish(monkeypatch):
+    monkeypatch.setattr(service, "_notify_lifecycle", AsyncMock())
     owner_id = uuid4()
     page = DocPage(
         id=uuid4(),
@@ -80,18 +81,20 @@ async def test_only_creator_or_publisher_can_publish(monkeypatch):
         async def refresh(self, _value):
             pass
 
+    monkeypatch.setattr(service.repo, "get_space", AsyncMock(return_value=DocSpace(id=uuid4(), product_id=None, task_id=None)))
     monkeypatch.setattr(service.repo, "get_page", get_page)
+    monkeypatch.setattr(service, "_locked_page", get_page)
     monkeypatch.setattr(service, "_page_editable", editable)
     with pytest.raises(ForbiddenError):
         await service.set_published(MockSession(), user("docs.edit"), page.id, True)  # type: ignore[arg-type]
 
+    token = CurrentUser(owner_id, "token@example.com", "Token", permissions=["docs.view"], allow_role_bypass=False)
     with pytest.raises(ForbiddenError):
-        # Even the creator cannot publish without docs.publish (H-2)
-        await service.set_published(MockSession(), user("docs.edit", user_id=owner_id), page.id, True)  # type: ignore[arg-type]
+        await service.set_published(MockSession(), token, page.id, True)
 
-    result = await service.set_published(MockSession(), user("docs.publish", user_id=owner_id), page.id, True)  # type: ignore[arg-type]
+    result = await service.set_published(MockSession(), user("docs.create", user_id=owner_id), page.id, True)  # type: ignore[arg-type]
     assert result.status == "published"
-    assert result.visibility == "public"
+    assert result.visibility == "private"  # Publication must never widen access.
 
 
 @pytest.mark.asyncio
@@ -107,7 +110,9 @@ async def test_hierarchy_move_rejects_nesting_a_page_in_its_child(monkeypatch):
     async def editable(*_args):
         return True
 
+    monkeypatch.setattr(service.repo, "get_space", AsyncMock(return_value=DocSpace(id=uuid4(), product_id=None, task_id=None)))
     monkeypatch.setattr(service.repo, "get_page", get_page)
+    monkeypatch.setattr(service, "_locked_page", get_page)
     monkeypatch.setattr(service, "_page_editable", editable)
     with pytest.raises(ValidationAppError):
         await service.move_page(None, owner, parent.id, PageMove(parent_page_id=child.id))  # type: ignore[arg-type]
@@ -192,3 +197,11 @@ async def test_seed_internal_documentation():
     page_count = sum(1 for item in mock_db.added if isinstance(item, DocPage))
     assert space_count == len(DOC_SPACES_DATA)
     assert page_count > 0
+
+
+@pytest.mark.asyncio
+async def test_creation_permission_cannot_bypass_managed_workspace_access(monkeypatch):
+    from app.modules.docs import upload_library
+    space = DocSpace(id=uuid4(), visibility="workspace", product_id=uuid4())
+    monkeypatch.setattr(upload_library, "managed_access", AsyncMock(return_value=False))
+    assert not await service.can_create_page(AsyncMock(), user("docs.create", "docs.edit"), space)

@@ -313,7 +313,17 @@ export function detachTask(id: UUID) {
 }
 
 // ---- Project / product / phase management (admin) ----
-export type ProductDetails = Pick<ProductRead, "name" | "description" | "status" | "priority" | "environment" | "technology_stack" | "repository_url" | "documentation_link">;
+export interface MembershipPersonRead { id: UUID; full_name: string; email: string; is_active: boolean }
+export function getProductMembers(id: UUID) {
+  return apiFetch<MembershipPersonRead[]>(`/products/${id}/members`);
+}
+export function getProjectAssignmentCandidates(id: UUID) {
+  return apiFetch<MembershipPersonRead[]>(`/projects/${id}/assignment-candidates`);
+}
+export function getTaskAssignmentCandidates(id: UUID) {
+  return apiFetch<MembershipPersonRead[]>(`/tasks/${id}/assignment-candidates`);
+}
+export type ProductDetails = Pick<ProductRead, "name" | "description" | "status" | "priority" | "environment" | "technology_stack" | "repository_url" | "documentation_link" | "member_user_ids">;
 export function updateProduct(id: UUID, input: ProductDetails) {
   return apiFetch<ProductRead>(`/products/${id}`, { method: "PUT", body: input });
 }
@@ -339,7 +349,8 @@ export function createProject(input: {
   sprints?: {
     name: string;
     start_date: string;
-    end_date: string;
+    end_date?: string;
+    duration_days?: number;
     lead_assignee_user_id?: UUID;
   }[];
 }) {
@@ -371,6 +382,7 @@ export function createPhase(input: {
 }
 
 export function createSprint(input: {
+  duration_days?: number;
   project_id: UUID;
   name: string;
   sequence?: number;
@@ -450,4 +462,12 @@ export function createProjectDependency(
 }
 export function deleteProjectDependency(dependencyId: UUID) {
   return apiFetch<void>(`/projects/dependencies/${dependencyId}`, { method: "DELETE" });
+}
+
+
+export function createSprintBatch(projectId: UUID, input: { name: string; start_date: string; duration_days: number; count: number }) {
+  return apiFetch<PhaseRead[]>(`/projects/${projectId}/sprints/batch`, { method: "POST", body: input });
+}
+export function updateSprint(id: UUID, input: { name?: string; start_date?: string; duration_days?: number }) {
+  return apiFetch<PhaseRead>(`/sprints/${id}`, { method: "PUT", body: input });
 }

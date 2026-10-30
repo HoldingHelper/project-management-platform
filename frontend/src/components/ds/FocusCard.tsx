@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
@@ -22,6 +23,8 @@ export function FocusCard({
   padded = true,
   bodyStyle,
 }: Props) {
+  const { t: translateUI } = useI18n();
+
   const [focused, setFocused] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -43,7 +46,7 @@ export function FocusCard({
         type="button"
         className="pmp-icon-btn"
         onClick={() => setFocused(true)}
-        title="Focus chart"
+        title={translateUI("Focus chart")}
         aria-label={`Focus ${String(title)} chart`}
         style={iconBtn}
       >
@@ -59,7 +62,7 @@ export function FocusCard({
       </Card>
       {mounted && focused
         ? createPortal(
-            <div className="pmp-focus-backdrop" role="dialog" aria-modal="true" aria-label="Focused chart">
+            <div className="pmp-focus-backdrop" role="dialog" aria-modal="true" aria-label={translateUI("Focused chart")}>
               <section className="pmp-focus-panel">
                 <div className="pmp-focus-header">
                   <div style={{ fontSize: 18, fontWeight: 800, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -69,8 +72,8 @@ export function FocusCard({
                     type="button"
                     className="pmp-icon-btn"
                     onClick={() => setFocused(false)}
-                    title="Exit focus"
-                    aria-label="Exit chart focus"
+                    title={translateUI("Exit focus")}
+                    aria-label={translateUI("Exit chart focus")}
                     style={iconBtn}
                   >
                     <Minimize2 size={16} />

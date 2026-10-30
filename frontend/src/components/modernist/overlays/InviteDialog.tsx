@@ -1,3 +1,6 @@
+"use client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { LocalizedText } from "@/lib/i18n/I18nProvider";
 import React, { useState } from 'react';
 import { Team } from '../types';
 import { Icon } from '../icons';
@@ -10,6 +13,8 @@ interface InviteDialogProps {
 }
 
 export function InviteDialog({ teams, onClose, onInvite }: InviteDialogProps) {
+  const { t: translateUI } = useI18n();
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [team, setTeam] = useState(teams[0]?.id || 'plt');
@@ -81,13 +86,13 @@ export function InviteDialog({ teams, onClose, onInvite }: InviteDialogProps) {
           }}
         >
           <div>
-            <h6 style={{ color: 'var(--color-accent)', marginBottom: 6 }}>People</h6>
-            <h3 style={{ margin: 0 }}>Invite teammate</h3>
+            <h6 style={{ color: 'var(--color-accent)', marginBottom: 6 }}><LocalizedText message={"People"} /></h6>
+            <h3 style={{ margin: 0 }}><LocalizedText message={"Invite teammate"} /></h3>
           </div>
           <button
             type="button"
             className="btn btn-icon"
-            aria-label="Close"
+            aria-label={translateUI("Close")}
             onClick={onClose}
           >
             <Icon name="x" size={16} />
@@ -96,7 +101,7 @@ export function InviteDialog({ teams, onClose, onInvite }: InviteDialogProps) {
 
         <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div className="field">
-            <label htmlFor="iv-name">Full name</label>
+            <label htmlFor="iv-name"><LocalizedText message={"Full name"} /></label>
             <input
               id="iv-name"
               className="input"
@@ -111,13 +116,13 @@ export function InviteDialog({ teams, onClose, onInvite }: InviteDialogProps) {
           </div>
 
           <div className="field">
-            <label htmlFor="iv-mail">Work email</label>
+            <label htmlFor="iv-mail"><LocalizedText message={"Work email"} /></label>
             <input
               id="iv-mail"
               type="email"
               className="input"
               style={{ minHeight: 44 }}
-              placeholder="name@projectplatform.io"
+              placeholder={translateUI("name@projectplatform.io")}
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value);
@@ -127,7 +132,7 @@ export function InviteDialog({ teams, onClose, onInvite }: InviteDialogProps) {
           </div>
 
           <div className="field">
-            <label htmlFor="iv-team">Team</label>
+            <label htmlFor="iv-team"><LocalizedText message={"Team"} /></label>
             <select
               id="iv-team"
               className="input"
@@ -144,7 +149,7 @@ export function InviteDialog({ teams, onClose, onInvite }: InviteDialogProps) {
           </div>
 
           <div className="field">
-            <label>Role</label>
+            <label><LocalizedText message={"Role"} /></label>
             <div className="seg">
               {ROLES.slice(0, 3).map((rKey, idx) => {
                 const on = role === rKey;
@@ -198,17 +203,13 @@ export function InviteDialog({ teams, onClose, onInvite }: InviteDialogProps) {
             borderRadius: 'var(--r-md)',
           }}
         >
-          <button type="button" className="btn btn-ghost" onClick={onClose}>
-            Cancel
-          </button>
+          <button type="button" className="btn btn-ghost" onClick={onClose}>{" "}<LocalizedText message={"Cancel"} />{" "}</button>
           <button
             type="submit"
             className="btn btn-primary"
             style={{ minHeight: 40, borderRadius: 'var(--r-sm)' }}
           >
-            <Icon name="mail" size={16} />
-            Send invite
-          </button>
+            <Icon name="mail" size={16} />{" "}<LocalizedText message={"Send invite"} />{" "}</button>
         </div>
       </form>
     </div>
