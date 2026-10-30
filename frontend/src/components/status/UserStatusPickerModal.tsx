@@ -6,7 +6,7 @@ import { useState } from "react";
 import { Check, Clock, Sparkles, Trash2, X } from "lucide-react";
 import { updateMyStatus, clearMyStatus } from "@/lib/api/users";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { PresenceDot } from "@/components/ds";
+import { Modal, PresenceDot } from "@/components/ds";
 import type { PresenceStatus } from "@/lib/types";
 
 interface StatusPreset {
@@ -108,85 +108,91 @@ export function UserStatusPickerModal({ isOpen, onClose, onSuccess }: Props) {
   const isInactive = presence === "away" || presence === "offline";
 
   return (
-    <div
-      className="pmp-modal-backdrop"
-      style={{
-        position: "fixed",
-        inset: 0,
-        backgroundColor: "rgba(0, 0, 0, 0.6)",
-        backdropFilter: "blur(6px)",
-        zIndex: 9999,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 16,
-      }}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div
-        style={{
-          background: "var(--surface-1)",
-          border: "1px solid var(--border-default)",
-          borderRadius: "var(--radius-3)",
-          boxShadow: "var(--shadow-xl)",
-          width: "100%",
-          maxWidth: 480,
-          overflow: "hidden",
-          display: "flex",
-          flexDirection: "column",
-          animation: "modalFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1)",
-        }}
-      >
-        {/* Header */}
+    <Modal
+      open={isOpen}
+      onClose={() => { if (!saving) onClose(); }}
+      closeOnBackdrop={!saving}
+      width={480}
+      title={<div>
+        <span style={{ display: "flex", alignItems: "center", gap: 8 }}><Sparkles size={18} /><LocalizedText message={"Set your status"} /></span>
+        <p style={{ fontSize: 12, fontWeight: 400, color: "var(--text-tertiary)", margin: "4px 0" }}><LocalizedText message={"Let your team know your availability & focus"} /></p>
+      </div>}
+      footer={
         <div
           style={{
-            padding: "16px 20px",
-            borderBottom: "1px solid var(--border-subtle)",
+            width: "100%",
+            flexWrap: "wrap",
+            gap: 10,
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: "50%",
-                background: "color-mix(in srgb, var(--accent-primary) 18%, transparent)",
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "var(--accent-primary)",
-              }}
-            >
-              <Sparkles size={16} />
-            </span>
-            <div>
-              <h2 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: "var(--text-primary)" }}>{" "}<LocalizedText message={"Set your status"} />{" "}</h2>
-              <p style={{ fontSize: 12, color: "var(--text-tertiary)", margin: 0, marginTop: 1 }}>{" "}<LocalizedText message={"Let your team know your availability & focus"} />{" "}</p>
-            </div>
-          </div>
           <button
-            onClick={onClose}
+            type="button"
+            onClick={handleClear}
+            disabled={saving || (!user?.status_text && !user?.status_emoji)}
             style={{
-              border: "none",
-              background: "transparent",
-              cursor: "pointer",
-              padding: 6,
-              borderRadius: "var(--radius-full)",
-              color: "var(--text-tertiary)",
               display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "7px 12px",
+              borderRadius: "var(--radius-2)",
+              border: "1px solid var(--border-subtle)",
+              background: "transparent",
+              color: "var(--text-tertiary)",
+              fontSize: 12.5,
+              fontWeight: 500,
+              cursor: saving || (!user?.status_text && !user?.status_emoji) ? "not-allowed" : "pointer",
+              opacity: !user?.status_text && !user?.status_emoji ? 0.5 : 1,
             }}
           >
-            <X size={18} />
-          </button>
-        </div>
+            <Trash2 size={14} />{" "}<LocalizedText message={"Clear status"} />{" "}</button>
 
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginInlineStart: "auto" }}>
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={saving}
+              style={{
+                padding: "7px 14px",
+                borderRadius: "var(--radius-2)",
+                border: "1px solid var(--border-default)",
+                background: "var(--surface-1)",
+                color: "var(--text-secondary)",
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >{" "}<LocalizedText message={"Cancel"} />{" "}</button>
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={saving}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "7px 18px",
+                borderRadius: "var(--radius-2)",
+                border: "none",
+                background: "var(--accent-primary)",
+                color: "var(--accent-text)",
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: saving ? "wait" : "pointer",
+                boxShadow: "var(--shadow-sm)",
+              }}
+            >
+              <Check size={15} />
+              {saving ? <LocalizedText message={"Saving…"} /> : <LocalizedText message={"Save Status"} />}
+            </button>
+          </div>
+        </div>
+      }
+    >
         {/* Body */}
-        <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 18, maxHeight: "75vh", overflowY: "auto" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 18, minWidth: 0 }}>
           {/* Active vs Inactive state segmented switch */}
           <div>
             <label style={{ fontSize: 11.5, fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.04em", display: "block", marginBottom: 8 }}>{" "}<LocalizedText message={"Availability State"} />{" "}</label>
@@ -289,7 +295,7 @@ export function UserStatusPickerModal({ isOpen, onClose, onSuccess }: Props) {
                     style={{
                       position: "absolute",
                       top: 44,
-                      left: 0,
+                      insetInlineStart: 0,
                       background: "var(--surface-1)",
                       border: "1px solid var(--border-default)",
                       borderRadius: "var(--radius-2)",
@@ -337,6 +343,7 @@ export function UserStatusPickerModal({ isOpen, onClose, onSuccess }: Props) {
                 maxLength={255}
                 style={{
                   flex: 1,
+                  minWidth: 0,
                   background: "transparent",
                   border: "none",
                   outline: "none",
@@ -418,79 +425,6 @@ export function UserStatusPickerModal({ isOpen, onClose, onSuccess }: Props) {
           </div>
         </div>
 
-        {/* Footer */}
-        <div
-          style={{
-            padding: "14px 20px",
-            borderTop: "1px solid var(--border-subtle)",
-            background: "var(--surface-2)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <button
-            type="button"
-            onClick={handleClear}
-            disabled={saving || (!user?.status_text && !user?.status_emoji)}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-              padding: "7px 12px",
-              borderRadius: "var(--radius-2)",
-              border: "1px solid var(--border-subtle)",
-              background: "transparent",
-              color: "var(--text-tertiary)",
-              fontSize: 12.5,
-              fontWeight: 500,
-              cursor: saving || (!user?.status_text && !user?.status_emoji) ? "not-allowed" : "pointer",
-              opacity: !user?.status_text && !user?.status_emoji ? 0.5 : 1,
-            }}
-          >
-            <Trash2 size={14} />{" "}<LocalizedText message={"Clear status"} />{" "}</button>
-
-          <div style={{ display: "flex", gap: 8 }}>
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={saving}
-              style={{
-                padding: "7px 14px",
-                borderRadius: "var(--radius-2)",
-                border: "1px solid var(--border-default)",
-                background: "var(--surface-1)",
-                color: "var(--text-secondary)",
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
-            >{" "}<LocalizedText message={"Cancel"} />{" "}</button>
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={saving}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-                padding: "7px 18px",
-                borderRadius: "var(--radius-2)",
-                border: "none",
-                background: "var(--accent-primary)",
-                color: "var(--accent-text)",
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: saving ? "wait" : "pointer",
-                boxShadow: "var(--shadow-sm)",
-              }}
-            >
-              <Check size={15} />
-              {saving ? <LocalizedText message={"Saving…"} /> : <LocalizedText message={"Save Status"} />}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    </Modal>
   );
 }
