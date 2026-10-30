@@ -1319,7 +1319,7 @@
     ]
   },
   {
-    "message": "Applies to all sprints. Individual durations can be changed below.",
+    "message": "Applies to all sprints.",
     "translated": true,
     "neutral": false,
     "files": [
@@ -13165,14 +13165,6 @@
       "app/(app)/projects/[projectId]/ProjectDetailClient.tsx",
       "app/(app)/tasks/page.tsx",
       "components/tasks/TaskEditorModal.tsx"
-    ]
-  },
-  {
-    "message": "Sprint {number} duration",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "app/(app)/portfolio/page.tsx"
     ]
   },
   {

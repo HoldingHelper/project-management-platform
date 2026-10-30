@@ -6,7 +6,7 @@ on the day after the previous sprint ends.
 
 New project:
 - Choose the first sprint start date and number of sprints (1–52).
-- Apply a duration to all sprints or override individual sprint durations.
+- Choose one duration at the top; it applies to every sprint.
 - Preview every sprint's dates; the project planned end is calculated from the
   final sprint and is read-only.
 
@@ -24,7 +24,7 @@ API and MCP:
   start_date, duration_days, count, and a name/prefix.
 - Duration is derived from persisted start/end dates; no data migration is needed.
 
-Verification:
+Initial scheduling implementation verification:
 - 46 frontend tests and TypeScript passed.
 - 34 targeted backend tests passed, including real PostgreSQL mixed-plan,
   batch creation, sprint edits, readonly-end rejection, and MCP regressions.
@@ -33,3 +33,10 @@ Verification:
   dates, and readonly end fields in New project and existing-project sprint forms.
 - Browser test changes were discarded; no existing sprint was modified.
 - Changes run locally. Production was not deployed.
+
+
+Updated project-creation form verification: build, TypeScript, and strict translation audit passed.
+
+Project creation uses one Sprint duration selector at the top. Every sprint row
+uses that duration, with no individual duration overrides. Changing the count or
+removing a sprint preserves the shared duration and recalculates all dates.
