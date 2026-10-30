@@ -32,6 +32,7 @@ from app.modules.identity.schemas import (
     LoginRequest,
     LogoutRequest,
     PermissionRead,
+    PlatformLanguageUpdate,
     PresenceUpdateRequest,
     RefreshTokenRequest,
     ResetPasswordRequest,
@@ -47,6 +48,17 @@ from app.modules.identity.schemas import (
 router = APIRouter(prefix="/auth", tags=["Identity - Auth"])
 users_router = APIRouter(prefix="/users", tags=["Identity - Users"])
 rbac_router = APIRouter(tags=["Identity - RBAC"])
+
+
+@router.get("/language-default")
+async def language_default(response: Response, db: AsyncSession = Depends(get_db)):
+    response.headers["Cache-Control"] = "no-store"
+    return await service.get_platform_language(db)
+
+
+@users_router.patch("/platform-language")
+async def set_language_default(payload: PlatformLanguageUpdate, user: CurrentUser = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    return await service.set_platform_language(db, user, payload.locale)
 
 
 @router.post("/login", response_model=TokenResponse)
@@ -136,7 +148,7 @@ async def update_my_profile(
     db: AsyncSession = Depends(get_db),
 ) -> UserRead:
     return await service.update_profile(
-        db, current_user.user_id, **payload.model_dump(exclude_none=True)
+        db, current_user.user_id, **payload.model_dump(exclude_unset=True)
     )
 
 

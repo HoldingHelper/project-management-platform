@@ -20,6 +20,7 @@ import {
   ShieldCheck,
   Trash2,
 } from "lucide-react";
+import { copyText } from "@/lib/clipboard";
 import { API_BASE_URL, AppError } from "@/lib/api/client";
 import {
   createMcpToken,
@@ -158,8 +159,12 @@ export default function McpSettingsPage() {
   };
 
   const copy = async (value: string, label: string) => {
-    await navigator.clipboard.writeText(value);
-    toast.push(`${label} copied.`, "success");
+    try {
+      await copyText(value);
+      toast.push(translateUI("{label} copied.", { label }), "success");
+    } catch {
+      toast.push(translateUI("Copy failed. Select the text and copy it manually."), "error");
+    }
   };
 
   const downloadSkill = () => {

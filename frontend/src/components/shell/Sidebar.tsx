@@ -130,11 +130,11 @@ export function Sidebar({
                         aria-hidden
                         style={{
                           position: "absolute",
-                          left: 0,
+                          insetInlineStart: 0,
                           top: 8,
                           bottom: 8,
                           width: 3,
-                          borderRadius: "0 var(--radius-full) var(--radius-full) 0",
+                          borderRadius: "var(--radius-full)",
                           background: "var(--accent-primary)",
                         }}
                       />

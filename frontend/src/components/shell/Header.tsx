@@ -3,7 +3,6 @@ import { LocalizedRelativeTime } from "@/lib/i18n/I18nProvider";
 
 import { useI18n } from "@/lib/i18n/I18nProvider";
 
-import { LanguageSelector } from "@/components/LanguageSelector";
 import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
 import { useEffect, useRef, useState } from "react";
@@ -414,7 +413,7 @@ export function Header({
               <div style={{ fontSize: 11, color: "var(--text-tertiary)" }}>{user?.email}</div>
             </div>
 
-            <div style={{padding:"10px 12px"}}><LanguageSelector /></div>
+
 {/* Custom status shortcut */}
             <button
               type="button"

@@ -778,7 +778,7 @@ async def update_profile(db: AsyncSession, user_id: UUID, **fields) -> UserRead:
     if user is None:
         raise NotFoundError("User", user_id)
     for name, value in fields.items():
-        if value is not None:
+        if value is not None or name == "locale":
             setattr(user, name, value)
     await db.commit()
     await db.refresh(user, attribute_names=["roles"])
@@ -1157,3 +1157,21 @@ async def admin_reset_password(
     user.password_hash = hash_password(new_password)
     await repo.revoke_all_refresh_tokens_for_user(db, user_id)
     await db.commit()
+
+
+async def get_platform_language(db):
+    from app.modules.identity.models import PlatformLanguage
+    setting = await db.get(PlatformLanguage, "default")
+    return {"locale": setting.locale if setting and setting.locale else "en", "configured": bool(setting and setting.locale)}
+
+
+async def set_platform_language(db, user, locale):
+    from app.core.exceptions import ForbiddenError
+    if not user.is_super_admin():
+        raise ForbiddenError("Only a Super Admin can set the platform language.")
+    from sqlalchemy import select
+    from app.modules.identity.models import PlatformLanguage
+    setting = (await db.execute(select(PlatformLanguage).where(PlatformLanguage.key == "default").with_for_update())).scalar_one()
+    setting.locale = locale
+    await db.commit()
+    return {"locale": locale, "configured": True}

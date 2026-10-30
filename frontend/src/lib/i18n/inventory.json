@@ -187,6 +187,14 @@
     ]
   },
   {
+    "message": "{label} copied.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/settings/mcp/page.tsx"
+    ]
+  },
+  {
     "message": "{visible} visible · {loaded} loaded · imported from GitHub issues and created in-app.",
     "translated": true,
     "neutral": false,
@@ -1316,6 +1324,14 @@
     "neutral": false,
     "files": [
       "app/(app)/portfolio/page.tsx"
+    ]
+  },
+  {
+    "message": "Applies to users without a personal language preference.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/LanguageSelector.tsx"
     ]
   },
   {
@@ -2505,6 +2521,14 @@
     ]
   },
   {
+    "message": "Choose the initial language for all users.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/LanguageSelector.tsx"
+    ]
+  },
+  {
     "message": "CI/CD & Verify",
     "translated": true,
     "neutral": false,
@@ -3238,6 +3262,14 @@
     ]
   },
   {
+    "message": "Copy failed. Select the text and copy it manually.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/settings/mcp/page.tsx"
+    ]
+  },
+  {
     "message": "Copy link",
     "translated": true,
     "neutral": false,
@@ -3794,6 +3826,14 @@
     "neutral": false,
     "files": [
       "components/public/WorkspaceMap.tsx"
+    ]
+  },
+  {
+    "message": "Default language",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/LanguageSelector.tsx"
     ]
   },
   {
@@ -10275,6 +10315,14 @@
     ]
   },
   {
+    "message": "Platform default language",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/LanguageSelector.tsx"
+    ]
+  },
+  {
     "message": "Platform Infrastructure & Launch",
     "translated": true,
     "neutral": false,
@@ -12109,6 +12157,14 @@
     "files": [
       "app/(app)/tasks/[taskId]/TaskDetailClient.tsx",
       "components/modernist/overlays/TaskDrawer.tsx"
+    ]
+  },
+  {
+    "message": "Save default language",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/LanguageSelector.tsx"
     ]
   },
   {
@@ -14860,6 +14916,14 @@
     "neutral": false,
     "files": [
       "components/music/MusicChannelView.tsx"
+    ]
+  },
+  {
+    "message": "Use platform default",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/LanguageSelector.tsx"
     ]
   },
   {

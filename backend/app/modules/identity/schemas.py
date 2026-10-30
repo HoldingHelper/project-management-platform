@@ -353,3 +353,7 @@ class AdminUpdateUserRequest(BaseModel):
 
 class AdminResetPasswordRequest(BaseModel):
     new_password: str = Field(min_length=8)
+
+
+class PlatformLanguageUpdate(BaseModel):
+    locale: Literal["en", "fa"]

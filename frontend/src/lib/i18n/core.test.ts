@@ -62,3 +62,11 @@ test("absent or invalid account preferences do not overwrite browser choices", (
   assert.deepEqual(accountPreferences({}), {});
   assert.deepEqual(accountPreferences({ locale: "ar", calendar: "other", numbering_system: null }), {});
 });
+
+
+test("platform language is inherited only when no personal preference exists", () => {
+  assert.equal(accountPreferences({ locale: null }, "fa").locale, "fa");
+  assert.equal(accountPreferences({ locale: "en" }, "fa").locale, "en");
+  assert.equal(accountPreferences({ locale: "fa" }, "en").locale, "fa");
+  assert.equal(accountPreferences({}, "en").locale, "en");
+});

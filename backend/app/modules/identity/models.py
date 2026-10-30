@@ -303,3 +303,10 @@ class PasswordResetToken(Base, UUIDPKMixin):
     used_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+
+
+class PlatformLanguage(Base):
+    __tablename__ = "platform_language"
+    __table_args__ = {"schema": SCHEMA}
+    key: Mapped[str] = mapped_column(String(20), primary_key=True)
+    locale: Mapped[Optional[str]] = mapped_column(String(2), nullable=True)

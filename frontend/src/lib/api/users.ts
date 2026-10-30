@@ -157,7 +157,7 @@ export function acceptInvitation(
 
 // ---- Profile & settings ----
 export function updateMyProfile(input: {
-  locale?: "en" | "fa";
+  locale?: "en" | "fa" | null;
   calendar?: "gregory" | "persian";
   numbering_system?: "latn" | "arabext";
   first_name?: string;
@@ -217,3 +217,7 @@ export function clearMyStatus() {
 export function getPresenceSnapshot() {
   return apiFetch<Record<string, PresenceStatus | { status: PresenceStatus; custom_status?: { text?: string; emoji?: string; expires_at?: string } }>>("/users/presence");
 }
+
+export type PlatformLanguage = { locale: "en" | "fa"; configured: boolean };
+export const getPlatformLanguage = () => apiFetch<PlatformLanguage>("/auth/language-default", { auth: false });
+export const setPlatformLanguage = (locale: "en" | "fa") => apiFetch<PlatformLanguage>("/users/platform-language", { method: "PATCH", body: { locale } });

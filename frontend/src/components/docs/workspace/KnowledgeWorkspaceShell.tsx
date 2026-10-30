@@ -2,7 +2,6 @@
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
-import { LanguageSelector } from "@/components/LanguageSelector";
 
 
 import { useState, useRef, useEffect } from "react";
@@ -421,7 +420,7 @@ function WorkspaceNavigation({ returnPath }: { returnPath: string }) {
             <Link href={returnPath} className="knowledge-workspace-return">
               <Landmark className="knowledge-desktop-return-icon" size={15} aria-hidden /><ArrowLeft className="knowledge-mobile-return-icon" size={15} aria-hidden /><LocalizedText message={"Holding"} />{" "}</Link>
           </div>
-          <div className="knowledge-language-selector"><LanguageSelector /></div>
+
           <Link href="/my-work" className="knowledge-mobile-main-menu"><Menu size={17} aria-hidden /><LocalizedText message={"Main menu"} /></Link>
         </nav>
 

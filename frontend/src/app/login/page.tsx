@@ -2,7 +2,6 @@
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
-import { LanguageSelector } from "@/components/LanguageSelector";
 
 
 import { useEffect, useState } from "react";
@@ -61,7 +60,7 @@ export default function LoginPage() {
       description={translateUI("Sign in to continue to your projects, team and operational dashboards.")}
       footer={translateUI("Use your Project Management Platform account credentials.")}
     >
-      <LanguageSelector />
+
       <form onSubmit={onSubmit} className="pmp-access-form">
         <Field label={translateUI("Email or username")}>
           <TextInput

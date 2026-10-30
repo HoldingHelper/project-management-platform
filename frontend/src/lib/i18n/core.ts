@@ -6,8 +6,8 @@ export const defaults: Preferences = { locale: "en", calendar: "gregory", number
 export function savedPreferencesMatch(saved: { [Key in keyof Preferences]?: Preferences[Key] | null }, requested: Partial<Preferences>): boolean {
   return Object.entries(requested).every(([key, value]) => saved[key as keyof Preferences] === value);
 }
-export function accountPreferences(user: { locale?: unknown; calendar?: unknown; numbering_system?: unknown }): Partial<Preferences> {
-  const result: Partial<Preferences> = {};
+export function accountPreferences(user: { locale?: unknown; calendar?: unknown; numbering_system?: unknown }, defaultLocale?: Locale): Partial<Preferences> {
+  const result: Partial<Preferences> = defaultLocale ? { locale: defaultLocale } : {};
   if (user.locale === "en" || user.locale === "fa") result.locale = user.locale;
   if (user.calendar === "gregory" || user.calendar === "persian") result.calendar = user.calendar;
   if (user.numbering_system === "latn" || user.numbering_system === "arabext") result.numbering_system = user.numbering_system;

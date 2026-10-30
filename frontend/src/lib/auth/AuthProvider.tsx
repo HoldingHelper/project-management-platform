@@ -9,9 +9,10 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { accountPreferences } from "@/lib/i18n/core";
+import { getPlatformLanguage } from "@/lib/api/users";
 import * as authApi from "@/lib/api/auth";
 import type { TokenResponse, UserRead } from "@/lib/types";
 import {
@@ -42,9 +43,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const [user, setUser] = useState<UserRead | null>(null);
   const [loading, setLoading] = useState(true);
+  const platformLanguage = useQuery({ queryKey: ["platform-language"], queryFn: getPlatformLanguage, staleTime: 30000, refetchInterval: 60000 });
   useEffect(() => {
-    if (user) setPreferences(accountPreferences(user));
-  }, [user?.id, user?.locale, user?.calendar, user?.numbering_system, setPreferences]);
+    if (user) setPreferences(accountPreferences(user, platformLanguage.data?.locale));
+    else if (platformLanguage.data) setPreferences({ locale: platformLanguage.data.locale });
+  }, [user?.id, user?.locale, user?.calendar, user?.numbering_system, platformLanguage.data?.locale, setPreferences]);
 
   // On mount, restore a session from the persisted refresh token.
   useEffect(() => {
