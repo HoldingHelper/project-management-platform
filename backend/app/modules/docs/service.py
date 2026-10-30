@@ -541,6 +541,7 @@ async def lifecycle_permissions(db, user, page_id):
     return {
         "page_id": str(page.id), "status": page.status,
         "can_edit": await _page_editable(db, user, page),
+        "can_comment": page.status != "archived" and (has_global_docs_access(user, "comment") or await can_access(db, user, "page", page.id, "comment")),
         "can_publish": await _can_publish_page(db, user, page),
         "can_archive": not managed_folder and page.status != "archived" and (user.is_super_admin() or (page.created_by == user.user_id and writable_token)),
         "can_restore": page.status == "archived" and user.is_super_admin(),

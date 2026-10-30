@@ -12,7 +12,7 @@ from app.core.exceptions import ForbiddenError
 from app.modules.identity.models import User
 from app.modules.docs import service
 from app.modules.docs.models import DocSpace
-from app.modules.docs.schemas import PageCreate, PageUpdate
+from app.modules.docs.schemas import PageCreate, PageUpdate, CommentCreate
 
 pytestmark = pytest.mark.skipif(os.getenv("PMP_MEMBERSHIP_DB_TESTS") != "1", reason="Local PostgreSQL opt-in")
 
@@ -49,6 +49,10 @@ async def test_regular_staff_create_and_edit_own_drafts_without_global_edit(monk
                         await service.set_published(db, actor, original.id, True)
                     published = await service.set_published(db, actor, page.id, True)
                     assert published.status == "published" and published.visibility == "inherit"
+                    assert (await service.lifecycle_permissions(db, actor, page.id))["can_comment"]
+                    comment = await service.add_comment(db, actor, page.id, CommentCreate(body="Published document feedback"))
+                    assert comment.author_user_id == actor.user_id
+                    assert comment.id in {item.id for item in await service.list_comments(db, actor, page.id)}
                     assert not (await service.lifecycle_permissions(db, actor, page.id))["can_publish"]
                     with pytest.raises(ForbiddenError):
                         await service.update_page(db, actor, page.id, PageUpdate(content="Published edit denied"))

@@ -470,14 +470,6 @@
     ]
   },
   {
-    "message": "2 of 4 approvals • Due Apr 25, 2026",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "components/docs/workspace/ContextInspector.tsx"
-    ]
-  },
-  {
     "message": "2. Copy into your AI client",
     "translated": true,
     "neutral": false,
@@ -802,6 +794,7 @@
     "translated": true,
     "neutral": false,
     "files": [
+      "components/docs/DocumentComments.tsx",
       "components/modernist/overlays/TaskDrawer.tsx"
     ]
   },
@@ -895,14 +888,6 @@
     ]
   },
   {
-    "message": "Add link to theme guide",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "components/docs/workspace/ContextInspector.tsx"
-    ]
-  },
-  {
     "message": "Add member",
     "translated": true,
     "neutral": false,
@@ -948,14 +933,6 @@
     "neutral": false,
     "files": [
       "components/chat/ChannelConversation.tsx"
-    ]
-  },
-  {
-    "message": "Add reviewers",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "components/docs/workspace/ContextInspector.tsx"
     ]
   },
   {
@@ -1173,14 +1150,6 @@
     ]
   },
   {
-    "message": "All comments",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "components/docs/workspace/ContextInspector.tsx"
-    ]
-  },
-  {
     "message": "All Departments (",
     "translated": true,
     "neutral": false,
@@ -1347,14 +1316,6 @@
     "neutral": false,
     "files": [
       "app/(app)/portfolio/page.tsx"
-    ]
-  },
-  {
-    "message": "Apply",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "components/docs/workspace/ContextInspector.tsx"
     ]
   },
   {
@@ -2910,6 +2871,7 @@
     "translated": true,
     "neutral": false,
     "files": [
+      "components/docs/DocumentComments.tsx",
       "components/docs/workspace/ContextInspector.tsx",
       "components/docs/workspace/MarkdownWorkspaceEditor.tsx"
     ]
@@ -3341,6 +3303,14 @@
     ]
   },
   {
+    "message": "Could not load comments.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/docs/DocumentComments.tsx"
+    ]
+  },
+  {
     "message": "Could not load connected documents",
     "translated": true,
     "neutral": false,
@@ -3370,6 +3340,14 @@
     "neutral": false,
     "files": [
       "components/docs/DocumentationUpload.tsx"
+    ]
+  },
+  {
+    "message": "Could not post comment.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/docs/DocumentComments.tsx"
     ]
   },
   {
@@ -4200,6 +4178,7 @@
     "translated": true,
     "neutral": false,
     "files": [
+      "components/docs/DocumentComments.tsx",
       "components/docs/workspace/MarkdownWorkspaceEditor.tsx"
     ]
   },
@@ -6457,14 +6436,6 @@
     ]
   },
   {
-    "message": "In Review",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "components/docs/workspace/ContextInspector.tsx"
-    ]
-  },
-  {
     "message": "In-App Notification Preferences",
     "translated": true,
     "neutral": false,
@@ -7204,7 +7175,8 @@
     "translated": true,
     "neutral": false,
     "files": [
-      "app/(app)/tasks/[taskId]/TaskDetailClient.tsx"
+      "app/(app)/tasks/[taskId]/TaskDetailClient.tsx",
+      "components/docs/DocumentComments.tsx"
     ]
   },
   {
@@ -8447,6 +8419,14 @@
     "neutral": false,
     "files": [
       "app/(app)/admin/users/page.tsx"
+    ]
+  },
+  {
+    "message": "No comments yet.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/docs/DocumentComments.tsx"
     ]
   },
   {
@@ -10434,6 +10414,14 @@
     ]
   },
   {
+    "message": "Post comment",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/docs/DocumentComments.tsx"
+    ]
+  },
+  {
     "message": "Posting…",
     "translated": true,
     "neutral": false,
@@ -11604,14 +11592,6 @@
     ]
   },
   {
-    "message": "Replace \"company's\" with \"organization's\"",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "components/docs/workspace/ContextInspector.tsx"
-    ]
-  },
-  {
     "message": "Replace file",
     "translated": true,
     "neutral": false,
@@ -11718,14 +11698,6 @@
     ]
   },
   {
-    "message": "Request approval",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "components/docs/workspace/ContextInspector.tsx"
-    ]
-  },
-  {
     "message": "Request queue",
     "translated": true,
     "neutral": false,
@@ -11796,16 +11768,7 @@
     "neutral": false,
     "files": [
       "app/(app)/notifications/page.tsx",
-      "components/docs/workspace/ContextInspector.tsx",
       "components/public/WorkspaceMap.tsx"
-    ]
-  },
-  {
-    "message": "Resolved (1)",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "components/docs/workspace/ContextInspector.tsx"
     ]
   },
   {
@@ -11900,14 +11863,6 @@
     "neutral": false,
     "files": [
       "app/about/page.tsx"
-    ]
-  },
-  {
-    "message": "Review Status",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "components/docs/workspace/ContextInspector.tsx"
     ]
   },
   {
@@ -12760,7 +12715,8 @@
     "neutral": false,
     "files": [
       "app/(app)/notifications/page.tsx",
-      "app/forgot-password/page.tsx"
+      "app/forgot-password/page.tsx",
+      "components/docs/DocumentComments.tsx"
     ]
   },
   {
@@ -13558,14 +13514,6 @@
     "neutral": false,
     "files": [
       "app/(app)/tasks/[taskId]/TaskDetailClient.tsx"
-    ]
-  },
-  {
-    "message": "Suggested edits",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "components/docs/workspace/ContextInspector.tsx"
     ]
   },
   {
@@ -14783,22 +14731,6 @@
     "neutral": false,
     "files": [
       "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
-    ]
-  },
-  {
-    "message": "Unresolved",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "components/docs/workspace/ContextInspector.tsx"
-    ]
-  },
-  {
-    "message": "Unresolved (2)",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "components/docs/workspace/ContextInspector.tsx"
     ]
   },
   {

@@ -39,6 +39,7 @@ import {
 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getDocPage, updateDocPage, listDocComments, addDocComment, type DocPage, type DocComment } from "@/lib/api/docs";
+import { DocumentComments } from "../DocumentComments";
 import { UploadedDocumentView } from "./UploadedDocumentView";
 import { DocumentLifecycleControls, type DocumentLifecycle } from "../DocumentLifecycleControls";
 import { apiFetch } from "@/lib/api/client";
@@ -230,7 +231,7 @@ export function MarkdownWorkspaceEditor({ pageId }: Props) {
             <MessageSquare size={13} />
             <span><LocalizedText message={"Comments"} /></span>
             <span style={{ fontSize: 10, padding: "1px 5px", borderRadius: "10px", background: "var(--accent-primary-soft)", color: "var(--accent-primary)", fontWeight: 700 }}>
-              {comments.length || 3}
+              {comments.length}
             </span>
           </button>
 
@@ -396,6 +397,7 @@ export function MarkdownWorkspaceEditor({ pageId }: Props) {
         </div>
       )}
 
+      {activeTab === "comments" ? <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: 20 }}><DocumentComments key={pageId} pageId={pageId} /></div> : <>
       {/* Main Workspace Area (Split or Full) */}
       <div className="knowledge-editor-body" style={{ flex: 1, display: "flex", minHeight: 0, position: "relative" }}>
         {/* Editor Column (Monospace Markdown with Line Numbers) */}
@@ -494,6 +496,7 @@ export function MarkdownWorkspaceEditor({ pageId }: Props) {
           </div>
         )}
       </div>
+      </>}
     </div>
   );
 }

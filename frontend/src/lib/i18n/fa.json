@@ -2044,5 +2044,9 @@
   "Save sprint schedule": "ذخیره برنامه اسپرینت",
   "Calculated end date": "تاریخ پایان محاسبه‌شده",
   "Calculated from the start date, duration, and number of sprints.": "بر اساس تاریخ شروع، مدت و تعداد اسپرینت‌ها محاسبه می‌شود.",
-  "Create the first sprint to start planning work.": "برای برنامه‌ریزی کارها، اولین اسپرینت را ایجاد کنید."
+  "Create the first sprint to start planning work.": "برای برنامه‌ریزی کارها، اولین اسپرینت را ایجاد کنید.",
+  "Could not load comments.": "بارگذاری نظرات انجام نشد.",
+  "No comments yet.": "هنوز نظری ثبت نشده است.",
+  "Could not post comment.": "ثبت نظر انجام نشد.",
+  "Post comment": "ثبت نظر"
 }

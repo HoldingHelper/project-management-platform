@@ -81,3 +81,14 @@ check. Other users still need publisher permission and draft edit access; scoped
 MCP tokens must include creation/edit/manage permission to publish the author's
 own draft, or an explicit publish grant. Publication preserves visibility and
 makes the document immutable.
+
+
+## Document comments
+
+The editor Comments button opens the saved comment list and composer; the
+inspector uses the same component. Counts come from the API, with no sample
+comments or fixed counts. Comments can be posted by authorized users on drafts
+and published documents without editing the document content. Archived documents
+remain inaccessible to regular users. Submission errors are visible, duplicate
+submissions are blocked while sending, and successful posts refresh both views.
+Verified with PostgreSQL persistence/permission tests and the frontend build.

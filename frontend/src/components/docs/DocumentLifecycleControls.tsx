@@ -6,7 +6,7 @@ import { Button, Modal, useToast } from "@/components/ds";
 import { apiFetch } from "@/lib/api/client";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 
-export type DocumentLifecycle = { page_id: string; status: string; can_edit: boolean; can_publish: boolean; can_archive: boolean; can_restore: boolean };
+export type DocumentLifecycle = { page_id: string; status: string; can_edit: boolean; can_comment?: boolean; can_publish: boolean; can_archive: boolean; can_restore: boolean };
 export function DocumentLifecycleControls({ attachmentId, pageId, fileName, onArchived, beforePublish }: {
   attachmentId?: string; pageId?: string; fileName: string; onArchived?: () => void; beforePublish?: () => Promise<void>;
 }) {
