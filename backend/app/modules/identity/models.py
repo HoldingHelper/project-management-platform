@@ -280,6 +280,8 @@ class UserSettings(Base, TimestampMixin):
         JSONB, default=dict, nullable=False
     )
     theme: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)
+    theme_variant: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)
+    accent_color: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)
     github_username: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
 
 

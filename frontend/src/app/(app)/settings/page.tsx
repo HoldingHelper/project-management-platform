@@ -54,7 +54,7 @@ import { Button, Card, Field, Switch, TextInput, useToast } from "@/components/d
 import { PageHeader, PAGE_STYLE } from "@/components/ui/States";
 import { GitHubBadge } from "@/components/github/GitHubBadge";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { applyTheme, getStoredTheme, type Theme } from "@/lib/theme";
+import { AppearanceSettings } from "@/components/AppearanceSettings";
 import { useRouter } from "next/navigation";
 
 const NOTIF_PREFS: { key: string; label: string; hint: string }[] = [
@@ -72,7 +72,6 @@ export default function SettingsPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { user, setUser, logout } = useAuth();
-  const [theme, setTheme] = useState<Theme>("dark");
   const [emailForm, setEmailForm] = useState({ new_email: "", current_password: "" });
   const [pwForm, setPwForm] = useState({ current_password: "", new_password: "", confirm: "" });
   const [prefs, setPrefs] = useState<Record<string, boolean>>({});
@@ -92,7 +91,6 @@ export default function SettingsPage() {
   const [repoOwner, setRepoOwner] = useState("");
   const [repoName, setRepoName] = useState("");
 
-  useEffect(() => setTheme(getStoredTheme()), []);
 
   const { data: settings } = useQuery({ queryKey: ["my-settings"], queryFn: getMySettings });
   const { data: integrationsStatus } = useQuery({
@@ -617,24 +615,7 @@ export default function SettingsPage() {
 
           {/* Theme & Appearance */}
           <Card title={translateUI("Language and region")} padded><LanguageSelector regional /></Card>
-<Card title={translateUI("Appearance")} padded>
-            <div style={{ display: "flex", gap: 10 }}>
-              {(["dark", "light", "system"] as Theme[]).map((t) => (
-                <Button
-                  key={t}
-                  variant={theme === t ? "primary" : "secondary"}
-                  size="sm"
-                  onClick={() => {
-                    setTheme(t);
-                    applyTheme(t);
-                  }}
-                >
-                  {t === "dark" ? <Moon size={14} /> : t === "light" ? <Sun size={14} /> : <Code2 size={14} />}
-                  <span style={{ textTransform: "capitalize", marginLeft: 4 }}><LocalizedText message={t} /></span>
-                </Button>
-              ))}
-            </div>
-          </Card>
+<Card title={translateUI("Appearance")} padded><AppearanceSettings /></Card>
 
           {/* In-App Notification Preferences */}
           <Card title={translateUI("In-App Notification Preferences")} padded>

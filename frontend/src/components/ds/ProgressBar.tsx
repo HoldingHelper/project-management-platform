@@ -4,16 +4,18 @@ interface Props {
   percent: number;
   blocks?: number;
   showLabel?: boolean;
+  variant?: "standard" | "timeline";
 }
 
 /** Accessible continuous progress indicator used for projects and sprints. */
-export function ProgressBar({ percent, blocks = 20, showLabel = true }: Props) {
+export function ProgressBar({ percent, blocks = 20, showLabel = true, variant = "standard" }: Props) {
   const { t, number } = useI18n();
   const pct = Math.round(Math.max(0, Math.min(100, percent)));
   void blocks;
   return (
     <span
       className="pmp-progress"
+      data-progress-variant={variant}
       role="progressbar"
       aria-valuemin={0}
       aria-valuemax={100}
@@ -22,6 +24,7 @@ export function ProgressBar({ percent, blocks = 20, showLabel = true }: Props) {
       style={{ display: "inline-flex", alignItems: "center", gap: 10, width: "100%" }}
     >
       <span
+        className="pmp-progress-track"
         style={{
           position: "relative",
           height: 8,
@@ -33,6 +36,7 @@ export function ProgressBar({ percent, blocks = 20, showLabel = true }: Props) {
         }}
       >
         <span
+          className="pmp-progress-fill"
           style={{
             position: "absolute",
             inset: 0,

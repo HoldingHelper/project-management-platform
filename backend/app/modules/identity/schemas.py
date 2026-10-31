@@ -305,12 +305,16 @@ class UserSettingsRead(BaseModel):
 
     notification_prefs: dict = Field(default_factory=dict)
     theme: Optional[str] = None
+    theme_variant: Optional[Literal["classic", "frosted", "clinical", "sprint", "study", "minimal"]] = None
+    accent_color: Optional[Literal["blue", "purple", "emerald", "teal", "rose", "amber"]] = None
     github_username: Optional[str] = None
 
 
 class UpdateUserSettingsRequest(BaseModel):
     notification_prefs: Optional[dict] = None
-    theme: Optional[str] = Field(default=None, max_length=16)
+    theme: Optional[Literal["light", "dark", "system"]] = None
+    theme_variant: Optional[Literal["classic", "frosted", "clinical", "sprint", "study", "minimal"]] = None
+    accent_color: Optional[Literal["blue", "purple", "emerald", "teal", "rose", "amber"]] = None
     github_username: Optional[str] = Field(default=None, max_length=64)
 
 

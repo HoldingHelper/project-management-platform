@@ -187,7 +187,9 @@ export function getMySettings() {
 }
 export function updateMySettings(input: {
   notification_prefs?: Record<string, unknown>;
-  theme?: string;
+  theme?: "light" | "dark" | "system";
+  theme_variant?: "classic" | "frosted" | "clinical" | "sprint" | "study" | "minimal";
+  accent_color?: "blue" | "purple" | "emerald" | "teal" | "rose" | "amber";
   github_username?: string;
 }) {
   return apiFetch<UserSettingsRead>("/users/me/settings", {

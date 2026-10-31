@@ -16,3 +16,35 @@
 .confirm { flex-wrap: wrap; justify-content: flex-end; font-size: 12px; padding-top: 8px; }
 .confirm > span { margin-right: auto; color: var(--text-secondary); }
 @media(max-width: 480px) { .add { flex-wrap: wrap; } .add > :global(.pmp-text-input) { flex-basis: 100%; } .add > button { width: 100%; } }
+/* Warm Glass checklists echo the compact, luminous study-panel reference. */
+:global(html[data-theme-style="study"]) .content { gap:8px; }
+:global(html[data-theme-style="study"]) .row { gap:10px; min-height:34px; }
+:global(html[data-theme-style="study"]) .item { padding:0 0 4px; border-bottom-color:color-mix(in srgb,var(--text-primary) 8%,transparent); }
+:global(html[data-theme-style="study"]) .text,
+:global(html[data-theme-style="study"]) .done { font-size:12.5px; line-height:1.6; }
+:global(html[data-theme-style="study"]) .done { text-decoration:none; color:var(--text-primary); opacity:.86; }
+:global(html[data-theme-style="study"]) .checkbox {
+  appearance:none; -webkit-appearance:none; position:relative; box-sizing:border-box;
+  width:18px; height:18px; margin:0; border:1.5px solid var(--text-tertiary); border-radius:4px;
+  background:color-mix(in srgb,var(--surface-1) 65%,transparent); transition:background 140ms,border-color 140ms,box-shadow 140ms;
+}
+:global(html[data-theme-style="study"]) .checkbox:checked {
+  --study-check-color:color-mix(in srgb,#7C3AED calc(100% - var(--study-check-mix,0%)),#0284C7 var(--study-check-mix,0%));
+  border-color:transparent;
+  background:linear-gradient(135deg,color-mix(in srgb,var(--study-check-color) 88%,#fff),var(--study-check-color));
+  box-shadow:0 0 9px color-mix(in srgb,var(--study-check-color) 38%,transparent),inset 0 1px 0 rgba(255,255,255,.25);
+}
+:global(html[data-theme-style="study"]) .checkbox:checked::after {
+  content:""; position:absolute; width:5px; height:9px; inset-inline-start:5px; top:1px;
+  border:solid #fff; border-width:0 2px 2px 0; transform:rotate(45deg);
+}
+:global(html[data-theme-style="study"]) .checkbox:focus-visible { outline:2px solid var(--study-progress-end); outline-offset:3px; }
+:global(html[data-theme-style="study"]) .checkbox:disabled { cursor:default; }
+:global(html[data-theme-style="study"]) .progress {
+  height:6px; background:var(--study-progress-track); border:1px solid color-mix(in srgb,var(--text-primary) 6%,transparent);
+  box-shadow:inset 0 1px 3px rgba(0,0,0,.14); overflow:visible;
+}
+:global(html[data-theme-style="study"]) .progress > span {
+  border-radius:inherit; background:linear-gradient(90deg,var(--study-progress-start),var(--study-progress-end));
+  box-shadow:0 0 8px var(--study-progress-glow),inset 0 1px 0 rgba(255,255,255,.24);
+}
