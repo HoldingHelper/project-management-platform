@@ -12,7 +12,8 @@ import {
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { accountPreferences } from "@/lib/i18n/core";
-import { getPlatformLanguage } from "@/lib/api/users";
+import { applyAppearance, getStoredAppearance, normalizeAppearance } from "@/lib/theme";
+import { getMySettings, getPlatformLanguage } from "@/lib/api/users";
 import * as authApi from "@/lib/api/auth";
 import type { TokenResponse, UserRead } from "@/lib/types";
 import {
@@ -48,6 +49,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (user) setPreferences(accountPreferences(user, platformLanguage.data?.locale));
     else if (platformLanguage.data) setPreferences({ locale: platformLanguage.data.locale });
   }, [user?.id, user?.locale, user?.calendar, user?.numbering_system, platformLanguage.data?.locale, setPreferences]);
+
+  const appearanceSettings = useQuery({ queryKey: ["my-settings", user?.id], queryFn: getMySettings, enabled: !!user && !loading, staleTime: 60000 });
+  useEffect(() => {
+    if (!user || loading || !appearanceSettings.data) return;
+    applyAppearance(normalizeAppearance(appearanceSettings.data, getStoredAppearance(user.id)), user.id);
+  }, [user?.id, loading, appearanceSettings.data]);
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    const update = () => { const current = getStoredAppearance(); if (current.theme === "system") applyAppearance(current, user?.id); };
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, [user?.id]);
 
   // On mount, restore a session from the persisted refresh token.
   useEffect(() => {

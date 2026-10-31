@@ -214,6 +214,8 @@ export interface InvitationPublicRead {
 export interface UserSettingsRead {
   notification_prefs: Record<string, unknown>;
   theme?: string | null;
+  theme_variant?: string | null;
+  accent_color?: string | null;
   github_username?: string | null;
 }
 

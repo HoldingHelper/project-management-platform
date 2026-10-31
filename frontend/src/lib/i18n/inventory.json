@@ -599,6 +599,14 @@
     ]
   },
   {
+    "message": "Accent color",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/AppearanceSettings.tsx"
+    ]
+  },
+  {
     "message": "Accept",
     "translated": true,
     "neutral": false,
@@ -1284,6 +1292,22 @@
     "neutral": false,
     "files": [
       "app/(app)/settings/page.tsx"
+    ]
+  },
+  {
+    "message": "Appearance saved to your account.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/AppearanceSettings.tsx"
+    ]
+  },
+  {
+    "message": "Appearance settings could not be loaded.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/AppearanceSettings.tsx"
     ]
   },
   {
@@ -2194,6 +2218,14 @@
     ]
   },
   {
+    "message": "Changes apply immediately and sync with your account.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/AppearanceSettings.tsx"
+    ]
+  },
+  {
     "message": "Changes apply to every teammate assigned the",
     "translated": true,
     "neutral": false,
@@ -2371,6 +2403,14 @@
     "neutral": false,
     "files": [
       "app/(app)/tasks/page.tsx"
+    ]
+  },
+  {
+    "message": "Choose a theme and accent color.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/AppearanceSettings.tsx"
     ]
   },
   {
@@ -3335,6 +3375,14 @@
     ]
   },
   {
+    "message": "Could not save appearance. Your previous theme has been restored.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/AppearanceSettings.tsx"
+    ]
+  },
+  {
     "message": "Could not save product line",
     "translated": true,
     "neutral": false,
@@ -4106,6 +4154,14 @@
     "neutral": false,
     "files": [
       "components/modernist/overlays/Toast.tsx"
+    ]
+  },
+  {
+    "message": "Display mode",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/AppearanceSettings.tsx"
     ]
   },
   {
@@ -5441,6 +5497,14 @@
   },
   {
     "message": "Filter tasks by partition",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/tasks/page.tsx"
+    ]
+  },
+  {
+    "message": "Filter tasks by product line",
     "translated": true,
     "neutral": false,
     "files": [
@@ -10578,6 +10642,14 @@
     ]
   },
   {
+    "message": "Product line: {name}",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/tasks/page.tsx"
+    ]
+  },
+  {
     "message": "product lines",
     "translated": true,
     "neutral": false,
@@ -11696,6 +11768,7 @@
     "neutral": false,
     "files": [
       "app/(app)/tasks/page.tsx",
+      "components/AppearanceSettings.tsx",
       "components/docs/DocumentationUpload.tsx",
       "components/docs/workspace/KnowledgeExplorer.tsx",
       "components/holding/AddProductLine.tsx"
@@ -12080,6 +12153,7 @@
       "app/(app)/admin/users/page.tsx",
       "app/(app)/profile/[userId]/ProfileClient.tsx",
       "app/(app)/settings/page.tsx",
+      "components/AppearanceSettings.tsx",
       "components/docs/DocumentLifecycleControls.tsx",
       "components/docs/workspace/MarkdownWorkspaceEditor.tsx",
       "components/holding/AddProductLine.tsx",
@@ -12519,6 +12593,14 @@
     "neutral": false,
     "files": [
       "components/ds/StatusChip.tsx"
+    ]
+  },
+  {
+    "message": "Selected",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/tasks/page.tsx"
     ]
   },
   {
@@ -14005,6 +14087,14 @@
     "neutral": false,
     "files": [
       "components/docs/workspace/ContextInspector.tsx"
+    ]
+  },
+  {
+    "message": "Theme style",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/AppearanceSettings.tsx"
     ]
   },
   {

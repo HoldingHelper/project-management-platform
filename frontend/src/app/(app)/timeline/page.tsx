@@ -164,7 +164,7 @@ export default function TimelinePage() {
                   {project.start_date ?? "No start"}{" "}<LocalizedText message={"to"} />{" "}{project.end_date ?? "No end"}
                 </div>
               </div>
-              <ProgressBar percent={Number(project.progress_percentage)} blocks={12} />
+              <ProgressBar percent={Number(project.progress_percentage)} blocks={12} variant="timeline" />
               <StatusChip status={String(project.status === "in-progress" ? project.health_status : project.status)} />
             </div>
           ))

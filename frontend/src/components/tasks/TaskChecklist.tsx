@@ -3,7 +3,7 @@
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { LocalizedText } from "@/lib/i18n/I18nProvider";
 
-import { useRef, useState } from "react";
+import { useRef, useState, type CSSProperties } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Check, ListChecks, Pencil, Plus, Trash2, X } from "lucide-react";
 import { Button, TextInput, useToast } from "@/components/ds";
@@ -108,7 +108,7 @@ function EntityChecklist({ entity: task, canEdit, kind }: { entity: Pick<TaskRea
     <div className={styles.content}>
       {total > 0 && <div className={styles.progress} role="progressbar" aria-label={translateUI("Checklist completion")} aria-valuemin={0} aria-valuemax={total} aria-valuenow={completed}><span style={{ width: `${percent}%` }} /></div>}
       {!total && <p className={styles.hint}><LocalizedText message={kind === "task" ? "Break this task into small steps and track each one here." : "Break this project into small steps and track each one here."} /></p>}
-      {task.checklist_items.map((item) => <div key={item.id} className={styles.item}>
+      {task.checklist_items.map((item, index) => <div key={item.id} className={styles.item} style={{ "--study-check-mix": `${index / Math.max(task.checklist_items.length - 1, 1) * 100}%` } as CSSProperties}>
         <div className={styles.row}>
           <input type="checkbox" className={styles.checkbox} checked={item.is_done} disabled={!canEdit || disabled} aria-label={translateUI("Complete {item}", { item: item.text })} onChange={(event) => submit({ type: "toggle", id: item.id, done: event.target.checked })} />
           {editing === item.id ? <>

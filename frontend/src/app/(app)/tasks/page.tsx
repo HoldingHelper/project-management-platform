@@ -86,6 +86,7 @@ function TasksPage() {
   const [mode, setMode] = useUrlView("layout", TASK_LAYOUTS, "list");
   const [filtersOpen, setFiltersOpen] = useViewState("task-filters-open", false);
   const [partition, setPartition] = useViewState<string>("task-partition", "all");
+  const [productFilter, setProductFilter] = useViewState<string>("task-product-line", "all");
   const [projectFilter, setProjectFilter] = useViewState<string>("task-project", "all");
   const [assigneeFilter, setAssigneeFilter] = useViewState<string>("task-assignee", "all");
   const [createdMonth, setCreatedMonth] = useViewState("task-created", "");
@@ -104,9 +105,10 @@ function TasksPage() {
   const canCreate = Boolean(user);
 
   const { data, error, isError, isFetching, isLoading, refetch } = useQuery({
-    queryKey: ["tasks", partition, label, status, unattachedOnly, search],
+    queryKey: ["tasks", productFilter, partition, label, status, unattachedOnly, search],
     queryFn: () =>
       listTasks({
+        product_id: productFilter === "all" ? undefined : productFilter as UUID,
         partition: partition === "all" ? undefined : partition,
         label: label || undefined,
         status: status || undefined,
@@ -380,6 +382,7 @@ function TasksPage() {
   const hasFilters =
     view !== "all" ||
     partition !== "all" ||
+    productFilter !== "all" ||
     projectFilter !== "all" ||
     assigneeFilter !== "all" ||
     !!createdMonth ||
@@ -392,6 +395,7 @@ function TasksPage() {
   const activeFilters = [
     view !== "all" ? `View: ${viewLabel(view)}` : null,
     partition !== "all" ? `Partition: ${partition}` : null,
+    productFilter !== "all" ? translateUI("Product line: {name}", { name: productNames.get(productFilter as UUID) ?? translateUI("Selected") }) : null,
     projectFilter !== "all" ? `Project: ${projects.data?.items.find((p) => p.id === projectFilter)?.name ?? "Selected"}` : null,
     assigneeFilter !== "all" ? `Assignee: ${assigneeFilter === "unassigned" ? "Unassigned" : nameOf(assigneeFilter)}` : null,
     createdMonth ? `Created: ${createdMonth}` : null,
@@ -405,6 +409,7 @@ function TasksPage() {
   function clearFilters() {
     setView("all");
     setPartition("all");
+    setProductFilter("all");
     setProjectFilter("all");
     setAssigneeFilter("all");
     setCreatedMonth("");
@@ -502,6 +507,20 @@ function TasksPage() {
           ]}
         />
         <Select
+          value={productFilter}
+          aria-label={translateUI("Filter tasks by product line")}
+          disabled={products.isPending || products.isError}
+          onChange={(event) => {
+            setProductFilter(event.target.value);
+            setProjectFilter("all");
+            setPage(1);
+          }}
+          options={[
+            { translateLabel: true, value: "all", label: "All product lines" },
+            ...(products.data ?? []).map((product) => ({ value: product.id, label: product.name })),
+          ]}
+        />
+        <Select
           value={projectFilter}
           aria-label={translateUI("Filter tasks by project")}
           onChange={(e) => {
@@ -510,7 +529,7 @@ function TasksPage() {
           }}
           options={[
             { translateLabel: true, value: "all", label: "All projects" },
-            ...(projects.data?.items ?? []).map((p) => ({ value: p.id, label: p.name })),
+            ...(projects.data?.items ?? []).filter((project) => productFilter === "all" || project.product_id === productFilter).map((p) => ({ value: p.id, label: p.name })),
           ]}
         />
         <Select

@@ -308,6 +308,7 @@ async def get_task_by_github_url(db: AsyncSession, url: str) -> Optional[TaskIte
 async def list_tasks(
     db: AsyncSession,
     *,
+    product_id: Optional[UUID] = None,
     partition: Optional[str] = None,
     label: Optional[str] = None,
     assignee_user_id: Optional[UUID] = None,
@@ -321,6 +322,9 @@ async def list_tasks(
 ) -> Tuple[Sequence[TaskItem], int]:
     """Org-wide task browser powering the standalone-task views."""
     stmt = select(TaskItem)
+    if product_id is not None:
+        product_phases = select(Phase.id).join(Project, Phase.project_id == Project.id).where(Project.product_id == product_id)
+        stmt = stmt.where(TaskItem.phase_id.in_(product_phases))
     if user_id is not None:
         user_project_ids = (
             select(Project.id)
