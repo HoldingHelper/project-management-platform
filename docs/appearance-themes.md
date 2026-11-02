@@ -12,7 +12,7 @@ Settings → Appearance offers six theme styles:
 The selector displays only simple theme names. Reference images are not bundled
 with the application. The workspace uses CSS surfaces, gradients and tokens.
 Frosted Glass uses cool translucent layers; Warm Glass retains its warmer
-ambient gradients. Both use stronger blur and slightly more transparent panels.
+ambient gradients. Both retain soft blur with restrained panel transparency.
 Evergreen uses a white selected navigation tab with accent-colored text, rounded
 outer ends, and curved cut-outs joining the content edge. The selection mirrors
 for Persian RTL. Each style supports Light, Dark and System
@@ -87,3 +87,8 @@ progress values are preserved.
 Warm Glass completed checkboxes use a continuous purple-to-blue color range,
 interpolated by item position, including intermediate violet/indigo shades rather
 than alternating two fixed colors. This applies to both task/project checklists.
+
+
+Glass opacity restoration: restored the panel opacity from before the halving
+for Frosted Glass and Warm Glass in light/dark modes. Blur remains at 24px and
+22px respectively; reduced-transparency preferences retain opaque panels.

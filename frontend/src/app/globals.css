@@ -5947,12 +5947,12 @@ html[data-theme="dark"][data-theme-style]:where(:not([data-theme-style="classic"
   --border-subtle:rgba(215,228,246,.11); --border-default:rgba(215,228,246,.18); --border-strong:rgba(215,228,246,.30);
 }
 html[data-theme-style="frosted"] {
-  --theme-canvas:#DCE6F5; --surface-1:rgba(255,255,255,.38); --surface-2:rgba(255,255,255,.30); --surface-3:rgba(235,241,253,.92); --surface-4:#DEE8F9;
+  --theme-canvas:#DCE6F5; --surface-1:rgba(255,255,255,.76); --surface-2:rgba(255,255,255,.60); --surface-3:rgba(235,241,253,.92); --surface-4:#DEE8F9;
   --radius-3:20px; --radius-4:24px; --theme-blur:24px;
   --theme-background:radial-gradient(ellipse at 10% 10%,#C5EEE9 0,transparent 48%),radial-gradient(ellipse at 90% 40%,#DACAF8 0,transparent 55%),linear-gradient(145deg,#E4F2FB,#DCE1F2 60%,#F3DFE8);
 }
 html[data-theme="dark"][data-theme-style="frosted"] {
-  --theme-canvas:#142238; --surface-1:rgba(21,35,56,.40); --surface-2:rgba(31,47,73,.36); --surface-3:#2A3C58; --surface-4:#3A4B68;
+  --theme-canvas:#142238; --surface-1:rgba(21,35,56,.80); --surface-2:rgba(31,47,73,.72); --surface-3:#2A3C58; --surface-4:#3A4B68;
   --theme-background:radial-gradient(ellipse at 0 0,#194F58,transparent 55%),radial-gradient(ellipse at 100% 70%,#3D2A61,transparent 60%),#142238;
 }
 html[data-theme-style="clinical"] {
@@ -5968,12 +5968,12 @@ html[data-theme="dark"][data-theme-style="sprint"] {
   --shadow-md:0 12px 30px rgba(0,0,0,.25);
 }
 html[data-theme-style="study"] {
-  --theme-canvas:#DCE3EB; --surface-1:rgba(255,255,255,.41); --surface-2:rgba(248,249,253,.36); --surface-3:#E8ECF3; --surface-4:#D9E1EC;
+  --theme-canvas:#DCE3EB; --surface-1:rgba(255,255,255,.82); --surface-2:rgba(248,249,253,.72); --surface-3:#E8ECF3; --surface-4:#D9E1EC;
   --radius-3:18px; --radius-4:22px; --theme-blur:22px;
   --theme-background:radial-gradient(ellipse at 0 90%,#D3BCAA,transparent 55%),radial-gradient(ellipse at 100% 0,#AFCBE1,transparent 65%),#DFE4ED;
 }
 html[data-theme="dark"][data-theme-style="study"] {
-  --theme-canvas:#111B29; --surface-1:rgba(11,20,34,.41); --surface-2:rgba(19,31,49,.38); --surface-3:#27354A; --surface-4:#34465D;
+  --theme-canvas:#111B29; --surface-1:rgba(11,20,34,.82); --surface-2:rgba(19,31,49,.76); --surface-3:#27354A; --surface-4:#34465D;
   --theme-background:radial-gradient(ellipse at 0 100%,rgba(122,72,40,.60),transparent 48%),radial-gradient(ellipse at 100% 0,rgba(64,98,141,.65),transparent 65%),#111B29;
 }
 html[data-theme-style="minimal"] {
