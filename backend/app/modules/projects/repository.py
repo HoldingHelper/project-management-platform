@@ -491,27 +491,29 @@ async def list_tasks_by_assignee(
 async def set_task_assignees(
     db: AsyncSession, task_id: UUID, user_ids: List[UUID]
 ) -> None:
-    result = await db.execute(
-        select(TaskAssignee).where(TaskAssignee.task_id == task_id)
-    )
-    for existing in result.scalars().all():
-        await db.delete(existing)
-    await db.flush()
-    for user_id in user_ids:
-        db.add(TaskAssignee(task_id=task_id, user_id=user_id))
+    result = await db.execute(select(TaskAssignee).where(TaskAssignee.task_id == task_id))
+    existing = {entry.user_id: entry for entry in result.scalars().all()}
+    desired = set(user_ids)
+    for value, entry in existing.items():
+        if value not in desired:
+            await db.delete(entry)
+    for value in dict.fromkeys(user_ids):
+        if value not in existing:
+            db.add(TaskAssignee(task_id=task_id, user_id=value))
 
 
 async def set_task_labels(
     db: AsyncSession, task_id: UUID, label_ids: List[UUID]
 ) -> None:
-    result = await db.execute(
-        select(TaskLabelAssignment).where(TaskLabelAssignment.task_id == task_id)
-    )
-    for existing in result.scalars().all():
-        await db.delete(existing)
-    await db.flush()
-    for label_id in dict.fromkeys(label_ids):
-        db.add(TaskLabelAssignment(task_id=task_id, label_id=label_id))
+    result = await db.execute(select(TaskLabelAssignment).where(TaskLabelAssignment.task_id == task_id))
+    existing = {entry.label_id: entry for entry in result.scalars().all()}
+    desired = set(label_ids)
+    for value, entry in existing.items():
+        if value not in desired:
+            await db.delete(entry)
+    for value in dict.fromkeys(label_ids):
+        if value not in existing:
+            db.add(TaskLabelAssignment(task_id=task_id, label_id=value))
 
 
 async def set_task_checklist(

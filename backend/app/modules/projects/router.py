@@ -28,6 +28,8 @@ from app.modules.collaboration.authorization import (
     _require_project_access,
     _require_task_access,
 )
+from app.modules.analytics.schemas import EntityHistoryRead
+from app.modules.analytics.service import get_entity_history
 from app.modules.projects import service
 from app.modules.projects import membership
 from app.modules.projects.product_access import require_product_access
@@ -510,6 +512,16 @@ async def confirm_project_regeneration(
     return await confirm_generation(db, generation_run_id, current_user.user_id)
 
 
+@projects_router.get("/{project_id}/history", response_model=list[EntityHistoryRead])
+async def get_project_history(
+    project_id: UUID,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> list[EntityHistoryRead]:
+    await _require_project_access(db, current_user, project_id)
+    return await get_entity_history(db, "projects.Project", project_id)
+
+
 @projects_router.get("/{project_id}", response_model=ProjectRead)
 async def get_project(
     project_id: UUID,
@@ -914,6 +926,16 @@ async def detach_task(
     db: AsyncSession = Depends(get_db),
 ) -> TaskRead:
     return await service.detach_task_from_phase(db, task_id)
+
+
+@tasks_router.get("/{task_id}/history", response_model=list[EntityHistoryRead])
+async def get_task_history(
+    task_id: UUID,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> list[EntityHistoryRead]:
+    await _require_task_access(db, current_user, task_id)
+    return await get_entity_history(db, "projects.TaskItem", task_id)
 
 
 @tasks_router.get("/{task_id}", response_model=TaskRead)

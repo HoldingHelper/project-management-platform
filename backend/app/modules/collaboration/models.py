@@ -23,6 +23,11 @@ SCHEMA = "collaboration"
 
 
 class Comment(Base, UUIDPKMixin, TimestampMixin, AuditableMixin):
+    @property
+    def __audit_parent__(self):
+        entity = {"project": "projects.Project", "task": "projects.TaskItem"}.get(self.entity_type)
+        return (entity, "entity_id", "comments", ("id", "body", "author_user_id", "is_deleted", "mentioned_user_ids", "parent_comment_id")) if entity else None
+
     __tablename__ = "comments"
     __table_args__ = {"schema": SCHEMA}
 
@@ -67,6 +72,11 @@ class Reaction(Base, UUIDPKMixin):
 
 
 class FileAttachment(Base, UUIDPKMixin, TimestampMixin, AuditableMixin):
+    @property
+    def __audit_parent__(self):
+        entity = {"project": "projects.Project", "task": "projects.TaskItem"}.get(self.entity_type)
+        return (entity, "entity_id", "attachments", ("id", "file_name", "content_type", "size_bytes", "version")) if entity else None
+
     __tablename__ = "file_attachments"
     __table_args__ = {"schema": SCHEMA}
 

@@ -70,6 +70,7 @@ import {
 } from "@/lib/api/docs";
 import { ChecklistEditor, ProjectChecklist, type ChecklistDraft } from "@/components/tasks/TaskChecklist";
 import { DocumentationFiles, DocumentationUpload, uploadDocumentationFiles } from "@/components/docs/DocumentationUpload";
+import { EntityHistory } from "@/components/history/EntityHistory";
 import { ProjectMembersFields, useProjectMembersDraft } from "@/components/projects/ProjectMembersFields";
 import { ProjectSprintsFields, useProjectSprintsDraft } from "@/components/projects/ProjectSprintsFields";
 import { SearchSuggestionInput } from "@/components/docs/SearchSuggestionInput";
@@ -168,6 +169,7 @@ const TAB_KEYS = [
   { key: "blockers", label: "Blockers" },
   { key: "discussions", label: "Discussions" },
   { key: "attachments", label: "Attachments" },
+  { key: "history", label: "History & Changes" },
 ];
 
 const PROJECT_STATUS_OPTIONS = [
@@ -363,6 +365,7 @@ function ProjectWorkspaceInner() {
       {tab === "blockers" && <BlockersTab projectId={projectId} />}
       {tab === "discussions" && <DiscussionsTab projectId={projectId} />}
       {tab === "attachments" && <ProjectAttachmentsTab projectId={projectId} />}
+      {tab === "history" && <EntityHistory entityType="project" entityId={projectId as UUID} />}
       <EditProjectModal
         open={editOpen}
         onClose={() => setEditOpen(false)}

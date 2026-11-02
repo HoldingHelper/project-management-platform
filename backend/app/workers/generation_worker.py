@@ -7,6 +7,8 @@ from datetime import datetime, timezone
 
 import structlog
 
+from app.core.audit import register_audit_listeners
+from app.modules.analytics.event_handlers import register_analytics_event_handlers
 from app.core.config import get_settings
 from app.core.database import AsyncSessionLocal, engine
 from app.core.logging import configure_logging
@@ -50,6 +52,8 @@ async def _run_once() -> bool:
 
 async def main() -> None:
     configure_logging(debug=settings.debug)
+    register_audit_listeners()
+    register_analytics_event_handlers()
     try:
         file_storage_service.ensure_bucket()
     except Exception as exc:  # noqa: BLE001

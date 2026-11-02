@@ -2089,5 +2089,9 @@
   "Appearance settings could not be loaded.": "بارگذاری تنظیمات ظاهر انجام نشد.",
   "Choose a theme and accent color.": "پوسته و رنگ تأکیدی را انتخاب کنید.",
   "Midnight": "نیمه‌شب",
-  "Warm Glass": "شیشه گرم"
+  "Warm Glass": "شیشه گرم",
+  "Could not load change history.": "بارگیری تاریخچه تغییرات ناموفق بود.",
+  "No recorded changes yet.": "هنوز تغییری ثبت نشده است.",
+  "Previous value": "مقدار قبلی",
+  "New value": "مقدار جدید"
 }

@@ -27,6 +27,8 @@ from app.core.request_context import (
 from app.shared.events import AuditableChangeOccurred
 
 _PENDING_KEY = "_pending_audit_entries"
+_REGISTERED = False
+_PARENT_CREATES_KEY = "_pending_audit_parent_creates"
 
 
 def _entity_type(obj: Any) -> str:
@@ -40,6 +42,10 @@ def _entity_type(obj: Any) -> str:
 def _serialisable(value: Any) -> Any:
     if isinstance(value, (str, int, float, bool)) or value is None:
         return value
+    if isinstance(value, dict):
+        return {str(key): _serialisable(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_serialisable(item) for item in value]
     return str(value)
 
 
@@ -58,14 +64,44 @@ def _diff_for_update(obj: Any) -> dict:
     return diffs
 
 
+def record_audit_change(session: Session, entity_type: str, entity_id: Any, changes: dict) -> None:
+    """Queue changes made through SQL statements alongside the ORM audit stream."""
+    if changes:
+        session.info.setdefault(_PENDING_KEY, []).append(("Update", entity_type, entity_id, changes))
+
+
+def _capture_parent(session: Session, obj: Any, action: str) -> None:
+    target = getattr(obj, "__audit_parent__", None)
+    if not target:
+        return
+    entity_type, id_field, field, columns = target
+    before, after = {}, {}
+    for column in columns:
+        history = get_history(obj, column)
+        value = getattr(obj, column, None)
+        before[column] = _serialisable(history.deleted[0] if history.deleted else value)
+        after[column] = _serialisable(value)
+    old = None if action == "Create" else before
+    new = None if action == "Delete" else after
+    if old != new:
+        record_audit_change(session, entity_type, getattr(obj, id_field), {field: {"old": old, "new": new}})
+
+
 def register_audit_listeners() -> None:
+    global _REGISTERED
+    if _REGISTERED:
+        return
+    _REGISTERED = True
+
     @event.listens_for(Session, "before_flush")
     def _before_flush(session: Session, flush_context, instances) -> None:  # noqa: ANN001
-        pending: List[Tuple[str, Any, dict]] = session.info.setdefault(_PENDING_KEY, [])
+        pending: List[Tuple[str, str, Any, dict]] = session.info.setdefault(_PENDING_KEY, [])
 
         for obj in session.new:
             if getattr(obj, "__auditable__", False):
-                pending.append(("Create", obj, {}))
+                pending.append(("Create", _entity_type(obj), obj, {}))
+            if getattr(obj, "__audit_parent__", None):
+                session.info.setdefault(_PARENT_CREATES_KEY, []).append(obj)
 
         for obj in session.dirty:
             if getattr(obj, "__auditable__", False) and session.is_modified(
@@ -73,19 +109,28 @@ def register_audit_listeners() -> None:
             ):
                 diff = _diff_for_update(obj)
                 if diff:
-                    pending.append(("Update", obj, diff))
+                    pending.append(("Update", _entity_type(obj), obj, diff))
+            if session.is_modified(obj, include_collections=False):
+                _capture_parent(session, obj, "Update")
 
         for obj in session.deleted:
             if getattr(obj, "__auditable__", False):
-                pending.append(("Delete", obj, {}))
+                pending.append(("Delete", _entity_type(obj), obj, {}))
+            _capture_parent(session, obj, "Delete")
+
+    @event.listens_for(Session, "after_flush_postexec")
+    def _after_flush(session: Session, flush_context) -> None:
+        # Server/client defaults and generated IDs now reflect the inserted row.
+        for obj in session.info.pop(_PARENT_CREATES_KEY, []):
+            _capture_parent(session, obj, "Create")
 
     @event.listens_for(Session, "after_commit")
     def _after_commit(session: Session) -> None:  # noqa: ANN001
-        pending: List[Tuple[str, Any, dict]] = session.info.pop(_PENDING_KEY, [])
-        for action_type, obj, diff in pending:
+        pending: List[Tuple[str, str, Any, dict]] = session.info.pop(_PENDING_KEY, [])
+        for action_type, entity_type, obj, diff in pending:
             audit_event = AuditableChangeOccurred(
-                entity_type=_entity_type(obj),
-                entity_id=str(getattr(obj, "id", "")),
+                entity_type=entity_type,
+                entity_id=str(getattr(obj, "id", obj)),
                 action_type=action_type,
                 changes_json=json.dumps(diff, default=str),
                 user_id=current_user_id_var.get(),
@@ -97,3 +142,4 @@ def register_audit_listeners() -> None:
     @event.listens_for(Session, "after_rollback")
     def _after_rollback(session: Session) -> None:  # noqa: ANN001
         session.info.pop(_PENDING_KEY, None)
+        session.info.pop(_PARENT_CREATES_KEY, None)

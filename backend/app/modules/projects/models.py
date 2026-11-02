@@ -195,6 +195,7 @@ class Project(Base, UUIDPKMixin, TimestampMixin, AuditableMixin):
 
 
 class ProjectMember(Base, TimestampMixin):
+    __audit_parent__ = ("projects.Project", "project_id", "members", ("user_id", "role"))
     __tablename__ = "project_members"
     __table_args__ = (_check("role", ProjectMemberRole), {"schema": SCHEMA})
 
@@ -210,6 +211,7 @@ class ProjectMember(Base, TimestampMixin):
 
 
 class Phase(Base, UUIDPKMixin, TimestampMixin, AuditableMixin):
+    __audit_parent__ = ("projects.Project", "project_id", "sprints", ("id", "name", "start_date", "end_date", "status", "lead_assignee_user_id", "progress_percentage"))
     __tablename__ = "phases"
     __table_args__ = (
         _check("phase_type", PhaseType),
@@ -368,6 +370,7 @@ class TaskItem(Base, UUIDPKMixin, TimestampMixin, AuditableMixin):
 
 
 class TaskAssignee(Base):
+    __audit_parent__ = ("projects.TaskItem", "task_id", "assignee_user_ids", ("user_id",))
     __tablename__ = "task_assignees"
     __table_args__ = {"schema": SCHEMA}
 
@@ -393,6 +396,7 @@ class TaskLabel(Base, UUIDPKMixin):
 
 
 class TaskLabelAssignment(Base):
+    __audit_parent__ = ("projects.TaskItem", "task_id", "label_ids", ("label_id",))
     __tablename__ = "task_label_assignments"
     __table_args__ = {"schema": SCHEMA}
 
@@ -412,6 +416,7 @@ class TaskLabelAssignment(Base):
 
 
 class ChecklistItem(Base, UUIDPKMixin):
+    __audit_parent__ = ("projects.TaskItem", "task_id", "checklist_items", ("id", "text", "is_done", "order"))
     __tablename__ = "checklist_items"
     __table_args__ = {"schema": SCHEMA}
 
@@ -429,6 +434,7 @@ class ChecklistItem(Base, UUIDPKMixin):
 
 
 class Milestone(Base, UUIDPKMixin, TimestampMixin, AuditableMixin):
+    __audit_parent__ = ("projects.Project", "project_id", "milestones", ("id", "name", "due_date", "completed_at", "sequence"))
     __tablename__ = "milestones"
     __table_args__ = {"schema": SCHEMA}
 

@@ -12,6 +12,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
+from app.core.audit import record_audit_change
 from app.core.events import event_bus
 from app.core.current_user import CurrentUser
 from app.core.exceptions import BusinessRuleError, ForbiddenError, NotFoundError, ValidationAppError
@@ -725,6 +726,8 @@ async def add_project_member(
         ).on_conflict_do_nothing(index_elements=["project_id", "user_id"])
         .returning(ProjectMember.user_id)
     )).scalar_one_or_none()
+    if inserted is not None:
+        record_audit_change(db.sync_session, "projects.Project", project_id, {"members": {"old": None, "new": {"user_id": str(payload.user_id), "role": payload.role.value}}})
     await db.commit()
     if inserted is not None:
         await event_bus.publish(ProjectMemberAdded(

@@ -271,6 +271,11 @@ class DocAttachment(Base, UUIDPKMixin, TimestampMixin):
 
 
 class DocLink(Base, UUIDPKMixin, TimestampMixin):
+    @property
+    def __audit_parent__(self):
+        entity = {"project": "projects.Project", "task": "projects.TaskItem"}.get(self.entity_type)
+        return (entity, "entity_id", "documents", ("page_id",)) if entity else None
+
     __tablename__ = "links"
     __table_args__ = (UniqueConstraint("page_id", "entity_type", "entity_id", name="uq_doc_link"), {"schema": SCHEMA})
     page_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey(f"{SCHEMA}.pages.id", ondelete="CASCADE"), index=True)
