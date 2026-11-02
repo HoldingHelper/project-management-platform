@@ -16,7 +16,14 @@ export function DocumentLifecycleControls({ attachmentId, pageId, fileName, onAr
   const [action, setAction] = useState<"publish" | "archive" | "restore" | null>(null);
   const [busy, setBusy] = useState(false);
   const resource = pageId ? `/docs/pages/${pageId}` : `/files/${attachmentId}`;
-  const access = useQuery({ queryKey: ["document-lifecycle", resource], queryFn: () => apiFetch<DocumentLifecycle>(`${resource}/lifecycle`), refetchInterval: 15000 });
+  const access = useQuery({
+    queryKey: ["document-lifecycle", resource],
+    queryFn: () => apiFetch<DocumentLifecycle>(`${resource}/lifecycle`, { cache: "no-store" }),
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: "always",
+    refetchInterval: 15000,
+  });
   async function apply() {
     if (!action || busy || !access.data) return;
     setBusy(true);
