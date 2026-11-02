@@ -112,6 +112,11 @@ async function installApi(
   projectMemberRole = "ProjectManager",
 ) {
   const state = {
+    members: [{ project_id: PROJECT_ID, user_id: sessionUser.id, role: projectMemberRole }],
+    sprint: { ...sprint, duration_days: 14 },
+    sprintUpdates: [] as Array<Record<string, unknown>>,
+    uploads: 0,
+    failNextUpload: false,
     project: { ...initialProject },
     projectUpdate: null as Record<string, unknown> | null,
     createdTask: null as Record<string, unknown> | null,
@@ -127,6 +132,7 @@ async function installApi(
     if (path === "/auth/login" || path === "/auth/refresh") {
       return json(route, { access_token: "test-access", refresh_token: "test-refresh", token_type: "bearer", expires_in: 900, user: sessionUser });
     }
+    if (path === "/org/cockpit") return json(route, { holding: { slug: "holding", name: "Holding" }, ventures: [], active_ventures: 0, at_risk_ventures: 0, total_allocated_percent: 0, orphan_projects: 0 });
     if (path === "/users") return json(route, { items: [sessionUser, recipient], page: 1, page_size: 200, total_count: 2 });
     if (path === "/teams") return json(route, [{ id: TEAM_ID, department_id: PRODUCT_ID, name: "Production Support", member_count: 4 }]);
     if (path === "/products") {
@@ -138,11 +144,11 @@ async function installApi(
     if (path === `/projects/${PROJECT_ID}/overview`) {
       return json(route, {
         project: state.project,
-        sprints: [sprint],
-        phases: [sprint],
-        current_sprint: sprint,
-        current_phase: sprint,
-        members: [{ project_id: PROJECT_ID, user_id: sessionUser.id, role: projectMemberRole }],
+        sprints: [state.sprint],
+        phases: [state.sprint],
+        current_sprint: state.sprint,
+        current_phase: state.sprint,
+        members: state.members,
         milestones: [],
         task_stats: { total: state.createdTask ? 1 : 0, done: 0, in_progress: 0, blocked: 0, overdue: 0, unassigned: state.createdTask ? 1 : 0 },
         open_blockers: 0,
@@ -154,7 +160,38 @@ async function installApi(
       Object.assign(state.project, state.projectUpdate, { updated_at: NOW });
       return json(route, state.project);
     }
-    if (path === `/projects/${PROJECT_ID}/sprints`) return json(route, [sprint]);
+    if (path === `/products/${PRODUCT_ID}/members`) return json(route, [sessionUser, recipient]);
+    if (path === `/projects/${PROJECT_ID}/members`) {
+      if (method === "POST") {
+        state.members.push({ project_id: PROJECT_ID, ...request.postDataJSON() });
+        return route.fulfill({ status: 204 });
+      }
+      return json(route, state.members);
+    }
+    if (path === `/projects/${PROJECT_ID}/members/${RECIPIENT_ID}` && method === "DELETE") {
+      state.members = state.members.filter((member) => member.user_id !== RECIPIENT_ID);
+      return route.fulfill({ status: 204 });
+    }
+    if (path === `/projects/${PROJECT_ID}/sprints`) return json(route, [state.sprint]);
+    if (path === `/sprints/${SPRINT_ID}` && method === "PUT") {
+      const payload = request.postDataJSON();
+      state.sprintUpdates.push(payload);
+      Object.assign(state.sprint, payload);
+      const start = new Date(state.sprint.start_date + "T00:00:00Z");
+      start.setUTCDate(start.getUTCDate() + state.sprint.duration_days - 1);
+      state.sprint.end_date = start.toISOString().slice(0, 10);
+      return json(route, state.sprint);
+    }
+    if (path === "/files" && method === "POST") {
+      if (state.failNextUpload) {
+        state.failNextUpload = false;
+        return json(route, { message: "Upload unavailable" }, 503);
+      }
+      expect(url.searchParams.get("documentation")).toBe("true");
+      expect(request.postDataBuffer()?.toString()).toContain("project-guide.md");
+      state.uploads++;
+      return json(route, { id: `file-${state.uploads}`, file_name: "project-guide.md", size_bytes: 20 }, 201);
+    }
     if (path === `/sprints/${SPRINT_ID}/tasks`) {
       return json(route, state.createdTask ? [state.createdTask] : []);
     }
@@ -209,6 +246,10 @@ async function installApi(
       state.links.push(link);
       return json(route, link, 201);
     }
+    if (path.startsWith(`/docs/pages/${DOC_ID}/links/`) && method === "DELETE") {
+      state.links = state.links.filter((link) => link.id !== path.split("/").at(-1));
+      return route.fulfill({ status: 204 });
+    }
     if (path === "/notifications/unread-count") return json(route, { count: 0 });
     if (path === "/chat/channels") return json(route, []);
     if (path.includes("pending-work")) return json(route, { pending_on_me: [] });
@@ -223,7 +264,7 @@ async function login(page: Page, sessionUser: typeof user = user) {
   await page.getByLabel("Email or username").fill(sessionUser.email);
   await page.getByLabel("Password", { exact: true }).fill("valid-test-password");
   await page.getByRole("button", { name: /sign in/i }).click();
-  await expect(page).toHaveURL(/\/app\/(teams|docs)$/);
+  await expect(page).toHaveURL(/\/(?:app\/(?:teams|docs)|h\/holding)$/);
 }
 
 test("task navigation restores the source filters through Back and Forward", async ({ page }, testInfo) => {
@@ -255,6 +296,99 @@ test("task navigation restores the source filters through Back and Forward", asy
   }
   await expect(page.getByPlaceholder("Search title…")).toHaveValue("Return");
   await expect(page).toHaveURL(/\/tasks$/);
+});
+
+test("Task details refreshes published documents when reopened", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "desktop", "Exercises the desktop task details dialog cache.");
+  const api = await installApi(page);
+  api.createdTask = {
+    id: TASK_ID, title: "Document lifecycle task", description: "Publication check", phase_id: SPRINT_ID,
+    parent_task_id: null, task_type: "Feature", priority: "P2", status: "Ready",
+    assignee_user_ids: [], labels: [], checklist_items: [], board_order: 0,
+    created_by: "manual", created_at: NOW, updated_at: NOW,
+  };
+  let status = "draft";
+  await page.route("**/api/v1/files?**", route => json(route, [{
+    id: DOC_ID, entity_type: "task", entity_id: TASK_ID, file_name: "voice_20261101_135707.ogg",
+    content_type: "audio/ogg", size_bytes: 20480, uploaded_by_user_id: USER_ID, version: 1, created_at: NOW,
+  }]));
+  await page.route(`**/api/v1/files/${DOC_ID}/lifecycle`, route => json(route, {
+    page_id: DOC_ID, status, can_edit: status === "draft", can_publish: status === "draft", can_archive: true, can_restore: false,
+  }));
+  await login(page);
+  await page.goto("/tasks");
+  await page.getByRole("link", { name: "Document lifecycle task", exact: true }).first().click();
+  const dialog = page.getByRole("dialog", { name: "Task details", exact: true });
+  await expect(dialog.getByText("Draft / On Publish", { exact: true })).toBeVisible();
+  await dialog.getByRole("button", { name: "Close dialog", exact: true }).click();
+  // Publishing in another tab can happen without a websocket event reaching this tab.
+  status = "published";
+  await page.getByRole("link", { name: "Document lifecycle task", exact: true }).first().click();
+  await expect(dialog.getByText("Published · Read-only", { exact: true })).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Publish document", exact: true })).toHaveCount(0);
+
+  // A later archive in Docs must also refresh when the browser tab becomes visible.
+  await page.evaluate(() => {
+    Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "hidden" });
+    window.dispatchEvent(new Event("visibilitychange"));
+  });
+  status = "archived";
+  await page.evaluate(() => {
+    Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "visible" });
+    window.dispatchEvent(new Event("visibilitychange"));
+  });
+  await expect(dialog.getByText("Archived · Read-only", { exact: true })).toBeVisible();
+});
+
+test("Persian uses Jalali dates and saves selected days as ISO", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === "tablet", "Phone and desktop cover the shared date control.");
+  const persianUser = { ...user, locale: "fa", calendar: "gregory", numbering_system: "latn" };
+  const api = await installApi(page, persianUser);
+  await login(page, persianUser);
+  await page.goto(`/projects/${PROJECT_ID}`);
+  await expect(page.locator("html")).toHaveAttribute("lang", "fa");
+  await page.getByRole("button", { name: "ویرایش پروژه", exact: true }).click();
+  const modal = page.getByRole("dialog", { name: "ویرایش پروژه", exact: true });
+  const start = modal.getByLabel("تاریخ شروع", { exact: true });
+  await expect(start).toContainText("1405");
+  await start.click();
+  const calendar = modal.getByRole("group", { name: "تقویم جلالی", exact: true });
+  await calendar.getByLabel("سال شمسی").fill("1405");
+  await calendar.getByLabel("ماه شمسی").selectOption("1");
+  await calendar.getByRole("button", { name: "1 فروردین 1405", exact: true }).click();
+  await expect(start).toContainText("1405/01/01");
+  await modal.getByRole("button", { name: "ذخیره تغییرات", exact: true }).click();
+  await expect(modal).toHaveCount(0);
+  expect(api.sprint.start_date).toBe("2026-03-21");
+  expect(api.sprint.end_date).toBe("2026-04-03");
+  await page.reload();
+  await page.getByRole("button", { name: "ویرایش پروژه", exact: true }).click();
+  await expect(modal.getByLabel("تاریخ شروع", { exact: true })).toContainText("1405/01/01");
+  await modal.getByLabel("تاریخ شروع", { exact: true }).click();
+  const accessibility = await new AxeBuilder({ page }).include('[role="dialog"]').analyze();
+  expect(accessibility.violations).toEqual([]);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
+  await page.screenshot({ path: testInfo.outputPath("jalali-calendar.png"), fullPage: true });
+  await modal.getByRole("group", { name: "تقویم جلالی", exact: true }).getByLabel("ماه شمسی").press("Escape");
+  await expect(modal.getByRole("group", { name: "تقویم جلالی", exact: true })).toHaveCount(0);
+  await expect(modal.getByLabel("تاریخ شروع", { exact: true })).toBeFocused();
+});
+
+test("Persian monthly planning puts Nowruz tasks in Farvardin", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "desktop", "The month grouping uses shared calendar logic.");
+  await page.clock.setFixedTime(new Date("2026-03-22T12:00:00Z"));
+  const persianUser = { ...user, locale: "fa", calendar: "gregory", numbering_system: "latn" };
+  const api = await installApi(page, persianUser);
+  api.createdTask = {
+    id: TASK_ID, title: "Nowruz delivery", description: "Jalali grouping", phase_id: SPRINT_ID,
+    parent_task_id: null, task_type: "Feature", priority: "P2", status: "Ready", due_date: "2026-03-21",
+    assignee_user_ids: [], labels: [], checklist_items: [], board_order: 0,
+    created_by: "manual", created_at: NOW, updated_at: NOW,
+  };
+  await login(page, persianUser);
+  await page.goto("/tasks?layout=monthly");
+  const month = page.getByText("فروردین 1405", { exact: true }).locator("..").locator("..");
+  await expect(month.getByRole("link", { name: "Nowruz delivery", exact: true })).toBeVisible();
 });
 
 test("project dates, sprint planning, and searchable Docs links work together", async ({ page }, testInfo) => {
@@ -344,3 +478,118 @@ test("a user without task-management permissions can create tasks", async ({ pag
   await page.getByRole("button", { name: "Open task details for Task created by an observer" }).click();
   await expect(page.getByLabel("New subtask title")).toBeVisible();
 });
+
+
+test("Edit project saves members, sprint edits and additional documentation", async ({ page }, testInfo) => {
+  const api = await installApi(page);
+  await login(page);
+  await page.goto(`/projects/${PROJECT_ID}`);
+  await page.getByRole("button", { name: "Edit project", exact: true }).click();
+  let modal = page.getByRole("dialog", { name: "Edit project", exact: true });
+  await expect(modal.getByRole("button", { name: /Remove member: Project Owner/ })).toHaveCount(0);
+  await modal.getByLabel("User", { exact: true }).selectOption(RECIPIENT_ID);
+  await modal.getByLabel("Project role", { exact: true }).selectOption("QA");
+  await modal.getByRole("button", { name: "Add member", exact: true }).click();
+  await modal.getByLabel("Sprint name", { exact: true }).fill("Release sprint");
+  await modal.getByLabel("Start date", { exact: true }).fill("2026-09-01");
+  await modal.getByLabel("Sprint duration", { exact: true }).selectOption("7");
+  await expect(modal.getByLabel("Calculated end date", { exact: true })).toHaveValue("2026-09-07");
+  await modal.getByLabel("Search documents to connect to project").fill("Launch");
+  await modal.getByRole("option", { name: /Launch runbook/ }).click();
+  await modal.locator('input[type="file"]').setInputFiles({ name: "project-guide.md", mimeType: "text/markdown", buffer: Buffer.from("# Project guide") });
+  const accessibility = await new AxeBuilder({ page }).include('[role="dialog"]').analyze();
+  expect(accessibility.violations).toEqual([]);
+  await page.screenshot({ path: testInfo.outputPath("edit-project.png"), fullPage: true });
+  await modal.getByRole("button", { name: "Save changes", exact: true }).click();
+  await expect(modal).toHaveCount(0);
+  expect(api.members).toContainEqual({ project_id: PROJECT_ID, user_id: RECIPIENT_ID, role: "QA" });
+  expect(api.sprint.name).toBe("Release sprint");
+  expect(api.sprint.start_date).toBe("2026-09-01");
+  expect(api.sprint.end_date).toBe("2026-09-07");
+  expect(api.uploads).toBe(1);
+  expect(api.links).toHaveLength(1);
+  expect(api.project.start_date).toBe(initialProject.start_date);
+  await page.getByRole("button", { name: "Edit project", exact: true }).click();
+  modal = page.getByRole("dialog", { name: "Edit project", exact: true });
+  await expect(modal.getByLabel("Sprint name", { exact: true })).toHaveValue("Release sprint");
+  await expect(modal.getByRole("button", { name: /Launch runbook/ })).toBeVisible();
+  await modal.getByRole("button", { name: "Remove member: Support Agent", exact: true }).click();
+  await modal.getByRole("button", { name: "Save changes", exact: true }).click();
+  await expect(modal).toHaveCount(0);
+  expect(api.members.map((member) => member.user_id)).toEqual([USER_ID]);
+  expect(api.links).toHaveLength(1);
+  expect(api.uploads).toBe(1);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
+});
+
+test("Edit project cancels drafts and retries a failed upload without duplicating changes", async ({ page }) => {
+  const api = await installApi(page);
+  await login(page);
+  await page.goto(`/projects/${PROJECT_ID}`);
+  await page.getByRole("button", { name: "Edit project", exact: true }).click();
+  let modal = page.getByRole("dialog", { name: "Edit project", exact: true });
+  await modal.getByLabel("User", { exact: true }).selectOption(RECIPIENT_ID);
+  await modal.getByRole("button", { name: "Add member", exact: true }).click();
+  await modal.getByLabel("Sprint name", { exact: true }).fill("Discard this draft");
+  await modal.getByRole("button", { name: "Cancel", exact: true }).click();
+  expect(api.members).toHaveLength(1);
+  expect(api.sprintUpdates).toHaveLength(0);
+  await page.getByRole("button", { name: "Edit project", exact: true }).click();
+  modal = page.getByRole("dialog", { name: "Edit project", exact: true });
+  await expect(modal.getByLabel("Sprint name", { exact: true })).toHaveValue("Sprint 1");
+  await expect(modal.getByRole("button", { name: "Remove member: Support Agent", exact: true })).toHaveCount(0);
+  await modal.getByLabel("User", { exact: true }).selectOption(RECIPIENT_ID);
+  await modal.getByRole("button", { name: "Add member", exact: true }).click();
+  await modal.getByLabel("Sprint name", { exact: true }).fill("Retry sprint");
+  await modal.getByLabel("Search documents to connect to project").fill("Launch");
+  await modal.getByRole("option", { name: /Launch runbook/ }).click();
+  await modal.locator('input[type="file"]').setInputFiles({ name: "project-guide.md", mimeType: "text/markdown", buffer: Buffer.from("# Project guide") });
+  api.failNextUpload = true;
+  await modal.getByRole("button", { name: "Save changes", exact: true }).click();
+  await expect(page.getByText("Project saved, but some documents could not be uploaded. Retry Save changes to upload the remaining files.", { exact: true })).toBeVisible();
+  await expect(modal.getByText("project-guide.md", { exact: true })).toBeVisible();
+  await modal.getByRole("button", { name: "Save changes", exact: true }).click();
+  await expect(modal).toHaveCount(0);
+  expect(api.members).toHaveLength(2);
+  expect(api.links).toHaveLength(1);
+  expect(api.uploads).toBe(1);
+  expect(api.sprintUpdates).toHaveLength(1);
+});
+
+for (const entityType of ["project", "task"] as const) {
+  test(`${entityType} History & Changes shows real edits with old and new values`, async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name === "tablet", "Phone and desktop cover history layout.");
+    const api = await installApi(page);
+    api.createdTask = {
+      id: TASK_ID, title: "Audited task", description: "History details", phase_id: SPRINT_ID,
+      parent_task_id: null, task_type: "Feature", priority: "P2", status: "Ready",
+      assignee_user_ids: [], labels: [], checklist_items: [], board_order: 0,
+      created_by: "manual", created_at: NOW, updated_at: NOW,
+    };
+    const id = entityType === "project" ? PROJECT_ID : TASK_ID;
+    await page.route(`**/api/v1/${entityType}s/${id}/history*`, (route) => json(route, [{
+      id: "audit-update", entity_type: entityType === "project" ? "projects.Project" : "projects.TaskItem",
+      entity_id: id, action_type: "Update", user_id: USER_ID, user_name: "Project Owner",
+      changes_json: JSON.stringify({ priority: { old: "P2", new: "P1" }, description: { old: "Previous brief", new: "Updated brief" } }),
+      occurred_at: "2026-08-25T12:30:00Z",
+    }, {
+      id: "audit-create", entity_type: entityType === "project" ? "projects.Project" : "projects.TaskItem",
+      entity_id: id, action_type: "Create", user_id: USER_ID, user_name: "Project Owner",
+      changes_json: "{}", occurred_at: NOW,
+    }]));
+    await login(page);
+    await page.goto(`/${entityType}s/${id}`);
+    await page.getByRole(entityType === "project" ? "tab" : "button", { name: "History & Changes", exact: true }).click();
+    const history = page.getByRole("region", { name: "History & Changes", exact: true });
+    await expect(history.getByText("Previous brief", { exact: true })).toBeVisible();
+    await expect(history.getByText("Updated brief", { exact: true })).toBeVisible();
+    await expect(history.getByText("P2", { exact: true })).toBeVisible();
+    await expect(history.getByText("P1", { exact: true })).toBeVisible();
+    await expect(history.getByText("Project Owner", { exact: true }).first()).toBeVisible();
+    await expect(history.getByText("Created", { exact: true })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
+    const accessibility = await new AxeBuilder({ page }).include('[aria-label="History & Changes"]').analyze();
+    expect(accessibility.violations).toEqual([]);
+    await page.screenshot({ path: testInfo.outputPath("history.png"), fullPage: true });
+  });
+}
