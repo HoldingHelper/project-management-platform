@@ -374,6 +374,66 @@ test("Persian uses Jalali dates and saves selected days as ISO", async ({ page }
   await expect(modal.getByLabel("تاریخ شروع", { exact: true })).toBeFocused();
 });
 
+test("Persian project team count stays clear of member avatars", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === "tablet", "Phone and desktop cover the team card layout.");
+  const persianUser = { ...user, locale: "fa", calendar: "gregory", numbering_system: "latn" };
+  const api = await installApi(page, persianUser);
+  api.members.push({ project_id: PROJECT_ID, user_id: RECIPIENT_ID, role: "Developer" });
+  await login(page, persianUser);
+  await page.goto(`/projects/${PROJECT_ID}`);
+  const avatars = page.locator('[aria-label="اعضای پروژه"]');
+  const count = avatars.locator("+ span");
+  await expect(avatars.locator(":scope > span")).toHaveCount(2);
+  await expect(count).toContainText("2 عضو");
+  const countBox = await count.boundingBox();
+  const avatarBoxes = await avatars.locator(":scope > span").all();
+  expect(countBox).not.toBeNull();
+  const firstAvatar = await avatarBoxes[0].boundingBox();
+  const secondAvatar = await avatarBoxes[1].boundingBox();
+  expect(firstAvatar!.x + firstAvatar!.width).toBeLessThanOrEqual(secondAvatar!.x);
+  for (const avatar of avatarBoxes) {
+    const box = await avatar.boundingBox();
+    expect(box).not.toBeNull();
+    expect(box!.x + box!.width <= countBox!.x || countBox!.x + countBox!.width <= box!.x || box!.y + box!.height <= countBox!.y || countBox!.y + countBox!.height <= box!.y).toBeTruthy();
+  }
+  await avatars.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: testInfo.outputPath("persian-project-team.png") });
+});
+
+test("project document controls fit in the Persian edit dialog", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === "tablet", "Phone and desktop cover narrow and wide layouts.");
+  const persianUser = { ...user, locale: "fa", calendar: "gregory", numbering_system: "latn" };
+  await installApi(page, persianUser);
+  const fileName = "ecommerce-product-catalog-edited.md";
+  await page.route("**/api/v1/files?**", route => json(route, [{
+    id: DOC_ID, entity_type: "project", entity_id: PROJECT_ID, file_name: fileName,
+    content_type: "text/markdown", size_bytes: 19353, uploaded_by_user_id: USER_ID, version: 1, created_at: NOW,
+  }]));
+  await page.route(`**/api/v1/files/${DOC_ID}/lifecycle`, route => json(route, {
+    page_id: DOC_ID, status: "draft", can_edit: true, can_publish: true, can_archive: true, can_restore: false,
+  }));
+  await login(page, persianUser);
+  await page.goto(`/projects/${PROJECT_ID}`);
+  await page.getByRole("button", { name: "ویرایش پروژه", exact: true }).click();
+  const modal = page.getByRole("dialog", { name: "ویرایش پروژه", exact: true });
+  const filename = modal.getByTitle(fileName);
+  const download = modal.getByRole("button", { name: `Download ${fileName}` });
+  const publish = modal.getByRole("button", { name: "انتشار سند", exact: true });
+  const archive = modal.getByRole("button", { name: `بایگانی سند ${fileName}` });
+  await expect(filename).toBeVisible();
+  await expect(download).toBeVisible();
+  await expect(publish).toBeVisible();
+  await expect(archive).toBeVisible();
+  const boxes = await Promise.all([filename, download, publish, archive].map(item => item.boundingBox()));
+  expect(boxes.every(Boolean)).toBeTruthy();
+  for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) {
+    const a = boxes[i]!;
+    const b = boxes[j]!;
+    expect(a.x + a.width <= b.x + 1 || b.x + b.width <= a.x + 1 || a.y + a.height <= b.y + 1 || b.y + b.height <= a.y + 1).toBeTruthy();
+  }
+  expect(await modal.evaluate(node => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(1);
+});
+
 test("Persian monthly planning puts Nowruz tasks in Farvardin", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "desktop", "The month grouping uses shared calendar logic.");
   await page.clock.setFixedTime(new Date("2026-03-22T12:00:00Z"));
@@ -389,6 +449,99 @@ test("Persian monthly planning puts Nowruz tasks in Farvardin", async ({ page },
   await page.goto("/tasks?layout=monthly");
   const month = page.getByText("فروردین 1405", { exact: true }).locator("..").locator("..");
   await expect(month.getByRole("link", { name: "Nowruz delivery", exact: true })).toBeVisible();
+});
+
+test("portfolio timeline keeps panned bars outside project labels and zooms long schedules", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === "tablet", "Phone and desktop exercise timeline sizing.");
+  await page.clock.setFixedTime(new Date("2026-03-22T12:00:00Z"));
+  const faUser = { ...user, locale: "fa", calendar: "persian" };
+  await installApi(page, faUser);
+  await page.route("**/api/v1/portfolio/gantt*", route => json(route, {
+    projects: [{ ...initialProject, name: "Timeline project", start_date: "2026-03-15", end_date: "2026-04-05", current_sprint: "Sprint 1", milestones: [] }], links: [],
+  }));
+  await login(page, faUser);
+  await page.goto("/portfolio");
+  const chart = page.locator(".pmp-chart-time-axis").first();
+  const project = chart.getByRole("link", { name: "Timeline project", exact: true }).first();
+  await expect(project).toBeVisible();
+  await expect(chart.locator('[data-project-label] [data-status]').first()).toHaveAttribute("data-status", "in-progress");
+  const month = await chart.getByText("فروردین 1405", { exact: true }).boundingBox();
+  const grid = await chart.locator("[data-timeline-grid]").boundingBox();
+  // The range starts on March 5; Farvardin begins March 21, sixteen days later.
+  expect(Math.abs(month!.x - grid!.x - grid!.width * 16 / 46)).toBeLessThan(2);
+  await page.getByRole("button", { name: "نمایش بازه بعد", exact: true }).first().click();
+  await chart.locator("[data-timeline-grid]").evaluate(node => node.scrollIntoView({ block: "center" }));
+  const covered = await project.evaluate(link => {
+    const label = link.parentElement!.parentElement!;
+    const rect = label.getBoundingClientRect();
+    const hit = document.elementFromPoint(rect.right - 10, rect.top + rect.height / 2);
+    return !!hit?.closest('[title*="click to open"]');
+  });
+  expect(covered).toBe(false);
+  const timelineBar = chart.locator(`[data-timeline-bar="${PROJECT_ID}"]`);
+  const beforePan = await timelineBar.evaluate(node => (node as HTMLElement).style.left);
+  const panGrid = (await chart.locator("[data-timeline-grid]").boundingBox())!;
+  await page.mouse.move(panGrid.x + 80, panGrid.y + panGrid.height - 3);
+  await page.mouse.down();
+  await page.mouse.move(panGrid.x + 120, panGrid.y + panGrid.height - 3, { steps: 4 });
+  await page.mouse.up();
+  await expect.poll(() => timelineBar.evaluate(node => (node as HTMLElement).style.left)).not.toBe(beforePan);
+  await page.screenshot({ path: testInfo.outputPath("panned-timeline.png"), fullPage: true });
+  await project.click();
+  await expect(page).toHaveURL(new RegExp(`/projects/${PROJECT_ID}$`));
+  await page.route("**/api/v1/portfolio/gantt*", route => json(route, {
+    projects: [{ ...initialProject, name: "Long schedule", start_date: "2023-03-15", end_date: "2026-04-05", milestones: [] }], links: [],
+  }));
+  await page.goto("/portfolio");
+  const bar = chart.locator('[title^="Long schedule ·"]').first();
+  const before = (await bar.boundingBox())!.width;
+  await page.getByRole("button", { name: "بزرگ‌نمایی", exact: true }).first().click();
+  await expect.poll(async () => (await bar.boundingBox())!.width).toBeGreaterThan(before);
+  const labels = chart.locator("[data-project-label]");
+  const labelBefore = (await labels.boundingBox())!.x;
+  await chart.evaluate(node => { node.scrollLeft = 150; });
+  expect(Math.abs((await labels.boundingBox())!.x - labelBefore)).toBeLessThan(1);
+  const accessibility = await new AxeBuilder({ page }).include(".pmp-chart-time-axis").analyze();
+  expect(accessibility.violations).toEqual([]);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
+  await page.screenshot({ path: testInfo.outputPath("portfolio-timeline.png"), fullPage: true });
+});
+
+test("timeline dates are inclusive, dependencies reach their targets and focus charts have unique markers", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "desktop", "Checks shared date geometry and focused chart instances.");
+  await page.clock.setFixedTime(new Date("2026-03-22T12:00:00Z"));
+  await installApi(page, { ...user, roles: ["CLevel"] });
+  await page.route("**/api/v1/portfolio/gantt*", route => json(route, {
+    projects: [
+      { ...initialProject, name: "One day", status: "completed", health_status: "delayed", start_date: "2026-03-21", end_date: "2026-03-21", milestones: [] },
+      { ...initialProject, id: DOC_ID, name: "Two days", status: "not-started", health_status: "delayed", start_date: "2026-03-23", end_date: "2026-03-24", milestones: [] },
+    ],
+    links: [{ id: "test-dependency", predecessor_project_id: PROJECT_ID, successor_project_id: DOC_ID, dependency_type: "FinishToStart", lag_days: 0 }],
+  }));
+  await login(page);
+  await page.goto("/timeline?level=inter-team");
+  const chart = page.locator(".pmp-chart-time-axis").first();
+  const oneDay = chart.locator(`[data-timeline-bar="${PROJECT_ID}"]`);
+  const twoDays = chart.locator(`[data-timeline-bar="${DOC_ID}"]`);
+  await expect(oneDay).toBeVisible();
+  const widths = await Promise.all([oneDay.boundingBox(), twoDays.boundingBox()]);
+  expect(Math.abs(widths[1]!.width / widths[0]!.width - 2)).toBeLessThan(.05);
+  const labels = chart.locator("[data-project-label] [data-status]");
+  await expect(labels.nth(0)).toHaveAttribute("data-status", "completed");
+  await expect(labels.nth(1)).toHaveAttribute("data-status", "not-started");
+  await expect(chart.getByTitle("Drag project start", { exact: true })).toHaveCount(0);
+  const arrow = await chart.locator("path[marker-end]").getAttribute("d");
+  const arrowEndX = Number(arrow!.trim().split(/[ ,]+/).at(-2));
+  const targetLeft = await twoDays.evaluate(node => parseFloat((node as HTMLElement).style.left));
+  expect(Math.abs(arrowEndX - (targetLeft - 4))).toBeLessThan(.1);
+  await page.getByRole("button", { name: /^Focus .* chart$/ }).click();
+  const markerIds = await page.locator("marker").evaluateAll(nodes => nodes.map(node => node.id));
+  expect(markerIds).toHaveLength(2);
+  expect(new Set(markerIds).size).toBe(2);
+  await page.getByRole("button", { name: "Exit chart focus", exact: true }).click();
+  await oneDay.focus();
+  await oneDay.press("Enter");
+  await expect(page).toHaveURL(new RegExp(`/projects/${PROJECT_ID}$`));
 });
 
 test("project dates, sprint planning, and searchable Docs links work together", async ({ page }, testInfo) => {

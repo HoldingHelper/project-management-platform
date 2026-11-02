@@ -904,7 +904,7 @@ function OverviewTab({ projectId, canManage }: { projectId: string; canManage: b
             <div key={ph.id} style={{ display: "grid", gridTemplateColumns: "180px minmax(160px, 1fr) 150px 90px", gap: 12, alignItems: "center" }}>
               <span style={{ fontSize: 12.5, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {ph.name}
-                {!ph.is_sprint && <small style={{ marginLeft: 6, color: "var(--text-tertiary)" }}><LocalizedText message={"Legacy"} /></small>}
+                {!ph.is_sprint && <small style={{ marginInlineStart: 6, color: "var(--text-tertiary)" }}><LocalizedText message={"Legacy"} /></small>}
               </span>
               <ProgressBar percent={Number(ph.progress_percentage)} blocks={22} showLabel={false} />
               <span style={{ display: "flex", alignItems: "center", gap: 7, minWidth: 0 }}>
@@ -944,7 +944,7 @@ function OverviewTab({ projectId, canManage }: { projectId: string; canManage: b
                   <span style={{ height: 10, borderRadius: "var(--radius-full)", background: "var(--surface-3)", overflow: "hidden" }}>
                     <span style={{ display: "block", width: `${percent}%`, height: "100%", background: row.blocked || row.overdue ? "var(--status-delayed)" : "var(--accent-primary)" }} />
                   </span>
-                  <span style={{ fontSize: 12, color: "var(--text-tertiary)", fontFamily: "var(--font-mono)", textAlign: "right" }}>
+                  <span style={{ fontSize: 12, color: "var(--text-tertiary)", textAlign: "end" }}>
                     {row.tasks}{" "}<LocalizedText message={"open"} />{" "}</span>
                   {(row.blocked > 0 || row.overdue > 0 || row.points > 0) && (
                     <span style={{ gridColumn: "2 / 4", fontSize: 11.5, color: "var(--text-tertiary)" }}>
@@ -967,7 +967,7 @@ function OverviewTab({ projectId, canManage }: { projectId: string; canManage: b
                 <span style={{ flex: 1 }}>
                   <ProgressBar percent={(count / Math.max(1, remainingTasks.length)) * 100} blocks={10} showLabel={false} />
                 </span>
-                <span style={{ width: 54, textAlign: "right", fontSize: 12, color: "var(--text-tertiary)", fontFamily: "var(--font-mono)" }}>{count}</span>
+                <span style={{ width: 54, textAlign: "end", fontSize: 12, color: "var(--text-tertiary)", fontFamily: "var(--font-mono)" }}>{count}</span>
               </div>
             ))}
             {!tasks.isLoading && partitionRows.length === 0 && (
@@ -1007,18 +1007,23 @@ function OverviewTab({ projectId, canManage }: { projectId: string; canManage: b
                 <span style={{ fontSize: 13, fontWeight: 600, textDecoration: m.completed_at ? "line-through" : undefined, color: m.completed_at ? "var(--text-tertiary)" : undefined }}>
                   {m.name}
                 </span>
-                <span style={{ fontSize: 11.5, color: "var(--text-tertiary)", marginLeft: "auto" }}>{m.due_date ?? ""}</span>
+                <span style={{ fontSize: 11.5, color: "var(--text-tertiary)", marginInlineStart: "auto" }}>{m.due_date ?? ""}</span>
               </div>
             ))}
             {o.milestones.length === 0 && <div style={{ fontSize: 12.5, color: "var(--text-tertiary)" }}><LocalizedText message={"No milestones yet."} /></div>}
-            <div style={{ borderTop: "1px solid var(--border-subtle)", paddingTop: 12, display: "flex", alignItems: "center", gap: 4 }}>
-              <Users size={13} style={{ color: "var(--text-tertiary)", marginRight: 6 }} />
-              {o.members.slice(0, 8).map((m, i) => (
-                <span key={m.user_id} style={{ marginLeft: i === 0 ? 0 : -8 }} title={`${nameOf(m.user_id)} · ${m.role}`}>
-                  <Avatar name={nameOf(m.user_id)} size={26} />
-                </span>
-              ))}
-              <span style={{ fontSize: 12, color: "var(--text-tertiary)", marginLeft: 8 }}>
+            <div style={{ borderTop: "1px solid var(--border-subtle)", paddingTop: 12, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+              <Users size={13} style={{ color: "var(--text-tertiary)", flexShrink: 0 }} />
+              <div
+                aria-label={translateUI("Project members")}
+                style={{ display: "flex", flexWrap: "wrap", gap: 4, alignItems: "center", direction: "ltr", flex: "0 1 auto", minWidth: 0 }}
+              >
+                {o.members.slice(0, 8).map((m) => (
+                  <span key={m.user_id} style={{ display: "flex" }} title={`${nameOf(m.user_id)} · ${m.role}`}>
+                    <Avatar name={nameOf(m.user_id)} size={26} />
+                  </span>
+                ))}
+              </div>
+              <span style={{ fontSize: 12, color: "var(--text-tertiary)", whiteSpace: "nowrap", flexShrink: 0 }}>
                 {o.members.length}{" "}<LocalizedText message={"member(s)"} />{" "}</span>
             </div>
           </div>
@@ -1481,7 +1486,7 @@ function BoardTab({
                       background: active ? "color-mix(in srgb, var(--accent-primary) 10%, var(--surface-2))" : "var(--surface-2)",
                       color: "var(--text-primary)",
                       cursor: "pointer",
-                      textAlign: "left",
+                      textAlign: "start",
                     }}
                   >
                     <span style={{ display: "block", fontWeight: 800, fontSize: 12.5 }}>{sprint.name}</span>
@@ -1663,7 +1668,7 @@ function TaskCard({
           aria-expanded={expanded}
           aria-label={`${expanded ? "Collapse" : "Expand"} ${task.title}`}
           onClick={() => setExpanded((value) => !value)}
-          style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "flex-start", gap: 8, padding: 0, border: 0, background: "transparent", color: "inherit", textAlign: "left", cursor: "pointer" }}
+          style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "flex-start", gap: 8, padding: 0, border: 0, background: "transparent", color: "inherit", textAlign: "start", cursor: "pointer" }}
         >
           <span style={{ color: "var(--text-tertiary)", display: "inline-flex", marginTop: 2 }}>
             {expanded ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
@@ -1803,7 +1808,7 @@ const docLinkRow: React.CSSProperties = {
   borderRadius: "var(--radius-2)",
   background: "var(--surface-2)",
   color: "var(--text-secondary)",
-  textAlign: "left",
+  textAlign: "start",
   cursor: "pointer",
 };
 

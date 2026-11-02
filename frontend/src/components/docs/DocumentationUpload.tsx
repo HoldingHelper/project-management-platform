@@ -75,11 +75,15 @@ export function DocumentationFiles({ entityType, entityId }: { entityType: "task
     {documents.isLoading && <span className={styles.caption}><LocalizedText message={"Loading documents…"} /></span>}
     {documents.data?.length === 0 && <span className={styles.caption}><LocalizedText message={"No uploaded documents yet."} /></span>}
     {documents.isError && <span role="alert" className={styles.caption}><LocalizedText message={"Could not load uploaded documents."} />{" "}<button type="button" onClick={() => documents.refetch()}><LocalizedText message={"Retry"} /></button></span>}
-    {(documents.data ?? []).map((file) => <div key={file.id} style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-      <FileText size={16} aria-hidden style={{ flexShrink: 0, color: "var(--accent-primary)" }} />
-      <span className={styles.details}><span className={styles.title} title={file.file_name}>{file.file_name}</span><span className={styles.caption}>{size(file.size_bytes)}</span></span>
-      <Button type="button" variant="tertiary" size="sm" disabled={!!downloading} aria-label={`Download ${file.file_name}`} onClick={() => download(file.id, file.file_name)}><Download size={14} aria-hidden />{downloading === file.id ? <LocalizedText message={"Downloading…"} /> : <LocalizedText message={"Download"} />}</Button>
-      <DocumentLifecycleControls attachmentId={file.id} fileName={file.file_name} />
+    {(documents.data ?? []).map((file) => <div key={file.id} className={styles.documentRow}>
+      <div className={styles.documentInfo}>
+        <FileText size={16} aria-hidden style={{ flexShrink: 0, color: "var(--accent-primary)" }} />
+        <span className={styles.details}><span className={styles.title} title={file.file_name}><bdi>{file.file_name}</bdi></span><span className={styles.caption}><bdi>{size(file.size_bytes)}</bdi></span></span>
+      </div>
+      <div className={styles.documentActions}>
+        <Button type="button" variant="tertiary" size="sm" disabled={!!downloading} aria-label={`Download ${file.file_name}`} onClick={() => download(file.id, file.file_name)}><Download size={14} aria-hidden />{downloading === file.id ? <LocalizedText message={"Downloading…"} /> : <LocalizedText message={"Download"} />}</Button>
+        <DocumentLifecycleControls attachmentId={file.id} fileName={file.file_name} />
+      </div>
     </div>)}
   </div>;
 }
