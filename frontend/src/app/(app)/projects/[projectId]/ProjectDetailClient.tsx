@@ -17,21 +17,29 @@ import {
   ChevronLeft,
   ChevronRight,
   Diamond,
+  Download,
   ExternalLink,
+  FileText,
   GitBranch,
   GripVertical,
+  Image as ImageIcon,
   ListChecks,
   Link2,
   Lock,
   Maximize2,
+  Mic,
+  Paperclip,
   Pencil,
   Plus,
   ShieldAlert,
   Trash2,
   Unlock,
+  Upload,
   Users,
   X,
 } from "lucide-react";
+import { downloadFile, listFiles, uploadFile } from "@/lib/api/collaboration";
+import { VoiceBubble } from "@/components/chat/VoiceBubble";
 import {
   addProjectMember,
   archiveProject,
@@ -62,6 +70,8 @@ import {
 } from "@/lib/api/docs";
 import { ChecklistEditor, ProjectChecklist, type ChecklistDraft } from "@/components/tasks/TaskChecklist";
 import { DocumentationFiles, DocumentationUpload, uploadDocumentationFiles } from "@/components/docs/DocumentationUpload";
+import { ProjectMembersFields, useProjectMembersDraft } from "@/components/projects/ProjectMembersFields";
+import { ProjectSprintsFields, useProjectSprintsDraft } from "@/components/projects/ProjectSprintsFields";
 import { SearchSuggestionInput } from "@/components/docs/SearchSuggestionInput";
 import { getBottlenecks } from "@/lib/api/analytics";
 import { listBlockers } from "@/lib/api/blockers";
@@ -157,6 +167,7 @@ const TAB_KEYS = [
   { key: "milestones", label: "Milestones" },
   { key: "blockers", label: "Blockers" },
   { key: "discussions", label: "Discussions" },
+  { key: "attachments", label: "Attachments" },
 ];
 
 const PROJECT_STATUS_OPTIONS = [
@@ -351,12 +362,189 @@ function ProjectWorkspaceInner() {
       {tab === "milestones" && <MilestonesTab projectId={projectId} canManage={canManage} />}
       {tab === "blockers" && <BlockersTab projectId={projectId} />}
       {tab === "discussions" && <DiscussionsTab projectId={projectId} />}
+      {tab === "attachments" && <ProjectAttachmentsTab projectId={projectId} />}
       <EditProjectModal
         open={editOpen}
         onClose={() => setEditOpen(false)}
         project={p}
+        canManageMembers={isSuperAdmin() || hasPermission("projects.manage_all") || isProjectAdmin}
+        canManageSprints={isSuperAdmin() || hasPermission("phases.manage_all", "phases.manage_team", "phases.approve")}
         onSaved={() => overview.refetch()}
       />
+    </div>
+  );
+}
+
+function ProjectAttachmentsTab({ projectId }: { projectId: string }) {
+  const { t: translateUI } = useI18n();
+  const toast = useToast();
+  const qc = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  const files = useQuery({
+    queryKey: ["entity-files", "project", projectId],
+    queryFn: () => listFiles("project", projectId as UUID),
+    enabled: Boolean(projectId),
+  });
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !projectId) return;
+    setIsUploading(true);
+    try {
+      await uploadFile("project", projectId as UUID, file, file.name);
+      toast.push(translateUI("File uploaded successfully"), "success");
+      qc.invalidateQueries({ queryKey: ["entity-files", "project", projectId] });
+    } catch {
+      toast.push(translateUI("Could not upload file. Please try again."), "error");
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleDownload = async (fileId: UUID, fileName: string) => {
+    setDownloadingId(fileId);
+    try {
+      const blob = await downloadFile(fileId);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch {
+      toast.push(translateUI("Could not download file."), "error");
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16, marginTop: 16 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, padding: "16px 20px", background: "var(--surface-1, #18181b)", borderRadius: 10, border: "1px solid var(--border-default, #27272a)" }}>
+        <div>
+          <h3 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: "var(--text-primary)" }}>
+            <LocalizedText message={"Project Attachments & Documents"} />
+          </h3>
+          <p style={{ margin: "4px 0 0", fontSize: 12.5, color: "var(--text-muted, #71717a)" }}>
+            <LocalizedText message={"Upload, listen to voice recordings, and manage project-wide specification files."} />
+          </p>
+        </div>
+        <div>
+          <input type="file" ref={fileInputRef} onChange={handleUpload} style={{ display: "none" }} />
+          <Button variant="primary" size="sm" disabled={isUploading} onClick={() => fileInputRef.current?.click()}>
+            <Upload size={14} /> {isUploading ? <LocalizedText message={"Uploading…"} /> : <LocalizedText message={"Upload File"} />}
+          </Button>
+        </div>
+      </div>
+
+      {files.isLoading ? (
+        <div style={{ padding: 40, textAlign: "center", color: "var(--text-muted)" }}>
+          <LocalizedText message={"Loading attachments…"} />
+        </div>
+      ) : (files.data?.length ?? 0) === 0 ? (
+        <div style={{ padding: "48px 20px", textAlign: "center", background: "var(--surface-1)", borderRadius: 10, border: "1px solid var(--border-default)" }}>
+          <Paperclip size={36} className="text-neutral-500 mb-2 opacity-50" style={{ margin: "0 auto 10px" }} />
+          <p style={{ margin: 0, fontSize: 13, color: "var(--text-muted)" }}>
+            <LocalizedText message={"No project attachments yet. Click 'Upload File' to add documents, diagrams, or briefs."} />
+          </p>
+        </div>
+      ) : (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 14 }}>
+          {files.data!.map((file) => {
+            const isVoice = file.file_name.endsWith(".ogg") || file.content_type.startsWith("audio/");
+            const isImage = file.content_type.startsWith("image/") || /\.(png|jpe?g|gif|webp|svg)$/i.test(file.file_name);
+            const isPdf = file.content_type.includes("pdf") || file.file_name.endsWith(".pdf");
+
+            return (
+              <div
+                key={file.id}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 10,
+                  padding: 14,
+                  borderRadius: 10,
+                  border: "1px solid var(--border-default, #27272a)",
+                  background: "var(--surface-1, #18181b)",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                    {isVoice ? (
+                      <Mic size={20} style={{ color: "#F59E0B", flexShrink: 0 }} />
+                    ) : isImage ? (
+                      <ImageIcon size={20} style={{ color: "#38BDF8", flexShrink: 0 }} />
+                    ) : (
+                      <FileText size={20} style={{ color: isPdf ? "#EF4444" : "#00E261", flexShrink: 0 }} />
+                    )}
+                    <div style={{ minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontSize: 13.5,
+                          fontWeight: 500,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                        title={file.file_name}
+                      >
+                        {file.file_name}
+                      </div>
+                      <div style={{ fontSize: 11.5, color: "var(--text-muted, #71717a)" }}>
+                        {(file.size_bytes / 1024).toFixed(1)} KB · <LocalizedRelativeTime value={file.created_at} />
+                      </div>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    disabled={downloadingId === file.id}
+                    onClick={() => handleDownload(file.id, file.file_name)}
+                  >
+                    <Download size={13} />
+                    {downloadingId === file.id ? <LocalizedText message={"Downloading…"} /> : <LocalizedText message={"Download"} />}
+                  </Button>
+                </div>
+
+                {isVoice && (
+                  <div style={{ marginTop: 2 }}>
+                    <VoiceBubble attachmentId={file.id} />
+                  </div>
+                )}
+
+                {isImage && (
+                  <div
+                    style={{
+                      marginTop: 4,
+                      borderRadius: 6,
+                      overflow: "hidden",
+                      background: "rgba(0,0,0,0.2)",
+                      maxHeight: 180,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <img
+                      src={`/api/v1/files/${file.id}/download`}
+                      alt={file.file_name}
+                      style={{ maxWidth: "100%", maxHeight: 180, objectFit: "contain", display: "block" }}
+                      loading="lazy"
+                    />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -365,11 +553,15 @@ function EditProjectModal({
   open,
   onClose,
   project,
+  canManageMembers,
+  canManageSprints,
   onSaved,
 }: {
   open: boolean;
   onClose: () => void;
   project: ProjectRead;
+  canManageMembers: boolean;
+  canManageSprints: boolean;
   onSaved: () => void;
 }) {
   const { t: localizeAttribute } = useI18n();
@@ -412,8 +604,15 @@ function EditProjectModal({
     tags: project.tags.filter((tag) => !tag.startsWith("level:") && !tag.startsWith("partition:")).join(", "),
   });
 
+  const membersEditor = useProjectMembersDraft(project.id, form.product_id, open, canManageMembers);
+  const sprintsEditor = useProjectSprintsDraft(project.id, open, canManageSprints);
+  const initialized = useRef(false);
+  const docsInitialized = useRef(false);
+
   useEffect(() => {
-    if (!open) return;
+    if (!open) { initialized.current = false; docsInitialized.current = false; return; }
+    if (initialized.current) return;
+    initialized.current = true;
     setDocumentationFiles([]);
     setChecklist(project.checklist_items ?? []);
     setForm({
@@ -436,11 +635,12 @@ function EditProjectModal({
   }, [open, project]);
 
   useEffect(() => {
-    if (!open || !linkedDocs.data) return;
+    if (!open || !linkedDocs.data || linkedDocs.isFetching || docsInitialized.current) return;
+    docsInitialized.current = true;
     setSelectedDocs(
       linkedDocs.data.map((link) => ({ id: link.page_id, title: link.title, linkId: link.id })),
     );
-  }, [open, linkedDocs.data]);
+  }, [open, linkedDocs.data, linkedDocs.isFetching]);
 
   const plannedDatesLocked = Boolean(project.start_date && project.end_date);
   const editSprints = useQuery({ queryKey: ["project-phases", project.id], queryFn: () => getProjectSprints(project.id), enabled: open && !plannedDatesLocked });
@@ -470,11 +670,13 @@ function EditProjectModal({
         actual_completion_date: form.actual_completion_date || null,
         tags: tagsWithTaxonomy(form.tags, form.level, form.partition),
       });
-      const initialLinks = linkedDocs.data ?? [];
+      await membersEditor.save();
+      await sprintsEditor.save();
+      const initialLinks = await listEntityDocLinks("project", project.id);
       const selectedIds = new Set(selectedDocs.map((doc) => doc.id));
       await Promise.all([
         ...selectedDocs
-          .filter((doc) => !doc.linkId)
+          .filter((doc) => !initialLinks.some((link) => link.page_id === doc.id))
           .map((doc) => addDocLink(doc.id, { entity_type: "project", entity_id: project.id })),
         ...initialLinks
           .filter((link) => !selectedIds.has(link.page_id))
@@ -505,19 +707,19 @@ function EditProjectModal({
   return (
     <Modal
       open={open}
-      onClose={onClose}
+      onClose={() => { if (!save.isPending) onClose(); }}
       title={translateUI("Edit project")}
       width={860}
       footer={
         <>
-          <Button variant="secondary" onClick={onClose}><LocalizedText message={"Cancel"} /></Button>
-          <Button disabled={!form.name.trim() || checklist.some((item) => !item.text.trim()) || !datesPaired || !datesOrdered || save.isPending} onClick={() => save.mutate()}>
+          <Button variant="secondary" disabled={save.isPending} onClick={onClose}><LocalizedText message={"Cancel"} /></Button>
+          <Button disabled={!membersEditor.ready || !sprintsEditor.ready || !sprintsEditor.valid || !linkedDocs.isSuccess || linkedDocs.isFetching || !form.name.trim() || checklist.some((item) => !item.text.trim()) || !datesPaired || !datesOrdered || save.isPending} onClick={() => save.mutate()}>
             {save.isPending ? <LocalizedText message={"Saving..."} /> : <LocalizedText message={"Save changes"} />}
           </Button>
         </>
       }
     >
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 340px), 1fr))", gap: 18 }}>
+      <fieldset disabled={save.isPending} style={{ border: 0, padding: 0, margin: 0, minWidth: 0, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 340px), 1fr))", gap: 18 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <Field label={translateUI("Project name")}>
             <TextInput value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
@@ -591,8 +793,11 @@ function EditProjectModal({
           <Card title={translateUI("Project description preview")} padded>
             <MarkdownPreview value={form.description} />
           </Card>
+          <ProjectMembersFields editor={membersEditor} disabled={save.isPending} />
+          <ProjectSprintsFields editor={sprintsEditor} disabled={save.isPending} />
           <Card title={translateUI("Connected documents")} padded>
-            <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+            <fieldset disabled={save.isPending} style={{ border: 0, padding: 0, margin: 0, minWidth: 0, display: "flex", flexDirection: "column", gap: 9 }}>
+              {linkedDocs.isError && <Button type="button" variant="secondary" onClick={() => linkedDocs.refetch()}>{translateUI("Retry")}</Button>}
               <SearchSuggestionInput
                 value={docSearch}
                 options={(docs.data ?? [])
@@ -613,10 +818,10 @@ function EditProjectModal({
               ))}
               {selectedDocs.length === 0 && <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}><LocalizedText message={"No documents connected."} /></span>}
               <DocumentationUpload files={documentationFiles} onChange={setDocumentationFiles} disabled={save.isPending} entityType="project" entityId={project.id} />
-            </div>
+            </fieldset>
           </Card>
         </div>
-      </div>
+      </fieldset>
     </Modal>
   );
 }

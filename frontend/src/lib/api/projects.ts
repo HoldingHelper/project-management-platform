@@ -335,6 +335,7 @@ export function createProduct(input: { name: string; owner_user_id: UUID; descri
 
 export function createProject(input: {
   product_id: UUID;
+  manager_user_id?: UUID;
   checklist_items?: { text: string; order: number }[];
   name: string;
   description?: string;

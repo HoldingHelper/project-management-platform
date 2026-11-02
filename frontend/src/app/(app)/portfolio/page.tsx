@@ -14,6 +14,7 @@ import {
   addProjectMember,
   attachTask,
   createProject,
+  getProductMembers,
   getProjectSprints,
   getPortfolioGantt,
   listAllProducts,
@@ -452,10 +453,29 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
     enabled: open,
   });
   const availableProductLines = useMemo(() => (products.data ?? []).map((product) => product.name), [products.data]);
+  const selectedProductId = useMemo(() => {
+    return products.data?.find((product) => product.name === form.product_line)?.id;
+  }, [products.data, form.product_line]);
+
+  const productMembersQuery = useQuery({
+    queryKey: ["product-members", selectedProductId],
+    queryFn: () => (selectedProductId ? getProductMembers(selectedProductId) : Promise.resolve([])),
+    enabled: open && Boolean(selectedProductId),
+  });
+
+  const availableManagers = useMemo(() => {
+    if (selectedProductId && productMembersQuery.data && productMembersQuery.data.length > 0) {
+      return productMembersQuery.data.map((m) => ({
+        id: m.id,
+        full_name: m.full_name || m.email,
+      }));
+    }
+    return users;
+  }, [selectedProductId, productMembersQuery.data, users]);
 
   useEffect(() => {
     if (form.product_line && (!open || (products.data && !availableProductLines.includes(form.product_line)))) {
-      setForm((current) => ({ ...current, product_line: "" }));
+      setForm((current) => ({ ...current, product_line: "", project_manager_id: "" }));
     }
   }, [availableProductLines, form.product_line, open, products.data]);
 
@@ -470,6 +490,7 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
 
       const project = await createProject({
         product_id: productId as UUID,
+        manager_user_id: form.project_manager_id ? (form.project_manager_id as UUID) : undefined,
         checklist_items: checklist.map((item, order) => ({ text: item.text.trim(), order })),
         name: form.name,
         description: form.description || undefined,
@@ -786,14 +807,14 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
               value={form.project_manager_id}
               onChange={(e) => setForm((f) => ({ ...f, project_manager_id: e.target.value }))}
               placeholder={user ? `Creator: ${user.full_name}` : localizeAttribute("Choose a manager...")}
-              options={users.map((u) => ({ value: u.id, label: u.full_name }))}
+              options={availableManagers.map((u) => ({ value: u.id, label: u.full_name }))}
             />
           </Field>
           <div>
             <div style={sectionLabel}><LocalizedText message={"Leads to add and notify"} /></div>
             <div style={pickerGrid}>
-              {users.slice(0, 12).map((u) => (
-                <label key={u.id} style={checkRow} title={`${u.full_name}${u.job_title ? ` - ${u.job_title}` : ""}`}>
+              {availableManagers.slice(0, 12).map((u) => (
+                <label key={u.id} style={checkRow} title={u.full_name}>
                   <input type="checkbox" checked={form.lead_ids.includes(u.id)} onChange={() => toggleLead(u.id)} />
                   <Avatar name={u.full_name} size={22} />
                   <span style={ellipsis}>{u.full_name}</span>
