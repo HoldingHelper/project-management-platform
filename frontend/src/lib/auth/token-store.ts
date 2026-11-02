@@ -50,3 +50,22 @@ export function clearSession(): void {
     window.localStorage.removeItem(USER_KEY);
   }
 }
+
+export function isTokenExpired(token: string | null = accessToken, skewSeconds = 30): boolean {
+  if (!token) return true;
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return true;
+    const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const jsonStr =
+      typeof atob !== "undefined"
+        ? atob(base64)
+        : Buffer.from(base64, "base64").toString("utf-8");
+    const payload = JSON.parse(jsonStr) as { exp?: number };
+    if (!payload.exp) return false;
+    return Date.now() >= (payload.exp - skewSeconds) * 1000;
+  } catch {
+    return true;
+  }
+}
+
