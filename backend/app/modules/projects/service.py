@@ -337,7 +337,9 @@ async def create_project(
         raise NotFoundError("Product", payload.product_id)
     if created_by_user_id is not None:
         await membership.require_product_members(db, payload.product_id, [created_by_user_id])
-    data = _dump(payload, exclude={"sprints"})
+    if payload.manager_user_id is not None:
+        await membership.require_product_members(db, payload.product_id, [payload.manager_user_id])
+    data = _dump(payload, exclude={"sprints", "manager_user_id"})
     if payload.sprints:
         calculated_start = min(sprint.start_date for sprint in payload.sprints)
         calculated_end = max(sprint.end_date for sprint in payload.sprints)
@@ -385,12 +387,23 @@ async def create_project(
         )
 
     member_ids: List[UUID] = []
-    if created_by_user_id is not None:
+    effective_manager_id = payload.manager_user_id or created_by_user_id
+    if effective_manager_id is not None:
+        db.add(
+            ProjectMember(
+                project_id=project.id,
+                user_id=effective_manager_id,
+                role="ProjectManager",
+            ),
+        )
+        member_ids.append(effective_manager_id)
+
+    if created_by_user_id is not None and created_by_user_id != effective_manager_id:
         db.add(
             ProjectMember(
                 project_id=project.id,
                 user_id=created_by_user_id,
-                role="ProjectManager",
+                role="TeamLead",
             ),
         )
         member_ids.append(created_by_user_id)

@@ -437,8 +437,9 @@ async def resolve_github_mention(
 async def generate_telegram_link_code(
     db: AsyncSession, user_id: UUID
 ) -> TelegramLinkCodeResponse:
-    code = secrets.token_hex(4).upper()  # 8-character hex code
-    expires_at = utcnow() + timedelta(minutes=30)
+    # 16 bytes = 32-character cryptographically secure opaque token with 128 bits of entropy
+    token = secrets.token_hex(16)
+    expires_at = utcnow() + timedelta(minutes=15)
     bot_username = settings.telegram_bot_username or "YourConfiguredBot"
 
     stmt = select(UserTelegramConnection).where(UserTelegramConnection.user_id == user_id)
@@ -446,12 +447,12 @@ async def generate_telegram_link_code(
     conn = res.scalar_one_or_none()
 
     if conn:
-        conn.auth_link_code = code
+        conn.auth_link_code = token
         conn.auth_link_expires_at = expires_at
     else:
         conn = UserTelegramConnection(
             user_id=user_id,
-            auth_link_code=code,
+            auth_link_code=token,
             auth_link_expires_at=expires_at,
             is_connected=False,
         )
@@ -459,9 +460,9 @@ async def generate_telegram_link_code(
 
     await db.commit()
 
-    deep_link = f"https://t.me/{bot_username}?start={code}"
+    deep_link = f"https://t.me/{bot_username}?start={token}"
     return TelegramLinkCodeResponse(
-        link_code=code,
+        link_code=token,
         bot_username=bot_username,
         deep_link=deep_link,
         expires_at=expires_at,
@@ -470,12 +471,22 @@ async def generate_telegram_link_code(
 
 async def handle_telegram_webhook(db: AsyncSession, payload: dict) -> dict:
     """Handle incoming Telegram webhook update (/start <CODE>, /tasks, etc.)."""
+    # 1. Feed update to the Telegram Bot Dispatcher
+    try:
+        from app.modules.telegram.bot import feed_telegram_update
+        await feed_telegram_update(payload)
+    except Exception as exc:
+        logger.warning("telegram_bot_dispatch_error", error=str(exc))
+
+    # 2. Preserve backward-compatible direct result structure
     message = payload.get("message")
     if not message:
         return {"status": "ok"}
 
     chat_id = str(message.get("chat", {}).get("id", ""))
-    username = message.get("from", {}).get("username") or message.get("from", {}).get("first_name", "Telegram User")
+    from_user = message.get("from") or {}
+    from_user_id = str(from_user.get("id") or chat_id)
+    username = from_user.get("username") or from_user.get("first_name", "Telegram User")
     text = (message.get("text") or "").strip()
 
     if text.startswith("/start"):
@@ -491,10 +502,28 @@ async def handle_telegram_webhook(db: AsyncSession, payload: dict) -> dict:
             conn = res.scalar_one_or_none()
 
             if conn:
-                conn.telegram_chat_id = chat_id
+                # Check if this Telegram User is already connected to another PMP User
+                existing_stmt = select(UserTelegramConnection).where(
+                    UserTelegramConnection.telegram_chat_id == from_user_id,
+                    UserTelegramConnection.is_connected.is_(True),
+                )
+                existing_res = await db.execute(existing_stmt)
+                existing_conn = existing_res.scalar_one_or_none()
+
+                if existing_conn and existing_conn.user_id != conn.user_id:
+                    return {
+                        "status": "conflict",
+                        "chat_id": chat_id,
+                        "reply": "این حساب Telegram قبلاً به یک حساب PMP متصل است. ابتدا اتصال قبلی را قطع کنید و سپس دوباره تلاش کنید.",
+                    }
+
+                conn.telegram_chat_id = from_user_id
                 conn.telegram_username = username
                 conn.is_connected = True
                 conn.connected_at = utcnow()
+                # Anti-replay: invalidate code
+                conn.auth_link_code = f"used_{secrets.token_hex(8)}"
+                conn.auth_link_expires_at = utcnow() - timedelta(seconds=1)
                 await db.commit()
                 return {
                     "status": "connected",
@@ -513,6 +542,10 @@ async def disconnect_telegram(db: AsyncSession, user_id: UUID) -> None:
     if conn:
         conn.is_connected = False
         conn.telegram_chat_id = None
+        conn.telegram_username = None
+        conn.connected_at = None
+        conn.auth_link_code = f"revoked_{secrets.token_hex(8)}"
+        conn.auth_link_expires_at = utcnow()
         await db.commit()
 
 

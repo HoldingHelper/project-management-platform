@@ -120,6 +120,7 @@ class ProjectCreate(BaseModel):
     product_id: UUID
     name: str = Field(min_length=1, max_length=200)
     description: Optional[str] = None
+    manager_user_id: Optional[UUID] = None
     budget: Optional[float] = None
     priority: Priority = Priority.P2
     risk_level: RiskLevel = RiskLevel.MEDIUM

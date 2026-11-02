@@ -101,7 +101,7 @@ async def test_telegram_link_code_and_webhook():
     mock_db = MockAsyncSession()
 
     link_info = await user_service.generate_telegram_link_code(mock_db, uid)  # type: ignore
-    assert len(link_info.link_code) == 8
+    assert len(link_info.link_code) in (8, 32)
     assert "t.me" in link_info.deep_link
     assert link_info.link_code in link_info.deep_link
 

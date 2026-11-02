@@ -36,6 +36,10 @@ x-api-environment: &api-environment
   GITHUB_ORG_TOKEN: ${GITHUB_ORG_TOKEN:-}
   TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
   TELEGRAM_BOT_USERNAME: ${TELEGRAM_BOT_USERNAME:-}
+  TELEGRAM_WEBHOOK_SECRET: ${TELEGRAM_WEBHOOK_SECRET:-}
+  TELEGRAM_BOT_ENABLED: ${TELEGRAM_BOT_ENABLED:-false}
+  TELEGRAM_WEBHOOK_URL: ${TELEGRAM_WEBHOOK_URL:-}
+  TELEGRAM_POLLING_ENABLED: ${TELEGRAM_POLLING_ENABLED:-false}
   WHATSAPP_API_TOKEN: ${WHATSAPP_API_TOKEN:-}
   WHATSAPP_PHONE_NUMBER_ID: ${WHATSAPP_PHONE_NUMBER_ID:-}
   WHATSAPP_VERIFY_TOKEN: ${WHATSAPP_VERIFY_TOKEN:-}
@@ -89,6 +93,7 @@ services:
       <<: *api-environment
       RUN_MIGRATIONS_ON_STARTUP: "true"
       SEED_ON_STARTUP: "true"
+      TELEGRAM_POLLING_ENABLED: "false"
     ports:
       - "8000:8000"
     volumes:
@@ -110,6 +115,24 @@ services:
       INIT_ADMIN_ON_STARTUP: "false"
       RUN_MIGRATIONS_ON_STARTUP: "false"
       SEED_ON_STARTUP: "false"
+      TELEGRAM_POLLING_ENABLED: "false"
+    volumes:
+      - api-logs:/app/var/logs
+    depends_on:
+      api:
+        condition: service_started
+
+  telegram-bot:
+    image: project-management-platform-api:local
+    build: ./backend
+    command: ["python", "-m", "app.modules.telegram.worker"]
+    environment:
+      <<: *api-environment
+      INIT_ADMIN_ON_STARTUP: "false"
+      RUN_MIGRATIONS_ON_STARTUP: "false"
+      SEED_ON_STARTUP: "false"
+      TELEGRAM_POLLING_ENABLED: "true"
+      TELEGRAM_BOT_ENABLED: "true"
     volumes:
       - api-logs:/app/var/logs
     depends_on:
