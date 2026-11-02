@@ -1,16 +1,16 @@
 "use client";
 
 import { createContext, useCallback, useContext, useLayoutEffect, useMemo, useState, type ReactNode } from "react";
-import { defaults, preferencesFromCookies, translateWithPreferences, formatDate, formatNumber, relativeDate, type Preferences } from "./core";
+import { defaults, normalizePreferences, preferencesFromCookies, translateWithPreferences, formatDate, formatNumber, relativeDate, type Preferences } from "./core";
 
 type Context = Preferences & { setPreferences: (prefs: Partial<Preferences>) => void; t: (message: string, values?: Record<string, string | number>) => string; date: (value: string | Date, options?: Intl.DateTimeFormatOptions) => string; number: (value: number, options?: Intl.NumberFormatOptions) => string };
 const I18nContext = createContext<Context | null>(null);
 
 export function I18nProvider({ initial = defaults, children }: { initial?: Preferences; children: ReactNode }) {
-  const [prefs, setPrefs] = useState(initial);
+  const [prefs, setPrefs] = useState(() => normalizePreferences(initial));
   const [restored, setRestored] = useState(false);
   const setPreferences = useCallback((updates: Partial<Preferences>) => setPrefs(previous => {
-    const next = { ...previous, ...updates };
+    const next = normalizePreferences({ ...previous, ...updates });
     return Object.keys(next).every(key => next[key as keyof Preferences] === previous[key as keyof Preferences]) ? previous : next;
   }), []);
   useLayoutEffect(() => {

@@ -3,6 +3,9 @@ import persian from "./fa.json";
 export type Locale = "en" | "fa";
 export type Preferences = { locale: Locale; calendar: "gregory" | "persian"; numbering_system: "latn" | "arabext" };
 export const defaults: Preferences = { locale: "en", calendar: "gregory", numbering_system: "latn" };
+export function normalizePreferences(prefs: Preferences): Preferences {
+  return prefs.locale === "fa" ? { ...prefs, calendar: "persian" } : prefs;
+}
 export function savedPreferencesMatch(saved: { [Key in keyof Preferences]?: Preferences[Key] | null }, requested: Partial<Preferences>): boolean {
   return Object.entries(requested).every(([key, value]) => saved[key as keyof Preferences] === value);
 }
@@ -11,17 +14,18 @@ export function accountPreferences(user: { locale?: unknown; calendar?: unknown;
   if (user.locale === "en" || user.locale === "fa") result.locale = user.locale;
   if (user.calendar === "gregory" || user.calendar === "persian") result.calendar = user.calendar;
   if (user.numbering_system === "latn" || user.numbering_system === "arabext") result.numbering_system = user.numbering_system;
+  if (result.locale === "fa") result.calendar = "persian";
   return result;
 }
 export function preferencesFromCookies(cookies: Record<string, string | undefined>, fallback: Preferences = defaults): Preferences {
   const locale = cookies["pmp.locale"];
   const calendar = cookies["pmp.calendar"];
   const numbering = cookies["pmp.numbering_system"];
-  return {
+  return normalizePreferences({
     locale: locale === "en" || locale === "fa" ? locale : fallback.locale,
     calendar: calendar === "gregory" || calendar === "persian" ? calendar : fallback.calendar,
     numbering_system: numbering === "latn" || numbering === "arabext" ? numbering : fallback.numbering_system,
-  };
+  });
 }
 export const messages: Record<string, string> = persian;
 const folded = Object.fromEntries(Object.entries(messages).map(([key, value]) => [key.toLowerCase(), value]));
@@ -30,7 +34,7 @@ export function translate(locale: Locale, message: string, values: Record<string
   return translated.replace(/\{(\w+)\}/g, (match, key: string) => key in values ? String(values[key]) : match);
 }
 export function intlLocale(prefs: Preferences): string {
-  return `${prefs.locale === "fa" ? "fa-IR" : "en-US"}-u-ca-${prefs.calendar}-nu-${prefs.numbering_system}`;
+  return `${prefs.locale === "fa" ? "fa-IR" : "en-US"}-u-ca-${normalizePreferences(prefs).calendar}-nu-${prefs.numbering_system}`;
 }
 export function formatDate(value: string | Date, prefs: Preferences, options: Intl.DateTimeFormatOptions = {}): string {
   const date = value instanceof Date ? value : /^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(Number(value.slice(0, 4)), Number(value.slice(5, 7)) - 1, Number(value.slice(8, 10))) : new Date(value);

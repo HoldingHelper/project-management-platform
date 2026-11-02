@@ -1,4 +1,6 @@
 import type { InputHTMLAttributes, ReactNode } from "react";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { PersianDateInput } from "./PersianDateInput";
 
 interface Props extends InputHTMLAttributes<HTMLInputElement> {
   icon?: ReactNode;
@@ -6,6 +8,8 @@ interface Props extends InputHTMLAttributes<HTMLInputElement> {
 }
 
 export function TextInput({ icon, trailing, style, ...rest }: Props) {
+  const { calendar } = useI18n();
+  if (rest.type === "date" && calendar === "persian") return <PersianDateInput {...rest} style={style} />;
   return (
     <div className="pmp-text-input"
       style={{

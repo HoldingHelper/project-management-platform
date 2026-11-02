@@ -13,14 +13,15 @@ export function LanguageSelector({ regional = false }: { regional?: boolean }) {
   const platform = useQuery({ queryKey: ["platform-language"], queryFn: getPlatformLanguage });
   const [platformChoice, setPlatformChoice] = useState<"en" | "fa" | "">("");
   async function changeLanguage(locale: string) {
-    if (locale !== "default") return change({ locale: locale as Preferences["locale"] });
+    if (locale !== "default") return change({ locale: locale as Preferences["locale"], calendar: locale === "fa" ? "persian" : "gregory" });
     if (!user) return;
     setError(false); setSaving(true);
     try {
-      const updated = await updateMyProfile({ locale: null });
+      const calendar = platform.data?.locale === "fa" ? "persian" : "gregory";
+      const updated = await updateMyProfile({ locale: null, calendar });
       if (updated.locale != null) throw new Error("Preference reset failed");
       setUser(updated);
-      intl.setPreferences({ locale: platform.data?.locale ?? "en" });
+      intl.setPreferences({ locale: platform.data?.locale ?? "en", calendar });
     } catch { setError(true); }
     finally { setSaving(false); }
   }
@@ -48,7 +49,15 @@ export function LanguageSelector({ regional = false }: { regional?: boolean }) {
   }
   return <div className="pmp-language-preferences">
     <label>{intl.t("Language")}<select aria-label={intl.t("Language")} value={user?.locale ?? "default"} disabled={saving} onChange={event => changeLanguage(event.target.value)}><option value="default">{intl.t("Use platform default")}</option><option value="en" lang="en">English</option><option value="fa" lang="fa">فارسی</option></select></label>
-    {regional && <><label>{intl.t("Calendar")}<select value={intl.calendar} disabled={saving} onChange={event => change({ calendar: event.target.value as Preferences["calendar"] })}><option value="gregory">{intl.t("Gregorian")}</option><option value="persian">{intl.t("Persian calendar")}</option></select></label><label>{intl.t("Digits")}<select value={intl.numbering_system} disabled={saving} onChange={event => change({ numbering_system: event.target.value as Preferences["numbering_system"] })}><option value="latn">{intl.t("Latin digits")} (0123)</option><option value="arabext">{intl.t("Persian digits")} (۰۱۲۳)</option></select></label><p className="pmp-language-hint">{intl.t("Language changes apply immediately.")}</p></>}
+    {regional && <>
+      <label>{intl.t("Calendar")}<select value={intl.calendar} disabled={saving || intl.locale === "fa"} onChange={event => change({ calendar: event.target.value as Preferences["calendar"] })}>
+        <option value="gregory">{intl.t("Gregorian")}</option><option value="persian">{intl.t("Persian calendar")}</option>
+      </select></label>
+      <label>{intl.t("Digits")}<select value={intl.numbering_system} disabled={saving} onChange={event => change({ numbering_system: event.target.value as Preferences["numbering_system"] })}>
+        <option value="latn">{intl.t("Latin digits")} (0123)</option><option value="arabext">{intl.t("Persian digits")} (۰۱۲۳)</option>
+      </select></label>
+      <p className="pmp-language-hint">{intl.t("Language changes apply immediately.")}</p>
+    </>}
     {isSuperAdmin() && <fieldset style={{ marginTop: 16, padding: 12, border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-2)" }}>
       <legend>{intl.t("Platform default language")}</legend>
       {!platform.data?.configured && <p>{intl.t("Choose the initial language for all users.")}</p>}

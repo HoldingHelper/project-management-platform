@@ -561,7 +561,7 @@ export default function TaskDetailPage({
           {row.due_date && (
             <div className="quick-prop-pill date-pill" title={`Due on ${row.due_date}`}>
               <Calendar size={12} />
-              <span><LocalizedText message={"Due"} />{" "}{row.due_date}</span>
+              <span><LocalizedText message={"Due"} />{" "}<LocalizedDate value={row.due_date} /></span>
             </div>
           )}
         </div>
@@ -968,11 +968,11 @@ export default function TaskDetailPage({
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <span className="field-label"><LocalizedText message={"Start Date"} /></span>
-                <span className="field-val">{row.start_date ?? "—"}</span>
+                <span className="field-val"><LocalizedDate value={row.start_date} /></span>
               </div>
               <div>
                 <span className="field-label"><LocalizedText message={"Due Date"} /></span>
-                <span className="field-val">{row.due_date ?? "—"}</span>
+                <span className="field-val"><LocalizedDate value={row.due_date} /></span>
               </div>
             </div>
 
