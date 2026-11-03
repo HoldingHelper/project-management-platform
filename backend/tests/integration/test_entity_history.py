@@ -2,6 +2,7 @@
 from contextlib import asynccontextmanager
 import json
 import os
+from datetime import date
 from uuid import uuid4
 
 import pytest
@@ -17,7 +18,7 @@ from app.core.request_context import current_user_id_var
 from app.modules.identity.models import User
 from app.modules.projects.models import ChecklistItem, Product, ProductMember, Project, ProjectMember, TaskItem
 from app.modules.projects import repository, service
-from app.modules.projects.schemas import ProjectMemberCreate
+from app.modules.projects.schemas import ProjectMemberCreate, ProjectUpdate
 from app.modules.analytics import event_handlers as audit_handlers, service as analytics_service
 
 pytestmark = pytest.mark.skipif(os.getenv("PMP_HISTORY_DB_TESTS") != "1", reason="Local PostgreSQL opt-in")
@@ -26,6 +27,33 @@ pytestmark = pytest.mark.skipif(os.getenv("PMP_HISTORY_DB_TESTS") != "1", reason
 @pytest.fixture(scope="module", autouse=True)
 def audit_listeners():
     register_audit_listeners()
+
+
+@pytest.mark.asyncio
+async def test_project_date_edits_are_recorded(monkeypatch):
+    events = []
+    monkeypatch.setattr(event_bus, "publish_sync_fire_and_forget", events.append)
+    async with engine.connect() as connection:
+        transaction = await connection.begin()
+        async with AsyncSession(bind=connection, expire_on_commit=False, join_transaction_mode="create_savepoint") as db:
+            actor = (await db.execute(select(User.id).limit(1))).scalar_one()
+            token = current_user_id_var.set(actor)
+            try:
+                product = Product(name=f"Date history {uuid4()}", owner_user_id=actor)
+                db.add(product); await db.flush()
+                project = Project(product_id=product.id, name="Date history", status="in-progress", start_date=date(2028, 1, 1), end_date=date(2028, 1, 31))
+                db.add(project); await db.commit()
+                events.clear()
+                await service.update_project(db, project.id, ProjectUpdate(start_date=date(2028, 1, 5), end_date=date(2028, 2, 5)))
+                change = next(event for event in events if event.entity_id == str(project.id))
+                values = json.loads(change.changes_json)
+                assert values["start_date"] == {"old": "2028-01-01", "new": "2028-01-05"}
+                assert values["end_date"] == {"old": "2028-01-31", "new": "2028-02-05"}
+                assert change.user_id == actor
+            finally:
+                current_user_id_var.reset(token)
+                await db.close(); await transaction.rollback()
+    await engine.dispose()
 
 
 @pytest.mark.asyncio

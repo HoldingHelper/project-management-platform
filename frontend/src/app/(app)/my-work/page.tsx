@@ -25,7 +25,7 @@ export default function HomePage() {
 
   const exec = useQuery({ queryKey: ["exec-dash"], queryFn: getExecutiveDashboard, enabled: canExec });
   const personal = useQuery({ queryKey: ["personal-dash"], queryFn: getPersonalDashboard });
-  const blockers = useQuery({ queryKey: ["blockers", "open"], queryFn: () => listBlockers("Open") });
+  const blockers = useQuery({ queryKey: ["blockers", "home"], queryFn: () => listBlockers() });
   const pending = useQuery({ queryKey: ["pending-work", user?.id], queryFn: () => getUserPendingWork(user!.id), enabled: !!user });
   const projects = useQuery({ queryKey: ["projects"], queryFn: () => listProjects(1, 200) });
   const workload = useQuery({ queryKey: ["a-workload", "home"], queryFn: () => getWorkload(), enabled: canExec });
@@ -39,7 +39,6 @@ export default function HomePage() {
     ["at-risk", "blocked", "delayed"].includes(p.health_status),
   );
   const pendingItems = pending.data?.pending_on_me ?? [];
-  const blockedCount = blockers.data?.length ?? 0;
   const personalLate = personal.data?.late_tasks?.length ?? 0;
   const personalUpcoming = personal.data?.upcoming_deadlines?.length ?? 0;
   const personalDone = Number(personal.data?.velocity_points_completed ?? 0);
@@ -77,10 +76,11 @@ export default function HomePage() {
 
       {/* Metric cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 16 }}>
-        <MetricCard href="/tasks?view=my" label={translateUI("My velocity")} value={personalDone} trend="points completed" tone="completed" icon={<CheckCircle2 size={15} />} />
-        <MetricCard href="/notifications?filter=action_required" label={translateUI("Needs me")} value={pendingItems.length} tone={pendingItems.length > 0 ? "delayed" : "default"} trend="reviews and blockers" icon={<Zap size={15} />} />
-        <MetricCard href="/tasks?view=my" label={translateUI("Upcoming")} value={personalUpcoming} trend="next 7 days" icon={<CalendarClock size={15} />} />
-        <MetricCard href="/tasks?view=my-blocked" label={translateUI("My late work")} value={personalLate} tone={personalLate > 0 ? "blocked" : "default"} trend="past due tasks" icon={<Clock size={15} />} />
+        <MetricCard href="/tasks?view=my-completed" label={translateUI("My velocity")} value={personalDone} trend="points completed" tone="completed" icon={<CheckCircle2 size={15} />} />
+        <MetricCard href="#pending-on-me" label={translateUI("Needs me")} value={pendingItems.length} tone={pendingItems.length > 0 ? "delayed" : "default"} trend="reviews and blockers" icon={<Zap size={15} />} />
+        <MetricCard href="/tasks?view=my-upcoming" label={translateUI("Upcoming")} value={personalUpcoming} trend="next 7 days" icon={<CalendarClock size={15} />} />
+        <MetricCard href="/tasks?view=my-overdue" label={translateUI("My late work")} value={personalLate} tone={personalLate > 0 ? "blocked" : "default"} trend="past due tasks" icon={<Clock size={15} />} />
+        <MetricCard href="/tasks?view=my-blocked" label={translateUI("My blocked")} value={personal.data?.blocked_tasks ?? "..."} tone={(personal.data?.blocked_tasks ?? 0) > 0 ? "blocked" : "default"} />
       </div>
 
       <section style={{ background: "var(--surface-2)", border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-3)", padding: 16 }}>
@@ -115,10 +115,10 @@ export default function HomePage() {
             />
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginBottom: 16 }}>
-            <MetricCard href="/dashboards/executive" label={translateUI("Active projects")} value={exec.data?.active_projects ?? "..."} tone="in-progress" />
-            <MetricCard href="/dashboards/executive" label={translateUI("Completed")} value={exec.data?.completed_projects ?? "..."} tone="completed" />
-            <MetricCard href="/dashboards/executive" label={translateUI("Delayed")} value={exec.data?.delayed_projects ?? "..."} tone="delayed" />
-            <MetricCard href="/dashboards/executive" label={translateUI("Blocked")} value={exec.data?.blocked_projects ?? "..."} tone="blocked" />
+            <MetricCard href="/portfolio?view=active" label={translateUI("Active projects")} value={exec.data?.active_projects ?? "..."} tone="in-progress" />
+            <MetricCard href="/portfolio?view=completed" label={translateUI("Completed")} value={exec.data?.completed_projects ?? "..."} tone="completed" />
+            <MetricCard href="/portfolio?view=delayed" label={translateUI("Delayed")} value={exec.data?.delayed_projects ?? "..."} tone="delayed" />
+            <MetricCard href="/portfolio?view=blocked" label={translateUI("Blocked projects")} value={exec.data?.blocked_projects ?? "..."} tone="blocked" />
           </div>
           <div className="pmp-two-col-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "start" }}>
             <div style={{ border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-2)", overflow: "hidden" }}>
@@ -166,7 +166,7 @@ export default function HomePage() {
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 360px), 1fr))", gap: 20, alignItems: "stretch" }}>
         {/* Pending On Me */}
-        <section style={{ background: "var(--surface-2)", border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-3)", padding: 16, display: "flex", flexDirection: "column" }}>
+        <section id="pending-on-me" style={{ background: "var(--surface-2)", border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-3)", padding: 16, display: "flex", flexDirection: "column", scrollMarginTop: 90 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
             <div style={{ fontSize: 15, fontWeight: 700 }}><LocalizedText message={"Pending On Me"} /></div>
             <span style={{ fontSize: 11, fontWeight: 700, color: "var(--status-delayed)", background: "var(--status-delayed-bg)", borderRadius: "var(--radius-full)", padding: "2px 9px" }}>
@@ -195,13 +195,14 @@ export default function HomePage() {
                     <PriorityBadge level={p.priority} compact />
                   </>
                 );
+                const taskId = p.kind === "review_task" ? p.id : p.kind === "blocker" ? blockers.data?.find((blocker) => blocker.id === p.id)?.blocked_task_id : undefined;
                 const rowStyle: React.CSSProperties = {
-                  display: "flex", alignItems: "center", gap: 12, textAlign: "left",
+                  display: "flex", alignItems: "center", gap: 12, textAlign: "start",
                   border: "none", borderTop: "1px solid var(--border-subtle)", background: "transparent",
-                  padding: "11px 6px", borderRadius: 8, cursor: p.project_id ? "pointer" : "default", color: "inherit",
+                  padding: "11px 6px", borderRadius: 8, cursor: taskId ? "pointer" : "default", color: "inherit",
                 };
-                return p.project_id ? (
-                  <Link key={p.id} href={`/projects/${p.project_id}`} className="pmp-row" style={rowStyle}>{inner}</Link>
+                return taskId ? (
+                  <Link key={p.id} href={`/tasks/${taskId}`} className="pmp-row" style={rowStyle}>{inner}</Link>
                 ) : (
                   <div key={p.id} className="pmp-row" style={rowStyle}>{inner}</div>
                 );

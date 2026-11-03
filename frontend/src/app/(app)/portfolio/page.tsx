@@ -49,6 +49,16 @@ import { relativeTime } from "@/lib/format";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import type { PortfolioGantt, ProjectLevel, TaskRead, UUID } from "@/lib/types";
 import { useViewState } from "@/lib/navigation";
+import { useUrlView } from "@/lib/url-view";
+
+const PROJECT_VIEWS = ["all", "active", "completed", "delayed", "blocked"] as const;
+
+function matchesProjectView(project: { status: string; health_status: string }, view: (typeof PROJECT_VIEWS)[number]) {
+  if (view === "active") return project.status === "in-progress";
+  if (view === "completed") return project.status === "completed";
+  if (view === "delayed" || view === "blocked") return project.health_status === view;
+  return true;
+}
 
 const PROJECT_LEVELS: { value: ProjectLevel; label: string; detail: string }[] = [
   { value: "inter-team", label: "Inter-team", detail: "Inside one partition" },
@@ -129,12 +139,22 @@ export default function PortfolioPage() {
   const { t: translateUI } = useI18n();
 
   const [search, setSearch] = useViewState("portfolio-search", "");
+  const [projectView, setProjectView] = useUrlView("view", PROJECT_VIEWS, "all");
   const [createOpen, setCreateOpen] = useState(false);
   const [productLine, setProductLine] = useViewState<string>("portfolio-product-line", "all");
   const [timelinePartition, setTimelinePartition] = useViewState<string>("portfolio-partition", "all");
   const [showArchived, setShowArchived] = useViewState("portfolio-archived", false);
   const { hasPermission, isSuperAdmin } = useAuth();
-  const projects = useQuery({ queryKey: ["projects"], queryFn: () => listProjects(1, 200) });
+  const projects = useQuery({ queryKey: ["projects", "portfolio-all"], queryFn: async () => {
+    const first = await listProjects(1, 200);
+    const items = [...first.items];
+    for (let page = 2; items.length < first.total_count; page++) {
+      const next = await listProjects(page, 200);
+      if (!next.items.length) break;
+      items.push(...next.items);
+    }
+    return { ...first, items };
+  } });
   const products = useQuery({ queryKey: ["products"], queryFn: listAllProducts });
   useEffect(() => {
     if (productLine !== "all" && products.data && !products.data.some((product) => product.id === productLine)) {
@@ -170,13 +190,14 @@ export default function PortfolioPage() {
   const items = projects.data?.items ?? [];
   const q = search.trim().toLowerCase();
   const filtered = items.filter((project) =>
+    matchesProjectView(project, projectView) &&
     (productLine === "all" || project.product_id === productLine) &&
     (!q || project.name.toLowerCase().includes(q) || project.id.toLowerCase().includes(q))
   );
   const visibleGantt = useMemo(() => {
     const source = gantt.data ?? { projects: [], links: [] };
     const match = (p: (typeof source.projects)[number]) => {
-      return (productLine === "all" || p.product_id === productLine) &&
+      return matchesProjectView(p, projectView) && (productLine === "all" || p.product_id === productLine) &&
         (timelinePartition === "all" || projectPartitionFromTags(p.tags) === timelinePartition);
     };
     const modeProjects = source.projects.filter(match);
@@ -185,7 +206,7 @@ export default function PortfolioPage() {
       projects: modeProjects,
       links: source.links.filter((l) => ids.has(l.predecessor_project_id) && ids.has(l.successor_project_id)),
     };
-  }, [gantt.data, timelinePartition, productLine]);
+  }, [gantt.data, timelinePartition, productLine, projectView]);
 
   return (
     <div style={{ ...PAGE_STYLE, gap: 18 }}>
@@ -211,6 +232,17 @@ export default function PortfolioPage() {
       />
 
       <div style={{ display: "flex", alignItems: "flex-end", gap: 10, flexWrap: "wrap" }}>
+        <Field label={translateUI("Project status")}>
+          <Select translateOptions aria-label={translateUI("Filter projects by status")} value={projectView}
+            onChange={(event) => setProjectView(event.target.value as (typeof PROJECT_VIEWS)[number])}
+            options={[
+              { value: "all", label: "All projects" },
+              { value: "active", label: "Active projects" },
+              { value: "completed", label: "Completed" },
+              { value: "delayed", label: "Delayed" },
+              { value: "blocked", label: "Blocked" },
+            ]} />
+        </Field>
         <Field label={translateUI("Product line")}>
           <Select
             aria-label={translateUI("Filter projects by product line")}
@@ -310,7 +342,7 @@ export default function PortfolioPage() {
                 </span>
                 <span>
                   <StatusChip
-                    status={String(p.status === "in-progress" ? p.health_status : p.status)}
+                    status={String(projectView === "blocked" || projectView === "delayed" || p.status === "in-progress" ? p.health_status : p.status)}
                     label={p.status === "archived" ? localizeAttribute("Archived") : undefined}
                   />
                 </span>

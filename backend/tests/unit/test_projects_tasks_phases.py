@@ -39,7 +39,7 @@ def test_project_create_schema_defaults_and_validation():
     assert req.budget == 150000.0
 
 
-def test_project_dates_are_a_single_immutable_baseline_contract():
+def test_project_creation_requires_complete_planned_dates():
     with pytest.raises(ValidationError, match="set together"):
         ProjectCreate(product_id=uuid4(), name="Partial dates", start_date=date(2026, 9, 1))
     with pytest.raises(ValidationError, match="Actual end date"):
@@ -66,21 +66,29 @@ def test_new_sprints_are_exactly_fourteen_calendar_days():
 
 
 @pytest.mark.asyncio
-async def test_planned_project_dates_cannot_change_after_first_baseline(monkeypatch):
+async def test_planned_project_dates_can_be_updated(monkeypatch):
     project = Project(
         id=uuid4(),
         product_id=uuid4(),
-        name="Locked plan",
+        name="Editable plan",
+        status="in-progress",
         start_date=date(2026, 9, 1),
         end_date=date(2026, 9, 30),
     )
     monkeypatch.setattr(service.repo, "get_project", AsyncMock(return_value=project))
-    with pytest.raises(BusinessRuleError, match="locked"):
-        await service.update_project(
-            AsyncMock(),
-            project.id,
-            ProjectUpdate(start_date=date(2026, 9, 2), end_date=date(2026, 9, 30)),
-        )
+    monkeypatch.setattr(service, "ProjectRead", SimpleNamespace(model_validate=lambda value: value))
+    db = AsyncMock()
+    result = await service.update_project(db, project.id, ProjectUpdate(start_date=date(2026, 9, 2), end_date=date(2026, 10, 5)))
+    assert (result.start_date, result.end_date) == (date(2026, 9, 2), date(2026, 10, 5))
+    db.commit.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_cannot_clear_planned_dates_while_an_actual_end_remains(monkeypatch):
+    project = Project(id=uuid4(), product_id=uuid4(), name="Completed", start_date=date(2026, 9, 1), end_date=date(2026, 9, 30), actual_completion_date=date(2026, 9, 29))
+    monkeypatch.setattr(service.repo, "get_project", AsyncMock(return_value=project))
+    with pytest.raises(BusinessRuleError, match="Actual end date"):
+        await service.update_project(AsyncMock(), project.id, ProjectUpdate(start_date=None, end_date=None))
 
 
 @pytest.mark.asyncio

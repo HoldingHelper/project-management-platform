@@ -267,6 +267,100 @@ async function login(page: Page, sessionUser: typeof user = user) {
   await expect(page).toHaveURL(/\/(?:app\/(?:teams|docs)|h\/holding)$/);
 }
 
+for (const locale of ["fa", "en"] as const) test(`executive dashboard uses ${locale} for filters and generated insights`, async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === "tablet", "Phone and desktop cover the dashboard.");
+  const actor = { ...user, locale, calendar: "gregory", numbering_system: "latn", permissions: [...user.permissions, "analytics.view_org"] };
+  await installApi(page, actor);
+  const metric = { display_value: "7.3 hrs", rating: "High", benchmark: "Less than one day", value: 7.3, unit: "hours", trend_percentage: 0 };
+  await page.route("**/api/v1/analytics/**", route => {
+    const path = new URL(route.request().url()).pathname;
+    if (path.endsWith("/executive-summary")) return json(route, {
+      dora: { overall_rating: "High", deployment_frequency: { ...metric, display_value: "1.6 / week" }, lead_time_for_changes: metric, mean_time_to_recovery: { ...metric, display_value: "8.5 hrs" }, change_failure_rate: { ...metric, display_value: "0.0%" }, lead_time_breakdown_hours: {} },
+      flow: { velocity_total_points: 9, velocity_tasks_completed: 4, flow_efficiency_percentage: 31.7, wip_active_tasks: 0, velocity_by_type: { features_percent: 22.2, tech_debt_percent: 0, defects_percent: 77.8, infra_percent: 0 }, category_distribution: [{ category: "Technical", percentage: 100, points: 9 }] },
+      predictability: { predictability_score_percent: 45, on_time_delivery_rate_percent: 100, overdue_tasks_count: 1, cfd_series: [] },
+      summary: { headline: "Delivery performance is rated 'High' with 4 completed tasks (9.0 story points) and an 100.0% on-time delivery rate.", velocity_trend: "Flow velocity is steady with 22.2% allocated to new features, 0.0% to technical debt, and 77.8% to quality defect fixes.", investment_mix_summary: "Leading department investment is Technical (100.0%), followed by balanced execution across Platform, Operations, and Marketing streams.", bottlenecks_summary: "Mean Time to Recovery (MTTR) is 8.5 hrs (High rating) with 1 overdue task(s) in flight.", recommendations: ["Maintain Flow Efficiency at 31.7% by capping Active WIP to under 5 tasks."] },
+    });
+    if (path.endsWith("/project-health")) return json(route, { blocked: [], delayed: [] });
+    if (path.endsWith("/velocity")) return json(route, { weeks: [], tasks_done: [] });
+    if (path.endsWith("/burndown")) return json(route, { days: [] });
+    if (path.endsWith("/completion-trends")) return json(route, { created: [], completed: [] });
+    return json(route, []);
+  });
+  await login(page, actor);
+  await page.goto("/dashboards/executive");
+  const persian = locale === "fa";
+  await expect(page.getByText(persian ? "عملکرد تحویل در سطح زیاد است؛ 4 کار (9 امتیاز) تکمیل شده و نرخ تحویل به‌موقع 100٪ است." : "Delivery performance is rated 'High' with 4 completed tasks (9.0 story points) and an 100.0% on-time delivery rate.")).toBeVisible();
+  await expect(page.locator("select").filter({ has: page.locator(`option[value="30"]`) })).toHaveValue("30");
+  await expect(page.getByRole("option", { name: persian ? "۳۰ روز گذشته" : "Last 30 days" })).toHaveCount(1);
+  await page.getByRole("button", { name: persian ? "عملکرد DORA" : "DORA Performance" }).click();
+  await expect(page.getByText(persian ? "دفعات استقرار" : "Deployment Frequency", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: persian ? "جریان و تخصیص" : "Flow & Investment" }).click();
+  await expect(page.locator("span").filter({ hasText: persian ? /^فنی$/ : /^Technical$/ })).toBeVisible();
+});
+
+test("My work cards and pending items open their corresponding work", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === "tablet", "Phone and desktop cover the same navigation.");
+  test.setTimeout(120_000);
+  await page.clock.setFixedTime(new Date("2026-08-24T12:00:00Z"));
+  const actor = { ...user, permissions: [...user.permissions, "reports.view_executive"] };
+  await installApi(page, actor);
+  const base = { phase_id: SPRINT_ID, parent_task_id: null, task_type: "Feature", priority: "P2", story_points: 1, assignee_user_ids: [USER_ID], labels: [], checklist_items: [], board_order: 0, created_by: "manual", created_at: NOW, updated_at: NOW };
+  const rows = [
+    { ...base, id: TASK_ID, title: "Late but not blocked", status: "InProgress", due_date: "2026-08-23" },
+    { ...base, id: DOC_ID, title: "Blocked but not late", status: "Blocked", due_date: "2026-09-03" },
+    { ...base, id: RECIPIENT_ID, title: "Upcoming work", status: "Ready", due_date: "2026-08-27" },
+    { ...base, id: TEAM_ID, title: "Completed work", status: "Done", due_date: "2026-08-23" },
+    { ...base, id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", title: "Someone else's blocked work", status: "Blocked", assignee_user_ids: [RECIPIENT_ID], due_date: null },
+  ];
+  const projectRows = [
+    { ...initialProject, id: PROJECT_ID, name: "Active project", status: "in-progress", health_status: "on-track" },
+    { ...initialProject, id: DOC_ID, name: "Blocked project", status: "not-started", health_status: "blocked" },
+    { ...initialProject, id: TEAM_ID, name: "Delayed project", status: "in-progress", health_status: "delayed" },
+    { ...initialProject, id: RECIPIENT_ID, name: "Completed project", status: "completed", health_status: "on-track" },
+  ];
+  await page.route("**/api/v1/tasks?**", route => json(route, { items: rows, total_count: rows.length, page: 1, page_size: 100 }));
+  await page.route("**/api/v1/projects?**", route => json(route, { items: projectRows, total_count: projectRows.length, page: 1, page_size: 200 }));
+  await page.route("**/api/v1/portfolio/gantt**", route => json(route, { projects: [], links: [] }));
+  await page.route("**/api/v1/analytics/personal-dashboard", route => json(route, { velocity_points_completed: 1, blocked_tasks: 1, late_tasks: [{ task_id: TASK_ID }], upcoming_deadlines: [{ task_id: RECIPIENT_ID }] }));
+  await page.route("**/api/v1/analytics/executive-dashboard", route => json(route, { active_projects: 2, completed_projects: 1, delayed_projects: 1, blocked_projects: 1 }));
+  await page.route("**/api/v1/blockers", route => json(route, [{ id: SPRINT_ID, blocked_task_id: TASK_ID, status: "InProgress" }]));
+  await page.route(`**/api/v1/users/${USER_ID}/pending-work`, route => json(route, { pending_on_me: [
+    { kind: "blocker", id: SPRINT_ID, title: "Pending blocker", priority: "P2", detail: "Waiting" },
+    { kind: "review_task", id: RECIPIENT_ID, title: "Pending review", priority: "P2", detail: "Review", project_id: PROJECT_ID },
+  ], pending_on_others: [] }));
+  await login(page, actor);
+  await page.goto("/my-work");
+  await expect(page.getByRole("link", { name: /Pending blocker/ })).toHaveAttribute("href", `/tasks/${TASK_ID}`);
+  await expect(page.getByRole("link", { name: /Pending review/ })).toHaveAttribute("href", `/tasks/${RECIPIENT_ID}`);
+  await expect(page.getByRole("link", { name: /Needs me/ })).toHaveAttribute("href", "#pending-on-me");
+  for (const [label, expected, absent, view] of [
+    ["My late work", "Late but not blocked", "Blocked but not late", "my-overdue"],
+    ["Upcoming", "Upcoming work", "Late but not blocked", "my-upcoming"],
+    ["My velocity", "Completed work", "Late but not blocked", "my-completed"],
+    ["My blocked", "Blocked but not late", "Someone else's blocked work", "my-blocked"],
+  ]) {
+    await page.goto("/my-work");
+    await page.getByRole("link", { name: new RegExp(label) }).click();
+    await expect(page).toHaveURL(new RegExp(`view=${view}`));
+    await expect(page.getByRole("link", { name: expected, exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: absent, exact: true })).toHaveCount(0);
+  }
+  for (const [label, expected, absent, view] of [
+    ["Blocked projects", "Blocked project", "Active project", "blocked"],
+    ["Delayed", "Delayed project", "Blocked project", "delayed"],
+    ["Completed", "Completed project", "Blocked project", "completed"],
+    ["Active projects", "Active project", "Blocked project", "active"],
+  ]) {
+    await page.goto("/my-work");
+    const card = page.getByRole("link", { name: new RegExp(`Open ${label}`) });
+    await card.evaluate(node => node.scrollIntoView({ block: "center" }));
+    await card.click();
+    await expect(page).toHaveURL(new RegExp(`view=${view}`));
+    await expect(page.getByRole("link").filter({ hasText: expected })).toBeVisible();
+    await expect(page.getByRole("link").filter({ hasText: absent })).toHaveCount(0);
+  }
+});
+
 test("task navigation restores the source filters through Back and Forward", async ({ page }, testInfo) => {
   const api = await installApi(page);
   api.createdTask = {
@@ -281,6 +375,7 @@ test("task navigation restores the source filters through Back and Forward", asy
   await page.goto("/tasks");
   if (testInfo.project.name === "phone") await page.getByRole("button", { name: /Filters/ }).click();
   await page.getByPlaceholder("Search title…").fill("Return");
+  if (testInfo.project.name === "phone") await page.getByRole("button", { name: "Close filters" }).last().click();
   await page.getByRole("link", { name: "Return to my filtered work", exact: true }).first().click();
   if (testInfo.project.name === "phone") {
     await expect(page).toHaveURL(new RegExp(`/tasks/${TASK_ID}$`));
@@ -349,6 +444,16 @@ test("Persian uses Jalali dates and saves selected days as ISO", async ({ page }
   await expect(page.locator("html")).toHaveAttribute("lang", "fa");
   await page.getByRole("button", { name: "ویرایش پروژه", exact: true }).click();
   const modal = page.getByRole("dialog", { name: "ویرایش پروژه", exact: true });
+  const plannedStart = modal.getByLabel("شروع برنامه‌ریزی‌شده", { exact: true });
+  await plannedStart.click();
+  const projectCalendar = modal.getByRole("group", { name: "تقویم جلالی", exact: true });
+  const monthSelector = projectCalendar.getByLabel("ماه شمسی");
+  expect((await monthSelector.boundingBox())!.width).toBeGreaterThan(85);
+  await expect(monthSelector.locator("option:checked")).not.toHaveText("");
+  await projectCalendar.getByLabel("سال شمسی").fill("1405");
+  await projectCalendar.getByLabel("ماه شمسی").selectOption("1");
+  await projectCalendar.getByRole("button", { name: "2 فروردین 1405", exact: true }).click();
+  await expect(plannedStart).toContainText("1405/01/02");
   const start = modal.getByLabel("تاریخ شروع", { exact: true });
   await expect(start).toContainText("1405");
   await start.click();
@@ -359,10 +464,13 @@ test("Persian uses Jalali dates and saves selected days as ISO", async ({ page }
   await expect(start).toContainText("1405/01/01");
   await modal.getByRole("button", { name: "ذخیره تغییرات", exact: true }).click();
   await expect(modal).toHaveCount(0);
+  expect(api.project.start_date).toBe("2026-03-22");
+  expect(api.project.end_date).toBe("2026-04-04");
   expect(api.sprint.start_date).toBe("2026-03-21");
   expect(api.sprint.end_date).toBe("2026-04-03");
   await page.reload();
   await page.getByRole("button", { name: "ویرایش پروژه", exact: true }).click();
+  await expect(modal.getByLabel("شروع برنامه‌ریزی‌شده", { exact: true })).toContainText("1405/01/02");
   await expect(modal.getByLabel("تاریخ شروع", { exact: true })).toContainText("1405/01/01");
   await modal.getByLabel("تاریخ شروع", { exact: true }).click();
   const accessibility = await new AxeBuilder({ page }).include('[role="dialog"]').analyze();
@@ -544,6 +652,34 @@ test("timeline dates are inclusive, dependencies reach their targets and focus c
   await expect(page).toHaveURL(new RegExp(`/projects/${PROJECT_ID}$`));
 });
 
+test("project planned end follows start and sprint durations", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === "tablet", "Phone and desktop cover the edit form.");
+  const api = await installApi(page);
+  await login(page);
+  await page.goto(`/projects/${PROJECT_ID}`);
+  await page.getByRole("button", { name: "Edit project", exact: true }).click();
+  const modal = page.getByRole("dialog", { name: "Edit project", exact: true });
+  await expect(modal.getByLabel("Planned end")).toHaveAttribute("readonly", "");
+  await expect(modal.getByLabel("Planned end")).toHaveValue(initialProject.end_date);
+  await modal.getByLabel("Planned start").fill("2026-09-10");
+  await expect(modal.getByLabel("Planned end")).toHaveValue("2026-09-23");
+  await modal.getByRole("button", { name: "Save changes" }).click();
+  await expect(modal).toHaveCount(0);
+  expect(api.project.start_date).toBe("2026-09-10");
+  expect(api.project.end_date).toBe("2026-09-23");
+  expect(api.sprint.start_date).toBe(sprint.start_date);
+  expect(api.sprint.end_date).toBe(sprint.end_date);
+  await page.getByRole("button", { name: "Edit project", exact: true }).click();
+  await expect(modal.getByLabel("Planned start")).toHaveValue("2026-09-10");
+  await expect(modal.getByLabel("Planned end")).toHaveValue("2026-09-23");
+  await modal.getByLabel("Sprint duration").selectOption("7");
+  await expect(modal.getByLabel("Planned end")).toHaveValue("2026-09-16");
+  await modal.getByRole("button", { name: "Save changes" }).click();
+  await expect(modal).toHaveCount(0);
+  expect(api.project.end_date).toBe("2026-09-16");
+  expect(api.sprint.duration_days).toBe(7);
+});
+
 test("project dates, sprint planning, and searchable Docs links work together", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name === "tablet", "Desktop and phone cover the adaptive project workspace.");
   test.setTimeout(60_000);
@@ -557,9 +693,11 @@ test("project dates, sprint planning, and searchable Docs links work together", 
   await expect(page.getByText("In progress", { exact: true }).first()).toBeVisible();
   await page.getByRole("button", { name: "Edit project" }).click();
 
-  await expect(page.getByLabel("Planned start")).toBeDisabled();
-  await expect(page.getByLabel("Planned end")).toBeDisabled();
+  await expect(page.getByLabel("Planned start")).toBeEnabled();
+  await expect(page.getByLabel("Planned end")).toHaveAttribute("readonly", "");
   await expect(page.getByLabel("Actual end date")).toBeEnabled();
+  await page.getByLabel("Planned start").fill("2026-09-10");
+  await expect(page.getByLabel("Planned end")).toHaveValue("2026-09-23");
   await page.getByLabel("Project name").fill("Sprint migration updated");
   await page.getByLabel("Actual end date").fill("2026-10-20");
   const projectDocSearch = page.getByLabel("Search documents to connect to project");
@@ -568,10 +706,14 @@ test("project dates, sprint planning, and searchable Docs links work together", 
   await page.getByRole("button", { name: "Save changes" }).click();
 
   await expect.poll(() => api.projectUpdate?.name).toBe("Sprint migration updated");
-  expect(api.projectUpdate?.start_date).toBe(initialProject.start_date);
-  expect(api.projectUpdate?.end_date).toBe(initialProject.end_date);
+  expect(api.projectUpdate?.start_date).toBe("2026-09-10");
+  expect(api.projectUpdate?.end_date).toBe("2026-09-23");
   expect(api.projectUpdate?.actual_completion_date).toBe("2026-10-20");
   await expect.poll(() => api.links.filter((link) => link.entity_type === "project").length).toBe(1);
+  await page.getByRole("button", { name: "Edit project" }).click();
+  await expect(page.getByLabel("Planned start")).toHaveValue("2026-09-10");
+  await expect(page.getByLabel("Planned end")).toHaveValue("2026-09-23");
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
 
   await page.getByRole("tab", { name: "Board" }).click();
   await expect(page.getByRole("button", { name: /Sprint 1/ })).toBeVisible();
@@ -595,8 +737,9 @@ test("project dates, sprint planning, and searchable Docs links work together", 
   await page.getByRole("button", { name: "Open task details for Connect release checklist" }).click();
   await expect(page.getByRole("dialog", { name: "Task details" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Connect release checklist" })).toBeVisible();
-  await expect(page).toHaveURL(boardUrl);
+  await expect(page).toHaveURL(`${boardUrl}&task=${TASK_ID}`);
   await page.getByRole("button", { name: "Close dialog" }).click();
+  await expect(page).toHaveURL(boardUrl);
 
   expect(pageErrors).toEqual([]);
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
@@ -634,6 +777,7 @@ test("a user without task-management permissions can create tasks", async ({ pag
 
 
 test("Edit project saves members, sprint edits and additional documentation", async ({ page }, testInfo) => {
+  test.setTimeout(60_000);
   const api = await installApi(page);
   await login(page);
   await page.goto(`/projects/${PROJECT_ID}`);
@@ -666,7 +810,9 @@ test("Edit project saves members, sprint edits and additional documentation", as
   modal = page.getByRole("dialog", { name: "Edit project", exact: true });
   await expect(modal.getByLabel("Sprint name", { exact: true })).toHaveValue("Release sprint");
   await expect(modal.getByRole("button", { name: /Launch runbook/ })).toBeVisible();
-  await modal.getByRole("button", { name: "Remove member: Support Agent", exact: true }).click();
+  const removeMember = modal.getByRole("button", { name: "Remove member: Support Agent", exact: true });
+  await removeMember.evaluate(node => node.scrollIntoView({ block: "center" }));
+  await removeMember.click();
   await modal.getByRole("button", { name: "Save changes", exact: true }).click();
   await expect(modal).toHaveCount(0);
   expect(api.members.map((member) => member.user_id)).toEqual([USER_ID]);

@@ -18,7 +18,8 @@ The vertical verification boundary is opening Edit project, adding/removing a
 member, changing a sprint, attaching a document, saving and reopening. Run
 `npx tsc --noEmit --incremental false` and the focused
 `e2e/project-sprints-doc-links.spec.ts` Playwright tests from frontend. Project
-baseline dates remain separate from editable sprint dates.
+planned start can be edited and the planned end is derived from sprint durations;
+existing sprint dates are not moved automatically.
 
 Verification on the local production frontend: build and TypeScript passed;
 34 existing frontend tests passed. Six Playwright scenarios passed across phone,

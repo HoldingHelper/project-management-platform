@@ -645,15 +645,14 @@ function EditProjectModal({
     );
   }, [open, linkedDocs.data, linkedDocs.isFetching]);
 
-  const plannedDatesLocked = Boolean(project.start_date && project.end_date);
-  const editSprints = useQuery({ queryKey: ["project-phases", project.id], queryFn: () => getProjectSprints(project.id), enabled: open && !plannedDatesLocked });
-  useEffect(() => {
-    if (plannedDatesLocked || !open || !editSprints.data) return;
-    const durations = editSprints.data.length ? editSprints.data.map((phase) => phase.duration_days ?? 14) : [14];
-    const end = sprintSchedule(form.start_date, durations).at(-1)?.end_date ?? "";
-    setForm((current) => current.end_date === end ? current : { ...current, end_date: end });
-  }, [plannedDatesLocked, open, editSprints.data, form.start_date]);
-
+  const originalSprints = (sprintsEditor.query.data ?? []).filter((sprint) => sprint.is_sprint);
+  const editedSprints = sprintsEditor.sprints.filter((sprint) => sprint.is_sprint);
+  const durationChanged = editedSprints.some((sprint, index) =>
+    (sprint.duration_days ?? 14) !== (originalSprints[index]?.duration_days ?? 14),
+  );
+  const scheduleChanged = form.start_date !== (project.start_date ?? "") || durationChanged;
+  const calculatedEnd = sprintSchedule(form.start_date, editedSprints.map((sprint) => sprint.duration_days ?? 14)).at(-1)?.end_date ?? "";
+  const plannedEnd = scheduleChanged ? calculatedEnd : form.end_date;
 
   const save = useMutation({
     mutationFn: async () => {
@@ -668,7 +667,7 @@ function EditProjectModal({
         status: form.status,
         health_status: form.health_status,
         start_date: form.start_date || null,
-        end_date: form.end_date || null,
+        end_date: plannedEnd || null,
         estimated_completion_date: form.estimated_completion_date || null,
         actual_completion_date: form.actual_completion_date || null,
         tags: tagsWithTaxonomy(form.tags, form.level, form.partition),
@@ -704,8 +703,9 @@ function EditProjectModal({
     },
     onError: (error) => toast.push(error instanceof Error ? error.message : "Could not update project.", "error"),
   });
-  const datesPaired = Boolean(form.start_date) === Boolean(form.end_date);
-  const datesOrdered = !form.start_date || !form.end_date || form.end_date >= form.start_date;
+  const datesPaired = Boolean(form.start_date) === Boolean(plannedEnd);
+  const datesOrdered = !form.start_date || !plannedEnd || plannedEnd >= form.start_date;
+  const actualNeedsPlan = Boolean(form.actual_completion_date && (!form.start_date || !plannedEnd));
 
   return (
     <Modal
@@ -716,7 +716,7 @@ function EditProjectModal({
       footer={
         <>
           <Button variant="secondary" disabled={save.isPending} onClick={onClose}><LocalizedText message={"Cancel"} /></Button>
-          <Button disabled={!membersEditor.ready || !sprintsEditor.ready || !sprintsEditor.valid || !linkedDocs.isSuccess || linkedDocs.isFetching || !form.name.trim() || checklist.some((item) => !item.text.trim()) || !datesPaired || !datesOrdered || save.isPending} onClick={() => save.mutate()}>
+          <Button disabled={!membersEditor.ready || !sprintsEditor.ready || !sprintsEditor.valid || !linkedDocs.isSuccess || linkedDocs.isFetching || !form.name.trim() || checklist.some((item) => !item.text.trim()) || !datesPaired || !datesOrdered || actualNeedsPlan || save.isPending} onClick={() => save.mutate()}>
             {save.isPending ? <LocalizedText message={"Saving..."} /> : <LocalizedText message={"Save changes"} />}
           </Button>
         </>
@@ -771,20 +771,20 @@ function EditProjectModal({
           </Field>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10 }}>
             <Field label={translateUI("Planned start")}>
-              <TextInput type="date" value={form.start_date} onChange={(e) => setForm((f) => ({ ...f, start_date: e.target.value }))} disabled={plannedDatesLocked} />
+              <TextInput type="date" value={form.start_date} onChange={(e) => setForm((f) => ({ ...f, start_date: e.target.value }))} />
             </Field>
             <Field label={translateUI("Planned end")}>
-              <TextInput type="date" value={form.end_date} readOnly aria-readonly="true" disabled={plannedDatesLocked} />
+              <TextInput type="date" value={plannedEnd} readOnly />
             </Field>
             <Field label={translateUI("Actual end date")}>
-              <TextInput type="date" value={form.actual_completion_date} onChange={(e) => setForm((f) => ({ ...f, actual_completion_date: e.target.value }))} disabled={!form.start_date || !form.end_date} />
+              <TextInput type="date" value={form.actual_completion_date} onChange={(e) => setForm((f) => ({ ...f, actual_completion_date: e.target.value }))} disabled={(!form.start_date || !plannedEnd) && !form.actual_completion_date} />
             </Field>
           </div>
-          {plannedDatesLocked && (
-            <div style={{ fontSize: 11.5, color: "var(--text-tertiary)", marginTop: -6 }}>{" "}<LocalizedText message={"Planned dates are baseline dates and cannot be changed. Record schedule movement using the estimated and actual end dates."} />{" "}</div>
-          )}
+          <div style={{ fontSize: 11.5, color: "var(--text-tertiary)", marginTop: -6 }}><LocalizedText message={"Planned end is calculated from the project start and sprint durations. Sprint dates remain unchanged."} /></div>
+          {scheduleChanged && form.start_date && sprintsEditor.ready && !calculatedEnd && <div style={{ fontSize: 11.5, color: "var(--status-delayed)" }}><LocalizedText message={"A sprint with a valid duration is required to calculate the planned end."} /></div>}
           {!datesPaired && <div style={{ fontSize: 11.5, color: "var(--status-delayed)" }}><LocalizedText message={"Set both planned dates or leave both empty."} /></div>}
           {!datesOrdered && <div style={{ fontSize: 11.5, color: "var(--status-delayed)" }}><LocalizedText message={"Planned end must be on or after planned start."} /></div>}
+          {actualNeedsPlan && <div style={{ fontSize: 11.5, color: "var(--status-delayed)" }}><LocalizedText message={"Actual end date requires planned project start and end dates."} /></div>}
           <Field label={translateUI("Estimated completion")}>
             <TextInput type="date" value={form.estimated_completion_date} onChange={(e) => setForm((f) => ({ ...f, estimated_completion_date: e.target.value }))} />
           </Field>

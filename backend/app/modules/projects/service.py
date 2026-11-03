@@ -452,26 +452,12 @@ async def update_project(
             raise ValidationAppError("Checklist items cannot be repeated.")
         update_data["checklist_items"] = [item.model_dump(mode="json") for item in payload.checklist_items]
     fields_set = payload.model_fields_set
-    planned_dates_locked = project.start_date is not None and project.end_date is not None
-    if planned_dates_locked:
-        attempted_change = (
-            "start_date" in fields_set and update_data.get("start_date") != project.start_date
-        ) or (
-            "end_date" in fields_set and update_data.get("end_date") != project.end_date
-        )
-        if attempted_change:
-            raise BusinessRuleError(
-                "Planned start and end dates are locked after they are first set. "
-                "Update the actual end date instead."
-            )
-
     next_start = update_data.get("start_date", project.start_date)
     next_end = update_data.get("end_date", project.end_date)
     if "start_date" in fields_set or "end_date" in fields_set:
         _validate_project_date_baseline(next_start, next_end)
     if (
-        "actual_completion_date" in fields_set
-        and update_data.get("actual_completion_date") is not None
+        update_data.get("actual_completion_date", project.actual_completion_date) is not None
         and not (next_start and next_end)
     ):
         raise BusinessRuleError(
