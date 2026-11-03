@@ -16,14 +16,6 @@
     ]
   },
   {
-    "message": "? This permanently removes the product line and its uploaded documentation from Holding and project dropdowns.",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "components/holding/RemoveProductLine.tsx"
-    ]
-  },
-  {
     "message": ". Access follows the original item’s permissions.",
     "translated": true,
     "neutral": false,
@@ -146,6 +138,22 @@
     ]
   },
   {
+    "message": "{completed} of {total} tasks completed",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/my-work/page.tsx"
+    ]
+  },
+  {
+    "message": "{count} events on {day}",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/dashboards/executive/page.tsx"
+    ]
+  },
+  {
     "message": "{count} items need your action across {projects} active projects.",
     "translated": true,
     "neutral": false,
@@ -178,12 +186,21 @@
     ]
   },
   {
+    "message": "{count} tasks completed",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/dashboards/executive/page.tsx"
+    ]
+  },
+  {
     "message": "{days} days",
     "translated": true,
     "neutral": false,
     "files": [
       "app/(app)/portfolio/page.tsx",
-      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx",
+      "components/projects/ProjectSprintsFields.tsx"
     ]
   },
   {
@@ -192,6 +209,30 @@
     "neutral": false,
     "files": [
       "app/(app)/settings/mcp/page.tsx"
+    ]
+  },
+  {
+    "message": "{name} task column",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
+    ]
+  },
+  {
+    "message": "{value} deploys",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/dashboards/executive/page.tsx"
+    ]
+  },
+  {
+    "message": "{value}% on-time",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/dashboards/executive/page.tsx"
     ]
   },
   {
@@ -590,6 +631,14 @@
     ]
   },
   {
+    "message": "A sprint with a valid duration is required to calculate the planned end.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
+    ]
+  },
+  {
     "message": "About",
     "translated": true,
     "neutral": false,
@@ -749,6 +798,14 @@
     ]
   },
   {
+    "message": "active vs wait time",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/dashboards/executive/page.tsx"
+    ]
+  },
+  {
     "message": "Activity Feed",
     "translated": true,
     "neutral": false,
@@ -765,6 +822,14 @@
     ]
   },
   {
+    "message": "Actual end",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
+    ]
+  },
+  {
     "message": "Actual end date",
     "translated": true,
     "neutral": false,
@@ -774,11 +839,27 @@
     ]
   },
   {
+    "message": "Actual end date requires planned project start and end dates.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
+    ]
+  },
+  {
     "message": "Actual hours",
     "translated": true,
     "neutral": false,
     "files": [
       "components/tasks/TaskEditorModal.tsx"
+    ]
+  },
+  {
+    "message": "Add",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/tasks/[taskId]/TaskDetailClient.tsx"
     ]
   },
   {
@@ -892,7 +973,8 @@
     "translated": true,
     "neutral": false,
     "files": [
-      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx",
+      "components/projects/ProjectMembersFields.tsx"
     ]
   },
   {
@@ -1255,6 +1337,23 @@
     ]
   },
   {
+    "message": "Allow download and Telegram sharing",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/notifications/page.tsx",
+      "components/docs/FileSharingControl.tsx"
+    ]
+  },
+  {
+    "message": "Allow download and Telegram sharing for {name}",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/docs/FileSharingControl.tsx"
+    ]
+  },
+  {
     "message": "Allowed",
     "translated": true,
     "neutral": false,
@@ -1363,8 +1462,11 @@
     "translated": true,
     "neutral": false,
     "files": [
+      "app/(app)/admin/archive/page.tsx",
       "app/(app)/projects/[projectId]/ProjectDetailClient.tsx",
-      "components/docs/DocumentLifecycleControls.tsx"
+      "app/(app)/tasks/[taskId]/TaskDetailClient.tsx",
+      "components/docs/DocumentLifecycleControls.tsx",
+      "components/holding/RemoveProductLine.tsx"
     ]
   },
   {
@@ -1384,11 +1486,22 @@
     ]
   },
   {
+    "message": "Archive product line {name}",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/holding/RemoveProductLine.tsx"
+    ]
+  },
+  {
     "message": "Archived",
     "translated": true,
     "neutral": false,
     "files": [
-      "app/(app)/portfolio/page.tsx"
+      "app/(app)/admin/archive/page.tsx",
+      "app/(app)/portfolio/page.tsx",
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx",
+      "components/docs/workspace/KnowledgeExplorer.tsx"
     ]
   },
   {
@@ -1413,6 +1526,14 @@
     "neutral": false,
     "files": [
       "components/docs/DocumentLifecycleControls.tsx"
+    ]
+  },
+  {
+    "message": "Archiving hides this product line and its projects. Only a Super Admin can restore it. Continue?",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/holding/RemoveProductLine.tsx"
     ]
   },
   {
@@ -1663,6 +1784,23 @@
     ]
   },
   {
+    "message": "Attachment uploaded successfully",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/tasks/[taskId]/TaskDetailClient.tsx"
+    ]
+  },
+  {
+    "message": "Attachments",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/tasks/[taskId]/TaskDetailClient.tsx",
+      "components/docs/DocumentAttachments.tsx"
+    ]
+  },
+  {
     "message": "Authentication & Security",
     "translated": true,
     "neutral": false,
@@ -1805,6 +1943,7 @@
     "translated": true,
     "neutral": false,
     "files": [
+      "app/(app)/dashboards/executive/charts.tsx",
       "app/(app)/tasks/page.tsx",
       "components/modernist/overlays/CreateTaskDialog.tsx"
     ]
@@ -1879,7 +2018,6 @@
     "translated": true,
     "neutral": false,
     "files": [
-      "app/(app)/my-work/page.tsx",
       "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
     ]
   },
@@ -1889,6 +2027,14 @@
     "neutral": false,
     "files": [
       "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
+    ]
+  },
+  {
+    "message": "Blocked projects",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/my-work/page.tsx"
     ]
   },
   {
@@ -2032,7 +2178,6 @@
     "translated": true,
     "neutral": false,
     "files": [
-      "app/(app)/tasks/[taskId]/TaskDetailClient.tsx",
       "components/github/GitHubMentionPicker.tsx"
     ]
   },
@@ -2049,7 +2194,8 @@
     "translated": true,
     "neutral": false,
     "files": [
-      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx",
+      "components/projects/ProjectSprintsFields.tsx"
     ]
   },
   {
@@ -2109,7 +2255,6 @@
       "components/docs/DocumentLifecycleControls.tsx",
       "components/docs/workspace/KnowledgeWorkspaceShell.tsx",
       "components/holding/AddProductLine.tsx",
-      "components/holding/RemoveProductLine.tsx",
       "components/modernist/overlays/CreateDocDialog.tsx",
       "components/modernist/overlays/CreateProjectDialog.tsx",
       "components/modernist/overlays/CreateTaskDialog.tsx",
@@ -2418,7 +2563,8 @@
     "translated": true,
     "neutral": false,
     "files": [
-      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx",
+      "components/projects/ProjectMembersFields.tsx"
     ]
   },
   {
@@ -2834,6 +2980,14 @@
     ]
   },
   {
+    "message": "Collapse {name}",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
+    ]
+  },
+  {
     "message": "Collapse All",
     "translated": true,
     "neutral": false,
@@ -2917,6 +3071,14 @@
     ]
   },
   {
+    "message": "commit to done",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/dashboards/executive/page.tsx"
+    ]
+  },
+  {
     "message": "Committing...",
     "translated": true,
     "neutral": false,
@@ -2946,7 +3108,6 @@
     "neutral": false,
     "files": [
       "app/(app)/my-work/page.tsx",
-      "app/(app)/tasks/[taskId]/TaskDetailClient.tsx",
       "components/tasks/TaskChecklist.tsx"
     ]
   },
@@ -3311,11 +3472,52 @@
     ]
   },
   {
+    "message": "Could not archive product line.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/holding/RemoveProductLine.tsx"
+    ]
+  },
+  {
     "message": "Could not create the role.",
     "translated": true,
     "neutral": false,
     "files": [
       "app/(app)/admin/users/page.tsx"
+    ]
+  },
+  {
+    "message": "Could not download file.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx",
+      "app/(app)/tasks/[taskId]/TaskDetailClient.tsx"
+    ]
+  },
+  {
+    "message": "Could not download the file. Please try again.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/docs/DocumentAttachments.tsx"
+    ]
+  },
+  {
+    "message": "Could not load archived items.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/admin/archive/page.tsx"
+    ]
+  },
+  {
+    "message": "Could not load change history.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/history/EntityHistory.tsx"
     ]
   },
   {
@@ -3335,6 +3537,14 @@
     ]
   },
   {
+    "message": "Could not load download permission.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/docs/FileSharingControl.tsx"
+    ]
+  },
+  {
     "message": "Could not load organization structure.",
     "translated": true,
     "neutral": false,
@@ -3351,11 +3561,27 @@
     ]
   },
   {
+    "message": "Could not load this project.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
+    ]
+  },
+  {
     "message": "Could not load uploaded documents.",
     "translated": true,
     "neutral": false,
     "files": [
       "components/docs/DocumentationUpload.tsx"
+    ]
+  },
+  {
+    "message": "Could not load your sprints.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/my-work/page.tsx"
     ]
   },
   {
@@ -3367,11 +3593,12 @@
     ]
   },
   {
-    "message": "Could not remove product line",
+    "message": "Could not restore item.",
     "translated": true,
     "neutral": false,
     "files": [
-      "components/holding/RemoveProductLine.tsx"
+      "app/(app)/admin/archive/page.tsx",
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
     ]
   },
   {
@@ -3399,6 +3626,14 @@
     ]
   },
   {
+    "message": "Could not update download permission.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/docs/FileSharingControl.tsx"
+    ]
+  },
+  {
     "message": "Could not update role permissions.",
     "translated": true,
     "neutral": false,
@@ -3412,6 +3647,15 @@
     "neutral": false,
     "files": [
       "components/docs/DocumentLifecycleControls.tsx"
+    ]
+  },
+  {
+    "message": "Could not upload file. Please try again.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx",
+      "app/(app)/tasks/[taskId]/TaskDetailClient.tsx"
     ]
   },
   {
@@ -3829,6 +4073,14 @@
     ]
   },
   {
+    "message": "Defects",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/dashboards/executive/charts.tsx"
+    ]
+  },
+  {
     "message": "Delayed",
     "translated": true,
     "neutral": false,
@@ -3841,9 +4093,7 @@
     "translated": true,
     "neutral": false,
     "files": [
-      "app/(app)/admin/users/page.tsx",
-      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx",
-      "app/(app)/tasks/[taskId]/TaskDetailClient.tsx"
+      "app/(app)/admin/users/page.tsx"
     ]
   },
   {
@@ -3908,14 +4158,6 @@
     "neutral": false,
     "files": [
       "app/(app)/admin/users/page.tsx"
-    ]
-  },
-  {
-    "message": "Deleting...",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
     ]
   },
   {
@@ -4328,6 +4570,7 @@
     "translated": true,
     "neutral": false,
     "files": [
+      "app/(app)/dashboards/executive/charts.tsx",
       "components/modernist/views/PerformanceView.tsx",
       "components/organization/InviteModal.tsx",
       "components/organization/UserDetailsModal.tsx",
@@ -4355,7 +4598,10 @@
     "translated": true,
     "neutral": false,
     "files": [
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx",
       "app/(app)/settings/mcp/page.tsx",
+      "app/(app)/tasks/[taskId]/TaskDetailClient.tsx",
+      "components/docs/DocumentAttachments.tsx",
       "components/docs/DocumentationUpload.tsx",
       "components/holding/ProductDocumentation.tsx",
       "components/modernist/plugins/PdfBlock.tsx"
@@ -4366,6 +4612,7 @@
     "translated": true,
     "neutral": false,
     "files": [
+      "app/(app)/tasks/[taskId]/TaskDetailClient.tsx",
       "components/docs/workspace/UploadedDocumentView.tsx"
     ]
   },
@@ -4390,6 +4637,8 @@
     "translated": true,
     "neutral": false,
     "files": [
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx",
+      "app/(app)/tasks/[taskId]/TaskDetailClient.tsx",
       "components/docs/DocumentationUpload.tsx",
       "components/docs/workspace/UploadedDocumentView.tsx",
       "components/holding/ProductDocumentation.tsx"
@@ -4843,7 +5092,8 @@
     "translated": true,
     "neutral": false,
     "files": [
-      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx",
+      "components/projects/ProjectSprintsFields.tsx"
     ]
   },
   {
@@ -5141,6 +5391,14 @@
     ]
   },
   {
+    "message": "Estimated end",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
+    ]
+  },
+  {
     "message": "Estimated hours",
     "translated": true,
     "neutral": false,
@@ -5303,6 +5561,14 @@
     ]
   },
   {
+    "message": "Expand {name}",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
+    ]
+  },
+  {
     "message": "Expand All",
     "translated": true,
     "neutral": false,
@@ -5399,6 +5665,14 @@
     ]
   },
   {
+    "message": "Features",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/dashboards/executive/charts.tsx"
+    ]
+  },
+  {
     "message": "Feedback helps keep documentation clear.",
     "translated": true,
     "neutral": false,
@@ -5412,6 +5686,14 @@
     "neutral": false,
     "files": [
       "components/modernist/overlays/CreateDocDialog.tsx"
+    ]
+  },
+  {
+    "message": "File uploaded successfully",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
     ]
   },
   {
@@ -5449,6 +5731,14 @@
   },
   {
     "message": "Filter projects by product line",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/portfolio/page.tsx"
+    ]
+  },
+  {
+    "message": "Filter projects by status",
     "translated": true,
     "neutral": false,
     "files": [
@@ -5722,14 +6012,6 @@
     "neutral": false,
     "files": [
       "components/public/InteractiveWorkflow.tsx"
-    ]
-  },
-  {
-    "message": "From your personal dashboard",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "app/(app)/my-work/page.tsx"
     ]
   },
   {
@@ -6324,7 +6606,9 @@
     "translated": true,
     "neutral": false,
     "files": [
-      "app/(app)/tasks/[taskId]/TaskDetailClient.tsx"
+      "app/(app)/admin/archive/page.tsx",
+      "app/(app)/tasks/[taskId]/TaskDetailClient.tsx",
+      "components/history/EntityHistory.tsx"
     ]
   },
   {
@@ -6431,6 +6715,7 @@
     "translated": true,
     "neutral": false,
     "files": [
+      "app/(app)/dashboards/executive/charts.tsx",
       "app/(app)/my-work/page.tsx",
       "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
     ]
@@ -6440,7 +6725,16 @@
     "translated": true,
     "neutral": false,
     "files": [
+      "app/(app)/dashboards/executive/charts.tsx",
       "components/public/WorkspaceMap.tsx"
+    ]
+  },
+  {
+    "message": "In Review",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/dashboards/executive/charts.tsx"
     ]
   },
   {
@@ -6457,6 +6751,14 @@
     "neutral": false,
     "files": [
       "app/(app)/dashboards/executive/page.tsx"
+    ]
+  },
+  {
+    "message": "Infra/Sec",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/dashboards/executive/charts.tsx"
     ]
   },
   {
@@ -6885,14 +7187,6 @@
     ]
   },
   {
-    "message": "Last modified",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "app/(app)/tasks/[taskId]/TaskDetailClient.tsx"
-    ]
-  },
-  {
     "message": "Last name",
     "translated": true,
     "neutral": false,
@@ -7011,7 +7305,8 @@
     "translated": true,
     "neutral": false,
     "files": [
-      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx",
+      "components/projects/ProjectSprintsFields.tsx"
     ]
   },
   {
@@ -7152,6 +7447,15 @@
     "neutral": false,
     "files": [
       "app/(app)/activity/page.tsx"
+    ]
+  },
+  {
+    "message": "Loading attachments…",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx",
+      "app/(app)/tasks/[taskId]/TaskDetailClient.tsx"
     ]
   },
   {
@@ -7421,8 +7725,13 @@
     "translated": true,
     "neutral": false,
     "files": [
+      "app/(app)/admin/archive/page.tsx",
       "app/(app)/drive/callback/page.tsx",
-      "components/chat/VoiceBubble.tsx"
+      "app/(app)/tasks/[taskId]/TaskDetailClient.tsx",
+      "components/chat/VoiceBubble.tsx",
+      "components/history/EntityHistory.tsx",
+      "components/projects/ProjectMembersFields.tsx",
+      "components/projects/ProjectSprintsFields.tsx"
     ]
   },
   {
@@ -7664,6 +7973,14 @@
     ]
   },
   {
+    "message": "Members",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/projects/ProjectMembersFields.tsx"
+    ]
+  },
+  {
     "message": "Mention GitHub Issue or Pull Request",
     "translated": true,
     "neutral": false,
@@ -7822,6 +8139,14 @@
     ]
   },
   {
+    "message": "more files",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/tasks/[taskId]/TaskDetailClient.tsx"
+    ]
+  },
+  {
     "message": "More navigation",
     "translated": true,
     "neutral": false,
@@ -7883,6 +8208,7 @@
     "translated": true,
     "neutral": false,
     "files": [
+      "app/(app)/my-work/page.tsx",
       "app/(app)/tasks/page.tsx"
     ]
   },
@@ -7927,7 +8253,7 @@
     ]
   },
   {
-    "message": "My Sprint",
+    "message": "My Sprints",
     "translated": true,
     "neutral": false,
     "files": [
@@ -7953,6 +8279,14 @@
       "components/holding/OrgAdmin.tsx",
       "components/modernist/overlays/CreateDocDialog.tsx",
       "components/modernist/views/VaultHomeView.tsx"
+    ]
+  },
+  {
+    "message": "Name, goal, stakeholders, timeline, team members, and constraints can come from the brief or Sheet.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/projects/ai-generator/page.tsx"
     ]
   },
   {
@@ -8240,6 +8574,14 @@
     ]
   },
   {
+    "message": "New value",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/history/EntityHistory.tsx"
+    ]
+  },
+  {
     "message": "NexFellas AI",
     "translated": true,
     "neutral": false,
@@ -8292,6 +8634,14 @@
     ]
   },
   {
+    "message": "No",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/history/EntityHistory.tsx"
+    ]
+  },
+  {
     "message": "No access",
     "translated": true,
     "neutral": false,
@@ -8333,12 +8683,28 @@
     ]
   },
   {
+    "message": "No archived items.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/admin/archive/page.tsx"
+    ]
+  },
+  {
     "message": "No articles yet",
     "translated": true,
     "neutral": false,
     "files": [
       "components/docs/DocsSidebar.tsx",
       "components/docs/workspace/KnowledgeExplorer.tsx"
+    ]
+  },
+  {
+    "message": "No assigned sprints yet.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/my-work/page.tsx"
     ]
   },
   {
@@ -8355,6 +8721,22 @@
     "neutral": false,
     "files": [
       "app/(app)/my-work/page.tsx"
+    ]
+  },
+  {
+    "message": "No attachments",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/tasks/[taskId]/TaskDetailClient.tsx"
+    ]
+  },
+  {
+    "message": "No attachments yet. Click 'Upload Attachment' or attach files/voice notes via Telegram.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/tasks/[taskId]/TaskDetailClient.tsx"
     ]
   },
   {
@@ -8426,6 +8808,7 @@
     "translated": true,
     "neutral": false,
     "files": [
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx",
       "components/modernist/overlays/TaskDrawer.tsx",
       "components/modernist/views/ExecutiveView.tsx",
       "components/modernist/views/HomeView.tsx",
@@ -8730,6 +9113,14 @@
     ]
   },
   {
+    "message": "No project attachments yet. Click 'Upload File' to add documents, diagrams, or briefs.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
+    ]
+  },
+  {
     "message": "No project channel",
     "translated": true,
     "neutral": false,
@@ -8785,6 +9176,14 @@
     "neutral": false,
     "files": [
       "app/(app)/portfolio/page.tsx"
+    ]
+  },
+  {
+    "message": "No recorded changes yet.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/history/EntityHistory.tsx"
     ]
   },
   {
@@ -8848,7 +9247,8 @@
     "translated": true,
     "neutral": false,
     "files": [
-      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx",
+      "components/projects/ProjectSprintsFields.tsx"
     ]
   },
   {
@@ -9196,14 +9596,6 @@
     ]
   },
   {
-    "message": "on",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "app/(app)/tasks/[taskId]/TaskDetailClient.tsx"
-    ]
-  },
-  {
     "message": "On critical path",
     "translated": true,
     "neutral": false,
@@ -9253,11 +9645,36 @@
     ]
   },
   {
-    "message": "Only Product Line members can join this project.",
+    "message": "Only a Super Admin can restore an archived project. Continue?",
     "translated": true,
     "neutral": false,
     "files": [
       "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
+    ]
+  },
+  {
+    "message": "Only a Super Admin can restore an archived task. Continue?",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/tasks/[taskId]/TaskDetailClient.tsx"
+    ]
+  },
+  {
+    "message": "Only a Super Admin can view archived items.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/admin/archive/page.tsx"
+    ]
+  },
+  {
+    "message": "Only Product Line members can join this project.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx",
+      "components/projects/ProjectMembersFields.tsx"
     ]
   },
   {
@@ -9337,6 +9754,7 @@
     "translated": true,
     "neutral": false,
     "files": [
+      "app/(app)/dashboards/executive/charts.tsx",
       "app/(app)/my-work/page.tsx",
       "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
     ]
@@ -9454,6 +9872,14 @@
     ]
   },
   {
+    "message": "Open task details for {name}",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
+    ]
+  },
+  {
     "message": "Open Task Load & Contributions (4 weeks)",
     "translated": true,
     "neutral": false,
@@ -9466,6 +9892,7 @@
     "translated": true,
     "neutral": false,
     "files": [
+      "app/(app)/dashboards/executive/charts.tsx",
       "app/(app)/my-work/page.tsx"
     ]
   },
@@ -9916,6 +10343,14 @@
     ]
   },
   {
+    "message": "Paste shared Google Sheets URLs in the brief; private sheets are rejected for review.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/projects/ai-generator/page.tsx"
+    ]
+  },
+  {
     "message": "Pause",
     "translated": true,
     "neutral": false,
@@ -10087,6 +10522,14 @@
     ]
   },
   {
+    "message": "Personal totals",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/my-work/page.tsx"
+    ]
+  },
+  {
     "message": "Phone",
     "translated": true,
     "neutral": false,
@@ -10144,7 +10587,15 @@
     ]
   },
   {
-    "message": "Planned dates are baseline dates and cannot be changed. Record schedule movement using the estimated and actual end dates.",
+    "message": "Planned",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
+    ]
+  },
+  {
+    "message": "Planned dates not set",
     "translated": true,
     "neutral": false,
     "files": [
@@ -10157,6 +10608,14 @@
     "neutral": false,
     "files": [
       "app/(app)/portfolio/page.tsx",
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
+    ]
+  },
+  {
+    "message": "Planned end is calculated from the project start and sprint durations. Sprint dates remain unchanged.",
+    "translated": true,
+    "neutral": false,
+    "files": [
       "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
     ]
   },
@@ -10296,14 +10755,6 @@
     "neutral": false,
     "files": [
       "components/music/MusicChannelView.tsx"
-    ]
-  },
-  {
-    "message": "Please try again.",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "components/holding/RemoveProductLine.tsx"
     ]
   },
   {
@@ -10532,6 +10983,14 @@
     ]
   },
   {
+    "message": "Previous value",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/history/EntityHistory.tsx"
+    ]
+  },
+  {
     "message": "Primary navigation",
     "translated": true,
     "neutral": false,
@@ -10626,6 +11085,14 @@
     ]
   },
   {
+    "message": "Product line archived.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/holding/RemoveProductLine.tsx"
+    ]
+  },
+  {
     "message": "Product Line members",
     "translated": true,
     "neutral": false,
@@ -10687,14 +11154,6 @@
     "neutral": false,
     "files": [
       "components/holding/HoldingCockpit.tsx"
-    ]
-  },
-  {
-    "message": "Product lines with existing projects cannot be removed. Move or remove their projects first.",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "components/holding/RemoveProductLine.tsx"
     ]
   },
   {
@@ -10779,6 +11238,14 @@
     ]
   },
   {
+    "message": "Project Attachments & Documents",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
+    ]
+  },
+  {
     "message": "Project brief",
     "translated": true,
     "neutral": false,
@@ -10855,6 +11322,14 @@
     ]
   },
   {
+    "message": "Project members",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
+    ]
+  },
+  {
     "message": "Project name",
     "translated": true,
     "neutral": false,
@@ -10901,11 +11376,20 @@
     ]
   },
   {
-    "message": "Project role",
+    "message": "Project restored.",
     "translated": true,
     "neutral": false,
     "files": [
       "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
+    ]
+  },
+  {
+    "message": "Project role",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx",
+      "components/projects/ProjectMembersFields.tsx"
     ]
   },
   {
@@ -10914,6 +11398,14 @@
     "neutral": false,
     "files": [
       "app/(app)/timeline/page.tsx"
+    ]
+  },
+  {
+    "message": "Project status",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/portfolio/page.tsx"
     ]
   },
   {
@@ -11331,6 +11823,14 @@
     ]
   },
   {
+    "message": "Refresh",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/history/EntityHistory.tsx"
+    ]
+  },
+  {
     "message": "Refresh Logs",
     "translated": true,
     "neutral": false,
@@ -11399,8 +11899,7 @@
     "translated": true,
     "neutral": false,
     "files": [
-      "app/(app)/projects/ai-generator/page.tsx",
-      "components/holding/RemoveProductLine.tsx"
+      "app/(app)/projects/ai-generator/page.tsx"
     ]
   },
   {
@@ -11458,7 +11957,8 @@
     "neutral": false,
     "files": [
       "app/(app)/projects/[projectId]/ProjectDetailClient.tsx",
-      "components/holding/AddProductLine.tsx"
+      "components/holding/AddProductLine.tsx",
+      "components/projects/ProjectMembersFields.tsx"
     ]
   },
   {
@@ -11467,14 +11967,6 @@
     "neutral": false,
     "files": [
       "app/(app)/projects/ai-generator/page.tsx"
-    ]
-  },
-  {
-    "message": "Remove product line",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "components/holding/RemoveProductLine.tsx"
     ]
   },
   {
@@ -11491,14 +11983,6 @@
     "neutral": false,
     "files": [
       "components/tasks/TaskChecklist.tsx"
-    ]
-  },
-  {
-    "message": "Removing…",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "components/holding/RemoveProductLine.tsx"
     ]
   },
   {
@@ -11723,6 +12207,15 @@
     ]
   },
   {
+    "message": "Restore",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/admin/archive/page.tsx",
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
+    ]
+  },
+  {
     "message": "Restore document",
     "translated": true,
     "neutral": false,
@@ -11767,11 +12260,16 @@
     "translated": true,
     "neutral": false,
     "files": [
+      "app/(app)/admin/archive/page.tsx",
+      "app/(app)/my-work/page.tsx",
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx",
       "app/(app)/tasks/page.tsx",
       "components/AppearanceSettings.tsx",
       "components/docs/DocumentationUpload.tsx",
       "components/docs/workspace/KnowledgeExplorer.tsx",
-      "components/holding/AddProductLine.tsx"
+      "components/history/EntityHistory.tsx",
+      "components/holding/AddProductLine.tsx",
+      "components/projects/ProjectSprintsFields.tsx"
     ]
   },
   {
@@ -11782,6 +12280,7 @@
       "app/(app)/projects/[projectId]/ProjectDetailClient.tsx",
       "app/(app)/tasks/[taskId]/TaskDetailClient.tsx",
       "components/holding/AddProductLine.tsx",
+      "components/projects/ProjectMembersFields.tsx",
       "components/tasks/TaskEditorModal.tsx"
     ]
   },
@@ -13110,7 +13609,16 @@
     "neutral": false,
     "files": [
       "app/(app)/portfolio/page.tsx",
-      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx",
+      "components/projects/ProjectSprintsFields.tsx"
+    ]
+  },
+  {
+    "message": "Sprint lead",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/my-work/page.tsx"
     ]
   },
   {
@@ -13118,7 +13626,8 @@
     "translated": true,
     "neutral": false,
     "files": [
-      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx",
+      "components/projects/ProjectSprintsFields.tsx"
     ]
   },
   {
@@ -13174,7 +13683,16 @@
     "translated": true,
     "neutral": false,
     "files": [
+      "components/projects/ProjectSprintsFields.tsx",
       "components/public/InteractiveBento.tsx"
+    ]
+  },
+  {
+    "message": "Sprints you lead or have assigned tasks in",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/my-work/page.tsx"
     ]
   },
   {
@@ -13234,7 +13752,8 @@
     "files": [
       "app/(app)/projects/ai-generator/page.tsx",
       "components/modernist/overlays/CreateProjectDialog.tsx",
-      "components/modernist/overlays/CreateTaskDialog.tsx"
+      "components/modernist/overlays/CreateTaskDialog.tsx",
+      "components/projects/ProjectSprintsFields.tsx"
     ]
   },
   {
@@ -13360,6 +13879,7 @@
     "translated": true,
     "neutral": false,
     "files": [
+      "app/(app)/dashboards/executive/charts.tsx",
       "components/tasks/TaskEditorModal.tsx"
     ]
   },
@@ -13369,6 +13889,14 @@
     "neutral": false,
     "files": [
       "app/(app)/tasks/[taskId]/TaskDetailClient.tsx"
+    ]
+  },
+  {
+    "message": "Story Points ({days}d)",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/dashboards/executive/page.tsx"
     ]
   },
   {
@@ -13523,7 +14051,7 @@
     "neutral": false,
     "files": [
       "app/(app)/activity/page.tsx",
-      "app/(app)/tasks/[taskId]/TaskDetailClient.tsx"
+      "components/history/EntityHistory.tsx"
     ]
   },
   {
@@ -13601,6 +14129,14 @@
     ]
   },
   {
+    "message": "Task Attachments & Media",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/tasks/[taskId]/TaskDetailClient.tsx"
+    ]
+  },
+  {
     "message": "Task browser",
     "translated": true,
     "neutral": false,
@@ -13622,14 +14158,6 @@
     "neutral": false,
     "files": [
       "components/tasks/TaskChecklist.tsx"
-    ]
-  },
-  {
-    "message": "Task created",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "app/(app)/tasks/[taskId]/TaskDetailClient.tsx"
     ]
   },
   {
@@ -13724,6 +14252,7 @@
     "translated": true,
     "neutral": false,
     "files": [
+      "app/(app)/dashboards/executive/charts.tsx",
       "app/(app)/my-work/page.tsx"
     ]
   },
@@ -13887,6 +14416,14 @@
     "neutral": false,
     "files": [
       "app/(app)/tasks/[taskId]/TaskDetailClient.tsx"
+    ]
+  },
+  {
+    "message": "Tech Debt",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/dashboards/executive/charts.tsx"
     ]
   },
   {
@@ -14733,11 +15270,43 @@
     ]
   },
   {
+    "message": "Upload Attachment",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/tasks/[taskId]/TaskDetailClient.tsx"
+    ]
+  },
+  {
     "message": "Upload documentation",
     "translated": true,
     "neutral": false,
     "files": [
       "components/docs/DocumentationUpload.tsx"
+    ]
+  },
+  {
+    "message": "Upload file",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/tasks/[taskId]/TaskDetailClient.tsx"
+    ]
+  },
+  {
+    "message": "Upload File",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
+    ]
+  },
+  {
+    "message": "Upload, listen to voice recordings, and manage project-wide specification files.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
     ]
   },
   {
@@ -14756,6 +15325,15 @@
     "neutral": false,
     "files": [
       "app/privacy/page.tsx"
+    ]
+  },
+  {
+    "message": "Uploading…",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/projects/[projectId]/ProjectDetailClient.tsx",
+      "app/(app)/tasks/[taskId]/TaskDetailClient.tsx"
     ]
   },
   {
@@ -14791,6 +15369,14 @@
     ]
   },
   {
+    "message": "Use real names or emails from the workspace. Unknown people are left unresolved for manual review.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/projects/ai-generator/page.tsx"
+    ]
+  },
+  {
     "message": "Use the AI generator to upload a brief, include Google Sheets links, review the draft, then commit it.",
     "translated": true,
     "neutral": false,
@@ -14820,7 +15406,8 @@
     "neutral": false,
     "files": [
       "app/(app)/projects/[projectId]/ProjectDetailClient.tsx",
-      "components/modernist/views/AdminView.tsx"
+      "components/modernist/views/AdminView.tsx",
+      "components/projects/ProjectMembersFields.tsx"
     ]
   },
   {
@@ -14945,6 +15532,14 @@
     ]
   },
   {
+    "message": "View and restore archived items by category.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/admin/archive/page.tsx"
+    ]
+  },
+  {
     "message": "View in GitHub",
     "translated": true,
     "neutral": false,
@@ -14958,6 +15553,14 @@
     "neutral": false,
     "files": [
       "components/status/UserStatusHoverCard.tsx"
+    ]
+  },
+  {
+    "message": "View: {name}",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/tasks/page.tsx"
     ]
   },
   {
@@ -15030,6 +15633,14 @@
     "neutral": false,
     "files": [
       "components/chat/VoiceBubble.tsx"
+    ]
+  },
+  {
+    "message": "Voice recordings, screenshots, documents, and files attached to this task.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/tasks/[taskId]/TaskDetailClient.tsx"
     ]
   },
   {
@@ -15303,7 +15914,16 @@
     "translated": true,
     "neutral": false,
     "files": [
-      "app/docs/[category]/[slug]/page.tsx"
+      "app/docs/[category]/[slug]/page.tsx",
+      "components/history/EntityHistory.tsx"
+    ]
+  },
+  {
+    "message": "You can dictate into GPT or Claude, paste the transcript into the template, then upload it.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/projects/ai-generator/page.tsx"
     ]
   },
   {
