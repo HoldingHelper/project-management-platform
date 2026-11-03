@@ -195,3 +195,15 @@ class EnhancedExecutiveKPIReport(BaseModel):
     flow: FlowMetricsReport
     predictability: PredictabilityReport
     summary: KPIExecutiveSummary
+
+
+class EntityHistoryRead(BaseModel):
+    """Entity-scoped history omits request IP and internal correlation metadata."""
+    id: UUID
+    user_id: Optional[UUID] = None
+    user_name: Optional[str] = None
+    entity_type: str
+    entity_id: str
+    action_type: str
+    changes_json: str
+    occurred_at: datetime

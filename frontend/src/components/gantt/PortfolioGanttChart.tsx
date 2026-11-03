@@ -6,13 +6,14 @@ import { LocalizedText } from "@/lib/i18n/I18nProvider";
    fill, milestone diamonds, cross-project dependency arrows (SVG overlay),
    a today line, and a pulse on blocked/delayed projects. */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, Diamond, GripHorizontal, ZoomIn, ZoomOut } from "lucide-react";
 import { toSemantic, semanticColor } from "@/lib/format";
 import { StatusChip } from "@/components/ds";
 import type { PortfolioGantt } from "@/lib/types";
+import { calendarMonth, monthBoundary, shiftMonth } from "@/lib/i18n/calendar-month";
 
 const DAY_MS = 86_400_000;
 
@@ -45,11 +46,13 @@ interface BarDrag {
 }
 
 function toIso(ms: number): string {
-  const d = new Date(ms);
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
+  return new Date(ms).toISOString().slice(0, 10);
+}
+
+function dateMs(value?: string | null): number | null {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const ms = Date.parse(`${value}T00:00:00Z`);
+  return Number.isFinite(ms) && toIso(ms) === value ? ms : null;
 }
 
 export function PortfolioGanttChart({
@@ -61,11 +64,22 @@ export function PortfolioGanttChart({
   editable?: boolean;
   onSchedule?: (id: string, dates: { start_date: string; end_date: string }) => void;
 }) {
-  const { t: translateUI, date: displayDate } = useI18n();
+  const { t: translateUI, date: displayDate, locale, calendar, number: displayNumber } = useI18n();
 
   const router = useRouter();
   const [zoom, setZoom] = useState(1);
   const [offsetDays, setOffsetDays] = useState(0);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState(1280);
+  const markerId = `dependency-${useId().replace(/:/g, "")}`;
+  useEffect(() => {
+    const node = scrollRef.current;
+    if (!node) return;
+    const observer = new ResizeObserver(() => setContainerWidth(node.clientWidth));
+    setContainerWidth(node.clientWidth);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [data]);
   const dragRef = useRef<{ x: number; offset: number } | null>(null);
   // Set true while a bar is actually dragged, so a plain click still navigates.
   const barMovedRef = useRef(false);
@@ -78,7 +92,7 @@ export function PortfolioGanttChart({
   // Global listeners for an active bar drag: live preview, commit on drop.
   useEffect(() => {
     if (!barDrag) return;
-    const onMove = (e: MouseEvent) => {
+    const onMove = (e: PointerEvent) => {
       const d = barDragRef.current;
       if (!d) return;
       if (Math.abs(e.clientX - d.startX) > 3) barMovedRef.current = true;
@@ -90,11 +104,12 @@ export function PortfolioGanttChart({
         startMs = d.origStartMs + deltaMs;
         endMs = d.origEndMs + deltaMs;
       } else if (d.mode === "start") {
-        startMs = Math.min(d.origStartMs + deltaMs, d.origEndMs - DAY_MS);
+        startMs = Math.min(d.origStartMs + deltaMs, d.origEndMs);
       } else {
-        endMs = Math.max(d.origEndMs + deltaMs, d.origStartMs + DAY_MS);
+        endMs = Math.max(d.origEndMs + deltaMs, d.origStartMs);
       }
-      setBarDrag({ ...d, startMs, endMs });
+      barDragRef.current = { ...d, startMs, endMs };
+      setBarDrag(barDragRef.current);
     };
     const onUp = () => {
       const d = barDragRef.current;
@@ -103,17 +118,21 @@ export function PortfolioGanttChart({
         if (changed) onSchedule(d.id, { start_date: toIso(d.startMs), end_date: toIso(d.endMs) });
       }
       setBarDrag(null);
+      barDragRef.current = null;
     };
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
+    const onCancel = () => { setBarDrag(null); barDragRef.current = null; };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onCancel);
     return () => {
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onUp);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onCancel);
     };
   }, [barDrag, onSchedule]);
 
-  const dated = data.projects.filter((p) => p.start_date);
-  const undated = data.projects.filter((p) => !p.start_date);
+  const dated = data.projects.filter((p) => dateMs(p.start_date) !== null);
+  const undated = data.projects.filter((p) => dateMs(p.start_date) === null);
 
   if (dated.length === 0) {
     return (
@@ -121,24 +140,27 @@ export function PortfolioGanttChart({
     );
   }
 
-  const starts = dated.map((p) => new Date(p.start_date!).getTime());
+  const now = new Date();
+  const todayMs = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  const starts = dated.map((p) => dateMs(p.start_date)!);
   const ends = dated.map((p) =>
-    p.end_date ? new Date(p.end_date).getTime() : new Date(p.start_date!).getTime() + 30 * DAY_MS,
+    Math.max(dateMs(p.start_date)!, dateMs(p.end_date) ?? dateMs(p.start_date)! + 29 * DAY_MS),
   );
-  const baseMin = Math.min(...starts, Date.now()) - 10 * DAY_MS;
-  const baseMax = Math.max(...ends, Date.now()) + 14 * DAY_MS;
+  const baseMin = Math.min(...starts, todayMs) - 10 * DAY_MS;
+  const baseMax = Math.max(...ends, todayMs) + 15 * DAY_MS;
   const min = baseMin + offsetDays * DAY_MS;
   const max = baseMax + offsetDays * DAY_MS;
   const totalDays = Math.max(14, Math.round((max - min) / DAY_MS));
 
-  const labelWidth = 320;
-  const dayWidth = Math.max(12, Math.min(48, (1280 / totalDays) * zoom * 1.3));
+  const labelWidth = containerWidth < 600 ? 180 : 320;
+  const availableWidth = Math.max(160, containerWidth - labelWidth);
+  const dayWidth = Math.max(0.1, Math.min(120, (availableWidth / totalDays) * zoom));
   dayWidthRef.current = dayWidth;
   const gridWidth = totalDays * dayWidth;
   const rowHeight = 56;
   const barHeight = 24;
 
-  const x = (iso: string) => ((new Date(iso).getTime() - min) / DAY_MS) * dayWidth;
+  const x = (iso: string) => ((dateMs(iso)! - min) / DAY_MS) * dayWidth;
   const xMs = (ms: number) => ((ms - min) / DAY_MS) * dayWidth;
 
   const rows: Layout[] = dated.map((p, i) => {
@@ -147,28 +169,29 @@ export function PortfolioGanttChart({
     const end = dragging
       ? xMs(barDrag.endMs)
       : p.end_date
-        ? x(p.end_date)
-        : start + 30 * dayWidth;
-    const semantic = toSemantic(String(p.health_status));
+        ? xMs(ends[i])
+        : start + 29 * dayWidth;
+    const status = p.status === "in-progress" && ["blocked", "delayed", "at-risk"].includes(p.health_status) ? p.health_status : p.status;
+    const semantic = toSemantic(String(status));
     const { fg, bg } = semanticColor(semantic);
-    const startMs = new Date(p.start_date!).getTime();
-    const endMs = p.end_date ? new Date(p.end_date).getTime() : startMs + 30 * DAY_MS;
+    const startMs = starts[i];
+    const endMs = ends[i];
     return {
       id: p.id,
       name: p.name,
       left: start,
-      width: Math.max(end - start, 14),
+      width: Math.max(end - start + dayWidth, 2),
       row: i,
       color: fg,
       bg,
-      healthStatus: String(p.health_status),
+      healthStatus: String(status),
       pulse: semantic === "blocked" || semantic === "delayed",
-      progress: Number(p.progress_percentage),
+      progress: Number.isFinite(Number(p.progress_percentage)) ? Number(p.progress_percentage) : 0,
       currentPhase: p.current_sprint ?? p.current_phase,
       startMs,
       endMs,
       milestones: p.milestones
-        .filter((m) => m.due_date)
+        .filter((m) => dateMs(m.due_date) !== null)
         .map((m) => ({
           name: m.name,
           x: x(m.due_date!),
@@ -178,42 +201,46 @@ export function PortfolioGanttChart({
     };
   });
   const rowById = new Map(rows.map((r) => [r.id, r]));
-  const todayX = ((Date.now() - min) / DAY_MS) * dayWidth;
+  const todayX = ((todayMs - min) / DAY_MS + 0.5) * dayWidth;
 
   const months: { label: string; x: number; width: number }[] = [];
-  const cursor = new Date(min);
-  cursor.setDate(1);
-  while (cursor.getTime() < max) {
-    const next = new Date(cursor);
-    next.setMonth(cursor.getMonth() + 1);
+  let month = calendarMonth(toIso(min), calendar);
+  const monthStride = dayWidth * 30 >= 72 ? 1 : dayWidth * 90 >= 72 ? 3 : 12;
+  const [headerYear, headerMonth] = month.split("-").map(Number);
+  month = `${headerYear}-${String(Math.floor((headerMonth - 1) / monthStride) * monthStride + 1).padStart(2, "0")}`;
+  while (dateMs(monthBoundary(month, calendar))! < max) {
+    const cursor = dateMs(monthBoundary(month, calendar))!;
+    const next = dateMs(monthBoundary(shiftMonth(month, monthStride), calendar))!;
+    const visibleStart = Math.max(cursor, min);
+    const visibleEnd = Math.min(next, max);
     months.push({
-      label: displayDate(cursor, { day: undefined, month: "short", year: "numeric" }),
-      x: ((cursor.getTime() - min) / DAY_MS) * dayWidth,
-      width: Math.max(72, ((next.getTime() - cursor.getTime()) / DAY_MS) * dayWidth),
+      label: displayDate(toIso(cursor), { day: undefined, month: monthStride === 12 ? undefined : "short", year: "numeric" }),
+      x: ((visibleStart - min) / DAY_MS) * dayWidth,
+      width: ((visibleEnd - visibleStart) / DAY_MS) * dayWidth,
     });
-    cursor.setMonth(cursor.getMonth() + 1);
+    month = shiftMonth(month, monthStride);
   }
 
   // Adaptive tick spacing: guarantee minimum 72px between ticks to eliminate all text collisions
   const minPxPerTick = 72;
   const rawStep = Math.ceil(minPxPerTick / dayWidth);
-  const stepDays = rawStep <= 1 ? 1 : rawStep <= 3 ? 3 : rawStep <= 7 ? 7 : rawStep <= 14 ? 14 : rawStep <= 30 ? 30 : 60;
+  const stepDays = [1, 3, 7, 14, 30, 60, 90, 180, 365].find(step => step >= rawStep) ?? Math.ceil(rawStep / 365) * 365;
   const dayTicks: { label: string; x: number }[] = [];
-  const tickCursor = new Date(min);
-  tickCursor.setHours(0, 0, 0, 0);
-  while (tickCursor.getTime() < max) {
+  let tickCursor = min;
+  while (tickCursor < max) {
     dayTicks.push({
-      label: displayDate(tickCursor, { year: undefined, month: "short", day: "numeric" }),
-      x: ((tickCursor.getTime() - min) / DAY_MS) * dayWidth,
+      label: displayDate(toIso(tickCursor), { year: undefined, month: "short", day: "numeric" }),
+      x: ((tickCursor - min) / DAY_MS) * dayWidth,
     });
-    tickCursor.setDate(tickCursor.getDate() + stepDays);
+    tickCursor += stepDays * DAY_MS;
   }
 
   const height = rows.length * rowHeight;
   const panBy = (days: number) => setOffsetDays((current) => current + days);
 
   const beginBarDrag = (e: React.PointerEvent, r: Layout, mode: BarDragMode) => {
-    if (!canDrag) return;
+    e.stopPropagation();
+    if (!canDrag || e.button !== 0) return;
     e.preventDefault();
     e.stopPropagation(); // don't start a timeline pan
     barMovedRef.current = false;
@@ -249,9 +276,11 @@ export function PortfolioGanttChart({
         </div>
       </div>
       <div
+        ref={scrollRef}
         className="pmp-chart-time-axis"
-        style={{ overflowX: "auto", cursor: "grab" }}
+        style={{ overflowX: "auto", maxWidth: "100%", cursor: "grab", touchAction: "pan-y" }}
         onPointerDown={(event) => {
+          if (event.button !== 0 || (event.target as Element).closest("a, button, [data-project-label], [data-timeline-bar]")) return;
           dragRef.current = { x: event.clientX, offset: offsetDays };
           event.currentTarget.setPointerCapture(event.pointerId);
         }}
@@ -267,11 +296,11 @@ export function PortfolioGanttChart({
           dragRef.current = null;
         }}
       >
-      <div style={{ minWidth: `max(100%, ${labelWidth + gridWidth}px)`, position: "relative" }}>
+      <div style={{ width: labelWidth + gridWidth, position: "relative" }}>
         {/* Month header */}
         <div style={{ display: "flex" }}>
-          <div style={{ width: labelWidth, flexShrink: 0 }} />
-          <div style={{ position: "relative", width: gridWidth, height: 24 }}>
+          <div style={{ width: labelWidth, flexShrink: 0, position: "sticky", left: 0, zIndex: 6, background: "var(--surface-1)" }} />
+          <div style={{ position: "relative", width: gridWidth, flexShrink: 0, height: 24, overflow: "hidden" }}>
             {months.map((m) => (
               <span
                 key={m.label + m.x}
@@ -281,16 +310,19 @@ export function PortfolioGanttChart({
                   width: m.width,
                   fontSize: 11.5,
                   fontWeight: 700,
-                  fontFamily: "var(--font-mono)",
+                  fontFamily: locale === "fa" ? "var(--font-sans)" : "var(--font-mono)",
                   color: "var(--text-secondary)",
                   borderLeft: "1px solid var(--border-default)",
                   paddingLeft: 7,
                   height: "100%",
+                  boxSizing: "border-box",
+                  overflow: "hidden",
+                  whiteSpace: "nowrap",
                   display: "flex",
                   alignItems: "center",
                 }}
               >
-                {m.label}
+                {m.width >= 64 ? m.label : ""}
               </span>
             ))}
           </div>
@@ -298,17 +330,17 @@ export function PortfolioGanttChart({
 
         {/* Dated tick row — specific dates so the timeline is readable */}
         <div style={{ display: "flex" }}>
-          <div style={{ width: labelWidth, flexShrink: 0 }} />
-          <div style={{ position: "relative", width: gridWidth, height: 20 }}>
+          <div style={{ width: labelWidth, flexShrink: 0, position: "sticky", left: 0, zIndex: 6, background: "var(--surface-1)" }} />
+          <div style={{ position: "relative", width: gridWidth, flexShrink: 0, height: 20, overflow: "hidden" }}>
             {dayTicks.map((t) => (
               <span
                 key={`tick-${t.x}`}
                 style={{
                   position: "absolute",
                   left: t.x,
-                  transform: "translateX(-50%)",
+                  transform: "none",
                   fontSize: 10,
-                  fontFamily: "var(--font-mono)",
+                  fontFamily: locale === "fa" ? "var(--font-sans)" : "var(--font-mono)",
                   color: "var(--text-tertiary)",
                   whiteSpace: "nowrap",
                   pointerEvents: "none",
@@ -322,7 +354,7 @@ export function PortfolioGanttChart({
 
         <div style={{ display: "flex" }}>
           {/* Labels Column matching Project Timeline */}
-          <div style={{ width: labelWidth, flexShrink: 0, borderRight: "1px solid var(--border-default)", background: "var(--surface-1)" }}>
+          <div data-project-label dir={locale === "fa" ? "rtl" : "ltr"} style={{ width: labelWidth, flexShrink: 0, boxSizing: "border-box", position: "sticky", left: 0, zIndex: 6, borderRight: "1px solid var(--border-default)", background: "var(--surface-1)" }}>
             {rows.map((r) => (
               <div
                 key={r.id}
@@ -358,7 +390,7 @@ export function PortfolioGanttChart({
           </div>
 
           {/* Grid */}
-          <div style={{ position: "relative", width: gridWidth, height }}>
+          <div data-timeline-grid style={{ position: "relative", width: gridWidth, flexShrink: 0, height, overflow: "hidden" }}>
             {rows.map((r) => (
               <div
                 key={`grid-${r.id}`}
@@ -381,7 +413,7 @@ export function PortfolioGanttChart({
                 <div
                   style={{
                     position: "absolute",
-                    top: -18,
+                    top: 0,
                     left: todayX,
                     transform: "translateX(-50%)",
                     background: "var(--status-delayed)",
@@ -400,7 +432,7 @@ export function PortfolioGanttChart({
             {/* Dependency arrows */}
             <svg width={gridWidth} height={height} style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 2 }}>
               <defs>
-                <marker id="dep-arrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+                <marker id={markerId} markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
                   <path d="M0,0 L7,3.5 L0,7 Z" fill="var(--accent-secondary)" />
                 </marker>
               </defs>
@@ -416,12 +448,12 @@ export function PortfolioGanttChart({
                 return (
                   <path
                     key={l.id}
-                    d={`M ${x1} ${y1} C ${x1 + 24} ${y1}, ${midX - 24} ${y2}, ${Math.max(x2 - 4, x1 + 8)} ${y2}`}
+                    d={`M ${x1} ${y1} C ${x1 + 24} ${y1}, ${midX} ${y2}, ${x2 - 4} ${y2}`}
                     fill="none"
                     stroke="var(--accent-secondary)"
                     strokeWidth={1.5}
                     strokeDasharray="4 3"
-                    markerEnd="url(#dep-arrow)"
+                    markerEnd={`url(#${markerId})`}
                     opacity={0.85}
                   />
                 );
@@ -432,9 +464,14 @@ export function PortfolioGanttChart({
             {rows.map((r) => (
               <div key={`bar-${r.id}`}>
                 <div
+                  data-timeline-bar={r.id}
+                  role="link"
+                  tabIndex={0}
+                  aria-label={r.name}
+                  onKeyDown={event => { if (event.key === "Enter") router.push(`/projects/${r.id}`); }}
                   className={r.pulse && !(barDrag && barDrag.id === r.id) ? "pmp-pulse" : undefined}
                   title={canDrag ? `${r.name} · drag to reschedule · click to open` : `${r.name} · ${Math.round(r.progress)}% · click to open`}
-                  onPointerDown={canDrag ? (e) => beginBarDrag(e, r, "move") : undefined}
+                  onPointerDown={(e) => beginBarDrag(e, r, "move")}
                   onClick={() => {
                     // Ignore the click that ends a real drag; otherwise open the project.
                     if (barMovedRef.current) {
@@ -500,7 +537,7 @@ export function PortfolioGanttChart({
                       }}
                     >
                       <span style={{ fontWeight: 700 }}>{m.name}</span>
-                      <span style={{ color: "var(--text-tertiary)", fontFamily: "var(--font-mono)" }}> · {m.date}</span>
+                      <span style={{ color: "var(--text-tertiary)", fontFamily: locale === "fa" ? "var(--font-sans)" : "var(--font-mono)" }}> · {m.date}</span>
                     </span>
                   </span>
                 ))}
@@ -511,7 +548,7 @@ export function PortfolioGanttChart({
 
         {undated.length > 0 && (
           <div style={{ padding: "10px 0 0", fontSize: 11.5, color: "var(--text-tertiary)" }}>
-            {undated.length}{" "}<LocalizedText message={"project(s) without dates are hidden from the timeline."} />{" "}</div>
+            {displayNumber(undated.length)}{" "}<LocalizedText message={"project(s) without dates are hidden from the timeline."} />{" "}</div>
         )}
       </div>
     </div>

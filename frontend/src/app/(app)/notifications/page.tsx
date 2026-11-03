@@ -20,6 +20,7 @@ import {
 import { Button, Tabs, TextInput, useToast } from "@/components/ds";
 import { EmptyState, PageHeader, PAGE_STYLE, Spinner } from "@/components/ui/States";
 import { VoiceRecorder } from "@/components/voice/VoiceRecorder";
+import { apiFetch } from "@/lib/api/client";
 import { formatNotificationBody, relativeTime } from "@/lib/format";
 import { useNotifications } from "@/lib/stores/notifications";
 import type { NotificationRead } from "@/lib/types";
@@ -113,6 +114,7 @@ function NotificationCard({
   const [replyOpen, setReplyOpen] = useState(false);
   const [body, setBody] = useState("");
   const [voiceBlob, setVoiceBlob] = useState<Blob | null>(null);
+  const [allowVoiceSharing, setAllowVoiceSharing] = useState(false);
 
   const canReply = !!n.entity_type && !!n.entity_id;
   const actionable = n.requires_action && !n.resolved_at;
@@ -128,6 +130,7 @@ function NotificationCard({
           `voice-${Date.now()}.webm`,
         );
         attachmentId = uploaded.id;
+        if (allowVoiceSharing) await apiFetch(`/files/${uploaded.id}/sharing`, { method: "PUT", body: { enabled: true } });
       }
       return replyToNotification(n.id, {
         body: body || undefined,
@@ -139,6 +142,7 @@ function NotificationCard({
       setReplyOpen(false);
       setBody("");
       setVoiceBlob(null);
+      setAllowVoiceSharing(false);
       onChange();
     },
     onError: () => toast.push("Could not send the reply.", "error"),
@@ -252,6 +256,7 @@ function NotificationCard({
                   {reply.isPending ? <LocalizedText message={"Sending…"} /> : <LocalizedText message={"Send"} />}
                 </Button>
               </div>
+              {voiceBlob && <label style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 12 }}><input type="checkbox" checked={allowVoiceSharing} onChange={event => setAllowVoiceSharing(event.target.checked)} />{translateUI("Allow download and Telegram sharing")}</label>}
               <div style={{ fontSize: 11.5, color: "var(--text-tertiary)" }}>{" "}<LocalizedText message={"Replies are posted back to the source — a comment on the task/blocker, or a chat message."} />{" "}</div>
             </div>
           )}

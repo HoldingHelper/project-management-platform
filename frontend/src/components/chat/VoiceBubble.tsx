@@ -4,22 +4,22 @@ import { LocalizedText } from "@/lib/i18n/I18nProvider";
 /* Voice-message playback bubble: fetches a presigned URL for the attachment
    on first play. */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Mic } from "lucide-react";
-import { getFileDownloadUrl } from "@/lib/api/collaboration";
+import { downloadFile } from "@/lib/api/collaboration";
 import type { UUID } from "@/lib/types";
 
 export function VoiceBubble({ attachmentId }: { attachmentId: UUID }) {
   const [url, setUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
+  useEffect(() => () => { if (url) URL.revokeObjectURL(url); }, [url]);
 
   async function load() {
     if (url || loading) return;
     setLoading(true);
     try {
-      const res = await getFileDownloadUrl(attachmentId);
-      setUrl(res.url);
+      setUrl(URL.createObjectURL(await downloadFile(attachmentId)));
     } catch {
       setError(true);
     } finally {

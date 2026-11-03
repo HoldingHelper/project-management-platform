@@ -14,6 +14,7 @@ import {
   addProjectMember,
   attachTask,
   createProject,
+  getProductMembers,
   getProjectSprints,
   getPortfolioGantt,
   listAllProducts,
@@ -48,6 +49,16 @@ import { relativeTime } from "@/lib/format";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import type { PortfolioGantt, ProjectLevel, TaskRead, UUID } from "@/lib/types";
 import { useViewState } from "@/lib/navigation";
+import { useUrlView } from "@/lib/url-view";
+
+const PROJECT_VIEWS = ["all", "active", "completed", "delayed", "blocked"] as const;
+
+function matchesProjectView(project: { status: string; health_status: string }, view: (typeof PROJECT_VIEWS)[number]) {
+  if (view === "active") return project.status === "in-progress";
+  if (view === "completed") return project.status === "completed";
+  if (view === "delayed" || view === "blocked") return project.health_status === view;
+  return true;
+}
 
 const PROJECT_LEVELS: { value: ProjectLevel; label: string; detail: string }[] = [
   { value: "inter-team", label: "Inter-team", detail: "Inside one partition" },
@@ -128,12 +139,22 @@ export default function PortfolioPage() {
   const { t: translateUI } = useI18n();
 
   const [search, setSearch] = useViewState("portfolio-search", "");
+  const [projectView, setProjectView] = useUrlView("view", PROJECT_VIEWS, "all");
   const [createOpen, setCreateOpen] = useState(false);
   const [productLine, setProductLine] = useViewState<string>("portfolio-product-line", "all");
   const [timelinePartition, setTimelinePartition] = useViewState<string>("portfolio-partition", "all");
   const [showArchived, setShowArchived] = useViewState("portfolio-archived", false);
   const { hasPermission, isSuperAdmin } = useAuth();
-  const projects = useQuery({ queryKey: ["projects"], queryFn: () => listProjects(1, 200) });
+  const projects = useQuery({ queryKey: ["projects", "portfolio-all"], queryFn: async () => {
+    const first = await listProjects(1, 200);
+    const items = [...first.items];
+    for (let page = 2; items.length < first.total_count; page++) {
+      const next = await listProjects(page, 200);
+      if (!next.items.length) break;
+      items.push(...next.items);
+    }
+    return { ...first, items };
+  } });
   const products = useQuery({ queryKey: ["products"], queryFn: listAllProducts });
   useEffect(() => {
     if (productLine !== "all" && products.data && !products.data.some((product) => product.id === productLine)) {
@@ -169,13 +190,14 @@ export default function PortfolioPage() {
   const items = projects.data?.items ?? [];
   const q = search.trim().toLowerCase();
   const filtered = items.filter((project) =>
+    matchesProjectView(project, projectView) &&
     (productLine === "all" || project.product_id === productLine) &&
     (!q || project.name.toLowerCase().includes(q) || project.id.toLowerCase().includes(q))
   );
   const visibleGantt = useMemo(() => {
     const source = gantt.data ?? { projects: [], links: [] };
     const match = (p: (typeof source.projects)[number]) => {
-      return (productLine === "all" || p.product_id === productLine) &&
+      return matchesProjectView(p, projectView) && (productLine === "all" || p.product_id === productLine) &&
         (timelinePartition === "all" || projectPartitionFromTags(p.tags) === timelinePartition);
     };
     const modeProjects = source.projects.filter(match);
@@ -184,7 +206,7 @@ export default function PortfolioPage() {
       projects: modeProjects,
       links: source.links.filter((l) => ids.has(l.predecessor_project_id) && ids.has(l.successor_project_id)),
     };
-  }, [gantt.data, timelinePartition, productLine]);
+  }, [gantt.data, timelinePartition, productLine, projectView]);
 
   return (
     <div style={{ ...PAGE_STYLE, gap: 18 }}>
@@ -210,6 +232,17 @@ export default function PortfolioPage() {
       />
 
       <div style={{ display: "flex", alignItems: "flex-end", gap: 10, flexWrap: "wrap" }}>
+        <Field label={translateUI("Project status")}>
+          <Select translateOptions aria-label={translateUI("Filter projects by status")} value={projectView}
+            onChange={(event) => setProjectView(event.target.value as (typeof PROJECT_VIEWS)[number])}
+            options={[
+              { value: "all", label: "All projects" },
+              { value: "active", label: "Active projects" },
+              { value: "completed", label: "Completed" },
+              { value: "delayed", label: "Delayed" },
+              { value: "blocked", label: "Blocked" },
+            ]} />
+        </Field>
         <Field label={translateUI("Product line")}>
           <Select
             aria-label={translateUI("Filter projects by product line")}
@@ -283,7 +316,7 @@ export default function PortfolioPage() {
                 key={p.id}
                 href={`/projects/${p.id}`}
                 className="pmp-row"
-                style={{ display: "grid", gridTemplateColumns: "minmax(220px,1.35fr) 160px 150px 120px 150px 260px 140px 90px 110px", alignItems: "center", padding: "13px 18px", borderBottom: "1px solid var(--border-subtle)", opacity: archived ? 0.68 : 1 }}
+                style={{ display: "grid", gridTemplateColumns: "minmax(220px,1.35fr) 160px 150px 120px 150px 260px 140px 90px 110px", alignItems: "center", padding: "13px 18px", borderBottom: "1px solid var(--border-subtle)", background: archived ? "color-mix(in srgb, var(--accent-primary) 10%, var(--surface-2))" : undefined }}
               >
                 <span style={{ minWidth: 0 }}>
                   <span style={{ display: "block", fontWeight: 700, fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</span>
@@ -309,7 +342,7 @@ export default function PortfolioPage() {
                 </span>
                 <span>
                   <StatusChip
-                    status={String(p.status === "in-progress" ? p.health_status : p.status)}
+                    status={String(projectView === "blocked" || projectView === "delayed" || p.status === "in-progress" ? p.health_status : p.status)}
                     label={p.status === "archived" ? localizeAttribute("Archived") : undefined}
                   />
                 </span>
@@ -452,10 +485,29 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
     enabled: open,
   });
   const availableProductLines = useMemo(() => (products.data ?? []).map((product) => product.name), [products.data]);
+  const selectedProductId = useMemo(() => {
+    return products.data?.find((product) => product.name === form.product_line)?.id;
+  }, [products.data, form.product_line]);
+
+  const productMembersQuery = useQuery({
+    queryKey: ["product-members", selectedProductId],
+    queryFn: () => (selectedProductId ? getProductMembers(selectedProductId) : Promise.resolve([])),
+    enabled: open && Boolean(selectedProductId),
+  });
+
+  const availableManagers = useMemo(() => {
+    if (selectedProductId && productMembersQuery.data && productMembersQuery.data.length > 0) {
+      return productMembersQuery.data.map((m) => ({
+        id: m.id,
+        full_name: m.full_name || m.email,
+      }));
+    }
+    return users;
+  }, [selectedProductId, productMembersQuery.data, users]);
 
   useEffect(() => {
     if (form.product_line && (!open || (products.data && !availableProductLines.includes(form.product_line)))) {
-      setForm((current) => ({ ...current, product_line: "" }));
+      setForm((current) => ({ ...current, product_line: "", project_manager_id: "" }));
     }
   }, [availableProductLines, form.product_line, open, products.data]);
 
@@ -470,6 +522,7 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
 
       const project = await createProject({
         product_id: productId as UUID,
+        manager_user_id: form.project_manager_id ? (form.project_manager_id as UUID) : undefined,
         checklist_items: checklist.map((item, order) => ({ text: item.text.trim(), order })),
         name: form.name,
         description: form.description || undefined,
@@ -786,14 +839,14 @@ function CreateProjectModal({ open, onClose, partitions }: { open: boolean; onCl
               value={form.project_manager_id}
               onChange={(e) => setForm((f) => ({ ...f, project_manager_id: e.target.value }))}
               placeholder={user ? `Creator: ${user.full_name}` : localizeAttribute("Choose a manager...")}
-              options={users.map((u) => ({ value: u.id, label: u.full_name }))}
+              options={availableManagers.map((u) => ({ value: u.id, label: u.full_name }))}
             />
           </Field>
           <div>
             <div style={sectionLabel}><LocalizedText message={"Leads to add and notify"} /></div>
             <div style={pickerGrid}>
-              {users.slice(0, 12).map((u) => (
-                <label key={u.id} style={checkRow} title={`${u.full_name}${u.job_title ? ` - ${u.job_title}` : ""}`}>
+              {availableManagers.slice(0, 12).map((u) => (
+                <label key={u.id} style={checkRow} title={u.full_name}>
                   <input type="checkbox" checked={form.lead_ids.includes(u.id)} onChange={() => toggleLead(u.id)} />
                   <Avatar name={u.full_name} size={22} />
                   <span style={ellipsis}>{u.full_name}</span>

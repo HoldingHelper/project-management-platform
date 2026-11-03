@@ -10,14 +10,51 @@ from app.core.database import engine
 from app.core.current_user import CurrentUser
 from app.core.exceptions import ForbiddenError, NotFoundError
 from app.modules.identity.models import User
-from app.modules.docs import service, repository, search_service, graph_service
+from app.modules.docs import service, repository, search_service, graph_service, upload_library
 from app.modules.docs.models import DocPage, DocSpace, DocAttachment, DocRevision
 from app.modules.docs.schemas import PageCreate, PageUpdate, PageMove, AttachmentCreate, LinkCreate
 from app.modules.docs.lifecycle import visible_upload, require_visible_upload
 from app.modules.collaboration.models import FileAttachment, Comment
 from app.modules.chat.models import Channel, Message
+from app.modules.projects.models import TaskItem
 
 pytestmark = pytest.mark.skipif(os.getenv("PMP_MEMBERSHIP_DB_TESTS") != "1", reason="Local PostgreSQL opt-in")
+
+
+@pytest.mark.asyncio
+async def test_uploaded_files_publish_after_indexing_and_existing_drafts_stay_drafts():
+    async with engine.connect() as connection:
+        root = await connection.begin()
+        async with AsyncSession(bind=connection, expire_on_commit=False, join_transaction_mode="create_savepoint") as db:
+            try:
+                actor_id = (await db.execute(select(User.id).where(User.is_active.is_(True)).limit(1))).scalar_one()
+                task = (await db.execute(select(TaskItem).limit(1))).scalars().first()
+                assert task is not None
+                attachment = FileAttachment(entity_type="task", entity_id=task.id, file_name="telegram-voice.ogg", content_type="audio/ogg", size_bytes=1, storage_key=f"test/{uuid4()}", uploaded_by_user_id=actor_id)
+                db.add(attachment)
+                await db.flush()
+                page = await upload_library.index_upload(db, attachment)
+                assert page.status == "published"
+                assert page.visibility == "inherit"
+                assert (await db.execute(select(DocSpace.visibility).where(DocSpace.id == page.space_id))).scalar_one() == "private"
+                assert (await db.execute(select(DocAttachment).where(DocAttachment.page_id == page.id))).scalars().one().storage_key == attachment.storage_key
+                assert (await upload_library.index_upload(db, attachment)).id == page.id
+                async with db.begin_nested() as nested:
+                    with pytest.raises(DBAPIError):
+                        await db.execute(DocAttachment.__table__.insert().values(id=uuid4(), page_id=page.id, file_name="extra.txt", file_url="", mime_type="text/plain", uploaded_by=actor_id))
+                    await nested.rollback()
+
+                old_attachment = FileAttachment(entity_type="task", entity_id=task.id, file_name="old-draft.txt", content_type="text/plain", size_bytes=1, storage_key=f"test/{uuid4()}", uploaded_by_user_id=actor_id)
+                db.add(old_attachment)
+                await db.flush()
+                old_page = DocPage(space_id=page.space_id, parent_page_id=page.parent_page_id, title="Existing draft", slug=f"existing-{uuid4()}", content="", content_json={}, status="draft", visibility="inherit", created_by=actor_id, updated_by=actor_id, source_attachment_id=old_attachment.id, source_entity_type="task", source_entity_id=task.id)
+                db.add(old_page)
+                await db.flush()
+                assert (await upload_library.index_upload(db, old_attachment)).status == "draft"
+            finally:
+                await db.close()
+                await root.rollback()
+    await engine.dispose()
 
 @pytest.mark.asyncio
 async def test_document_lifecycle_visibility_and_database_retention(monkeypatch):

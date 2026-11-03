@@ -33,7 +33,7 @@ export function MobileNavigation() {
   const pendingCount = pending?.pending_on_me.length ?? 0;
 
   const canSee = (item: AppNavItem) =>
-    !item.anyPermission || isSuperAdmin() || item.anyPermission.some((permission) => hasPermission(permission));
+    (!item.superAdminOnly || isSuperAdmin()) && (!item.anyPermission || isSuperAdmin() || item.anyPermission.some((permission) => hasPermission(permission)));
   const allItems = [...NAV_GROUPS.flatMap((group) => group.items), ...PERSONAL_NAV].filter(canSee);
   const primary = MOBILE_PRIMARY_HREFS.map((href) => allItems.find((item) => item.href === href)).filter(Boolean) as AppNavItem[];
   const secondaryGroups = NAV_GROUPS.map((group) => ({

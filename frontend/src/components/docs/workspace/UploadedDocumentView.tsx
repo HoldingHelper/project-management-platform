@@ -32,7 +32,7 @@ export function UploadedDocumentView({ page }: { page: DocPage }) {
     <div style={{ display: "flex", alignItems: "center", gap: 16, padding: 20, border: "1px solid var(--border-subtle)", borderRadius: 12, flexWrap: "wrap" }}>
       <FileText size={32} color="var(--accent-primary)" aria-hidden />
       <div style={{ flex: 1, minWidth: 120 }}><strong>{files.data?.[0]?.file_name ?? page.title}</strong><p style={{ fontSize: 12, color: "var(--text-secondary)" }}>{files.data?.[0]?.size_bytes != null ? `${(files.data[0].size_bytes! / 1024).toFixed(1)} KB · ` : ""}<LocalizedText message={"Original uploaded file"} /></p></div>
-      <Button disabled={busy} onClick={download}><Download size={16} aria-hidden />{busy ? <LocalizedText message={"Downloading…"} /> : <LocalizedText message={"Download file"} />}</Button>
+      <Button disabled={busy || !files.data?.[0]?.download_share_enabled} onClick={download}><Download size={16} aria-hidden />{busy ? <LocalizedText message={"Downloading…"} /> : <LocalizedText message={"Download file"} />}</Button>
       <DocumentLifecycleControls attachmentId={page.source_attachment_id!} fileName={page.title} onArchived={() => tabs.filter((tab) => tab.pageId === page.id).forEach((tab) => closeTab(tab.id))} />
     </div>
     <p style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 20 }}><LocalizedText message={"This file is connected to its"} />{" "}{page.source_entity_type === "product" ? <LocalizedText message={"product line"} /> : page.source_entity_type}<LocalizedText message={". Access follows the original item’s permissions."} /></p>

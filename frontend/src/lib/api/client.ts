@@ -10,6 +10,7 @@ import {
   clearSession,
   getAccessToken,
   getRefreshToken,
+  isTokenExpired,
   setAccessToken,
 } from "@/lib/auth/token-store";
 
@@ -62,7 +63,7 @@ type Options = Omit<RequestInit, "body"> & {
 let refreshInFlight: Promise<boolean> | null = null;
 
 /** Refresh the access token using the stored refresh token. De-duped. */
-async function refreshAccessToken(): Promise<boolean> {
+export async function refreshAccessToken(): Promise<boolean> {
   if (refreshInFlight) return refreshInFlight;
   const refresh = getRefreshToken();
   if (!refresh) return false;
@@ -113,7 +114,11 @@ async function doFetch(path: string, opts: Options): Promise<Response> {
   const { body, formData, auth = true, headers, ...rest } = opts;
   const h = new Headers(headers);
   if (auth) {
-    const token = getAccessToken();
+    let token = getAccessToken();
+    if (token && isTokenExpired(token)) {
+      await refreshAccessToken();
+      token = getAccessToken();
+    }
     if (token) h.set("Authorization", `Bearer ${token}`);
   }
   let payload: BodyInit | undefined;

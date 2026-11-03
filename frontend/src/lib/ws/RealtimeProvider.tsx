@@ -14,7 +14,8 @@ import {
   type ReactNode,
 } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { getAccessToken } from "@/lib/auth/token-store";
+import { getAccessToken, isTokenExpired } from "@/lib/auth/token-store";
+import { refreshAccessToken } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth/AuthProvider";
 
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:8000/ws";
@@ -44,6 +45,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
   const retryRef = useRef(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const closedRef = useRef(false);
+  const connectingRef = useRef(false);
   // True once the socket has opened at least once; a later open is a real
   // reconnect (drop + recover), which subscribers use to refetch authoritative
   // state rather than trusting frames they may have missed while offline.
@@ -54,8 +56,27 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
     if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(payload));
   }, []);
 
-  const connect = useCallback(() => {
-    const token = getAccessToken();
+  const connect = useCallback(async () => {
+    if (closedRef.current || connectingRef.current) return;
+    if (
+      socketRef.current &&
+      (socketRef.current.readyState === WebSocket.OPEN ||
+        socketRef.current.readyState === WebSocket.CONNECTING)
+    ) {
+      return;
+    }
+
+    connectingRef.current = true;
+    let token = getAccessToken();
+    if (!token || isTokenExpired(token)) {
+      const ok = await refreshAccessToken();
+      if (!ok || closedRef.current) {
+        connectingRef.current = false;
+        return;
+      }
+      token = getAccessToken();
+    }
+    connectingRef.current = false;
     if (!token || closedRef.current) return;
 
     let ws: WebSocket;
@@ -105,12 +126,23 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
         /* ignore malformed frames */
       }
     };
-    ws.onclose = () => {
+    ws.onclose = (event) => {
       socketRef.current = null;
       if (closedRef.current) return;
+      if (event.code === 4401 || event.code === 1008) {
+        void refreshAccessToken().then((ok) => {
+          if (ok && !closedRef.current) {
+            retryRef.current = 0;
+            void connect();
+          }
+        });
+        return;
+      }
       const delay = Math.min(30_000, 1000 * 2 ** retryRef.current);
       retryRef.current += 1;
-      timerRef.current = setTimeout(connect, delay);
+      timerRef.current = setTimeout(() => {
+        void connect();
+      }, delay);
     };
     ws.onerror = () => {
       /* onclose handles retry */
@@ -120,7 +152,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!user) return;
     closedRef.current = false;
-    connect();
+    void connect();
     return () => {
       closedRef.current = true;
       if (timerRef.current) clearTimeout(timerRef.current);

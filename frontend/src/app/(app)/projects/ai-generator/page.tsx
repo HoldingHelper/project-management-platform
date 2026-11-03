@@ -178,10 +178,10 @@ export default function AiProjectGeneratorPage() {
           <h2 style={sectionTitle}><LocalizedText message={"Brief guide"} /></h2>
           <p style={bodyText}><LocalizedText message={"Paste a shared Google Sheet URL directly, upload a brief, or combine both."} /></p>
           <div style={guideGrid}>
-            <GuideItem title={translateUI("Helpful fields")} text="Name, goal, stakeholders, timeline, team members, constraints can come from the brief or Sheet." />
-            <GuideItem title={translateUI("Voice friendly")} text="You can dictate into GPT or Claude, paste the transcript into the template, then upload." />
-            <GuideItem title={translateUI("Sheets context")} text="Paste shared Google Sheets URLs in the brief; private sheets are rejected for review." />
-            <GuideItem title={translateUI("Assignees")} text="Use real names or emails from the workspace. Unknown people are left unresolved for manual review." />
+            <GuideItem title={translateUI("Helpful fields")} text={translateUI("Name, goal, stakeholders, timeline, team members, and constraints can come from the brief or Sheet.")} />
+            <GuideItem title={translateUI("Voice friendly")} text={translateUI("You can dictate into GPT or Claude, paste the transcript into the template, then upload it.")} />
+            <GuideItem title={translateUI("Sheets context")} text={translateUI("Paste shared Google Sheets URLs in the brief; private sheets are rejected for review.")} />
+            <GuideItem title={translateUI("Assignees")} text={translateUI("Use real names or emails from the workspace. Unknown people are left unresolved for manual review.")} />
           </div>
         </div>
       </section>

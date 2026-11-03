@@ -96,6 +96,7 @@ export type DocAttachment = {
   size_bytes?: number | null;
   stored?: boolean;
   created_at: string;
+  download_share_enabled: boolean;
 };
 export const listDocSpaces = (category?: string) =>
   apiFetch<DocSpace[]>(`/docs/spaces${category && category !== "all" ? `?category=${encodeURIComponent(category)}` : ""}`);

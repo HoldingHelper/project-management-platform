@@ -15,7 +15,7 @@ test("calendar and digits are explicit formatting choices, not stored-date mutat
   const fa = { ...defaults, locale: "fa" as const, calendar: "persian" as const, numbering_system: "arabext" as const };
   assert.match(formatDate(date, fa, { year: "numeric" }), /۱۴۰۵/);
   assert.match(formatNumber(123, fa), /۱۲۳/);
-  assert.match(formatDate(date, { ...fa, calendar: "gregory" }), /۲۰۲۶/);
+  assert.match(formatDate(date, { ...fa, calendar: "gregory" }), /۱۴۰۵/);
   assert.equal(date, "2026-03-21");
 });
 test("invalid dates fail safely and relative time is localized", () => {
@@ -69,4 +69,11 @@ test("platform language is inherited only when no personal preference exists", (
   assert.equal(accountPreferences({ locale: "en" }, "fa").locale, "en");
   assert.equal(accountPreferences({ locale: "fa" }, "en").locale, "fa");
   assert.equal(accountPreferences({}, "en").locale, "en");
+});
+
+test("Persian language always uses Jalali even with a legacy Gregorian preference", () => {
+  assert.equal(accountPreferences({ locale: "fa", calendar: "gregory" }).calendar, "persian");
+  assert.equal(accountPreferences({ locale: null, calendar: "gregory" }, "fa").calendar, "persian");
+  assert.equal(preferencesFromCookies({ "pmp.locale": "fa", "pmp.calendar": "gregory" }).calendar, "persian");
+  assert.match(formatDate("2026-03-21", { ...defaults, locale: "fa" }, { year: "numeric" }), /1405/);
 });

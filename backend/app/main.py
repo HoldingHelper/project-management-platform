@@ -49,6 +49,7 @@ from app.modules.analytics.router import router as analytics_router
 from app.modules.analytics.router import search_router
 from app.modules.automations.router import automations_router
 from app.modules.automations.service import register_automation_event_listeners
+from app.modules.telegram.notifications import register_telegram_event_handlers
 from app.modules.blockers.router import blockers_router, pending_work_router
 from app.modules.calendar.router import calendar_router
 from app.modules.calendar import service as calendar_service
@@ -91,6 +92,13 @@ from app.modules.projects.router import (
     projects_router,
     sprints_router,
     tasks_router,
+)
+from app.modules.telegram.webhook import router as telegram_router
+from app.modules.telegram import (
+    close_bot,
+    get_bot,
+    get_dispatcher,
+    setup_bot_webhook,
 )
 
 settings = get_settings()
@@ -143,6 +151,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     register_analytics_event_handlers()
     register_chat_event_handlers()
     register_automation_event_listeners()
+    register_telegram_event_handlers()
 
     # 2. Ensure the object-storage bucket exists. Best-effort: the API must
     #    still boot in environments where MinIO/S3 isn't reachable yet -- file
@@ -166,6 +175,20 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         _calendar_reminder_worker(), name="calendar-reminders"
     )
 
+    # 5. Telegram Bot initialization (webhook registration or polling task)
+    tg_polling_task: asyncio.Task[None] | None = None
+    if settings.telegram_bot_token:
+        bot = get_bot()
+        if bot and settings.telegram_webhook_url:
+            await setup_bot_webhook(bot)
+        elif bot and settings.telegram_polling_enabled:
+            dp = get_dispatcher()
+            await bot.delete_webhook(drop_pending_updates=False)
+            tg_polling_task = asyncio.create_task(
+                dp.start_polling(bot, handle_signals=False), name="telegram-polling"
+            )
+            logger.info("telegram_polling_started_in_lifespan")
+
     logger.info(
         "application_startup",
         app_name=settings.app_name,
@@ -175,6 +198,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     yield
 
     # Shutdown: release pooled resources.
+    if tg_polling_task is not None:
+        tg_polling_task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await tg_polling_task
+    await close_bot()
     if backplane_task is not None:
         backplane_task.cancel()
         with contextlib.suppress(asyncio.CancelledError):
@@ -263,6 +291,7 @@ _MODULE_ROUTERS: tuple[APIRouter, ...] = (
     github_router,
     whatsapp_router,
     integrations_router,
+    telegram_router,
     automations_router,
     mcp_router,
 )

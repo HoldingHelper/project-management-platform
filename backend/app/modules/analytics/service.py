@@ -865,3 +865,18 @@ async def get_enhanced_kpi_dashboard(
         predictability=predictability,
         summary=summary,
     )
+
+
+async def get_entity_history(db: AsyncSession, entity_type: str, entity_id: UUID):
+    from app.modules.analytics.schemas import EntityHistoryRead
+    from app.modules.identity.service import get_user_summaries
+
+    logs = await repo.list_audit_logs_for_entity(db, entity_type, str(entity_id))
+    users = await get_user_summaries(db, list({entry.user_id for entry in logs if entry.user_id}))
+    names = {user.user_id: user.full_name for user in users}
+    return [EntityHistoryRead(
+        id=entry.id, user_id=entry.user_id, user_name=names.get(entry.user_id),
+        entity_type=entry.entity_type, entity_id=entry.entity_id,
+        action_type=entry.action_type, changes_json=entry.changes_json,
+        occurred_at=entry.occurred_at,
+    ) for entry in logs]

@@ -80,6 +80,11 @@ class Settings(BaseSettings):
     telegram_bot_token: str = ""
     telegram_bot_username: str = "YourConfiguredBot"
     telegram_webhook_secret: str = ""
+    telegram_bot_enabled: bool = False
+    telegram_webhook_url: str = ""
+    telegram_polling_enabled: bool = False
+    telegram_default_language: str = "fa"
+    telegram_state_ttl_seconds: int = 900  # 15 minutes conversation state TTL
 
     # WhatsApp Cloud API & Bot Integration
     whatsapp_api_token: str = ""

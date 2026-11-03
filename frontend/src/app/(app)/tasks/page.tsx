@@ -44,8 +44,9 @@ import { TASK_SORT_OPTIONS, sortTasks, type TaskSortMode } from "@/lib/task-sort
 import type { TaskRead, UUID } from "@/lib/types";
 import { useViewState } from "@/lib/navigation";
 import { useUrlView } from "@/lib/url-view";
+import { calendarMonth, monthBoundary, shiftMonth } from "@/lib/i18n/calendar-month";
 
-const TASK_VIEWS = ["all", "my", "my-blocked", "my-done", "review", "needs-review", "blocked", "backlog", "due-week"] as const;
+const TASK_VIEWS = ["all", "my", "my-blocked", "my-done", "my-completed", "my-upcoming", "my-overdue", "review", "needs-review", "blocked", "backlog", "due-week"] as const;
 const TASK_LAYOUTS = ["list", "monthly"] as const;
 
 const STATUS_OPTIONS = [
@@ -103,20 +104,33 @@ function TasksPage() {
 
   const canAttach = isSuperAdmin() || hasPermission("tasks.manage_all", "projects.manage_all");
   const canCreate = Boolean(user);
+  const personalMetricView = view === "my-completed" || view === "my-upcoming" || view === "my-overdue";
+  const personalListView = personalMetricView || view === "my-blocked";
 
   const { data, error, isError, isFetching, isLoading, refetch } = useQuery({
-    queryKey: ["tasks", productFilter, partition, label, status, unattachedOnly, search],
-    queryFn: () =>
-      listTasks({
+    queryKey: ["tasks", productFilter, partition, label, status, unattachedOnly, search, personalListView ? user?.id : null],
+    enabled: !personalListView || !!user,
+    queryFn: async () => {
+      const filters = {
         product_id: productFilter === "all" ? undefined : productFilter as UUID,
         partition: partition === "all" ? undefined : partition,
         label: label || undefined,
         status: status || undefined,
         unattached: unattachedOnly ? true : undefined,
         search: search || undefined,
-        page: 1,
+        assignee_user_id: personalListView ? user?.id : undefined,
         page_size: 100,
-      }),
+      };
+      const first = await listTasks({ ...filters, page: 1 });
+      if (!personalListView) return first;
+      const items = [...first.items];
+      for (let nextPage = 2; items.length < first.total_count; nextPage++) {
+        const next = await listTasks({ ...filters, page: nextPage });
+        if (!next.items.length) break;
+        items.push(...next.items);
+      }
+      return { ...first, items };
+    },
   });
   const products = useQuery({ queryKey: ["products"], queryFn: listAllProducts });
   const productNames = useMemo(() => new Map((products.data ?? []).map((product) => [product.id, product.name])), [products.data]);
@@ -158,6 +172,20 @@ function TasksPage() {
     if (view === "my" && user) rows = rows.filter((t) => t.assignee_user_ids.includes(user.id));
     if (view === "my-blocked" && user) rows = rows.filter((t) => t.assignee_user_ids.includes(user.id) && t.status === "Blocked");
     if (view === "my-done" && user) rows = rows.filter((t) => t.assignee_user_ids.includes(user.id) && t.status === "Done");
+    if (personalMetricView && user) {
+      const today = new Date();
+      const isoDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      const todayKey = isoDate(today);
+      const week = new Date(today);
+      week.setDate(week.getDate() + 7);
+      const weekKey = isoDate(week);
+      rows = rows.filter((task) => {
+        if (!task.assignee_user_ids.includes(user.id)) return false;
+        if (view === "my-completed") return ["Done", "Archived"].includes(task.status);
+        if (["Done", "Archived", "Cancelled"].includes(task.status) || !task.due_date) return false;
+        return view === "my-overdue" ? task.due_date < todayKey : task.due_date >= todayKey && task.due_date <= weekKey;
+      });
+    }
     if (view === "review" || view === "needs-review") rows = rows.filter((t) => ["Review", "Testing", "Waiting"].includes(String(t.status)));
     if (view === "blocked") rows = rows.filter((t) => t.status === "Blocked");
     if (view === "backlog") rows = rows.filter((t) => !t.phase_id);
@@ -180,7 +208,7 @@ function TasksPage() {
     if (createdMonth) rows = rows.filter((t) => t.created_at?.slice(0, 7) === createdMonth);
     if (dueMonth) rows = rows.filter((t) => t.due_date?.slice(0, 7) === dueMonth);
     return rows;
-  }, [allRows, view, user, projectFilter, phaseToProject, assigneeFilter, createdMonth, dueMonth]);
+  }, [allRows, view, personalMetricView, user, projectFilter, phaseToProject, assigneeFilter, createdMonth, dueMonth]);
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / 50));
   const pageRows = filteredRows.slice((page - 1) * 50, page * 50);
 
@@ -393,7 +421,7 @@ function TasksPage() {
     !!search;
 
   const activeFilters = [
-    view !== "all" ? `View: ${viewLabel(view)}` : null,
+    view !== "all" ? translateUI("View: {name}", { name: translateUI(viewLabel(view)) }) : null,
     partition !== "all" ? `Partition: ${partition}` : null,
     productFilter !== "all" ? translateUI("Product line: {name}", { name: productNames.get(productFilter as UUID) ?? translateUI("Selected") }) : null,
     projectFilter !== "all" ? `Project: ${projects.data?.items.find((p) => p.id === projectFilter)?.name ?? "Selected"}` : null,
@@ -636,21 +664,6 @@ function TasksPage() {
   );
 }
 
-function monthKey(date: Date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-}
-
-function monthLabel(key: string) {
-  if (key === "unscheduled") return "No month";
-  const [year, month] = key.split("-").map(Number);
-  return new Date(year, month - 1, 1).toLocaleDateString([], { month: "short", year: "numeric" });
-}
-
-function endOfMonthIso(key: string) {
-  const [year, month] = key.split("-").map(Number);
-  return new Date(year, month, 0).toISOString().slice(0, 10);
-}
-
 function MonthlyTaskPlanner({
   rows,
   nameOf,
@@ -660,32 +673,26 @@ function MonthlyTaskPlanner({
   nameOf: (id?: string | null) => string;
   canAttach: boolean;
 }) {
-  const { t: translateUI, date: displayDate, number: displayNumber } = useI18n();
+  const { t: translateUI, date: displayDate, number: displayNumber, calendar } = useI18n();
 
   const queryClient = useQueryClient();
   const toast = useToast();
   const [dragId, setDragId] = useState<UUID | null>(null);
   const [sortMode, setSortMode] = useState<TaskSortMode>("manual");
-  const [anchor, setAnchor] = useState(() => {
-    const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), 1);
-  });
+  const [monthOffset, setMonthOffset] = useState(0);
 
   const months = useMemo(() => {
-    const start = new Date(anchor);
-    start.setMonth(start.getMonth() - 1);
-    return Array.from({ length: 6 }, (_, index) => {
-      const next = new Date(start);
-      next.setMonth(start.getMonth() + index);
-      return monthKey(next);
-    });
-  }, [anchor]);
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    const current = calendarMonth(today, calendar);
+    return Array.from({ length: 6 }, (_, index) => shiftMonth(current, monthOffset + index - 1));
+  }, [monthOffset, calendar]);
 
   const moveTask = useMutation({
     mutationFn: async ({ task, targetMonth, groups }: { task: TaskRead; targetMonth: string; groups: UUID[][] }) => {
-      const currentMonth = task.due_date?.slice(0, 7) ?? "unscheduled";
+      const currentMonth = task.due_date ? calendarMonth(task.due_date, calendar) : "unscheduled";
       if (currentMonth !== targetMonth) {
-        await updateTask(task.id, { due_date: targetMonth === "unscheduled" ? null : endOfMonthIso(targetMonth) });
+        await updateTask(task.id, { due_date: targetMonth === "unscheduled" ? null : monthBoundary(targetMonth, calendar, true) });
       }
       await Promise.all(groups.filter((group) => group.length > 0).map((group) => reorderTasks(group)));
     },
@@ -699,13 +706,13 @@ function MonthlyTaskPlanner({
   const grouped = useMemo(() => {
     const map = new Map<string, TaskRead[]>([["unscheduled", []], ...months.map((m) => [m, [] as TaskRead[]] as const)]);
     for (const task of rows) {
-      const key = task.due_date?.slice(0, 7);
+      const key = task.due_date ? calendarMonth(task.due_date, calendar) : undefined;
       if (key && map.has(key)) map.get(key)!.push(task);
       else if (!key) map.get("unscheduled")!.push(task);
     }
     for (const [key, tasks] of map) map.set(key, sortTasks(tasks, sortMode, nameOf));
     return map;
-  }, [rows, months, nameOf, sortMode]);
+  }, [rows, months, nameOf, sortMode, calendar]);
 
   const dropOn = (targetMonth: string, beforeId?: UUID) => {
     if (!dragId) return;
@@ -716,7 +723,7 @@ function MonthlyTaskPlanner({
     const task = rows.find((row) => row.id === dragId);
     setDragId(null);
     if (!task) return;
-    const current = task.due_date?.slice(0, 7) ?? "unscheduled";
+    const current = task.due_date ? calendarMonth(task.due_date, calendar) : "unscheduled";
     const sourceOrder = (grouped.get(current) ?? []).filter((item) => item.id !== task.id).map((item) => item.id);
     const targetOrder = (grouped.get(targetMonth) ?? []).filter((item) => item.id !== task.id).map((item) => item.id);
     const insertAt = beforeId ? targetOrder.indexOf(beforeId) : targetOrder.length;
@@ -739,15 +746,15 @@ function MonthlyTaskPlanner({
           />
           <Button
             variant="secondary"
-            onClick={() => setAnchor((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1))}
+            onClick={() => setMonthOffset(current => current - 1)}
           >{" "}<LocalizedText message={"Previous"} />{" "}</Button>
           <Button
             variant="secondary"
-            onClick={() => setAnchor(new Date(new Date().getFullYear(), new Date().getMonth(), 1))}
+            onClick={() => setMonthOffset(0)}
           >{" "}<LocalizedText message={"Today"} />{" "}</Button>
           <Button
             variant="secondary"
-            onClick={() => setAnchor((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1))}
+            onClick={() => setMonthOffset(current => current + 1)}
           >{" "}<LocalizedText message={"Next"} />{" "}</Button>
         </div>
       </div>
@@ -768,7 +775,7 @@ function MonthlyTaskPlanner({
               }}
             >
               <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8, marginBottom: 10 }}>
-                <div style={{ fontSize: 13, fontWeight: 800 }}>{bucket === "unscheduled" ? translateUI("No month") : displayDate(`${bucket}-01`, { day: undefined, month: "short", year: "numeric" })}</div>
+                <div style={{ fontSize: 13, fontWeight: 800 }}>{bucket === "unscheduled" ? translateUI("No month") : displayDate(monthBoundary(bucket, calendar), { day: undefined, month: "short", year: "numeric" })}</div>
                 <div style={{ fontSize: 12, fontFamily: "var(--font-mono)", color: "var(--text-tertiary)" }}>{tasks.length}</div>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
@@ -877,6 +884,9 @@ function viewLabel(view: string) {
     my: "My tasks",
     "my-blocked": "My blocked",
     "my-done": "My done",
+    "my-completed": "My completed work",
+    "my-upcoming": "My upcoming deadlines",
+    "my-overdue": "My late work",
     review: "Review queue",
     "needs-review": "Needs review",
     blocked: "Blocked",

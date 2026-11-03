@@ -445,6 +445,7 @@ class AttachmentRead(BaseModel):
     uploaded_by: UUID
     size_bytes: Optional[int] = None
     stored: bool = False
+    download_share_enabled: bool = False
     created_at: datetime
 
 

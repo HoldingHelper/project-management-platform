@@ -12,6 +12,7 @@ class ProductStatus(str, Enum):
     ACTIVE = "Active"
     MAINTENANCE = "Maintenance"
     SUNSET = "Sunset"
+    ARCHIVED = "Archived"
 
 
 class Environment(str, Enum):

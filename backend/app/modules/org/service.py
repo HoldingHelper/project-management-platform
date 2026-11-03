@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.current_user import CurrentUser
-from app.core.exceptions import BusinessRuleError, ConflictError, NotFoundError
+from app.core.exceptions import BusinessRuleError, ConflictError, ForbiddenError, NotFoundError
 from app.modules.authz.policy import privileged_role, valid_role
 from app.modules.authz.service import authorize, explain, visible_nodes
 from app.modules.org import repository as repo
@@ -96,8 +96,14 @@ async def create_node(db: AsyncSession, payload: NodeCreate, actor: CurrentUser)
 
 async def update_node(db: AsyncSession, node: OrgNode, payload: NodeUpdate, actor: CurrentUser) -> OrgNode:
     action = "manage_confidentiality" if payload.confidentiality and payload.confidentiality != node.confidentiality else "update"
-    await authorize(db, actor, action, node)
+    if not (actor.is_super_admin() and node.status == "archived" and payload.status == "active"):
+        await authorize(db, actor, action, node)
     data = payload.model_dump(exclude_unset=True)
+    if node.status == "archived" and data.get("status") == "active":
+        if not actor.is_super_admin():
+            raise ForbiddenError("Only a Super Admin can restore archived items.")
+        if node.parent_id and (await get_node(db, node.parent_id)).status == "archived":
+            raise BusinessRuleError("Restore the parent scope first.")
     if "confidentiality" in data:
         descendants = await repo.descendants(db, node)
         for child in descendants:

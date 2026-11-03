@@ -46,7 +46,7 @@ async def _require_project_access(
     db: AsyncSession, user: CurrentUser, project_id: UUID
 ) -> None:
     project = await db.get(Project, project_id)
-    if project is None:
+    if project is None or (project.status == "archived" and not user.is_super_admin()):
         raise NotFoundError("Project", project_id)
 
     from app.modules.projects.product_access import require_product_access
@@ -114,7 +114,7 @@ async def _require_task_access(
     db: AsyncSession, user: CurrentUser, task_id: UUID
 ) -> None:
     task = await db.get(TaskItem, task_id)
-    if task is None:
+    if task is None or (task.status == "Archived" and not user.is_super_admin()):
         raise NotFoundError("Task", task_id)
 
     if task.phase_id is not None:

@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
   Activity,
+  Archive,
   BarChart3,
   Bell,
   Bot,
@@ -24,6 +25,7 @@ export interface AppNavItem {
   match: (pathname: string) => boolean;
   badge?: "pending" | "notifications";
   anyPermission?: string[];
+  superAdminOnly?: boolean;
 }
 
 export interface AppNavGroup {
@@ -80,6 +82,7 @@ export const NAV_GROUPS: AppNavGroup[] = [
   {
     label: "Administration",
     items: [
+      { href: "/admin/archive", label: "Archive", icon: Archive, match: (path) => path === "/admin/archive", superAdminOnly: true },
       { href: "/admin/users", label: "People", icon: ShieldCheck, match: (path) => path === "/admin/users", anyPermission: ["system.manage_users"] },
       { href: "/admin/departments", label: "Departments", icon: Network, match: (path) => path === "/admin/departments", anyPermission: ["system.manage_users"] },
       { href: "/admin/teams", label: "Teams", icon: UserRound, match: (path) => path === "/admin/teams", anyPermission: ["system.manage_users"] },
@@ -115,6 +118,7 @@ const ROUTE_META = [
   { test: (path: string) => isRoute(path, "/notifications"), crumb: "Personal", title: "Notification Center" },
   { test: (path: string) => isRoute(path, "/activity"), crumb: "Organization", title: "Activity Feed" },
   { test: (path: string) => path === "/admin/users", crumb: "Administration", title: "People" },
+  { test: (path: string) => path === "/admin/archive", crumb: "Administration", title: "Archive" },
   { test: (path: string) => path === "/admin/departments", crumb: "Administration", title: "Departments" },
   { test: (path: string) => path === "/admin/teams", crumb: "Administration", title: "Teams" },
   { test: (path: string) => path === "/admin/roles", crumb: "Administration", title: "Roles & Permissions" },

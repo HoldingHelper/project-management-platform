@@ -1,4 +1,5 @@
 "use client";
+import { EntityHistory } from "@/components/history/EntityHistory";
 import { LocalizedRelativeTime, LocalizedDate } from "@/lib/i18n/I18nProvider";
 
 import { useI18n } from "@/lib/i18n/I18nProvider";
@@ -15,16 +16,21 @@ import {
   CheckCircle2,
   Clock,
   Copy,
+  Download,
   Edit3,
   ExternalLink,
+  FileText,
   Flame,
   GitBranch,
+  Image as ImageIcon,
   Layers,
   Link as LinkIcon,
   Github,
   ListChecks,
   MessageSquare,
   MessageSquareText,
+  Mic,
+  Paperclip,
   Plus,
   Send,
   Share2,
@@ -32,7 +38,7 @@ import {
   Sparkles,
   Tag,
   Ticket,
-  Trash2,
+  Upload,
   User,
   Users,
   X,
@@ -40,14 +46,20 @@ import {
 import { useEffect, useRef, useState } from "react";
 import {
   createTask,
-  deleteTask,
   getTask,
   listTasks,
   updateTask,
   updateTaskStatus,
   getTaskAssignmentCandidates,
 } from "@/lib/api/projects";
-import { addComment, listComments } from "@/lib/api/collaboration";
+import {
+  addComment,
+  downloadFile,
+  listComments,
+  listFiles,
+  uploadFile,
+} from "@/lib/api/collaboration";
+import { VoiceBubble } from "@/components/chat/VoiceBubble";
 import { GitHubMentionPicker } from "@/components/github/GitHubMentionPicker";
 import {
   Avatar,
@@ -63,6 +75,8 @@ import {
 } from "@/components/ds";
 import { ErrorState, PageHeader, PAGE_STYLE, Spinner } from "@/components/ui/States";
 import { DocumentationFiles } from "@/components/docs/DocumentationUpload";
+import { FileSharingControl } from "@/components/docs/FileSharingControl";
+import { FileImagePreview } from "@/components/docs/FileImagePreview";
 import { TaskChecklist } from "@/components/tasks/TaskChecklist";
 import { TaskEditorModal } from "@/components/tasks/TaskEditorModal";
 import { useAuth } from "@/lib/auth/AuthProvider";
@@ -136,9 +150,12 @@ export default function TaskDetailPage({
   const [subtaskTitle, setSubtaskTitle] = useState("");
   const [newComment, setNewComment] = useState("");
   const [showGitHubPicker, setShowGitHubPicker] = useState(false);
-  const [activeTab, setActiveTab] = useState<"comments" | "history">("comments");
+  const [activeTab, setActiveTab] = useState<"comments" | "attachments" | "history">("comments");
   const [priorityMenuOpen, setPriorityMenuOpen] = useState(false);
   const [assigneeMenuOpen, setAssigneeMenuOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingFile, setIsUploadingFile] = useState(false);
+  const [downloadingFileId, setDownloadingFileId] = useState<string | null>(null);
 
   const task = useQuery({
     queryKey: ["task", taskId],
@@ -157,6 +174,49 @@ export default function TaskDetailPage({
     queryFn: () => listComments("task", taskId as UUID),
     enabled: Boolean(taskId),
   });
+
+  const attachments = useQuery({
+    queryKey: ["entity-files", "task", taskId],
+    queryFn: () => listFiles("task", taskId as UUID),
+    enabled: Boolean(taskId),
+  });
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !taskId) return;
+    setIsUploadingFile(true);
+    try {
+      await uploadFile("task", taskId as UUID, file, file.name);
+      toast.push(translateUI("Attachment uploaded successfully"), "success");
+      queryClient.invalidateQueries({ queryKey: ["entity-files", "task", taskId] });
+    } catch {
+      toast.push(translateUI("Could not upload file. Please try again."), "error");
+    } finally {
+      setIsUploadingFile(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  const handleDownloadFile = async (attachmentId: UUID, fileName: string) => {
+    setDownloadingFileId(attachmentId);
+    try {
+      const blob = await downloadFile(attachmentId);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch {
+      toast.push(translateUI("Could not download file."), "error");
+    } finally {
+      setDownloadingFileId(null);
+    }
+  };
 
   // Sync drafts when task loads
   useEffect(() => {
@@ -260,6 +320,7 @@ export default function TaskDetailPage({
       queryClient.invalidateQueries({ queryKey: ["task", taskId] });
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
       queryClient.invalidateQueries({ queryKey: ["phase-tasks"] });
+      if (saved.status === "Archived") { if (embedded) onClose?.(); else router.push("/tasks"); }
     },
     onError: () => toast.push("Could not update task status.", "error"),
   });
@@ -275,26 +336,6 @@ export default function TaskDetailPage({
     },
     onError: () => toast.push("Could not create subtask.", "error"),
   });
-
-  const removeTask = useMutation({
-    mutationFn: () => deleteTask(taskId as UUID),
-    onSuccess: () => {
-      toast.push("Task deleted.", "success");
-      queryClient.removeQueries({ queryKey: ["task", taskId] });
-      queryClient.invalidateQueries({ queryKey: ["tasks"] });
-      queryClient.invalidateQueries({ queryKey: ["phase-tasks"] });
-      queryClient.invalidateQueries({ queryKey: ["project-overview"] });
-      if (embedded) onClose?.();
-      else router.push("/tasks");
-    },
-    onError: () => toast.push("Could not delete task.", "error"),
-  });
-
-  const confirmDeleteTask = () => {
-    if (window.confirm(`Delete "${task.data?.title ?? "this task"}"? This cannot be undone.`)) {
-      removeTask.mutate();
-    }
-  };
 
   const copyTaskLink = () => {
     if (typeof window !== "undefined") {
@@ -378,15 +419,9 @@ export default function TaskDetailPage({
                 <Edit3 size={13} />
                 <span><LocalizedText message={"Full Edit"} /></span>
               </button>
-              <button
-                type="button"
-                onClick={confirmDeleteTask}
-                disabled={removeTask.isPending}
-                className="task-action-btn danger"
-              >
-                <Trash2 size={13} />
-                <span><LocalizedText message={"Delete"} /></span>
-              </button>
+              {row.status !== "Archived" && <button type="button" className="task-action-btn" disabled={changeStatus.isPending} onClick={() => { if (window.confirm(translateUI("Only a Super Admin can restore an archived task. Continue?"))) changeStatus.mutate("Archived"); }}>
+                <span><LocalizedText message="Archive" /></span>
+              </button>}
               {row.status !== "Done" ? (
                 <button
                   type="button"
@@ -561,7 +596,7 @@ export default function TaskDetailPage({
           {row.due_date && (
             <div className="quick-prop-pill date-pill" title={`Due on ${row.due_date}`}>
               <Calendar size={12} />
-              <span><LocalizedText message={"Due"} />{" "}{row.due_date}</span>
+              <span><LocalizedText message={"Due"} />{" "}<LocalizedDate value={row.due_date} /></span>
             </div>
           )}
         </div>
@@ -704,6 +739,14 @@ export default function TaskDetailPage({
                 </button>
                 <button
                   type="button"
+                  className={`tab-pill-btn ${activeTab === "attachments" ? "active" : ""}`}
+                  onClick={() => setActiveTab("attachments")}
+                >
+                  <Paperclip size={13} />
+                  <span><LocalizedText message={"Attachments"} /> ({(attachments.data?.length ?? 0)})</span>
+                </button>
+                <button
+                  type="button"
                   className={`tab-pill-btn ${activeTab === "history" ? "active" : ""}`}
                   onClick={() => setActiveTab("history")}
                 >
@@ -819,30 +862,143 @@ export default function TaskDetailPage({
                   )}
                 </div>
               </div>
-            ) : (
-              <div className="history-tab-view">
-                <div className="history-row">
-                  <span className="history-dot" />
-                  <div className="history-text">
-                    <b><LocalizedText message={"Task created"} /></b>{" "}<LocalizedText message={"on"} />{" "}<LocalizedDate value={row.created_at} />{" "}<LocalizedText message={"by"} />{" "}
-                    {row.created_by ? nameOf(row.created_by) || row.created_by : <LocalizedText message={"System"} />}
+            ) : activeTab === "attachments" ? (
+              <div className="attachments-tab-view" style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 16 }}>
+                {/* Upload Action Bar */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, paddingBottom: 12, borderBottom: "1px solid var(--border-default, #27272a)" }}>
+                  <div>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>
+                      <LocalizedText message={"Task Attachments & Media"} />
+                    </span>
+                    <p style={{ fontSize: 12, color: "var(--text-muted, #71717a)", margin: "2px 0 0" }}>
+                      <LocalizedText message={"Voice recordings, screenshots, documents, and files attached to this task."} />
+                    </p>
+                  </div>
+                  <div>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileUpload}
+                      style={{ display: "none" }}
+                    />
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="sm"
+                      disabled={isUploadingFile}
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <Upload size={13} /> {isUploadingFile ? <LocalizedText message={"Uploading…"} /> : <LocalizedText message={"Upload Attachment"} />}
+                    </Button>
                   </div>
                 </div>
-                <div className="history-row">
-                  <span className="history-dot" />
-                  <div className="history-text">
-                    <b><LocalizedText message={"Last modified"} /></b>{" "}<LocalizedText message={"on"} />{" "}<LocalizedDate value={row.updated_at} />
+
+                {/* Attachments List */}
+                {attachments.isLoading ? (
+                  <div style={{ padding: "32px 0", textAlign: "center", color: "var(--text-muted, #71717a)", fontSize: 13 }}>
+                    <LocalizedText message={"Loading attachments…"} />
                   </div>
-                </div>
-                {row.completed_at && (
-                  <div className="history-row">
-                    <span className="history-dot green" />
-                    <div className="history-text">
-                      <b><LocalizedText message={"Completed"} /></b>{" "}<LocalizedText message={"on"} />{" "}<LocalizedDate value={row.completed_at} />
-                    </div>
+                ) : (attachments.data?.length ?? 0) === 0 ? (
+                  <div className="empty-comments-state" style={{ padding: "40px 0", textAlign: "center" }}>
+                    <Paperclip size={32} className="text-neutral-500 mb-2 opacity-60" style={{ margin: "0 auto 8px" }} />
+                    <p style={{ margin: 0, fontSize: 13, color: "var(--text-muted, #71717a)" }}>
+                      <LocalizedText message={"No attachments yet. Click 'Upload Attachment' or attach files/voice notes via Telegram."} />
+                    </p>
+                  </div>
+                ) : (
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 }}>
+                    {attachments.data!.map((file) => {
+                      const isVoice = file.file_name.endsWith(".ogg") || file.content_type.startsWith("audio/");
+                      const isImage = file.content_type.startsWith("image/") || /\.(png|jpe?g|gif|webp|svg)$/i.test(file.file_name);
+                      const isPdf = file.content_type.includes("pdf") || file.file_name.endsWith(".pdf");
+
+                      return (
+                        <div
+                          key={file.id}
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 10,
+                            padding: 12,
+                            borderRadius: 8,
+                            border: "1px solid var(--border-default, #27272a)",
+                            background: "var(--surface-2, rgba(255,255,255,0.03))",
+                          }}
+                        >
+                          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                              {isVoice ? (
+                                <Mic size={18} style={{ color: "#F59E0B", flexShrink: 0 }} />
+                              ) : isImage ? (
+                                <ImageIcon size={18} style={{ color: "#38BDF8", flexShrink: 0 }} />
+                              ) : (
+                                <FileText size={18} style={{ color: isPdf ? "#EF4444" : "#00E261", flexShrink: 0 }} />
+                              )}
+                              <div style={{ minWidth: 0 }}>
+                                <div
+                                  style={{
+                                    fontSize: 13,
+                                    fontWeight: 500,
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                  title={file.file_name}
+                                >
+                                  {file.file_name}
+                                </div>
+                                <div style={{ fontSize: 11, color: "var(--text-muted, #71717a)" }}>
+                                  {(file.size_bytes / 1024).toFixed(1)} KB · <LocalizedDate value={file.created_at} />
+                                </div>
+                              </div>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              size="sm"
+                              disabled={downloadingFileId === file.id || !file.download_share_enabled}
+                              onClick={() => handleDownloadFile(file.id, file.file_name)}
+                              title={translateUI("Download file")}
+                            >
+                              <Download size={13} />
+                              {downloadingFileId === file.id ? <LocalizedText message={"Downloading…"} /> : <LocalizedText message={"Download"} />}
+                            </Button>
+                          </div>
+
+                          <FileSharingControl fileId={file.id} fileName={file.file_name} />
+
+                          {/* Voice player for voice messages */}
+                          {isVoice && file.download_share_enabled && (
+                            <div style={{ marginTop: 2 }}>
+                              <VoiceBubble attachmentId={file.id} />
+                            </div>
+                          )}
+
+                          {/* Image preview thumbnail */}
+                          {isImage && file.download_share_enabled && (
+                            <div
+                              style={{
+                                marginTop: 4,
+                                borderRadius: 6,
+                                overflow: "hidden",
+                                background: "rgba(0,0,0,0.2)",
+                                maxHeight: 160,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}
+                            >
+                              <FileImagePreview fileId={file.id} fileName={file.file_name} maxHeight={160} />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
+            ) : (
+              <EntityHistory entityType="task" entityId={row.id} />
             )}
           </div>
         </div>
@@ -968,11 +1124,11 @@ export default function TaskDetailPage({
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <span className="field-label"><LocalizedText message={"Start Date"} /></span>
-                <span className="field-val">{row.start_date ?? "—"}</span>
+                <span className="field-val"><LocalizedDate value={row.start_date} /></span>
               </div>
               <div>
                 <span className="field-label"><LocalizedText message={"Due Date"} /></span>
-                <span className="field-val">{row.due_date ?? "—"}</span>
+                <span className="field-val"><LocalizedDate value={row.due_date} /></span>
               </div>
             </div>
 
@@ -1002,6 +1158,62 @@ export default function TaskDetailPage({
                 ))
               )}
             </div>
+          </div>
+
+          {/* Card: Attachments Quick Access */}
+          <div className="inspector-card">
+            <div className="flex items-center justify-between">
+              <span className="inspector-heading"><LocalizedText message={"Attachments"} /></span>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab("attachments");
+                  fileInputRef.current?.click();
+                }}
+                className="quick-assign-btn"
+                title={translateUI("Upload file")}
+              >
+                <Plus size={11} /> <LocalizedText message={"Add"} />
+              </button>
+            </div>
+            {attachments.isLoading ? (
+              <span className="text-xs text-neutral-500"><LocalizedText message={"Loading…"} /></span>
+            ) : (attachments.data?.length ?? 0) === 0 ? (
+              <span className="unassigned-muted"><LocalizedText message={"No attachments"} /></span>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 4 }}>
+                {attachments.data!.slice(0, 4).map((att) => (
+                  <div
+                    key={att.id}
+                    onClick={() => setActiveTab("attachments")}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                      fontSize: 12,
+                      cursor: "pointer",
+                      padding: "4px 8px",
+                      borderRadius: 4,
+                      background: "rgba(255,255,255,0.03)",
+                    }}
+                  >
+                    <Paperclip size={12} style={{ color: "var(--accent-primary, #00E261)", flexShrink: 0 }} />
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={att.file_name}>
+                      {att.file_name}
+                    </span>
+                  </div>
+                ))}
+                {attachments.data!.length > 4 && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("attachments")}
+                    style={{ fontSize: 11, color: "var(--accent-secondary, #38BDF8)", textAlign: "left", background: "none", border: "none", cursor: "pointer", padding: "2px 8px" }}
+                  >
+                    +{attachments.data!.length - 4} <LocalizedText message={"more files"} />…
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </aside>
       </section>

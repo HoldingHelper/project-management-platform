@@ -1,7 +1,7 @@
 "use client";
 import { sprintSchedule, SPRINT_DURATIONS } from "@/lib/sprint-schedule";
 
-import { LocalizedRelativeTime } from "@/lib/i18n/I18nProvider";
+import { LocalizedDate, LocalizedRelativeTime } from "@/lib/i18n/I18nProvider";
 
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { LocalizedText } from "@/lib/i18n/I18nProvider";
@@ -17,27 +17,34 @@ import {
   ChevronLeft,
   ChevronRight,
   Diamond,
+  Download,
   ExternalLink,
+  FileText,
   GitBranch,
   GripVertical,
+  Image as ImageIcon,
   ListChecks,
   Link2,
   Lock,
   Maximize2,
+  Mic,
+  Paperclip,
   Pencil,
   Plus,
   ShieldAlert,
   Trash2,
   Unlock,
+  Upload,
   Users,
   X,
 } from "lucide-react";
+import { downloadFile, listFiles, uploadFile } from "@/lib/api/collaboration";
+import { VoiceBubble } from "@/components/chat/VoiceBubble";
 import {
   addProjectMember,
   archiveProject,
   createMilestone,
   createSprint, createSprintBatch, updateSprint,
-  deleteProject,
   getSprintProgress,
   getSprintTasks,
   getProjectOverview,
@@ -62,11 +69,16 @@ import {
 } from "@/lib/api/docs";
 import { ChecklistEditor, ProjectChecklist, type ChecklistDraft } from "@/components/tasks/TaskChecklist";
 import { DocumentationFiles, DocumentationUpload, uploadDocumentationFiles } from "@/components/docs/DocumentationUpload";
+import { DocumentLifecycleControls } from "@/components/docs/DocumentLifecycleControls";
+import { FileImagePreview } from "@/components/docs/FileImagePreview";
+import { EntityHistory } from "@/components/history/EntityHistory";
+import { ProjectMembersFields, useProjectMembersDraft } from "@/components/projects/ProjectMembersFields";
+import { ProjectSprintsFields, useProjectSprintsDraft } from "@/components/projects/ProjectSprintsFields";
 import { SearchSuggestionInput } from "@/components/docs/SearchSuggestionInput";
 import { getBottlenecks } from "@/lib/api/analytics";
 import { listBlockers } from "@/lib/api/blockers";
 import { listChannels } from "@/lib/api/chat";
-import { AppError } from "@/lib/api/client";
+import { AppError, apiFetch } from "@/lib/api/client";
 import { useTaskPartitions, useUserMap } from "@/lib/hooks";
 import { useRealtimeEvent } from "@/lib/ws/RealtimeProvider";
 import {
@@ -157,6 +169,8 @@ const TAB_KEYS = [
   { key: "milestones", label: "Milestones" },
   { key: "blockers", label: "Blockers" },
   { key: "discussions", label: "Discussions" },
+  { key: "attachments", label: "Attachments" },
+  { key: "history", label: "History & Changes" },
 ];
 
 const PROJECT_STATUS_OPTIONS = [
@@ -223,32 +237,20 @@ function ProjectWorkspaceInner() {
       qc.invalidateQueries({ queryKey: ["doc-spaces"] });
       qc.invalidateQueries({ queryKey: ["portfolio-gantt"] });
       qc.invalidateQueries({ queryKey: ["project-overview", projectId] });
-      overview.refetch();
+      if (isSuperAdmin()) overview.refetch();
+      else router.push("/portfolio");
     },
     onError: () => toast.push("Could not archive project.", "error"),
   });
 
-  const removeProject = useMutation({
-    mutationFn: () => deleteProject(projectId),
-    onSuccess: () => {
-      toast.push("Project deleted.", "success");
-      qc.removeQueries({ queryKey: ["project-overview", projectId] });
-      qc.invalidateQueries({ queryKey: ["projects"] });
-      qc.invalidateQueries({ queryKey: ["doc-pages"] });
-      qc.invalidateQueries({ queryKey: ["doc-spaces"] });
-      qc.invalidateQueries({ queryKey: ["portfolio-gantt"] });
-      qc.invalidateQueries({ queryKey: ["tasks"] });
-      qc.invalidateQueries({ queryKey: ["phase-tasks"] });
-      router.push("/portfolio");
+  const restoreProject = useMutation({
+    mutationFn: () => apiFetch(`/projects/archive/projects/${projectId}/restore`, { method: "POST" }),
+    onSuccess: async () => {
+      await Promise.all(["projects", "project-overview", "admin-archive", "portfolio-gantt"].map(key => qc.invalidateQueries({ queryKey: [key] })));
+      toast.push(translateUI("Project restored."), "success");
     },
-    onError: () => toast.push("Could not delete project.", "error"),
+    onError: () => toast.push(translateUI("Could not restore item."), "error"),
   });
-
-  const confirmDeleteProject = () => {
-    if (window.confirm(`Delete "${overview.data?.project.name ?? "this project"}" and all of its tasks? This cannot be undone.`)) {
-      removeProject.mutate();
-    }
-  };
 
   if (!projectId || overview.isLoading)
     return (
@@ -259,7 +261,7 @@ function ProjectWorkspaceInner() {
   if (overview.isError || !overview.data)
     return (
       <div style={PAGE_STYLE}>
-        <ErrorState message="Could not load this project." />
+        <ErrorState message={translateUI("Could not load this project.")} />
       </div>
     );
 
@@ -287,6 +289,7 @@ function ProjectWorkspaceInner() {
           <ChevronLeft size={14} />{" "}<LocalizedText message={"Portfolio"} />{" "}</Link>
         <div style={{ display: "flex", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
           <div style={{ flex: 1, minWidth: 260 }}>
+            {p.status === "archived" && <div role="status" style={{ marginBottom: 10, padding: "8px 12px", borderRadius: 8, color: "var(--accent-primary)", background: "color-mix(in srgb, var(--accent-primary) 12%, var(--surface-1))" }}>{translateUI("Archived")}</div>}
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
               <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, letterSpacing: "-0.02em" }}>{p.name}</h1>
               <StatusChip
@@ -299,37 +302,30 @@ function ProjectWorkspaceInner() {
                 size="sm"
               />
               <PriorityBadge level={p.priority} />
-              <span style={partitionBadge}>{projectPartitionFromTags(p.tags)}</span>
-              <span style={levelBadge}>{PROJECT_LEVELS.find((level) => level.value === projectLevelFromTags(p.tags))?.label}</span>
+              <span style={partitionBadge}>{translateUI(projectPartitionFromTags(p.tags))}</span>
+              <span style={levelBadge}>{translateUI(PROJECT_LEVELS.find((level) => level.value === projectLevelFromTags(p.tags))?.label ?? "")}</span>
               {(o.current_sprint ?? o.current_phase) && (
                 <span style={{ fontSize: 12, color: "var(--accent-gold-bright)", background: "rgba(212,169,55,0.12)", padding: "3px 10px", borderRadius: "var(--radius-full)" }}>{" "}<LocalizedText message={"Sprint:"} />{" "}{(o.current_sprint ?? o.current_phase)?.name}
                 </span>
               )}
             </div>
             <div style={{ fontSize: 13.5, color: "var(--text-secondary)", marginTop: 4 }}>
-              {p.start_date && `Planned ${p.start_date} → ${p.end_date ?? "?"}`}
-              {p.estimated_completion_date && p.estimated_completion_date !== p.end_date && ` · estimated end ${p.estimated_completion_date}`}
-              {p.actual_completion_date && ` · actual end ${p.actual_completion_date}`}
-              {!p.start_date && "Planned dates not set"}
+              {p.start_date && <><LocalizedText message="Planned" />{" "}<LocalizedDate value={p.start_date} />{" → "}<LocalizedDate value={p.end_date} /></>}
+              {p.estimated_completion_date && p.estimated_completion_date !== p.end_date && <> · <LocalizedText message="Estimated end" />{" "}<LocalizedDate value={p.estimated_completion_date} /></>}
+              {p.actual_completion_date && <> · <LocalizedText message="Actual end" />{" "}<LocalizedDate value={p.actual_completion_date} /></>}
+              {!p.start_date && <LocalizedText message="Planned dates not set" />}
             </div>
           </div>
           {canManage && (
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {p.status === "archived" && isSuperAdmin() && <Button variant="secondary" disabled={restoreProject.isPending} onClick={() => restoreProject.mutate()}>{translateUI("Restore")}</Button>}
               {p.status !== "archived" && (
-                <Button variant="secondary" disabled={archive.isPending} onClick={() => archive.mutate()}>
+                <Button variant="secondary" disabled={archive.isPending} onClick={() => { if (window.confirm(translateUI("Only a Super Admin can restore an archived project. Continue?"))) archive.mutate(); }}>
                   <Archive size={14} /> {archive.isPending ? <LocalizedText message={"Archiving..."} /> : <LocalizedText message={"Archive"} />}
                 </Button>
               )}
               <Button variant="secondary" onClick={() => setEditOpen(true)}>
                 <Pencil size={14} />{" "}<LocalizedText message={"Edit project"} />{" "}</Button>
-              <Button
-                variant="secondary"
-                disabled={removeProject.isPending}
-                onClick={confirmDeleteProject}
-                style={dangerButton}
-              >
-                <Trash2 size={14} /> {removeProject.isPending ? <LocalizedText message={"Deleting..."} /> : <LocalizedText message={"Delete"} />}
-              </Button>
             </div>
           )}
         </div>
@@ -351,12 +347,187 @@ function ProjectWorkspaceInner() {
       {tab === "milestones" && <MilestonesTab projectId={projectId} canManage={canManage} />}
       {tab === "blockers" && <BlockersTab projectId={projectId} />}
       {tab === "discussions" && <DiscussionsTab projectId={projectId} />}
+      {tab === "attachments" && <ProjectAttachmentsTab projectId={projectId} />}
+      {tab === "history" && <EntityHistory entityType="project" entityId={projectId as UUID} />}
       <EditProjectModal
         open={editOpen}
         onClose={() => setEditOpen(false)}
         project={p}
+        canManageMembers={isSuperAdmin() || hasPermission("projects.manage_all") || isProjectAdmin}
+        canManageSprints={isSuperAdmin() || hasPermission("phases.manage_all", "phases.manage_team", "phases.approve")}
         onSaved={() => overview.refetch()}
       />
+    </div>
+  );
+}
+
+function ProjectAttachmentsTab({ projectId }: { projectId: string }) {
+  const { t: translateUI } = useI18n();
+  const toast = useToast();
+  const qc = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  const files = useQuery({
+    queryKey: ["entity-files", "project", projectId],
+    queryFn: () => listFiles("project", projectId as UUID),
+    enabled: Boolean(projectId),
+  });
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !projectId) return;
+    setIsUploading(true);
+    try {
+      await uploadFile("project", projectId as UUID, file, file.name);
+      toast.push(translateUI("File uploaded successfully"), "success");
+      qc.invalidateQueries({ queryKey: ["entity-files", "project", projectId] });
+    } catch {
+      toast.push(translateUI("Could not upload file. Please try again."), "error");
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleDownload = async (fileId: UUID, fileName: string) => {
+    setDownloadingId(fileId);
+    try {
+      const blob = await downloadFile(fileId);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch {
+      toast.push(translateUI("Could not download file."), "error");
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16, marginTop: 16 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, padding: "16px 20px", background: "var(--surface-1, #18181b)", borderRadius: 10, border: "1px solid var(--border-default, #27272a)" }}>
+        <div>
+          <h3 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: "var(--text-primary)" }}>
+            <LocalizedText message={"Project Attachments & Documents"} />
+          </h3>
+          <p style={{ margin: "4px 0 0", fontSize: 12.5, color: "var(--text-muted, #71717a)" }}>
+            <LocalizedText message={"Upload, listen to voice recordings, and manage project-wide specification files."} />
+          </p>
+        </div>
+        <div>
+          <input type="file" ref={fileInputRef} onChange={handleUpload} style={{ display: "none" }} />
+          <Button variant="primary" size="sm" disabled={isUploading} onClick={() => fileInputRef.current?.click()}>
+            <Upload size={14} /> {isUploading ? <LocalizedText message={"Uploading…"} /> : <LocalizedText message={"Upload File"} />}
+          </Button>
+        </div>
+      </div>
+
+      {files.isLoading ? (
+        <div style={{ padding: 40, textAlign: "center", color: "var(--text-muted)" }}>
+          <LocalizedText message={"Loading attachments…"} />
+        </div>
+      ) : (files.data?.length ?? 0) === 0 ? (
+        <div style={{ padding: "48px 20px", textAlign: "center", background: "var(--surface-1)", borderRadius: 10, border: "1px solid var(--border-default)" }}>
+          <Paperclip size={36} className="text-neutral-500 mb-2 opacity-50" style={{ margin: "0 auto 10px" }} />
+          <p style={{ margin: 0, fontSize: 13, color: "var(--text-muted)" }}>
+            <LocalizedText message={"No project attachments yet. Click 'Upload File' to add documents, diagrams, or briefs."} />
+          </p>
+        </div>
+      ) : (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 320px), 1fr))", gap: 14 }}>
+          {files.data!.map((file) => {
+            const isVoice = file.file_name.endsWith(".ogg") || file.content_type.startsWith("audio/");
+            const isImage = file.content_type.startsWith("image/") || /\.(png|jpe?g|gif|webp|svg)$/i.test(file.file_name);
+            const isPdf = file.content_type.includes("pdf") || file.file_name.endsWith(".pdf");
+
+            return (
+              <div
+                key={file.id}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 10,
+                  padding: 14,
+                  borderRadius: 10,
+                  border: "1px solid var(--border-default, #27272a)",
+                  background: "var(--surface-1, #18181b)",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                    {isVoice ? (
+                      <Mic size={20} style={{ color: "#F59E0B", flexShrink: 0 }} />
+                    ) : isImage ? (
+                      <ImageIcon size={20} style={{ color: "#38BDF8", flexShrink: 0 }} />
+                    ) : (
+                      <FileText size={20} style={{ color: isPdf ? "#EF4444" : "#00E261", flexShrink: 0 }} />
+                    )}
+                    <div style={{ minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontSize: 13.5,
+                          fontWeight: 500,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                        title={file.file_name}
+                      >
+                        {file.file_name}
+                      </div>
+                      <div style={{ fontSize: 11.5, color: "var(--text-muted, #71717a)" }}>
+                        {(file.size_bytes / 1024).toFixed(1)} KB · <LocalizedRelativeTime value={file.created_at} />
+                      </div>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    disabled={downloadingId === file.id || !file.download_share_enabled}
+                    onClick={() => handleDownload(file.id, file.file_name)}
+                  >
+                    <Download size={13} />
+                    {downloadingId === file.id ? <LocalizedText message={"Downloading…"} /> : <LocalizedText message={"Download"} />}
+                  </Button>
+                </div>
+
+                <DocumentLifecycleControls attachmentId={file.id} fileName={file.file_name} />
+
+                {isVoice && file.download_share_enabled && (
+                  <div style={{ marginTop: 2 }}>
+                    <VoiceBubble attachmentId={file.id} />
+                  </div>
+                )}
+
+                {isImage && file.download_share_enabled && (
+                  <div
+                    style={{
+                      marginTop: 4,
+                      borderRadius: 6,
+                      overflow: "hidden",
+                      background: "rgba(0,0,0,0.2)",
+                      maxHeight: 180,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <FileImagePreview fileId={file.id} fileName={file.file_name} />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -365,11 +536,15 @@ function EditProjectModal({
   open,
   onClose,
   project,
+  canManageMembers,
+  canManageSprints,
   onSaved,
 }: {
   open: boolean;
   onClose: () => void;
   project: ProjectRead;
+  canManageMembers: boolean;
+  canManageSprints: boolean;
   onSaved: () => void;
 }) {
   const { t: localizeAttribute } = useI18n();
@@ -412,8 +587,15 @@ function EditProjectModal({
     tags: project.tags.filter((tag) => !tag.startsWith("level:") && !tag.startsWith("partition:")).join(", "),
   });
 
+  const membersEditor = useProjectMembersDraft(project.id, form.product_id, open, canManageMembers);
+  const sprintsEditor = useProjectSprintsDraft(project.id, open, canManageSprints);
+  const initialized = useRef(false);
+  const docsInitialized = useRef(false);
+
   useEffect(() => {
-    if (!open) return;
+    if (!open) { initialized.current = false; docsInitialized.current = false; return; }
+    if (initialized.current) return;
+    initialized.current = true;
     setDocumentationFiles([]);
     setChecklist(project.checklist_items ?? []);
     setForm({
@@ -436,21 +618,21 @@ function EditProjectModal({
   }, [open, project]);
 
   useEffect(() => {
-    if (!open || !linkedDocs.data) return;
+    if (!open || !linkedDocs.data || linkedDocs.isFetching || docsInitialized.current) return;
+    docsInitialized.current = true;
     setSelectedDocs(
       linkedDocs.data.map((link) => ({ id: link.page_id, title: link.title, linkId: link.id })),
     );
-  }, [open, linkedDocs.data]);
+  }, [open, linkedDocs.data, linkedDocs.isFetching]);
 
-  const plannedDatesLocked = Boolean(project.start_date && project.end_date);
-  const editSprints = useQuery({ queryKey: ["project-phases", project.id], queryFn: () => getProjectSprints(project.id), enabled: open && !plannedDatesLocked });
-  useEffect(() => {
-    if (plannedDatesLocked || !open || !editSprints.data) return;
-    const durations = editSprints.data.length ? editSprints.data.map((phase) => phase.duration_days ?? 14) : [14];
-    const end = sprintSchedule(form.start_date, durations).at(-1)?.end_date ?? "";
-    setForm((current) => current.end_date === end ? current : { ...current, end_date: end });
-  }, [plannedDatesLocked, open, editSprints.data, form.start_date]);
-
+  const originalSprints = (sprintsEditor.query.data ?? []).filter((sprint) => sprint.is_sprint);
+  const editedSprints = sprintsEditor.sprints.filter((sprint) => sprint.is_sprint);
+  const durationChanged = editedSprints.some((sprint, index) =>
+    (sprint.duration_days ?? 14) !== (originalSprints[index]?.duration_days ?? 14),
+  );
+  const scheduleChanged = form.start_date !== (project.start_date ?? "") || durationChanged;
+  const calculatedEnd = sprintSchedule(form.start_date, editedSprints.map((sprint) => sprint.duration_days ?? 14)).at(-1)?.end_date ?? "";
+  const plannedEnd = scheduleChanged ? calculatedEnd : form.end_date;
 
   const save = useMutation({
     mutationFn: async () => {
@@ -465,16 +647,18 @@ function EditProjectModal({
         status: form.status,
         health_status: form.health_status,
         start_date: form.start_date || null,
-        end_date: form.end_date || null,
+        end_date: plannedEnd || null,
         estimated_completion_date: form.estimated_completion_date || null,
         actual_completion_date: form.actual_completion_date || null,
         tags: tagsWithTaxonomy(form.tags, form.level, form.partition),
       });
-      const initialLinks = linkedDocs.data ?? [];
+      await membersEditor.save();
+      await sprintsEditor.save();
+      const initialLinks = await listEntityDocLinks("project", project.id);
       const selectedIds = new Set(selectedDocs.map((doc) => doc.id));
       await Promise.all([
         ...selectedDocs
-          .filter((doc) => !doc.linkId)
+          .filter((doc) => !initialLinks.some((link) => link.page_id === doc.id))
           .map((doc) => addDocLink(doc.id, { entity_type: "project", entity_id: project.id })),
         ...initialLinks
           .filter((link) => !selectedIds.has(link.page_id))
@@ -499,25 +683,26 @@ function EditProjectModal({
     },
     onError: (error) => toast.push(error instanceof Error ? error.message : "Could not update project.", "error"),
   });
-  const datesPaired = Boolean(form.start_date) === Boolean(form.end_date);
-  const datesOrdered = !form.start_date || !form.end_date || form.end_date >= form.start_date;
+  const datesPaired = Boolean(form.start_date) === Boolean(plannedEnd);
+  const datesOrdered = !form.start_date || !plannedEnd || plannedEnd >= form.start_date;
+  const actualNeedsPlan = Boolean(form.actual_completion_date && (!form.start_date || !plannedEnd));
 
   return (
     <Modal
       open={open}
-      onClose={onClose}
+      onClose={() => { if (!save.isPending) onClose(); }}
       title={translateUI("Edit project")}
       width={860}
       footer={
         <>
-          <Button variant="secondary" onClick={onClose}><LocalizedText message={"Cancel"} /></Button>
-          <Button disabled={!form.name.trim() || checklist.some((item) => !item.text.trim()) || !datesPaired || !datesOrdered || save.isPending} onClick={() => save.mutate()}>
+          <Button variant="secondary" disabled={save.isPending} onClick={onClose}><LocalizedText message={"Cancel"} /></Button>
+          <Button disabled={!membersEditor.ready || !sprintsEditor.ready || !sprintsEditor.valid || !linkedDocs.isSuccess || linkedDocs.isFetching || !form.name.trim() || checklist.some((item) => !item.text.trim()) || !datesPaired || !datesOrdered || actualNeedsPlan || save.isPending} onClick={() => save.mutate()}>
             {save.isPending ? <LocalizedText message={"Saving..."} /> : <LocalizedText message={"Save changes"} />}
           </Button>
         </>
       }
     >
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 340px), 1fr))", gap: 18 }}>
+      <fieldset disabled={save.isPending} style={{ border: 0, padding: 0, margin: 0, minWidth: 0, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 340px), 1fr))", gap: 18 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <Field label={translateUI("Project name")}>
             <TextInput value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
@@ -537,7 +722,7 @@ function EditProjectModal({
             />
           </Field>
           <Field label={translateUI("Project partition")}>
-            <Select
+            <Select translateOptions
               value={form.partition}
               onChange={(e) => setForm((f) => ({ ...f, partition: e.target.value }))}
               options={partitions.length ? partitions.map((item) => ({ value: item.slug, label: item.name })) : PROJECT_PARTITIONS}
@@ -566,20 +751,20 @@ function EditProjectModal({
           </Field>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10 }}>
             <Field label={translateUI("Planned start")}>
-              <TextInput type="date" value={form.start_date} onChange={(e) => setForm((f) => ({ ...f, start_date: e.target.value }))} disabled={plannedDatesLocked} />
+              <TextInput type="date" value={form.start_date} onChange={(e) => setForm((f) => ({ ...f, start_date: e.target.value }))} />
             </Field>
             <Field label={translateUI("Planned end")}>
-              <TextInput type="date" value={form.end_date} readOnly aria-readonly="true" disabled={plannedDatesLocked} />
+              <TextInput type="date" value={plannedEnd} readOnly />
             </Field>
             <Field label={translateUI("Actual end date")}>
-              <TextInput type="date" value={form.actual_completion_date} onChange={(e) => setForm((f) => ({ ...f, actual_completion_date: e.target.value }))} disabled={!form.start_date || !form.end_date} />
+              <TextInput type="date" value={form.actual_completion_date} onChange={(e) => setForm((f) => ({ ...f, actual_completion_date: e.target.value }))} disabled={(!form.start_date || !plannedEnd) && !form.actual_completion_date} />
             </Field>
           </div>
-          {plannedDatesLocked && (
-            <div style={{ fontSize: 11.5, color: "var(--text-tertiary)", marginTop: -6 }}>{" "}<LocalizedText message={"Planned dates are baseline dates and cannot be changed. Record schedule movement using the estimated and actual end dates."} />{" "}</div>
-          )}
+          <div style={{ fontSize: 11.5, color: "var(--text-tertiary)", marginTop: -6 }}><LocalizedText message={"Planned end is calculated from the project start and sprint durations. Sprint dates remain unchanged."} /></div>
+          {scheduleChanged && form.start_date && sprintsEditor.ready && !calculatedEnd && <div style={{ fontSize: 11.5, color: "var(--status-delayed)" }}><LocalizedText message={"A sprint with a valid duration is required to calculate the planned end."} /></div>}
           {!datesPaired && <div style={{ fontSize: 11.5, color: "var(--status-delayed)" }}><LocalizedText message={"Set both planned dates or leave both empty."} /></div>}
           {!datesOrdered && <div style={{ fontSize: 11.5, color: "var(--status-delayed)" }}><LocalizedText message={"Planned end must be on or after planned start."} /></div>}
+          {actualNeedsPlan && <div style={{ fontSize: 11.5, color: "var(--status-delayed)" }}><LocalizedText message={"Actual end date requires planned project start and end dates."} /></div>}
           <Field label={translateUI("Estimated completion")}>
             <TextInput type="date" value={form.estimated_completion_date} onChange={(e) => setForm((f) => ({ ...f, estimated_completion_date: e.target.value }))} />
           </Field>
@@ -591,8 +776,11 @@ function EditProjectModal({
           <Card title={translateUI("Project description preview")} padded>
             <MarkdownPreview value={form.description} />
           </Card>
+          <ProjectMembersFields editor={membersEditor} disabled={save.isPending} />
+          <ProjectSprintsFields editor={sprintsEditor} disabled={save.isPending} />
           <Card title={translateUI("Connected documents")} padded>
-            <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+            <fieldset disabled={save.isPending} style={{ border: 0, padding: 0, margin: 0, minWidth: 0, display: "flex", flexDirection: "column", gap: 9 }}>
+              {linkedDocs.isError && <Button type="button" variant="secondary" onClick={() => linkedDocs.refetch()}>{translateUI("Retry")}</Button>}
               <SearchSuggestionInput
                 value={docSearch}
                 options={(docs.data ?? [])
@@ -613,10 +801,10 @@ function EditProjectModal({
               ))}
               {selectedDocs.length === 0 && <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}><LocalizedText message={"No documents connected."} /></span>}
               <DocumentationUpload files={documentationFiles} onChange={setDocumentationFiles} disabled={save.isPending} entityType="project" entityId={project.id} />
-            </div>
+            </fieldset>
           </Card>
         </div>
-      </div>
+      </fieldset>
     </Modal>
   );
 }
@@ -696,7 +884,7 @@ function OverviewTab({ projectId, canManage }: { projectId: string; canManage: b
             <div key={ph.id} style={{ display: "grid", gridTemplateColumns: "180px minmax(160px, 1fr) 150px 90px", gap: 12, alignItems: "center" }}>
               <span style={{ fontSize: 12.5, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {ph.name}
-                {!ph.is_sprint && <small style={{ marginLeft: 6, color: "var(--text-tertiary)" }}><LocalizedText message={"Legacy"} /></small>}
+                {!ph.is_sprint && <small style={{ marginInlineStart: 6, color: "var(--text-tertiary)" }}><LocalizedText message={"Legacy"} /></small>}
               </span>
               <ProgressBar percent={Number(ph.progress_percentage)} blocks={22} showLabel={false} />
               <span style={{ display: "flex", alignItems: "center", gap: 7, minWidth: 0 }}>
@@ -726,7 +914,7 @@ function OverviewTab({ projectId, canManage }: { projectId: string; canManage: b
             {loadRows.map((row) => {
               const max = Math.max(1, ...loadRows.map((item) => item.tasks));
               const percent = (row.tasks / max) * 100;
-              const name = row.id === "unassigned" ? "Unassigned" : nameOf(row.id);
+              const name = row.id === "unassigned" ? translateUI("Unassigned") : nameOf(row.id);
               return (
                 <div key={row.id} style={{ display: "grid", gridTemplateColumns: "minmax(130px, 0.8fr) minmax(160px, 1fr) 90px", gap: 10, alignItems: "center" }}>
                   <span style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
@@ -736,11 +924,11 @@ function OverviewTab({ projectId, canManage }: { projectId: string; canManage: b
                   <span style={{ height: 10, borderRadius: "var(--radius-full)", background: "var(--surface-3)", overflow: "hidden" }}>
                     <span style={{ display: "block", width: `${percent}%`, height: "100%", background: row.blocked || row.overdue ? "var(--status-delayed)" : "var(--accent-primary)" }} />
                   </span>
-                  <span style={{ fontSize: 12, color: "var(--text-tertiary)", fontFamily: "var(--font-mono)", textAlign: "right" }}>
+                  <span style={{ fontSize: 12, color: "var(--text-tertiary)", textAlign: "end" }}>
                     {row.tasks}{" "}<LocalizedText message={"open"} />{" "}</span>
                   {(row.blocked > 0 || row.overdue > 0 || row.points > 0) && (
                     <span style={{ gridColumn: "2 / 4", fontSize: 11.5, color: "var(--text-tertiary)" }}>
-                      {row.points > 0 ? `${row.points} pts` : <LocalizedText message={"No points"} />} · {row.blocked}{" "}<LocalizedText message={"blocked ·"} />{" "}{row.overdue}{" "}<LocalizedText message={"overdue"} />{" "}</span>
+                      {row.points > 0 ? <>{row.points} <LocalizedText message="pts" /></> : <LocalizedText message={"No points"} />} · {row.blocked}{" "}<LocalizedText message={"blocked ·"} />{" "}{row.overdue}{" "}<LocalizedText message={"overdue"} />{" "}</span>
                   )}
                 </div>
               );
@@ -755,11 +943,11 @@ function OverviewTab({ projectId, canManage }: { projectId: string; canManage: b
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {partitionRows.map(([partition, count]) => (
               <div key={partition} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ ...taskPill, textTransform: "capitalize", minWidth: 98, justifyContent: "center" }}>{partition}</span>
+                <span style={{ ...taskPill, textTransform: "capitalize", minWidth: 98, justifyContent: "center" }}>{translateUI(partition)}</span>
                 <span style={{ flex: 1 }}>
                   <ProgressBar percent={(count / Math.max(1, remainingTasks.length)) * 100} blocks={10} showLabel={false} />
                 </span>
-                <span style={{ width: 54, textAlign: "right", fontSize: 12, color: "var(--text-tertiary)", fontFamily: "var(--font-mono)" }}>{count}</span>
+                <span style={{ width: 54, textAlign: "end", fontSize: 12, color: "var(--text-tertiary)", fontFamily: "var(--font-mono)" }}>{count}</span>
               </div>
             ))}
             {!tasks.isLoading && partitionRows.length === 0 && (
@@ -785,7 +973,7 @@ function OverviewTab({ projectId, canManage }: { projectId: string; canManage: b
               <span style={{ flex: 1, fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } as React.CSSProperties}>
                 {d.title}
               </span>
-              <span style={{ fontSize: 12, color: "var(--text-tertiary)", fontFamily: "var(--font-mono)" }}>{d.due_date}</span>
+              <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}><LocalizedDate value={d.due_date} /></span>
               <StatusChip status={d.status} />
             </Link>
           ))}
@@ -799,18 +987,23 @@ function OverviewTab({ projectId, canManage }: { projectId: string; canManage: b
                 <span style={{ fontSize: 13, fontWeight: 600, textDecoration: m.completed_at ? "line-through" : undefined, color: m.completed_at ? "var(--text-tertiary)" : undefined }}>
                   {m.name}
                 </span>
-                <span style={{ fontSize: 11.5, color: "var(--text-tertiary)", marginLeft: "auto" }}>{m.due_date ?? ""}</span>
+                <span style={{ fontSize: 11.5, color: "var(--text-tertiary)", marginInlineStart: "auto" }}>{m.due_date && <LocalizedDate value={m.due_date} />}</span>
               </div>
             ))}
             {o.milestones.length === 0 && <div style={{ fontSize: 12.5, color: "var(--text-tertiary)" }}><LocalizedText message={"No milestones yet."} /></div>}
-            <div style={{ borderTop: "1px solid var(--border-subtle)", paddingTop: 12, display: "flex", alignItems: "center", gap: 4 }}>
-              <Users size={13} style={{ color: "var(--text-tertiary)", marginRight: 6 }} />
-              {o.members.slice(0, 8).map((m, i) => (
-                <span key={m.user_id} style={{ marginLeft: i === 0 ? 0 : -8 }} title={`${nameOf(m.user_id)} · ${m.role}`}>
-                  <Avatar name={nameOf(m.user_id)} size={26} />
-                </span>
-              ))}
-              <span style={{ fontSize: 12, color: "var(--text-tertiary)", marginLeft: 8 }}>
+            <div style={{ borderTop: "1px solid var(--border-subtle)", paddingTop: 12, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+              <Users size={13} style={{ color: "var(--text-tertiary)", flexShrink: 0 }} />
+              <div
+                aria-label={translateUI("Project members")}
+                style={{ display: "flex", flexWrap: "wrap", gap: 4, alignItems: "center", direction: "ltr", flex: "0 1 auto", minWidth: 0 }}
+              >
+                {o.members.slice(0, 8).map((m) => (
+                  <span key={m.user_id} style={{ display: "flex" }} title={`${nameOf(m.user_id)} · ${translateUI(m.role)}`}>
+                    <Avatar name={nameOf(m.user_id)} size={26} />
+                  </span>
+                ))}
+              </div>
+              <span style={{ fontSize: 12, color: "var(--text-tertiary)", whiteSpace: "nowrap", flexShrink: 0 }}>
                 {o.members.length}{" "}<LocalizedText message={"member(s)"} />{" "}</span>
             </div>
           </div>
@@ -1273,12 +1466,12 @@ function BoardTab({
                       background: active ? "color-mix(in srgb, var(--accent-primary) 10%, var(--surface-2))" : "var(--surface-2)",
                       color: "var(--text-primary)",
                       cursor: "pointer",
-                      textAlign: "left",
+                      textAlign: "start",
                     }}
                   >
                     <span style={{ display: "block", fontWeight: 800, fontSize: 12.5 }}>{sprint.name}</span>
                     <span style={{ display: "block", marginTop: 3, color: "var(--text-secondary)", fontSize: 11, fontWeight: 600 }}>
-                      {sprint.start_date && sprint.end_date ? `${sprint.start_date} – ${sprint.end_date}` : <LocalizedText message={"Legacy schedule"} />}
+                      {sprint.start_date && sprint.end_date ? <><LocalizedDate value={sprint.start_date} />{" – "}<LocalizedDate value={sprint.end_date} /></> : <LocalizedText message={"Legacy schedule"} />}
                     </span>
                   </button>
                 );
@@ -1330,13 +1523,13 @@ function BoardTab({
                   key={col.title}
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={() => onDrop(col.statuses)}
-                  aria-label={`${col.title} task column`}
+                  aria-label={translateUI("{name} task column", { name: translateUI(col.title) })}
                   style={{ flex: 1, minWidth: 268, background: "var(--surface-2)", borderRadius: "var(--radius-3)", padding: 12, display: "flex", flexDirection: "column", gap: 10 }}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "2px 4px" }}>
                     <span style={{ width: 8, height: 8, borderRadius: "50%", background: col.dot }} />
                     <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.03em", textTransform: "uppercase", color: "var(--text-secondary)" }}>
-                      {col.title}
+                      {translateUI(col.title)}
                     </span>
                     <span style={{ fontSize: 12, color: "var(--text-tertiary)", fontFamily: "var(--font-mono)" }}>{col.tasks.length}</span>
                   </div>
@@ -1385,7 +1578,7 @@ function BoardTab({
           </Field>
           {!editingSprint && <Field label={translateUI("Number of sprints")}><TextInput type="number" min={1} max={52} step={1} value={sprintCount} onChange={(e) => setSprintCount(e.target.value)} /></Field>}
           <Field label={translateUI("Calculated end date")} hint={translateUI("Calculated from the start date, duration, and number of sprints.")}><TextInput type="date" readOnly aria-readonly="true" value={newSchedule.at(-1)?.end_date ?? ""} /></Field>
-          <div style={{ maxHeight: 180, overflowY: "auto", fontSize: 12 }}>{newSchedule.map((window, index) => <div key={index}>{index + 1}. {window.start_date} → {window.end_date}</div>)}</div>
+          <div style={{ maxHeight: 180, overflowY: "auto", fontSize: 12 }}>{newSchedule.map((window, index) => <div key={index}>{index + 1}. <LocalizedDate value={window.start_date} />{" → "}<LocalizedDate value={window.end_date} /></div>)}</div>
         </div>
       </Modal>
       <TaskEditorModal
@@ -1453,9 +1646,9 @@ function TaskCard({
         <button
           type="button"
           aria-expanded={expanded}
-          aria-label={`${expanded ? "Collapse" : "Expand"} ${task.title}`}
+          aria-label={translateUI(expanded ? "Collapse {name}" : "Expand {name}", { name: task.title })}
           onClick={() => setExpanded((value) => !value)}
-          style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "flex-start", gap: 8, padding: 0, border: 0, background: "transparent", color: "inherit", textAlign: "left", cursor: "pointer" }}
+          style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "flex-start", gap: 8, padding: 0, border: 0, background: "transparent", color: "inherit", textAlign: "start", cursor: "pointer" }}
         >
           <span style={{ color: "var(--text-tertiary)", display: "inline-flex", marginTop: 2 }}>
             {expanded ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
@@ -1470,7 +1663,7 @@ function TaskCard({
         <button
           type="button"
           title={translateUI("Open task details")}
-          aria-label={`Open task details for ${task.title}`}
+          aria-label={translateUI("Open task details for {name}", { name: task.title })}
           onClick={(e) => {
             e.stopPropagation();
             onOpen();
@@ -1488,8 +1681,8 @@ function TaskCard({
       {expanded && (
         <>
           <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
-            <span style={taskPill}>{task.task_type}</span>
-            {task.partition && <span style={taskPill}>{task.partition}</span>}
+            <span style={taskPill}>{translateUI(task.task_type)}</span>
+            {task.partition && <span style={taskPill}>{translateUI(task.partition)}</span>}
             {task.parent_task_id && (
               <span style={taskPill}>
                 <GitBranch size={11} />{" "}<LocalizedText message={"Subtask"} />{" "}</span>
@@ -1504,8 +1697,8 @@ function TaskCard({
           </div>
           {(task.start_date || task.due_date || task.estimated_hours != null) && (
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", fontSize: 11.5, color: "var(--text-tertiary)" }}>
-              {task.start_date && <span><LocalizedText message={"Start"} />{" "}{task.start_date}</span>}
-              {task.due_date && <span><LocalizedText message={"Due"} />{" "}{task.due_date}</span>}
+              {task.start_date && <span><LocalizedText message={"Start"} />{" "}<LocalizedDate value={task.start_date} /></span>}
+              {task.due_date && <span><LocalizedText message={"Due"} />{" "}<LocalizedDate value={task.due_date} /></span>}
               {task.estimated_hours != null && <span>{task.estimated_hours}<LocalizedText message={"h est"} /></span>}
             </div>
           )}
@@ -1514,7 +1707,7 @@ function TaskCard({
       {!expanded && (
         <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--text-tertiary)", fontSize: 12.5 }}>
           <PriorityBadge level={task.priority} compact />
-          {task.due_date && <span><LocalizedText message={"Due"} />{" "}{task.due_date}</span>}
+          {task.due_date && <span><LocalizedText message={"Due"} />{" "}<LocalizedDate value={task.due_date} /></span>}
           {task.estimated_hours != null && <span>{task.estimated_hours}<LocalizedText message={"h"} /></span>}
         </div>
       )}
@@ -1595,7 +1788,7 @@ const docLinkRow: React.CSSProperties = {
   borderRadius: "var(--radius-2)",
   background: "var(--surface-2)",
   color: "var(--text-secondary)",
-  textAlign: "left",
+  textAlign: "start",
   cursor: "pointer",
 };
 
@@ -1693,7 +1886,7 @@ function TeamTab({ projectId, canManage }: { projectId: string; canManage: boole
               {nameOf(m.user_id)}
             </Link>
             <span style={{ fontSize: 12, color: "var(--text-secondary)", background: "var(--surface-2)", padding: "2px 10px", borderRadius: "var(--radius-full)" }}>
-              {m.role}
+              {translateUI(m.role)}
             </span>
             {canManage && m.role !== "ProjectManager" && (
               <button
@@ -1764,12 +1957,12 @@ function TeamTab({ projectId, canManage }: { projectId: string; canManage: boole
               placeholder={translateUI("Choose a project member…")}
               options={adminCandidates.map((member) => ({
                 value: member.user_id,
-                label: `${nameOf(member.user_id)} · ${member.role}`,
+                label: `${nameOf(member.user_id)} · ${translateUI(member.role)}`,
               }))}
             />
           </Field>
           <Field label={translateUI("Previous admin role")}>
-            <Select
+            <Select translateOptions
               value={previousAdminRole}
               onChange={(event) => setPreviousAdminRole(event.target.value)}
               options={MEMBER_ROLES.filter((memberRole) => memberRole !== "ProjectManager").map(
@@ -1843,7 +2036,7 @@ function MilestonesTab({ projectId, canManage }: { projectId: string; canManage:
               </div>
               {m.description && <div style={{ fontSize: 12, color: "var(--text-tertiary)" }}>{m.description}</div>}
             </div>
-            <span style={{ fontSize: 12, color: "var(--text-tertiary)", fontFamily: "var(--font-mono)" }}>{m.due_date ?? "no date"}</span>
+            <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>{m.due_date ? <LocalizedDate value={m.due_date} /> : <LocalizedText message="No date" />}</span>
           </div>
         ))}
       </Card>
@@ -1929,7 +2122,7 @@ function BlockersTab({ projectId }: { projectId: string }) {
               <StatusChip status={b.status === "Resolved" ? "completed" : "blocked"} label={b.status} />
               {b.block_reason && (
                 <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: "var(--radius-full)", background: "var(--surface-2)", color: "var(--text-secondary)" }}>
-                  {REASON_LABEL[b.block_reason] ?? b.block_reason}
+                  {translateUI(REASON_LABEL[b.block_reason] ?? b.block_reason)}
                 </span>
               )}
             </div>
@@ -1937,7 +2130,7 @@ function BlockersTab({ projectId }: { projectId: string }) {
             </div>
             <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 4, display: "flex", gap: 14, flexWrap: "wrap" }}>
               <span><LocalizedText message={"Pending on"} />{" "}<b style={{ color: "var(--text-secondary)" }}>{nameOf(b.pending_on_user_id)}</b></span>
-              {b.estimated_unblock_date && <span><LocalizedText message={"ETA"} />{" "}{b.estimated_unblock_date}</span>}
+              {b.estimated_unblock_date && <span><LocalizedText message={"ETA"} />{" "}<LocalizedDate value={b.estimated_unblock_date} /></span>}
               <span><LocalizedText message={"Raised"} />{" "}{<LocalizedRelativeTime value={b.created_at} />}</span>
             </div>
           </div>

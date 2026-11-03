@@ -50,6 +50,7 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 import { useUserMap } from "@/lib/hooks";
 import { useUrlView } from "@/lib/url-view";
 import type { UUID } from "@/lib/types";
+import { localizeMetric, localizeNarrative } from "./localize";
 
 const EXECUTIVE_VIEWS = ["overview", "dora", "flow", "predictability"] as const;
 
@@ -95,7 +96,7 @@ const CATEGORY_OPTIONS = [
 ];
 
 export default function ExecutiveDashboardPage() {
-  const { t: translateUI } = useI18n();
+  const { t: translateUI, locale } = useI18n();
 
   const { hasPermission, isSuperAdmin } = useAuth();
   const { nameOf } = useUserMap();
@@ -217,24 +218,24 @@ export default function ExecutiveDashboardPage() {
               <span style={{ fontSize: 14.5, fontWeight: 800, color: "var(--text-primary)" }}>{" "}<LocalizedText message={"AI Executive Health & Strategic Narrative"} />{" "}</span>
             </div>
             {dora && (
-              <span style={{ fontSize: 11.5, fontWeight: 800, padding: "3px 10px", borderRadius: 12, background: "rgba(0, 226, 97, 0.15)", color: "#00E261" }}>{" "}<LocalizedText message={"DORA:"} />{" "}{dora.overall_rating.toUpperCase()}
+              <span style={{ fontSize: 11.5, fontWeight: 800, padding: "3px 10px", borderRadius: 12, background: "rgba(0, 226, 97, 0.15)", color: "#00E261" }}>{" "}<LocalizedText message={"DORA:"} />{" "}{translateUI(dora.overall_rating)}
               </span>
             )}
           </div>
 
           <div style={{ fontSize: 13.5, fontWeight: 600, color: "var(--text-primary)", lineHeight: 1.5 }}>
-            {summary.headline}
+            {localizeNarrative(summary.headline, locale, translateUI)}
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12, fontSize: 12.5, color: "var(--text-secondary)" }}>
             <div style={{ padding: "8px 12px", background: "var(--surface-2)", borderRadius: 6, border: "1px solid var(--border-subtle)" }}>
-              <strong style={{ color: "var(--text-primary)" }}><LocalizedText message={"Velocity Momentum:"} /></strong> {summary.velocity_trend}
+              <strong style={{ color: "var(--text-primary)" }}><LocalizedText message={"Velocity Momentum:"} /></strong> {localizeNarrative(summary.velocity_trend, locale, translateUI)}
             </div>
             <div style={{ padding: "8px 12px", background: "var(--surface-2)", borderRadius: 6, border: "1px solid var(--border-subtle)" }}>
-              <strong style={{ color: "var(--text-primary)" }}><LocalizedText message={"Investment Mix:"} /></strong> {summary.investment_mix_summary}
+              <strong style={{ color: "var(--text-primary)" }}><LocalizedText message={"Investment Mix:"} /></strong> {localizeNarrative(summary.investment_mix_summary, locale, translateUI)}
             </div>
             <div style={{ padding: "8px 12px", background: "var(--surface-2)", borderRadius: 6, border: "1px solid var(--border-subtle)" }}>
-              <strong style={{ color: "var(--text-primary)" }}><LocalizedText message={"Quality & MTTR:"} /></strong> {summary.bottlenecks_summary}
+              <strong style={{ color: "var(--text-primary)" }}><LocalizedText message={"Quality & MTTR:"} /></strong> {localizeNarrative(summary.bottlenecks_summary, locale, translateUI)}
             </div>
           </div>
 
@@ -258,7 +259,7 @@ export default function ExecutiveDashboardPage() {
                   }}
                 >
                   <CheckCircle2 size={13} color="var(--accent-primary)" />
-                  <span>{rec}</span>
+                  <span>{localizeNarrative(rec, locale, translateUI)}</span>
                 </div>
               ))}
             </div>
@@ -270,49 +271,49 @@ export default function ExecutiveDashboardPage() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 12 }}>
         <MetricCard
           label={translateUI("DORA Rating")}
-          value={dora?.overall_rating ?? "High"}
+          value={translateUI(dora?.overall_rating ?? "High")}
           tone="completed"
-          trend={`${dora?.deployment_frequency.display_value || "3.5/wk"} deploys`}
+          trend={translateUI("{value} deploys", { value: localizeMetric(dora?.deployment_frequency.display_value || "3.5/wk", locale, translateUI) })}
         />
         <MetricCard
           label={translateUI("Lead Time (Cycle)")}
-          value={dora?.lead_time_for_changes.display_value ?? "28.5 hrs"}
+          value={localizeMetric(dora?.lead_time_for_changes.display_value ?? "28.5 hrs", locale, translateUI)}
           tone="in-progress"
-          trend="commit to done"
+          trend={translateUI("commit to done")}
         />
         <MetricCard
           label={translateUI("Predictability")}
           value={`${predictability?.predictability_score_percent ?? 88}%`}
           tone="completed"
-          trend={`${predictability?.on_time_delivery_rate_percent ?? 88.5}% on-time`}
+          trend={translateUI("{value}% on-time", { value: predictability?.on_time_delivery_rate_percent ?? 88.5 })}
         />
         <MetricCard
           label={translateUI("Flow Efficiency")}
           value={`${flow?.flow_efficiency_percentage ?? 54}%`}
           tone="in-progress"
-          trend="active vs wait time"
+          trend={translateUI("active vs wait time")}
         />
         <MetricCard
-          label={`Story Points (${rangeDays}d)`}
+          label={translateUI("Story Points ({days}d)", { days: Number(rangeDays) })}
           value={flow?.velocity_total_points ?? Math.round(kpis.points)}
           tone="in-progress"
-          trend={`${flow?.velocity_tasks_completed ?? Math.round(kpis.doneThisRange)} tasks completed`}
+          trend={translateUI("{count} tasks completed", { count: flow?.velocity_tasks_completed ?? Math.round(kpis.doneThisRange) })}
         />
         <MetricCard
           label={translateUI("Active Blockers")}
           value={`${kpis.h?.blocked.length ?? 0}`}
           tone={(kpis.h?.blocked.length ?? 0) > 0 ? "delayed" : "default"}
-          trend={`MTTR: ${dora?.mean_time_to_recovery.display_value || "8.5 hrs"}`}
+          trend={`MTTR: ${localizeMetric(dora?.mean_time_to_recovery.display_value || "8.5 hrs", locale, translateUI)}`}
         />
       </div>
 
       {/* Navigation Segment Tabs */}
-      <div style={{ display: "flex", gap: 8, borderBottom: "1px solid var(--border-subtle)", paddingBottom: 10 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, borderBottom: "1px solid var(--border-subtle)", paddingBottom: 10 }}>
         {[
-          { key: "overview", label: "📊 Overview & Delivery", icon: <TrendingUp size={14} /> },
-          { key: "dora", label: "🚀 DORA Performance", icon: <Rocket size={14} /> },
-          { key: "flow", label: "🌊 Flow & Investment", icon: <PieIcon size={14} /> },
-          { key: "predictability", label: "🎯 Predictability (CFD)", icon: <Layers size={14} /> },
+          { key: "overview", label: "Overview & Delivery", icon: <TrendingUp size={14} /> },
+          { key: "dora", label: "DORA Performance", icon: <Rocket size={14} /> },
+          { key: "flow", label: "Flow & Investment", icon: <PieIcon size={14} /> },
+          { key: "predictability", label: "Predictability (CFD)", icon: <Layers size={14} /> },
         ].map((tab) => (
           <Button
             key={tab.key}
@@ -321,7 +322,7 @@ export default function ExecutiveDashboardPage() {
             onClick={() => setActiveTab(tab.key as (typeof EXECUTIVE_VIEWS)[number])}
           >
             {tab.icon}
-            <span style={{ marginLeft: 4 }}>{tab.label}</span>
+            <span>{translateUI(tab.label)}</span>
           </Button>
         ))}
       </div>
@@ -439,7 +440,7 @@ export default function ExecutiveDashboardPage() {
                 <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {b.title}
                 </div>
-                <div style={{ fontSize: 11.5, color: "var(--text-secondary)" }}>{b.detail}</div>
+                <div style={{ fontSize: 11.5, color: "var(--text-secondary)" }}>{localizeNarrative(b.detail, locale, translateUI)}</div>
               </div>
               <span style={{ fontSize: 11.5, color: "var(--text-tertiary)" }}>{b.age_days}<LocalizedText message={"d"} /></span>
             </Link>
@@ -488,6 +489,7 @@ function WorkloadPanel({
 }
 
 function HeatmapGrid({ cells, nameOf }: { cells: any[]; nameOf: (id: string) => string }) {
+  const { t } = useI18n();
   const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   const byUser: Record<string, number[]> = {};
   for (const c of cells) {
@@ -506,7 +508,7 @@ function HeatmapGrid({ cells, nameOf }: { cells: any[]; nameOf: (id: string) => 
       <div style={{ display: "grid", gridTemplateColumns: "130px repeat(7, 1fr)", gap: 4, fontSize: 11, color: "var(--text-tertiary)", textAlign: "center" }}>
         <div />
         {days.map((d) => (
-          <div key={d}>{d}</div>
+          <div key={d}>{t(d)}</div>
         ))}
       </div>
       {userIds.map((uid) => (
@@ -519,7 +521,7 @@ function HeatmapGrid({ cells, nameOf }: { cells: any[]; nameOf: (id: string) => 
             return (
               <div
                 key={dayIdx}
-                title={`${count} events on ${days[dayIdx]}`}
+                title={t("{count} events on {day}", { count, day: t(days[dayIdx]) })}
                 style={{
                   height: 20,
                   borderRadius: 4,

@@ -12,6 +12,8 @@ from app.modules.projects.schemas import ProjectMemberCreate
 
 @pytest.fixture(autouse=True)
 def membership_guards(monkeypatch):
+    monkeypatch.setattr(service, "record_audit_change", MagicMock())
+    # Audit capture has real database coverage in test_entity_history.
     # These tests isolate insert/event idempotency; real eligibility is covered
     # by the database-backed product membership regression test.
     monkeypatch.setattr(service.membership, "lock_project", AsyncMock(return_value=SimpleNamespace(name="Project", product_id=uuid4())))

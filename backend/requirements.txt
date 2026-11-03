@@ -28,3 +28,4 @@ langgraph-prebuilt==1.0.7
 langgraph-checkpoint==3.0.1
 langgraph-sdk==0.3.6
 strawberry-graphql[fastapi]>=0.250.0
+aiogram>=3.15.0

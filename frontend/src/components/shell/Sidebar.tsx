@@ -40,7 +40,7 @@ export function Sidebar({
   const pendingCount = pending?.pending_on_me.length ?? 0;
 
   const canSee = (item: AppNavItem) =>
-    !item.anyPermission || isSuperAdmin() || item.anyPermission.some((perm) => hasPermission(perm));
+    (!item.superAdminOnly || isSuperAdmin()) && (!item.anyPermission || isSuperAdmin() || item.anyPermission.some((perm) => hasPermission(perm)));
 
   const visibleGroups = NAV_GROUPS.map((g) => ({ ...g, items: g.items.filter(canSee) })).filter(
     (g) => g.items.length > 0,

@@ -45,6 +45,7 @@ class FileAttachmentRead(BaseModel):
     size_bytes: int
     uploaded_by_user_id: UUID
     version: int
+    download_share_enabled: bool = False
     created_at: datetime
 
 

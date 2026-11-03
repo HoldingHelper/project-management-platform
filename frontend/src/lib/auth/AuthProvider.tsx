@@ -15,6 +15,7 @@ import { accountPreferences } from "@/lib/i18n/core";
 import { applyAppearance, getStoredAppearance, normalizeAppearance } from "@/lib/theme";
 import { getMySettings, getPlatformLanguage } from "@/lib/api/users";
 import * as authApi from "@/lib/api/auth";
+import { refreshAccessToken } from "@/lib/api/client";
 import type { TokenResponse, UserRead } from "@/lib/types";
 import {
   clearSession,
@@ -92,6 +93,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       cancelled = true;
     };
   }, []);
+
+  // Proactive token refresh: access tokens expire in 15 minutes.
+  // Refresh periodically every 10 minutes while the session is active.
+  useEffect(() => {
+    if (!user) return;
+    const interval = setInterval(async () => {
+      await refreshAccessToken();
+    }, 10 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [user]);
 
   const login = useCallback(async (identifier: string, password: string) => {
     const res = await authApi.login(identifier, password);

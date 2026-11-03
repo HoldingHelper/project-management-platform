@@ -6,6 +6,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Query, Response, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from pydantic import BaseModel, StrictBool
 
 from app.core.current_user import CurrentUser
 from app.core.database import get_db
@@ -36,6 +37,9 @@ notifications_router = APIRouter(
 devices_router = APIRouter(
     prefix="/devices", tags=["Collaboration - Mobile Devices"]
 )
+
+class SharePermissionUpdate(BaseModel):
+    enabled: StrictBool
 
 
 @comments_router.post(
@@ -246,6 +250,8 @@ async def download_file(
     await authorize_entity_access(db, current_user, attachment.entity_type, attachment.entity_id)
     from app.modules.docs.lifecycle import require_visible_upload
     await require_visible_upload(db, current_user, attachment.id)
+    from app.modules.collaboration.sharing import require_download_enabled
+    require_download_enabled(attachment)
     content = await file_storage_service.download_async(attachment.storage_key)
     return Response(content, media_type="application/octet-stream", headers={
         "Content-Disposition": f"attachment; filename*=UTF-8''{quote(attachment.file_name, safe='')}",
@@ -265,3 +271,15 @@ async def uploaded_document_lifecycle(attachment_id: UUID, current_user: Current
     if page is None:
         raise NotFoundError("Documentation page", attachment_id)
     return await lifecycle_permissions(db, current_user, page.id)
+
+
+@files_router.get("/{attachment_id}/sharing")
+async def file_sharing(attachment_id: UUID, current_user: CurrentUser = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    from app.modules.collaboration.sharing import file_permission
+    return await file_permission(db, current_user, attachment_id)
+
+
+@files_router.put("/{attachment_id}/sharing")
+async def update_file_sharing(attachment_id: UUID, payload: SharePermissionUpdate, current_user: CurrentUser = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    from app.modules.collaboration.sharing import set_file_permission
+    return await set_file_permission(db, current_user, attachment_id, payload.enabled)

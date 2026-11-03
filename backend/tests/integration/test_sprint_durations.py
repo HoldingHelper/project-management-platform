@@ -11,7 +11,7 @@ from app.core.exceptions import ValidationAppError
 from app.modules.identity.models import User
 from app.modules.projects import service
 from app.modules.projects.models import Product, Project
-from app.modules.projects.schemas import ProjectCreate, ProjectSprintCreate, SprintBatchCreate, PhaseUpdate, PhaseCreate
+from app.modules.projects.schemas import ProjectCreate, ProjectUpdate, ProjectSprintCreate, SprintBatchCreate, PhaseUpdate, PhaseCreate
 
 pytestmark = pytest.mark.skipif(os.getenv("PMP_MEMBERSHIP_DB_TESTS") != "1", reason="Local PostgreSQL opt-in")
 
@@ -35,6 +35,12 @@ async def test_mixed_project_plan_batch_and_sprint_edit(monkeypatch):
                 assert project.start_date == start and project.end_date == date(2028, 3, 22)
                 phases = await service.list_phases_by_project(db, project.id)
                 assert [phase.duration_days for phase in phases] == [3, 7, 14]
+                revised = await service.update_project(db, project.id, ProjectUpdate(start_date=date(2028, 2, 25), end_date=date(2028, 4, 10)))
+                assert (revised.start_date, revised.end_date) == (date(2028, 2, 25), date(2028, 4, 10))
+                unchanged_phases = await service.list_phases_by_project(db, project.id)
+                assert [(p.start_date, p.end_date) for p in unchanged_phases] == [(p.start_date, p.end_date) for p in phases]
+                with pytest.raises(ValidationAppError, match="before"):
+                    await service.update_project(db, project.id, ProjectUpdate(start_date=date(2028, 5, 1)))
                 for duration in (3, 7, 14):
                     batch = await service.create_sprint_batch(db, project.id, SprintBatchCreate(name="Batch", start_date=date(2028, 4, 1), count=3, duration_days=duration))
                     assert len(batch) == 3

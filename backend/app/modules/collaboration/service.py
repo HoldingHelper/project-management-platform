@@ -239,9 +239,9 @@ async def get_file_download_url(
     )
     from app.modules.docs.lifecycle import require_visible_upload
     await require_visible_upload(db, current_user, attachment.id)
-    if attachment.entity_type in {"product", "project", "task"}:
-        return f"/api/v1/files/{attachment.id}/download"
-    return file_storage_service.presigned_url(attachment.storage_key, filename=attachment.file_name)
+    from app.modules.collaboration.sharing import require_download_enabled
+    require_download_enabled(attachment)
+    return f"/api/v1/files/{attachment.id}/download"
 
 
 

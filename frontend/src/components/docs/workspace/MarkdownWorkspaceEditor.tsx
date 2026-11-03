@@ -42,6 +42,7 @@ import { getDocPage, updateDocPage, listDocComments, addDocComment, type DocPage
 import { DocumentComments } from "../DocumentComments";
 import { UploadedDocumentView } from "./UploadedDocumentView";
 import { DocumentLifecycleControls, type DocumentLifecycle } from "../DocumentLifecycleControls";
+import { DocumentAttachments } from "../DocumentAttachments";
 import { apiFetch } from "@/lib/api/client";
 import { MarkdownPreview } from "@/components/ds";
 import { useKnowledgeWorkspace } from "@/lib/stores/knowledgeWorkspaceStore";
@@ -305,6 +306,8 @@ export function MarkdownWorkspaceEditor({ pageId }: Props) {
           </button>
         </div>
       </div>
+
+      <DocumentAttachments pageId={pageId} />
 
       {/* Formatting Toolbar (Only shown in edit/split mode) */}
       {editable && viewMode !== "rendered" && (

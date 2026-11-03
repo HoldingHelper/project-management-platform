@@ -20,7 +20,7 @@ async def list_recent_audit_logs(
     db: AsyncSession, limit: int = 20
 ) -> Sequence[AuditLog]:
     result = await db.execute(
-        select(AuditLog).order_by(AuditLog.occurred_at.desc()).limit(limit)
+        select(AuditLog).order_by(AuditLog.occurred_at.desc(), AuditLog.id.desc()).limit(limit)
     )
     return result.scalars().all()
 
@@ -31,6 +31,6 @@ async def list_audit_logs_for_entity(
     result = await db.execute(
         select(AuditLog)
         .where(AuditLog.entity_type == entity_type, AuditLog.entity_id == entity_id)
-        .order_by(AuditLog.occurred_at.desc())
+        .order_by(AuditLog.occurred_at.desc(), AuditLog.id.desc())
     )
     return result.scalars().all()

@@ -14,7 +14,9 @@ Existing project, Board:
 - Use Sprint to add a consecutive batch with count, duration, and start date.
 - Use Edit sprint for the selected sprint to change its name, start, or duration.
 - The end date is read-only and recalculates immediately.
-- Existing project planned-date baselines retain their date-lock behavior.
+- In Edit project, the planned start can be edited. When the start or sprint
+  durations change, the planned end is calculated from that start and the
+  sum of the sprint durations. Existing sprint dates are not moved automatically.
 
 API and MCP:
 - Project sprint inputs accept duration_days (3/7/14), with calculated end_date.

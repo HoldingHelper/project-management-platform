@@ -5,6 +5,7 @@ import { Archive, RotateCcw, Send } from "lucide-react";
 import { Button, Modal, useToast } from "@/components/ds";
 import { apiFetch } from "@/lib/api/client";
 import { useI18n } from "@/lib/i18n/I18nProvider";
+import { FileSharingControl } from "./FileSharingControl";
 
 export type DocumentLifecycle = { page_id: string; status: string; can_edit: boolean; can_comment?: boolean; can_publish: boolean; can_archive: boolean; can_restore: boolean };
 export function DocumentLifecycleControls({ attachmentId, pageId, fileName, onArchived, beforePublish }: {
@@ -16,7 +17,14 @@ export function DocumentLifecycleControls({ attachmentId, pageId, fileName, onAr
   const [action, setAction] = useState<"publish" | "archive" | "restore" | null>(null);
   const [busy, setBusy] = useState(false);
   const resource = pageId ? `/docs/pages/${pageId}` : `/files/${attachmentId}`;
-  const access = useQuery({ queryKey: ["document-lifecycle", resource], queryFn: () => apiFetch<DocumentLifecycle>(`${resource}/lifecycle`), refetchInterval: 15000 });
+  const access = useQuery({
+    queryKey: ["document-lifecycle", resource],
+    queryFn: () => apiFetch<DocumentLifecycle>(`${resource}/lifecycle`, { cache: "no-store" }),
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: "always",
+    refetchInterval: 15000,
+  });
   async function apply() {
     if (!action || busy || !access.data) return;
     setBusy(true);
@@ -33,9 +41,10 @@ export function DocumentLifecycleControls({ attachmentId, pageId, fileName, onAr
   }
   if (!access.data) return null;
   return <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
-    <span role="status" style={{ fontSize: 12, color: "var(--text-secondary)" }}>{t(access.data.status === "published" ? "Published · Read-only" : access.data.status === "archived" ? "Archived · Read-only" : "Draft / On Publish")}</span>
+    {attachmentId && <FileSharingControl fileId={attachmentId} fileName={fileName} />}
+    <span role="status" style={{ fontSize: 12, color: access.data.status === "archived" ? "var(--accent-primary)" : "var(--text-secondary)", background: access.data.status === "archived" ? "color-mix(in srgb, var(--accent-primary) 10%, var(--surface-1))" : undefined, borderRadius: 6, padding: access.data.status === "archived" ? "4px 8px" : undefined }}>{t(access.data.status === "published" ? "Published · Read-only" : access.data.status === "archived" ? "Archived · Read-only" : "Draft / On Publish")}</span>
     {access.data.can_publish && <Button type="button" size="sm" variant="secondary" onClick={() => setAction("publish")}><Send size={14} />{t("Publish document")}</Button>}
-    {access.data.can_archive && <Button type="button" size="sm" variant="ghost" aria-label={t("Archive document {name}", { name: fileName })} onClick={() => setAction("archive")}><Archive size={14} />{t("Archive")}</Button>}
+    {access.data.can_archive && <Button type="button" size="sm" variant="tertiary" style={{ background: "color-mix(in srgb, var(--accent-primary) 8%, var(--surface-2))", borderColor: "color-mix(in srgb, var(--accent-primary) 35%, var(--border-default))", color: "var(--text-primary)" }} aria-label={t("Archive document {name}", { name: fileName })} onClick={() => setAction("archive")}><Archive size={15} aria-hidden style={{ color: "var(--accent-primary)" }} />{t("Archive")}</Button>}
     {access.data.can_restore && <Button type="button" size="sm" variant="secondary" onClick={() => setAction("restore")}><RotateCcw size={14} />{t("Restore document")}</Button>}
     <Modal open={!!action} onClose={() => { if (!busy) setAction(null); }} title={t(action === "publish" ? "Publish document?" : action === "restore" ? "Restore document?" : "Archive document?")} footer={<><Button type="button" variant="secondary" disabled={busy} onClick={() => setAction(null)}>{t("Cancel")}</Button><Button type="button" disabled={busy} onClick={apply}>{t(busy ? "Saving…" : action === "publish" ? "Publish document" : action === "restore" ? "Restore document" : "Archive")}</Button></>}>
       <p style={{ overflowWrap: "anywhere" }}><strong>{fileName}</strong></p>

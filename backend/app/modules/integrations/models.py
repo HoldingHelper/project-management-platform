@@ -154,6 +154,15 @@ class UserTelegramConnection(Base):
         DateTime(timezone=True), nullable=True
     )
 
+    @property
+    def telegram_user_id(self) -> Optional[str]:
+        """Explicit alias for telegram_chat_id storing the immutable Telegram User ID (from_user.id)."""
+        return self.telegram_chat_id
+
+    @telegram_user_id.setter
+    def telegram_user_id(self, value: Optional[str]) -> None:
+        self.telegram_chat_id = value
+
 
 class UserDriveConnection(Base):
     """User personal Google Drive OAuth connection for document attachments."""

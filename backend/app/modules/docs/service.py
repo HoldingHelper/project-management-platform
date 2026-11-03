@@ -271,6 +271,7 @@ async def get_page(db: AsyncSession, user: CurrentUser, page_id: UUID) -> PageRe
         raise NotFoundError("Documentation page", page_id)
     await repo.touch_view(db, user.user_id, page.id)
     await db.commit()
+    await db.refresh(page)
     return PageRead.model_validate(page)
 
 
@@ -374,7 +375,12 @@ async def list_permissions(db: AsyncSession, user: CurrentUser, resource_type: s
 
 async def list_attachments(db: AsyncSession, user: CurrentUser, page_id: UUID) -> list[AttachmentRead]:
     await get_page(db, user, page_id)
-    return [_attachment_read(item) for item in await repo.list_attachments(db, page_id)]
+    from app.modules.collaboration.sharing import doc_permission
+    result = []
+    for item in await repo.list_attachments(db, page_id):
+        permission = await doc_permission(db, user, item.id)
+        result.append(_attachment_read(item, permission["enabled"]))
+    return result
 
 
 async def add_attachment(db: AsyncSession, user: CurrentUser, page_id: UUID, payload: AttachmentCreate) -> AttachmentRead:
@@ -389,16 +395,18 @@ async def add_attachment(db: AsyncSession, user: CurrentUser, page_id: UUID, pay
     return _attachment_read(attachment)
 
 
-def _attachment_read(attachment: DocAttachment) -> AttachmentRead:
+def _attachment_read(attachment: DocAttachment, enabled: bool | None = None) -> AttachmentRead:
+    enabled = attachment.download_share_enabled if enabled is None else enabled
     return AttachmentRead(
         id=attachment.id,
         page_id=attachment.page_id,
         file_name=attachment.file_name,
-        file_url=attachment.file_url or None,
+        file_url=(attachment.file_url or None) if enabled else None,
         mime_type=attachment.mime_type,
         uploaded_by=attachment.uploaded_by,
         size_bytes=attachment.size_bytes,
         stored=bool(attachment.storage_key),
+        download_share_enabled=enabled,
         created_at=attachment.created_at,
     )
 
@@ -442,6 +450,9 @@ async def attachment_download_url(
     if not attachment:
         raise NotFoundError("Documentation attachment", attachment_id)
     await get_page(db, user, attachment.page_id)
+    from app.modules.collaboration.sharing import doc_attachment, require_download_enabled
+    _, source = await doc_attachment(db, user, attachment_id)
+    require_download_enabled(source)
     if attachment.storage_key:
         return f"/api/v1/docs/attachments/{attachment.id}/download"
     if attachment.file_url:

@@ -83,6 +83,9 @@ async def index_upload(db, attachment):
     db.add(DocAttachment(page_id=page.id, file_name=attachment.file_name, file_url="", mime_type=attachment.content_type, uploaded_by=actor_id, storage_key=attachment.storage_key, size_bytes=attachment.size_bytes))
     db.add(DocLink(page_id=page.id, entity_type=attachment.entity_type, entity_id=attachment.entity_id))
     await db.flush()
+    # Attach the original file before publishing: published pages are immutable.
+    page.status = "published"
+    await db.flush()
     return page
 
 

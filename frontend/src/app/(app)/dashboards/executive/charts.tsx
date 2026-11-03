@@ -1,5 +1,6 @@
 "use client";
-import { LocalizedText } from "@/lib/i18n/I18nProvider";
+import { LocalizedText, useI18n } from "@/lib/i18n/I18nProvider";
+import { localizeMetric } from "./localize";
 
 /* Recharts chart panel for the executive dashboard. Kept in its own chunk
    (next/dynamic) so the chart library loads lazily. Colors come from the
@@ -87,13 +88,12 @@ const axisProps = {
   tickLine: false,
 } as const;
 
-function shortLabel(iso: string) {
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString([], { month: "short", day: "numeric" });
-}
-
 function compactName(name: string) {
   return name.length > 18 ? `${name.slice(0, 16)}…` : name;
+}
+
+function chartDate(value: string, date: (value: string, options?: Intl.DateTimeFormatOptions) => string) {
+  return Number.isNaN(new Date(value).getTime()) ? value : date(value, { month: "short", day: "numeric" });
 }
 
 // ============================================================================
@@ -104,8 +104,9 @@ export function CumulativeFlowChart({
 }: {
   cfdData?: CFDPoint[];
 }) {
+  const { t, date } = useI18n();
   const data = (cfdData ?? []).map((p) => ({
-    date: shortLabel(p.date),
+    date: chartDate(p.date, date),
     Done: p.done,
     "In Review": p.in_review,
     "In Progress": p.in_progress,
@@ -120,10 +121,10 @@ export function CumulativeFlowChart({
         <YAxis {...axisProps} allowDecimals={false} />
         <Tooltip contentStyle={tooltipStyle} />
         <Legend wrapperStyle={{ fontSize: 12, paddingTop: 6 }} />
-        <Area type="monotone" dataKey="Done" stackId="1" stroke="#10b981" fill="#10b981" fillOpacity={0.7} />
-        <Area type="monotone" dataKey="In Review" stackId="1" stroke="#a855f7" fill="#a855f7" fillOpacity={0.7} />
-        <Area type="monotone" dataKey="In Progress" stackId="1" stroke="#38bdf8" fill="#38bdf8" fillOpacity={0.7} />
-        <Area type="monotone" dataKey="Backlog" stackId="1" stroke="#64748b" fill="#64748b" fillOpacity={0.7} />
+        <Area type="monotone" dataKey="Done" name={t("Done")} stackId="1" stroke="#10b981" fill="#10b981" fillOpacity={0.7} />
+        <Area type="monotone" dataKey="In Review" name={t("In Review")} stackId="1" stroke="#a855f7" fill="#a855f7" fillOpacity={0.7} />
+        <Area type="monotone" dataKey="In Progress" name={t("In Progress")} stackId="1" stroke="#38bdf8" fill="#38bdf8" fillOpacity={0.7} />
+        <Area type="monotone" dataKey="Backlog" name={t("Backlog")} stackId="1" stroke="#64748b" fill="#64748b" fillOpacity={0.7} />
       </AreaChart>
     </ResponsiveContainer>
   );
@@ -133,6 +134,7 @@ export function CumulativeFlowChart({
 // DORA Metrics Visual Cards
 // ============================================================================
 export function DORAMetricsCardGroup({ dora }: { dora: DORAMetricsReport }) {
+  const { t, locale } = useI18n();
   const ratingBadge = (rating: string) => {
     const isElite = rating === "Elite";
     const isHigh = rating === "High";
@@ -140,7 +142,7 @@ export function DORAMetricsCardGroup({ dora }: { dora: DORAMetricsReport }) {
     const color = isElite ? "#00E261" : isHigh ? "#38bdf8" : "#f59e0b";
     return (
       <span style={{ fontSize: 11, fontWeight: 800, padding: "2px 8px", borderRadius: 4, background: bg, color }}>
-        {rating.toUpperCase()}
+        {t(rating)}
       </span>
     );
   };
@@ -196,16 +198,16 @@ export function DORAMetricsCardGroup({ dora }: { dora: DORAMetricsReport }) {
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 {m.icon}
-                <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-secondary)" }}>{m.label}</span>
+                <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-secondary)" }}>{t(m.label)}</span>
               </div>
               {ratingBadge(m.rating)}
             </div>
 
             <div style={{ fontSize: 24, fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-0.02em" }}>
-              {m.value}
+              {localizeMetric(m.value, locale, t)}
             </div>
 
-            <div style={{ fontSize: 11, color: "var(--text-tertiary)", marginTop: "auto" }}>{" "}<LocalizedText message={"Benchmark:"} />{" "}{m.benchmark}
+            <div style={{ fontSize: 11, color: "var(--text-tertiary)", marginTop: "auto" }}>{" "}<LocalizedText message={"Benchmark:"} />{" "}{t(m.benchmark)}
             </div>
           </div>
         ))}
@@ -243,11 +245,12 @@ export function DORAMetricsCardGroup({ dora }: { dora: DORAMetricsReport }) {
 // Flow Distribution & Investment Mix
 // ============================================================================
 export function FlowInvestmentChart({ flow }: { flow: FlowMetricsReport }) {
+  const { t } = useI18n();
   const typeData = [
-    { name: "Features", value: flow.velocity_by_type.features_percent, color: "#00E261" },
-    { name: "Defects", value: flow.velocity_by_type.defects_percent, color: "#ef4444" },
-    { name: "Tech Debt", value: flow.velocity_by_type.tech_debt_percent, color: "#f59e0b" },
-    { name: "Infra/Sec", value: flow.velocity_by_type.infra_percent, color: "#38bdf8" },
+    { name: t("Features"), value: flow.velocity_by_type.features_percent, color: "#00E261" },
+    { name: t("Defects"), value: flow.velocity_by_type.defects_percent, color: "#ef4444" },
+    { name: t("Tech Debt"), value: flow.velocity_by_type.tech_debt_percent, color: "#f59e0b" },
+    { name: t("Infra/Sec"), value: flow.velocity_by_type.infra_percent, color: "#38bdf8" },
   ];
 
   return (
@@ -259,7 +262,7 @@ export function FlowInvestmentChart({ flow }: { flow: FlowMetricsReport }) {
           {flow.category_distribution.map((cat) => (
             <div key={cat.category} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
-                <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>{cat.category}</span>
+                <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>{t(cat.category)}</span>
                 <span style={{ color: "var(--text-secondary)" }}>{cat.percentage}% ({cat.points}{" "}<LocalizedText message={"pts)"} /></span>
               </div>
               <div style={{ height: 6, borderRadius: 3, background: "var(--surface-3)", overflow: "hidden" }}>
@@ -319,6 +322,8 @@ export default function ExecutiveCharts({
   velocity?: VelocityReport;
   trends?: CompletionTrends;
 }) {
+  const { t, date } = useI18n();
+  const shortLabel = (value: string) => chartDate(value, date);
   const burndownData = (burndown?.days ?? []).map((p) => ({ label: shortLabel(p.label), open: p.value }));
   const velocityData = (velocity?.weeks ?? []).map((p, i) => ({
     label: shortLabel(p.label),
@@ -347,7 +352,7 @@ export default function ExecutiveCharts({
             <XAxis dataKey="label" {...axisProps} interval="preserveStartEnd" />
             <YAxis {...axisProps} allowDecimals={false} />
             <Tooltip contentStyle={tooltipStyle} />
-            <Area type="monotone" dataKey="open" name="Open tasks" stroke={C1} strokeWidth={2} fill={C1} fillOpacity={0.14} dot={false} />
+            <Area type="monotone" dataKey="open" name={t("Open tasks")} stroke={C1} strokeWidth={2} fill={C1} fillOpacity={0.14} dot={false} />
           </AreaChart>
         </ResponsiveContainer>
       </FocusCard>
@@ -367,8 +372,8 @@ export default function ExecutiveCharts({
             <YAxis {...axisProps} />
             <Tooltip contentStyle={tooltipStyle} />
             <Legend wrapperStyle={{ fontSize: 12, paddingTop: 6 }} />
-            <Bar dataKey="points" name="Story points" fill="#38bdf8" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="tasks" name="Tasks completed" fill="#00E261" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="points" name={t("Story points")} fill="#38bdf8" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="tasks" name={t("Tasks completed")} fill="#00E261" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </FocusCard>
@@ -383,6 +388,7 @@ export function WorkloadChart({
   workload: WorkloadRow[];
   nameOf: (id: string) => string;
 }) {
+  const { t } = useI18n();
   const data = workload.map((w) => ({
     name: compactName(nameOf(String(w.user_id))),
     "In progress": w.in_progress,
@@ -398,9 +404,9 @@ export function WorkloadChart({
         <YAxis dataKey="name" type="category" {...axisProps} width={110} />
         <Tooltip contentStyle={tooltipStyle} />
         <Legend wrapperStyle={{ fontSize: 12, paddingTop: 6 }} />
-        <Bar dataKey="In progress" fill="#38bdf8" stackId="a" radius={[0, 0, 0, 0]} />
-        <Bar dataKey="Open tasks" fill="#64748b" stackId="a" radius={[0, 0, 0, 0]} />
-        <Bar dataKey="Open blockers" fill="#ef4444" stackId="a" radius={[0, 4, 4, 0]} />
+        <Bar dataKey="In progress" name={t("In progress")} fill="#38bdf8" stackId="a" radius={[0, 0, 0, 0]} />
+        <Bar dataKey="Open tasks" name={t("Open tasks")} fill="#64748b" stackId="a" radius={[0, 0, 0, 0]} />
+        <Bar dataKey="Open blockers" name={t("Open blockers")} fill="#ef4444" stackId="a" radius={[0, 4, 4, 0]} />
       </BarChart>
     </ResponsiveContainer>
   );

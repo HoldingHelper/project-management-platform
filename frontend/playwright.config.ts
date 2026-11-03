@@ -13,6 +13,7 @@ export default defineConfig({
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
     video: "retain-on-failure",
+    launchOptions: process.env.PMP_CHROMIUM ? { executablePath: process.env.PMP_CHROMIUM } : undefined,
   },
   projects: [
     { name: "phone", use: { ...devices["iPhone 13"], browserName: "chromium" } },

@@ -1,16 +1,16 @@
 "use client";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { LocalizedText } from "@/lib/i18n/I18nProvider";
+import { LocalizedDate } from "@/lib/i18n/I18nProvider";
 
 import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Archive, Layers3 } from "lucide-react";
-import { getPortfolioGantt, updateProject } from "@/lib/api/projects";
-import { Button, Card, FocusCard, MetricCard, ProgressBar, StatusChip, Tabs, useToast } from "@/components/ds";
+import { getPortfolioGantt } from "@/lib/api/projects";
+import { Button, Card, FocusCard, MetricCard, ProgressBar, StatusChip, Tabs } from "@/components/ds";
 import { EmptyState, PAGE_STYLE, PageHeader, Spinner } from "@/components/ui/States";
 import { PortfolioGanttChart } from "@/components/gantt/PortfolioGanttChart";
-import { useAuth } from "@/lib/auth/AuthProvider";
 import type { PortfolioGantt, PortfolioGanttProject, ProjectLevel, UUID } from "@/lib/types";
 
 const PROJECT_LEVELS: { value: ProjectLevel; label: string; detail: string }[] = [
@@ -43,30 +43,10 @@ export default function TimelinePage() {
     router.replace(`/timeline?${params.toString()}`);
   };
   const [showArchived, setShowArchived] = useState(false);
-  const { user, isSuperAdmin, hasPermission } = useAuth();
-  const qc = useQueryClient();
-  const toast = useToast();
   const gantt = useQuery({
     queryKey: ["portfolio-gantt", showArchived],
     queryFn: () => getPortfolioGantt(showArchived),
   });
-
-  // C-levels (and admins) may reschedule projects directly on the portfolio Gantt.
-  const canSchedule =
-    isSuperAdmin() || !!user?.roles.includes("CLevel") || hasPermission("projects.manage_all");
-
-  const reschedule = useMutation({
-    mutationFn: ({ id, start_date, end_date }: { id: UUID; start_date: string; end_date: string }) =>
-      updateProject(id, { start_date, end_date }),
-    onSuccess: () => {
-      toast.push("Project rescheduled.", "success");
-      qc.invalidateQueries({ queryKey: ["portfolio-gantt"] });
-      qc.invalidateQueries({ queryKey: ["projects"] });
-    },
-    onError: () => toast.push("Could not reschedule project.", "error"),
-  });
-  const onSchedule = (id: string, dates: { start_date: string; end_date: string }) =>
-    reschedule.mutate({ id: id as UUID, start_date: dates.start_date, end_date: dates.end_date });
 
   const filtered = useMemo<PortfolioGantt>(() => {
     const source = gantt.data ?? { projects: [], links: [] };
@@ -141,9 +121,9 @@ export default function TimelinePage() {
       <FocusCard
         title={`${PROJECT_LEVELS.find((item) => item.value === level)?.label ?? "Project"} Gantt`}
         right={<TimelineLegend />}
-        focusChildren={<TimelineBody loading={gantt.isLoading} data={filtered} editable={canSchedule} onSchedule={onSchedule} />}
+        focusChildren={<TimelineBody loading={gantt.isLoading} data={filtered} />}
       >
-        <TimelineBody loading={gantt.isLoading} data={filtered} editable={canSchedule} onSchedule={onSchedule} />
+        <TimelineBody loading={gantt.isLoading} data={filtered} />
       </FocusCard>
 
       <Card title={translateUI("Projects in this level")} padded={false}>
@@ -161,11 +141,11 @@ export default function TimelinePage() {
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontSize: 13.5, fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{project.name}</div>
                 <div style={{ marginTop: 2, fontSize: 11.5, color: "var(--text-tertiary)" }}>
-                  {project.start_date ?? "No start"}{" "}<LocalizedText message={"to"} />{" "}{project.end_date ?? "No end"}
+                  <LocalizedDate value={project.start_date} />{" "}<LocalizedText message={"to"} />{" "}<LocalizedDate value={project.end_date} />
                 </div>
               </div>
               <ProgressBar percent={Number(project.progress_percentage)} blocks={12} variant="timeline" />
-              <StatusChip status={String(project.status === "in-progress" ? project.health_status : project.status)} />
+              <StatusChip status={String(project.status === "in-progress" && ["blocked", "delayed", "at-risk"].includes(project.health_status) ? project.health_status : project.status)} />
             </div>
           ))
         )}
