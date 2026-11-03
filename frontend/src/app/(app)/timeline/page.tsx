@@ -103,11 +103,11 @@ export default function TimelinePage() {
           >
             <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
               <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontWeight: 800 }}>
-                <Layers3 size={15} /> {item.label}
+                <Layers3 size={15} /> {translateUI(item.label)}
               </span>
               <span style={{ fontFamily: "var(--font-mono)", color: "var(--text-tertiary)", fontSize: 12 }}>{levelCounts.get(item.value) ?? 0}</span>
             </span>
-            <span style={{ display: "block", marginTop: 5, color: "var(--text-secondary)", fontSize: 12 }}>{item.detail}</span>
+            <span style={{ display: "block", marginTop: 5, color: "var(--text-secondary)", fontSize: 12 }}>{translateUI(item.detail)}</span>
           </button>
         ))}
       </div>
@@ -119,7 +119,7 @@ export default function TimelinePage() {
       </div>
 
       <FocusCard
-        title={`${PROJECT_LEVELS.find((item) => item.value === level)?.label ?? "Project"} Gantt`}
+        title={translateUI("{level} Gantt", { level: translateUI(PROJECT_LEVELS.find((item) => item.value === level)?.label ?? "Project") })}
         right={<TimelineLegend />}
         focusChildren={<TimelineBody loading={gantt.isLoading} data={filtered} />}
       >

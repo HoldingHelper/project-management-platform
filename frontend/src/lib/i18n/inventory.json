@@ -146,6 +146,14 @@
     ]
   },
   {
+    "message": "{count} item(s) waiting on you.",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/notifications/page.tsx"
+    ]
+  },
+  {
     "message": "{count} items need your action across {projects} active projects.",
     "translated": true,
     "neutral": false,
@@ -201,6 +209,14 @@
     "neutral": false,
     "files": [
       "app/(app)/settings/mcp/page.tsx"
+    ]
+  },
+  {
+    "message": "{level} Gantt",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/timeline/page.tsx"
     ]
   },
   {
@@ -695,6 +711,14 @@
     "neutral": false,
     "files": [
       "app/(app)/my-work/page.tsx"
+    ]
+  },
+  {
+    "message": "Action required",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/notifications/page.tsx"
     ]
   },
   {
@@ -2805,6 +2829,14 @@
     ]
   },
   {
+    "message": "click to open",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/gantt/PortfolioGanttChart.tsx"
+    ]
+  },
+  {
     "message": "Click to reset",
     "translated": true,
     "neutral": false,
@@ -4726,6 +4758,14 @@
     ]
   },
   {
+    "message": "drag to reschedule",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "components/gantt/PortfolioGanttChart.tsx"
+    ]
+  },
+  {
     "message": "Drag to resize names column",
     "translated": true,
     "neutral": false,
@@ -5711,6 +5751,14 @@
     "neutral": false,
     "files": [
       "components/modernist/views/ProjectsView.tsx"
+    ]
+  },
+  {
+    "message": "Filter projects by health",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/portfolio/page.tsx"
     ]
   },
   {
@@ -11251,6 +11299,14 @@
     "neutral": false,
     "files": [
       "app/(app)/projects/[projectId]/ProjectDetailClient.tsx"
+    ]
+  },
+  {
+    "message": "Project health",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/portfolio/page.tsx"
     ]
   },
   {

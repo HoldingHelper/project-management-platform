@@ -24,13 +24,14 @@ export interface DataTableProps<T> {
   columns: Column<T>[];
   rows: T[];
   rowKey: (row: T) => string;
+  rowClassName?: (row: T) => string | undefined;
   onRowClick?: (row: T) => void;
   emptyText?: string;
   /** Accessible label describing the collection. */
   label?: string;
 }
 
-export function DataTable<T>({ columns, rows, rowKey, onRowClick, emptyText = "No rows.", label = "Data table" }: DataTableProps<T>) {
+export function DataTable<T>({ columns, rows, rowKey, rowClassName, onRowClick, emptyText = "No rows.", label = "Data table" }: DataTableProps<T>) {
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<1 | -1>(1);
 
@@ -104,7 +105,7 @@ export function DataTable<T>({ columns, rows, rowKey, onRowClick, emptyText = "N
           {sorted.map((row) => (
             <tr
               key={rowKey(row)}
-              className="pmp-row"
+              className={`pmp-row ${rowClassName?.(row) ?? ""}`}
               onClick={onRowClick ? () => onRowClick(row) : undefined}
               style={{ cursor: onRowClick ? "pointer" : "default" }}
             >
@@ -133,7 +134,7 @@ export function DataTable<T>({ columns, rows, rowKey, onRowClick, emptyText = "N
             key={rowKey(row)}
             role={onRowClick ? "button" : "listitem"}
             tabIndex={onRowClick ? 0 : undefined}
-            className={`pmp-data-card ${onRowClick ? "is-clickable" : ""}`}
+            className={`pmp-data-card ${onRowClick ? "is-clickable" : ""} ${rowClassName?.(row) ?? ""}`}
             onClick={onRowClick ? () => onRowClick(row) : undefined}
             onKeyDown={onRowClick ? (event) => {
               if (event.key === "Enter" || event.key === " ") {

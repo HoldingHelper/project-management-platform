@@ -45,7 +45,7 @@ export default function ArchivePage() {
       {items.data[kind].length === 0 ? <p style={{ color: "var(--text-secondary)", margin: 0 }}>{t("No archived items.")}</p> : <div style={{ display: "grid", gap: 8 }}>
         {items.data[kind].map(item => {
           const href = kind === "projects" ? `/projects/${item.id}` : kind === "tasks" ? `/tasks/${item.id}` : kind === "documents" && item.space_id ? `/app/docs/spaces/${item.space_id}/${item.id}` : null;
-          return <div key={item.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, padding: 12, borderRadius: 10, background: "color-mix(in srgb, var(--accent-primary) 10%, var(--surface-2))", border: "1px solid color-mix(in srgb, var(--accent-primary) 28%, var(--border-default))" }}>
+          return <div key={item.id} className="pmp-archived" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, padding: 12, borderRadius: 10, border: "1px solid var(--border-default)" }}>
             <div style={{ minWidth: 0, overflowWrap: "anywhere" }}>{href ? <Link href={href}>{item.name}</Link> : <strong>{item.name}</strong>} <span style={{ color: "var(--text-secondary)", fontSize: 12 }}> · {t("Archived")}{item.source_type ? ` · ${t(item.source_type)}` : item.type ? ` · ${t(item.type)}` : ""}</span></div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {(kind === "products" || kind === "projects" || kind === "tasks") && <Button type="button" variant="tertiary" size="sm" onClick={() => setHistory({ type: kind === "products" ? "product" : kind === "projects" ? "project" : "task", item })}>{t("History & Changes")}</Button>}

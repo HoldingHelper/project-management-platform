@@ -366,20 +366,87 @@ test("My work cards and pending items open their corresponding work", async ({ p
     await expect(page.getByRole("link", { name: expected, exact: true })).toBeVisible();
     await expect(page.getByRole("link", { name: absent, exact: true })).toHaveCount(0);
   }
-  for (const [label, expected, absent, view] of [
-    ["Blocked projects", "Blocked project", "Active project", "blocked"],
-    ["Delayed", "Delayed project", "Blocked project", "delayed"],
-    ["Completed", "Completed project", "Blocked project", "completed"],
-    ["Active projects", "Active project", "Blocked project", "active"],
+  for (const [label, expected, absent, query] of [
+    ["Blocked projects", "Blocked project", "Active project", "health=blocked"],
+    ["Delayed", "Delayed project", "Blocked project", "health=delayed"],
+    ["Completed", "Completed project", "Blocked project", "view=completed"],
+    ["Active projects", "Active project", "Blocked project", "view=active"],
   ]) {
     await page.goto("/my-work");
     const card = page.getByRole("link", { name: new RegExp(`Open ${label}`) });
     await card.evaluate(node => node.scrollIntoView({ block: "center" }));
     await card.click();
-    await expect(page).toHaveURL(new RegExp(`view=${view}`));
+    await expect(page).toHaveURL(new RegExp(query));
     await expect(page.getByRole("link").filter({ hasText: expected })).toBeVisible();
     await expect(page.getByRole("link").filter({ hasText: absent })).toHaveCount(0);
   }
+});
+
+for (const locale of ["fa", "en"] as const) test(`notifications activity and timeline use ${locale} language`, async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "desktop", "Language is independent of viewport.");
+  const actor = { ...user, roles: ["SuperAdmin"], locale, calendar: locale === "fa" ? "persian" : "gregory", numbering_system: "latn" };
+  await installApi(page, actor);
+  await page.route("**/api/v1/notifications?**", route => json(route, [{ id: TASK_ID, type: "task_assigned", title: "You were assigned a task", body: 'Task "Important work" in MyProject was assigned to you.', is_read: false, requires_action: false, created_at: NOW }]));
+  await page.route("**/api/v1/analytics/audit-logs?**", route => json(route, [{ id: DOC_ID, entity_type: "TaskItem", action_type: "Update", changes_json: '{"due_date":{}}', user_id: null, occurred_at: NOW }]));
+  await page.route("**/api/v1/portfolio/gantt**", route => json(route, { projects: [], links: [] }));
+  await login(page, actor);
+  await page.goto("/notifications");
+  await expect(page.getByText(locale === "fa" ? "کاری به شما واگذار شد" : "You were assigned a task")).toBeVisible();
+  await expect(page.getByText(/Important work/)).toContainText(locale === "fa" ? "به شما واگذار شد" : "was assigned to you");
+  await page.goto("/activity");
+  await expect(page.getByText(locale === "fa" ? "کار به‌روزشده" : "Updated Task")).toBeVisible();
+  await expect(page.getByText(locale === "fa" ? "تاریخ سررسید" : "Due date", { exact: true })).toBeVisible();
+  await page.goto("/timeline");
+  await expect(page.getByText(locale === "fa" ? "پروژه‌های میان‌بخشی" : "Cross-partition projects", { exact: true })).toBeVisible();
+  await expect(page.getByText(locale === "fa" ? "نمودار گانت میان حوزه‌های کاری" : "Inter-partition Gantt", { exact: true }).first()).toBeVisible();
+});
+
+test("project status filter matches the list and timeline", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "desktop", "The status filter is shared across viewports.");
+  await page.clock.setFixedTime(new Date("2026-03-22T12:00:00Z"));
+  await installApi(page);
+  const rows = [
+    { ...initialProject, id: PROJECT_ID, name: "Working project", status: "in-progress", health_status: "on-track" },
+    { ...initialProject, id: DOC_ID, name: "Delayed project", status: "in-progress", health_status: "delayed" },
+    { ...initialProject, id: TEAM_ID, name: "Paused project", status: "on-hold", health_status: "on-track" },
+    { ...initialProject, id: RECIPIENT_ID, name: "Future project", status: "not-started", health_status: "blocked" },
+  ];
+  await page.route("**/api/v1/projects?**", route => json(route, { items: rows, total_count: rows.length, page: 1, page_size: 200 }));
+  await page.route("**/api/v1/portfolio/gantt**", route => json(route, { projects: rows.map(project => ({ ...project, start_date: "2026-03-15", end_date: "2026-04-05", milestones: [] })), links: [] }));
+  await login(page);
+  await page.goto("/portfolio");
+  const filter = page.getByRole("combobox", { name: "Filter projects by status" });
+  const health = page.getByRole("combobox", { name: "Filter projects by health" });
+  const list = page.locator("a.pmp-row");
+  const timeline = page.locator(".pmp-chart-time-axis").first();
+  for (const [value, expected, absent] of [
+    ["active", "Working project", "Paused project"],
+    ["on-hold", "Paused project", "Delayed project"],
+    ["not-started", "Future project", "Paused project"],
+  ]) {
+    await filter.selectOption(value);
+    await expect(list.filter({ hasText: expected })).toBeVisible();
+    await expect(list.filter({ hasText: absent })).toHaveCount(0);
+    await expect(timeline.getByRole("link", { name: expected, exact: true }).first()).toBeVisible();
+    await expect(timeline.getByRole("link", { name: absent, exact: true })).toHaveCount(0);
+  }
+  await page.reload();
+  await expect(filter).toHaveValue("not-started");
+  await expect(list.filter({ hasText: "Future project" })).toBeVisible();
+  await filter.selectOption("active");
+  await health.selectOption("delayed");
+  await expect(list.filter({ hasText: "Delayed project" })).toBeVisible();
+  await expect(list.filter({ hasText: "Working project" })).toHaveCount(0);
+  await expect(timeline.getByRole("link", { name: "Delayed project", exact: true }).first()).toBeVisible();
+  await page.reload();
+  await expect(filter).toHaveValue("active");
+  await expect(health).toHaveValue("delayed");
+  await health.selectOption("all");
+  await expect(list.filter({ hasText: "Working project" })).toBeVisible();
+  await page.goto("/portfolio?view=blocked");
+  await expect(health).toHaveValue("blocked");
+  await expect(filter).toHaveValue("all");
+  await expect(list.filter({ hasText: "Future project" })).toBeVisible();
 });
 
 test("task navigation restores the source filters through Back and Forward", async ({ page }, testInfo) => {
@@ -1002,4 +1069,53 @@ test("file owner can enable and revoke download and Telegram sharing", async ({ 
   await checkbox.click();
   await expect(checkbox).not.toBeChecked();
   await expect(page.getByRole("button", { name: "Download", exact: true })).toBeDisabled();
+});
+
+for (const theme of ["light", "dark"] as const) test(`archived products projects and tasks are muted in ${theme} theme`, async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === "tablet", "Desktop and phone cover archived list layouts.");
+  const admin = { ...user, roles: ["SuperAdmin"] };
+  await installApi(page, admin);
+  await page.addInitScript((value) => {
+    document.documentElement.dataset.theme = value;
+    const observer = new MutationObserver(() => { if (document.documentElement.dataset.theme !== value) document.documentElement.dataset.theme = value; });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  }, theme);
+  const product = { id: PRODUCT_ID, name: "Active product", owner_user_id: USER_ID, status: "Active", environment: "Development", priority: "P2", technology_stack: [], description: null, created_at: NOW, updated_at: NOW };
+  const products = [product, { ...product, id: DOC_ID, name: "Archived product", status: "Archived" }];
+  const projects = [{ ...initialProject, name: "Active project" }, { ...initialProject, id: DOC_ID, name: "Archived project", status: "archived" }];
+  const base = { phase_id: SPRINT_ID, parent_task_id: null, task_type: "Feature", priority: "P2", assignee_user_ids: [], labels: [], checklist_items: [], board_order: 0, created_by: "manual", created_at: NOW, updated_at: NOW };
+  const tasks = [{ ...base, id: TASK_ID, title: "Active task", status: "Ready" }, { ...base, id: RECIPIENT_ID, title: "Archived task", status: "Archived" }];
+  await page.route("**/api/v1/products?**", route => json(route, { items: products, page: 1, page_size: 200, total_count: 2 }));
+  await page.route("**/api/v1/projects?**", route => json(route, { items: projects, page: 1, page_size: 200, total_count: 2 }));
+  await page.route("**/api/v1/portfolio/gantt**", route => json(route, { projects: [], links: [] }));
+  await page.route("**/api/v1/tasks?**", route => json(route, { items: tasks, page: 1, page_size: 100, total_count: 2 }));
+  await page.route("**/api/v1/projects/archive/items", route => json(route, { products: [{ id: DOC_ID, name: "Archived product" }], projects: [{ id: DOC_ID, name: "Archived project" }], tasks: [{ id: RECIPIENT_ID, name: "Archived task" }], documents: [], organization: [] }));
+  await login(page, admin);
+  await page.goto("/h/holding");
+  const archivedProduct = page.locator("section.pmp-card").filter({ hasText: "Archived product" });
+  const activeProduct = page.locator("section.pmp-card").filter({ hasText: "Active product" });
+  await expect(archivedProduct).toHaveClass(/pmp-archived/);
+  await expect(activeProduct).not.toHaveClass(/pmp-archived/);
+  expect(await archivedProduct.evaluate(node => getComputedStyle(node).backgroundColor)).not.toBe(await activeProduct.evaluate(node => getComputedStyle(node).backgroundColor));
+  await expect(archivedProduct).toHaveCSS("opacity", "1");
+  await expect(archivedProduct.getByText("Archived", { exact: true })).toBeVisible();
+  await page.goto("/portfolio");
+  const archivedProject = page.getByRole("link", { name: /Archived project/ });
+  const activeProject = page.getByRole("link", { name: /Active project/ });
+  await expect(archivedProject).toHaveClass(/pmp-archived/);
+  await expect(activeProject).not.toHaveClass(/pmp-archived/);
+  expect(await archivedProject.evaluate(node => getComputedStyle(node).backgroundColor)).not.toBe(await activeProject.evaluate(node => getComputedStyle(node).backgroundColor));
+  await page.goto("/tasks");
+  const selector = testInfo.project.name === "phone" ? ".pmp-data-card" : "tr";
+  const archivedTask = page.locator(selector).filter({ hasText: "Archived task" });
+  const activeTask = page.locator(selector).filter({ hasText: "Active task" });
+  await expect(archivedTask).toHaveClass(/pmp-archived/);
+  await expect(activeTask).not.toHaveClass(/pmp-archived/);
+  expect(await archivedTask.evaluate(node => getComputedStyle(node).backgroundColor)).not.toBe(await activeTask.evaluate(node => getComputedStyle(node).backgroundColor));
+  await expect(archivedTask.getByText("Archived", { exact: true })).toBeVisible();
+  await page.goto("/admin/archive");
+  const entry = page.locator(".pmp-archived").filter({ hasText: "Archived project" });
+  await expect(entry).toBeVisible();
+  await expect(entry.getByRole("button", { name: "Restore", exact: true })).toBeEnabled();
+  await page.screenshot({ path: testInfo.outputPath(`archive-${theme}.png`) });
 });

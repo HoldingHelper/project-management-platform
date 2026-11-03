@@ -6072,3 +6072,22 @@ html[data-theme-style="study"] .pmp-progress:not([data-progress-variant="timelin
   background:linear-gradient(90deg,var(--study-progress-start),var(--study-progress-end)) !important;
   box-shadow:0 0 8px var(--study-progress-glow),inset 0 1px 0 rgba(255,255,255,.24);
 }
+
+/* Archived records remain readable and keep their restore controls active. */
+html .pmp-archived,
+html[data-theme] .pmp-archived,
+html [data-archive-container]:has([data-document-archived]),
+html[data-theme] [data-archive-container]:has([data-document-archived]) {
+  background: color-mix(in srgb, var(--surface-3) 78%, var(--surface-2)) !important;
+  border-color: var(--border-default) !important;
+  color: var(--text-secondary);
+  box-shadow: none !important;
+}
+html[data-theme] .pmp-row.pmp-archived:hover,
+html[data-theme] .pmp-data-table tbody tr.pmp-archived:hover {
+  background: color-mix(in srgb, var(--surface-3) 88%, var(--surface-2)) !important;
+  box-shadow: none !important;
+}
+html .pmp-archived-timeline-bar { border-color: var(--text-tertiary) !important; }
+html .pmp-archived .pmp-card-header { color: var(--text-secondary); }
+html .task-hero-block.pmp-archived .task-title-heading { color: var(--text-secondary); }

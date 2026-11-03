@@ -27,6 +27,7 @@ interface Layout {
   bg: string;
   healthStatus: string;
   pulse: boolean;
+  archived: boolean;
   progress: number;
   currentPhase?: string | null;
   startMs: number;
@@ -186,6 +187,7 @@ export function PortfolioGanttChart({
       bg,
       healthStatus: String(status),
       pulse: semantic === "blocked" || semantic === "delayed",
+      archived: p.status === "archived",
       progress: Number.isFinite(Number(p.progress_percentage)) ? Number(p.progress_percentage) : 0,
       currentPhase: p.current_sprint ?? p.current_phase,
       startMs,
@@ -358,6 +360,7 @@ export function PortfolioGanttChart({
             {rows.map((r) => (
               <div
                 key={r.id}
+                className={r.archived ? "pmp-archived" : undefined}
                 style={{
                   height: rowHeight,
                   display: "flex",
@@ -371,7 +374,7 @@ export function PortfolioGanttChart({
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <Link
                     href={`/projects/${r.id}`}
-                    style={{ fontSize: 13, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block", color: "var(--text-primary)", textDecoration: "none" }}
+                    style={{ fontSize: 13, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block", color: r.archived ? "var(--text-secondary)" : "var(--text-primary)", textDecoration: "none" }}
                     title={r.name}
                   >
                     {r.name}
@@ -469,8 +472,8 @@ export function PortfolioGanttChart({
                   tabIndex={0}
                   aria-label={r.name}
                   onKeyDown={event => { if (event.key === "Enter") router.push(`/projects/${r.id}`); }}
-                  className={r.pulse && !(barDrag && barDrag.id === r.id) ? "pmp-pulse" : undefined}
-                  title={canDrag ? `${r.name} · drag to reschedule · click to open` : `${r.name} · ${Math.round(r.progress)}% · click to open`}
+                  className={r.archived ? "pmp-archived pmp-archived-timeline-bar" : r.pulse && !(barDrag && barDrag.id === r.id) ? "pmp-pulse" : undefined}
+                  title={canDrag ? `${r.name} · ${translateUI("drag to reschedule")} · ${translateUI("click to open")}` : `${r.name} · ${Math.round(r.progress)}% · ${translateUI("click to open")}`}
                   onPointerDown={(e) => beginBarDrag(e, r, "move")}
                   onClick={() => {
                     // Ignore the click that ends a real drag; otherwise open the project.
@@ -495,7 +498,7 @@ export function PortfolioGanttChart({
                     boxShadow: barDrag && barDrag.id === r.id ? `0 0 0 2px ${r.color}` : undefined,
                   }}
                 >
-                  <div style={{ width: `${Math.max(0, Math.min(100, r.progress))}%`, height: "100%", background: r.color, opacity: 0.85, pointerEvents: "none" }} />
+                  <div style={{ width: `${Math.max(0, Math.min(100, r.progress))}%`, height: "100%", background: r.archived ? "var(--text-tertiary)" : r.color, opacity: r.archived ? 0.45 : 0.85, pointerEvents: "none" }} />
                   {canDrag && (
                     <>
                       <div

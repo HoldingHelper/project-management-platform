@@ -21,7 +21,7 @@ import { Button, Tabs, TextInput, useToast } from "@/components/ds";
 import { EmptyState, PageHeader, PAGE_STYLE, Spinner } from "@/components/ui/States";
 import { VoiceRecorder } from "@/components/voice/VoiceRecorder";
 import { apiFetch } from "@/lib/api/client";
-import { formatNotificationBody, relativeTime } from "@/lib/format";
+import { notificationText } from "@/lib/i18n/notifications";
 import { useNotifications } from "@/lib/stores/notifications";
 import type { NotificationRead } from "@/lib/types";
 
@@ -33,6 +33,11 @@ const TYPE_LABEL: Record<string, string> = {
   blocker_raised: "Waiting on you",
   dependency_assigned: "Dependency",
   project_update: "Project update",
+  ticket_assigned: "Ticket assigned",
+  project_member_added: "Project member added",
+  project_generated: "AI project",
+  meeting_reminder_10m: "Meeting reminder",
+  meeting_reminder_2m: "Meeting reminder",
 };
 
 export default function NotificationsPage() {
@@ -61,7 +66,7 @@ export default function NotificationsPage() {
         title={translateUI("Notification Center")}
         subtitle={
           actionRequiredCount > 0
-            ? `${actionRequiredCount} item(s) waiting on you.`
+            ? translateUI("{count} item(s) waiting on you.", { count: actionRequiredCount })
             : localizeAttribute("Everything that needs your attention, in one place.")
         }
         actions={
@@ -81,7 +86,7 @@ export default function NotificationsPage() {
         items={[
           { key: "all", label: "All" },
           { key: "unread", label: "Unread" },
-          { key: "action_required", label: `Action required${actionRequiredCount ? ` (${actionRequiredCount})` : ""}` },
+          { key: "action_required", label: `${translateUI("Action required")}${actionRequiredCount ? ` (${actionRequiredCount})` : ""}` },
         ]}
         active={tab}
         onChange={setTab}
@@ -107,7 +112,8 @@ function NotificationCard({
   notification: NotificationRead;
   onChange: () => void;
 }) {
-  const { t: translateUI } = useI18n();
+  const { t: translateUI, locale } = useI18n();
+  const text = notificationText(n, locale);
 
   const toast = useToast();
   const router = useRouter();
@@ -185,7 +191,7 @@ function NotificationCard({
         </span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
-            <span style={{ fontWeight: 700, fontSize: 13.5 }}>{n.title}</span>
+            <span style={{ fontWeight: 700, fontSize: 13.5 }}>{text.title}</span>
             <span
               style={{
                 fontSize: 10.5,
@@ -197,14 +203,14 @@ function NotificationCard({
                 letterSpacing: 0.5,
               }}
             >
-              {TYPE_LABEL[n.type] ?? n.type}
+              {translateUI(TYPE_LABEL[n.type] ?? n.type)}
             </span>
             <span style={{ fontSize: 11.5, color: "var(--text-tertiary)" }}>{<LocalizedRelativeTime value={n.created_at} />}</span>
             {n.resolved_at && (
               <span style={{ fontSize: 11.5, color: "var(--status-completed)" }}><LocalizedText message={"Resolved"} /></span>
             )}
           </div>
-          <div style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 4 }}>{formatNotificationBody(n.body)}</div>
+          <div style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 4 }}>{text.body}</div>
 
           <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
             {n.link && (

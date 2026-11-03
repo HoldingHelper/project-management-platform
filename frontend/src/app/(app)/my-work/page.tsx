@@ -117,8 +117,8 @@ export default function HomePage() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginBottom: 16 }}>
             <MetricCard href="/portfolio?view=active" label={translateUI("Active projects")} value={exec.data?.active_projects ?? "..."} tone="in-progress" />
             <MetricCard href="/portfolio?view=completed" label={translateUI("Completed")} value={exec.data?.completed_projects ?? "..."} tone="completed" />
-            <MetricCard href="/portfolio?view=delayed" label={translateUI("Delayed")} value={exec.data?.delayed_projects ?? "..."} tone="delayed" />
-            <MetricCard href="/portfolio?view=blocked" label={translateUI("Blocked projects")} value={exec.data?.blocked_projects ?? "..."} tone="blocked" />
+            <MetricCard href="/portfolio?health=delayed" label={translateUI("Delayed")} value={exec.data?.delayed_projects ?? "..."} tone="delayed" />
+            <MetricCard href="/portfolio?health=blocked" label={translateUI("Blocked projects")} value={exec.data?.blocked_projects ?? "..."} tone="blocked" />
           </div>
           <div className="pmp-two-col-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "start" }}>
             <div style={{ border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-2)", overflow: "hidden" }}>

@@ -33,7 +33,7 @@ export function ProductDocumentation({ product }: { product: ProductRead }) {
     } finally { setDownloading(false); }
   }
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, marginTop: 12, fontSize: 12, color: "var(--text-secondary)" }}>
+    <div data-archive-container="" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, marginTop: 12, fontSize: 12, color: "var(--text-secondary)" }}>
       <FileText size={15} aria-hidden /><span>{document.data?.file_name ?? "Documentation"}</span>
       <Button variant="tertiary" size="sm" disabled={downloading || !document.data?.download_share_enabled} onClick={download}><Download size={14} aria-hidden />{downloading ? <LocalizedText message={"Downloading…"} /> : <LocalizedText message={"Download"} />}</Button>
       {document.data && <DocumentLifecycleControls attachmentId={document.data.id} fileName={document.data.file_name} />}
