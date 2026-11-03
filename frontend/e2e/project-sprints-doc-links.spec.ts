@@ -482,6 +482,37 @@ test("Persian uses Jalali dates and saves selected days as ISO", async ({ page }
   await expect(modal.getByLabel("تاریخ شروع", { exact: true })).toBeFocused();
 });
 
+for (const locale of ["fa", "en"] as const) test(`project labels and dates follow ${locale} locale`, async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === "tablet", "Phone and desktop cover the project workspace.");
+  test.setTimeout(60_000);
+  const actor = { ...user, locale, calendar: "gregory", numbering_system: "latn" };
+  const api = await installApi(page, actor);
+  api.project.tags = ["level:inter-team", "partition:design"];
+  api.members[0].role = "UIUX";
+  api.createdTask = {
+    id: TASK_ID, title: "Design review", description: null, phase_id: SPRINT_ID,
+    parent_task_id: null, task_type: "Feature", partition: "design", priority: "P2", status: "Ready",
+    start_date: "2026-08-24", due_date: "2026-09-06", assignee_user_ids: [], labels: [], checklist_items: [],
+    board_order: 0, created_by: "manual", created_at: NOW, updated_at: NOW,
+  };
+  await login(page, actor);
+  await page.goto(`/projects/${PROJECT_ID}`);
+  const persian = locale === "fa";
+  await expect(page.getByRole("heading", { name: "Sprint migration" })).toBeVisible();
+  await expect(page.getByText(persian ? "2 شهریور 1405" : "Aug 24, 2026", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText(persian ? "بدون مسئول" : "Unassigned", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText(persian ? "طراحی" : "design", { exact: true }).first()).toBeVisible();
+  await page.getByRole("tab", { name: persian ? "پیوست‌ها" : "Attachments", exact: true }).click();
+  await expect(page.getByRole("heading", { name: persian ? "پیوست‌ها و مستندات پروژه" : "Project Attachments & Documents" })).toBeVisible();
+  await expect(page.getByRole("button", { name: persian ? "بارگذاری فایل" : "Upload File" })).toBeVisible();
+  await page.getByRole("tab", { name: persian ? "تیم" : "Team", exact: true }).click();
+  await expect(page.getByText(persian ? "طراحی رابط و تجربه کاربری" : "UIUX", { exact: true })).toBeVisible();
+  await page.getByRole("tab", { name: persian ? "برد" : "Board", exact: true }).click();
+  await expect(page.getByRole("button", { name: /Design review/ }).first()).toBeVisible();
+  await expect(page.getByText(persian ? "2 شهریور 1405" : "Aug 24, 2026", { exact: true }).first()).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
+});
+
 test("Persian project team count stays clear of member avatars", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name === "tablet", "Phone and desktop cover the team card layout.");
   const persianUser = { ...user, locale: "fa", calendar: "gregory", numbering_system: "latn" };
