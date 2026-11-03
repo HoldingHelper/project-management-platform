@@ -2239,5 +2239,8 @@
   "Member added — they now have access to the project channel.": "عضو اضافه شد و اکنون به کانال پروژه دسترسی دارد.",
   "Member removed.": "عضو حذف شد.",
   "Project admin transferred.": "مدیریت پروژه منتقل شد.",
-  "Milestone created.": "نقطه عطف ایجاد شد."
+  "Milestone created.": "نقطه عطف ایجاد شد.",
+  "Project health": "سلامت پروژه",
+  "Filter projects by health": "فیلتر پروژه‌ها بر اساس سلامت",
+  "All health statuses": "همه وضعیت‌های سلامت"
 }

@@ -51,13 +51,12 @@ import type { PortfolioGantt, ProjectLevel, TaskRead, UUID } from "@/lib/types";
 import { useViewState } from "@/lib/navigation";
 import { useUrlView } from "@/lib/url-view";
 
-const PROJECT_VIEWS = ["all", "active", "completed", "delayed", "blocked"] as const;
+const PROJECT_VIEWS = ["all", "active", "not-started", "on-hold", "completed", "cancelled", "archived"] as const;
+const HEALTH_VIEWS = ["all", "on-track", "at-risk", "delayed", "blocked", "completed"] as const;
 
-function matchesProjectView(project: { status: string; health_status: string }, view: (typeof PROJECT_VIEWS)[number]) {
-  if (view === "active") return project.status === "in-progress";
-  if (view === "completed") return project.status === "completed";
-  if (view === "delayed" || view === "blocked") return project.health_status === view;
-  return true;
+function matchesProjectView(project: { status: string; health_status: string }, view: (typeof PROJECT_VIEWS)[number], health: (typeof HEALTH_VIEWS)[number]) {
+  const matchesStatus = view === "all" || project.status === (view === "active" ? "in-progress" : view);
+  return matchesStatus && (health === "all" || project.health_status === health);
 }
 
 const PROJECT_LEVELS: { value: ProjectLevel; label: string; detail: string }[] = [
@@ -140,6 +139,21 @@ export default function PortfolioPage() {
 
   const [search, setSearch] = useViewState("portfolio-search", "");
   const [projectView, setProjectView] = useUrlView("view", PROJECT_VIEWS, "all");
+  const [healthView, setHealthView] = useUrlView("health", HEALTH_VIEWS, "all");
+  useEffect(() => {
+    const migrateLegacyView = () => {
+      const url = new URL(window.location.href);
+      const view = url.searchParams.get("view");
+      if (view !== "at-risk" && view !== "delayed" && view !== "blocked") return;
+      url.searchParams.delete("view");
+      if (!url.searchParams.has("health")) url.searchParams.set("health", view);
+      window.history.replaceState(window.history.state, "", url);
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    };
+    migrateLegacyView();
+    window.addEventListener("popstate", migrateLegacyView);
+    return () => window.removeEventListener("popstate", migrateLegacyView);
+  }, []);
   const [createOpen, setCreateOpen] = useState(false);
   const [productLine, setProductLine] = useViewState<string>("portfolio-product-line", "all");
   const [timelinePartition, setTimelinePartition] = useViewState<string>("portfolio-partition", "all");
@@ -190,14 +204,14 @@ export default function PortfolioPage() {
   const items = projects.data?.items ?? [];
   const q = search.trim().toLowerCase();
   const filtered = items.filter((project) =>
-    matchesProjectView(project, projectView) &&
+    matchesProjectView(project, projectView, healthView) &&
     (productLine === "all" || project.product_id === productLine) &&
     (!q || project.name.toLowerCase().includes(q) || project.id.toLowerCase().includes(q))
   );
   const visibleGantt = useMemo(() => {
     const source = gantt.data ?? { projects: [], links: [] };
     const match = (p: (typeof source.projects)[number]) => {
-      return matchesProjectView(p, projectView) && (productLine === "all" || p.product_id === productLine) &&
+      return matchesProjectView(p, projectView, healthView) && (productLine === "all" || p.product_id === productLine) &&
         (timelinePartition === "all" || projectPartitionFromTags(p.tags) === timelinePartition);
     };
     const modeProjects = source.projects.filter(match);
@@ -206,7 +220,7 @@ export default function PortfolioPage() {
       projects: modeProjects,
       links: source.links.filter((l) => ids.has(l.predecessor_project_id) && ids.has(l.successor_project_id)),
     };
-  }, [gantt.data, timelinePartition, productLine, projectView]);
+  }, [gantt.data, timelinePartition, productLine, projectView, healthView]);
 
   return (
     <div style={{ ...PAGE_STYLE, gap: 18 }}>
@@ -234,13 +248,31 @@ export default function PortfolioPage() {
       <div style={{ display: "flex", alignItems: "flex-end", gap: 10, flexWrap: "wrap" }}>
         <Field label={translateUI("Project status")}>
           <Select translateOptions aria-label={translateUI("Filter projects by status")} value={projectView}
-            onChange={(event) => setProjectView(event.target.value as (typeof PROJECT_VIEWS)[number])}
+            onChange={(event) => {
+              const view = event.target.value as (typeof PROJECT_VIEWS)[number];
+              if (view === "archived") setShowArchived(true);
+              setProjectView(view);
+            }}
             options={[
               { value: "all", label: "All projects" },
               { value: "active", label: "Active projects" },
+              { value: "not-started", label: "Not started" },
+              { value: "on-hold", label: "On hold" },
               { value: "completed", label: "Completed" },
+              { value: "cancelled", label: "Cancelled" },
+              ...(isSuperAdmin() ? [{ value: "archived", label: "Archived" }] : []),
+            ]} />
+        </Field>
+        <Field label={translateUI("Project health")}>
+          <Select translateOptions aria-label={translateUI("Filter projects by health")} value={healthView}
+            onChange={(event) => setHealthView(event.target.value as (typeof HEALTH_VIEWS)[number])}
+            options={[
+              { value: "all", label: "All health statuses" },
+              { value: "on-track", label: "On track" },
+              { value: "at-risk", label: "At risk" },
               { value: "delayed", label: "Delayed" },
               { value: "blocked", label: "Blocked" },
+              { value: "completed", label: "Completed" },
             ]} />
         </Field>
         <Field label={translateUI("Product line")}>
@@ -341,10 +373,10 @@ export default function PortfolioPage() {
                   </span>
                 </span>
                 <span>
-                  <StatusChip
-                    status={String(projectView === "blocked" || projectView === "delayed" || p.status === "in-progress" ? p.health_status : p.status)}
-                    label={p.status === "archived" ? localizeAttribute("Archived") : undefined}
-                  />
+                  <span style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                    <StatusChip status={String(p.status)} label={p.status === "archived" ? localizeAttribute("Archived") : undefined} />
+                    {p.status !== "archived" && ["at-risk", "delayed", "blocked"].includes(p.health_status) && <StatusChip status={p.health_status} />}
+                  </span>
                 </span>
                 <span><PriorityBadge level={String(p.priority)} compact /></span>
                 <span style={{ textAlign: "right", fontSize: 12, color: "var(--text-tertiary)" }}>{<LocalizedRelativeTime value={p.updated_at} />}</span>

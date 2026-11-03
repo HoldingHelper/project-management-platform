@@ -366,20 +366,68 @@ test("My work cards and pending items open their corresponding work", async ({ p
     await expect(page.getByRole("link", { name: expected, exact: true })).toBeVisible();
     await expect(page.getByRole("link", { name: absent, exact: true })).toHaveCount(0);
   }
-  for (const [label, expected, absent, view] of [
-    ["Blocked projects", "Blocked project", "Active project", "blocked"],
-    ["Delayed", "Delayed project", "Blocked project", "delayed"],
-    ["Completed", "Completed project", "Blocked project", "completed"],
-    ["Active projects", "Active project", "Blocked project", "active"],
+  for (const [label, expected, absent, query] of [
+    ["Blocked projects", "Blocked project", "Active project", "health=blocked"],
+    ["Delayed", "Delayed project", "Blocked project", "health=delayed"],
+    ["Completed", "Completed project", "Blocked project", "view=completed"],
+    ["Active projects", "Active project", "Blocked project", "view=active"],
   ]) {
     await page.goto("/my-work");
     const card = page.getByRole("link", { name: new RegExp(`Open ${label}`) });
     await card.evaluate(node => node.scrollIntoView({ block: "center" }));
     await card.click();
-    await expect(page).toHaveURL(new RegExp(`view=${view}`));
+    await expect(page).toHaveURL(new RegExp(query));
     await expect(page.getByRole("link").filter({ hasText: expected })).toBeVisible();
     await expect(page.getByRole("link").filter({ hasText: absent })).toHaveCount(0);
   }
+});
+
+test("project status filter matches the list and timeline", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "desktop", "The status filter is shared across viewports.");
+  await page.clock.setFixedTime(new Date("2026-03-22T12:00:00Z"));
+  await installApi(page);
+  const rows = [
+    { ...initialProject, id: PROJECT_ID, name: "Working project", status: "in-progress", health_status: "on-track" },
+    { ...initialProject, id: DOC_ID, name: "Delayed project", status: "in-progress", health_status: "delayed" },
+    { ...initialProject, id: TEAM_ID, name: "Paused project", status: "on-hold", health_status: "on-track" },
+    { ...initialProject, id: RECIPIENT_ID, name: "Future project", status: "not-started", health_status: "blocked" },
+  ];
+  await page.route("**/api/v1/projects?**", route => json(route, { items: rows, total_count: rows.length, page: 1, page_size: 200 }));
+  await page.route("**/api/v1/portfolio/gantt**", route => json(route, { projects: rows.map(project => ({ ...project, start_date: "2026-03-15", end_date: "2026-04-05", milestones: [] })), links: [] }));
+  await login(page);
+  await page.goto("/portfolio");
+  const filter = page.getByRole("combobox", { name: "Filter projects by status" });
+  const health = page.getByRole("combobox", { name: "Filter projects by health" });
+  const list = page.locator("a.pmp-row");
+  const timeline = page.locator(".pmp-chart-time-axis").first();
+  for (const [value, expected, absent] of [
+    ["active", "Working project", "Paused project"],
+    ["on-hold", "Paused project", "Delayed project"],
+    ["not-started", "Future project", "Paused project"],
+  ]) {
+    await filter.selectOption(value);
+    await expect(list.filter({ hasText: expected })).toBeVisible();
+    await expect(list.filter({ hasText: absent })).toHaveCount(0);
+    await expect(timeline.getByRole("link", { name: expected, exact: true }).first()).toBeVisible();
+    await expect(timeline.getByRole("link", { name: absent, exact: true })).toHaveCount(0);
+  }
+  await page.reload();
+  await expect(filter).toHaveValue("not-started");
+  await expect(list.filter({ hasText: "Future project" })).toBeVisible();
+  await filter.selectOption("active");
+  await health.selectOption("delayed");
+  await expect(list.filter({ hasText: "Delayed project" })).toBeVisible();
+  await expect(list.filter({ hasText: "Working project" })).toHaveCount(0);
+  await expect(timeline.getByRole("link", { name: "Delayed project", exact: true }).first()).toBeVisible();
+  await page.reload();
+  await expect(filter).toHaveValue("active");
+  await expect(health).toHaveValue("delayed");
+  await health.selectOption("all");
+  await expect(list.filter({ hasText: "Working project" })).toBeVisible();
+  await page.goto("/portfolio?view=blocked");
+  await expect(health).toHaveValue("blocked");
+  await expect(filter).toHaveValue("all");
+  await expect(list.filter({ hasText: "Future project" })).toBeVisible();
 });
 
 test("task navigation restores the source filters through Back and Forward", async ({ page }, testInfo) => {
