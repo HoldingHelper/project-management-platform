@@ -5,16 +5,6 @@ export function getPersonalDashboard() {
   return apiFetch<PersonalDashboard>("/analytics/personal-dashboard");
 }
 
-export interface PersonalSprint {
-  id: UUID; name: string; project_id: UUID; project_name: string; status: string;
-  start_date: string | null; end_date: string | null;
-  assigned_tasks: number; completed_tasks: number; is_lead: boolean;
-}
-
-export function getMySprints() {
-  return apiFetch<PersonalSprint[]>("/analytics/my-sprints");
-}
-
 export function getExecutiveDashboard() {
   return apiFetch<ExecutiveDashboard>("/analytics/executive-dashboard");
 }

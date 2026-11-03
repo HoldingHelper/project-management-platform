@@ -138,14 +138,6 @@
     ]
   },
   {
-    "message": "{completed} of {total} tasks completed",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "app/(app)/my-work/page.tsx"
-    ]
-  },
-  {
     "message": "{count} events on {day}",
     "translated": true,
     "neutral": false,
@@ -3577,14 +3569,6 @@
     ]
   },
   {
-    "message": "Could not load your sprints.",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "app/(app)/my-work/page.tsx"
-    ]
-  },
-  {
     "message": "Could not post comment.",
     "translated": true,
     "neutral": false,
@@ -6015,6 +5999,14 @@
     ]
   },
   {
+    "message": "From your personal dashboard",
+    "translated": true,
+    "neutral": false,
+    "files": [
+      "app/(app)/my-work/page.tsx"
+    ]
+  },
+  {
     "message": "Full burndown, velocity and trend charts live in the Executive dashboard.",
     "translated": true,
     "neutral": false,
@@ -8253,7 +8245,7 @@
     ]
   },
   {
-    "message": "My Sprints",
+    "message": "My Sprint",
     "translated": true,
     "neutral": false,
     "files": [
@@ -8697,14 +8689,6 @@
     "files": [
       "components/docs/DocsSidebar.tsx",
       "components/docs/workspace/KnowledgeExplorer.tsx"
-    ]
-  },
-  {
-    "message": "No assigned sprints yet.",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "app/(app)/my-work/page.tsx"
     ]
   },
   {
@@ -10522,14 +10506,6 @@
     ]
   },
   {
-    "message": "Personal totals",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "app/(app)/my-work/page.tsx"
-    ]
-  },
-  {
     "message": "Phone",
     "translated": true,
     "neutral": false,
@@ -12261,7 +12237,6 @@
     "neutral": false,
     "files": [
       "app/(app)/admin/archive/page.tsx",
-      "app/(app)/my-work/page.tsx",
       "app/(app)/projects/[projectId]/ProjectDetailClient.tsx",
       "app/(app)/tasks/page.tsx",
       "components/AppearanceSettings.tsx",
@@ -13614,14 +13589,6 @@
     ]
   },
   {
-    "message": "Sprint lead",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "app/(app)/my-work/page.tsx"
-    ]
-  },
-  {
     "message": "Sprint name",
     "translated": true,
     "neutral": false,
@@ -13685,14 +13652,6 @@
     "files": [
       "components/projects/ProjectSprintsFields.tsx",
       "components/public/InteractiveBento.tsx"
-    ]
-  },
-  {
-    "message": "Sprints you lead or have assigned tasks in",
-    "translated": true,
-    "neutral": false,
-    "files": [
-      "app/(app)/my-work/page.tsx"
     ]
   },
   {

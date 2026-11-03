@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import datetime
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
@@ -44,19 +44,6 @@ class PersonalDashboard(BaseModel):
     late_tasks: List[Dict[str, Any]]
     velocity_points_completed: float
     hours_logged: float
-
-
-class PersonalSprint(BaseModel):
-    id: UUID
-    name: str
-    project_id: UUID
-    project_name: str
-    status: str
-    start_date: Optional[date] = None
-    end_date: Optional[date] = None
-    assigned_tasks: int
-    completed_tasks: int
-    is_lead: bool
 
 
 class SeriesPoint(BaseModel):

@@ -26,7 +26,6 @@ from app.modules.analytics.schemas import (
     FlowMetricsReport,
     HeatmapCell,
     PersonalDashboard,
-    PersonalSprint,
     PredictabilityReport,
     ProjectHealthReport,
     VelocityReport,
@@ -57,11 +56,6 @@ async def get_personal_dashboard(
     db: AsyncSession = Depends(get_db),
 ) -> PersonalDashboard:
     return await service.get_personal_dashboard(db, current_user.user_id)
-
-
-@router.get("/my-sprints", response_model=list[PersonalSprint])
-async def get_my_sprints(current_user: CurrentUser = Depends(get_current_user), db: AsyncSession = Depends(get_db)) -> list[PersonalSprint]:
-    return await service.get_personal_sprints(db, current_user)
 
 
 @router.get("/audit-logs", response_model=list[AuditLogRead])

@@ -8,7 +8,7 @@ from datetime import date, datetime, timedelta, timezone
 from typing import List, Optional
 from uuid import UUID
 
-from sqlalchemy import delete, or_, select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
@@ -1455,48 +1455,6 @@ async def get_tasks_by_assignee(
             )
         )
     return summaries
-
-
-async def get_personal_sprints(db: AsyncSession, current_user: CurrentUser) -> list[dict]:
-    """List visible sprints where the user leads or has assigned work."""
-    tasks = await repo.list_tasks_by_assignee(db, current_user.user_id)
-    tasks_by_phase: dict[UUID, list[TaskItem]] = {}
-    for task in tasks:
-        if task.phase_id is not None:
-            tasks_by_phase.setdefault(task.phase_id, []).append(task)
-    rows = (await db.execute(
-        select(Phase, Project)
-        .join(Project, Project.id == Phase.project_id)
-        .join(Product, Product.id == Project.product_id)
-        .where(
-            Phase.is_sprint.is_(True),
-            Project.status != ProjectStatus.ARCHIVED.value,
-            Product.status != "Archived",
-            or_(Phase.id.in_(list(tasks_by_phase)), Phase.lead_assignee_user_id == current_user.user_id),
-        )
-        .order_by(Phase.start_date.desc().nullslast(), Project.name, Phase.sequence, Phase.id)
-    )).all()
-    accessible_projects: dict[UUID, bool] = {}
-    result = []
-    for sprint, project in rows:
-        if project.id not in accessible_projects:
-            try:
-                await _require_project_access(db, current_user, project.id)
-                accessible_projects[project.id] = True
-            except (ForbiddenError, NotFoundError):
-                accessible_projects[project.id] = False
-        if not accessible_projects[project.id]:
-            continue
-        assigned = tasks_by_phase.get(sprint.id, [])
-        result.append({
-            "id": sprint.id, "name": sprint.name, "project_id": project.id,
-            "project_name": project.name, "status": sprint.status,
-            "start_date": sprint.start_date, "end_date": sprint.end_date,
-            "assigned_tasks": len(assigned),
-            "completed_tasks": sum(task.status == TaskStatus.DONE.value for task in assigned),
-            "is_lead": sprint.lead_assignee_user_id == current_user.user_id,
-        })
-    return result
 
 
 async def get_blocked_tasks_with_incomplete_predecessors(
