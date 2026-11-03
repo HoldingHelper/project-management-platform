@@ -93,6 +93,7 @@ from app.modules.projects.router import (
     sprints_router,
     tasks_router,
 )
+from app.modules.projects.sprint_schedule import start_due_sprints
 from app.modules.telegram.webhook import router as telegram_router
 from app.modules.telegram import (
     close_bot,
@@ -132,6 +133,22 @@ async def _calendar_reminder_worker() -> None:
             break
         except Exception as exc:
             logger.warning("calendar_reminder_worker_error", error=str(exc))
+
+
+async def _sprint_schedule_worker() -> None:
+    """Start due sprints on startup and periodically while the API is running."""
+    while True:
+        try:
+            async with AsyncSessionLocal() as db:
+                await start_due_sprints(db)
+        except asyncio.CancelledError:
+            break
+        except Exception as exc:
+            logger.warning("sprint_schedule_worker_error", error=str(exc))
+        try:
+            await asyncio.sleep(60)
+        except asyncio.CancelledError:
+            break
 
 
 # --- Application lifecycle ---------------------------------------------------
@@ -174,6 +191,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     reminder_task = asyncio.create_task(
         _calendar_reminder_worker(), name="calendar-reminders"
     )
+    sprint_task = asyncio.create_task(_sprint_schedule_worker(), name="sprint-schedule")
 
     # 5. Telegram Bot initialization (webhook registration or polling task)
     tg_polling_task: asyncio.Task[None] | None = None
@@ -210,6 +228,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     reminder_task.cancel()
     with contextlib.suppress(asyncio.CancelledError):
         await reminder_task
+    sprint_task.cancel()
+    with contextlib.suppress(asyncio.CancelledError):
+        await sprint_task
     await engine.dispose()
     with contextlib.suppress(Exception):
         await get_redis().aclose()
