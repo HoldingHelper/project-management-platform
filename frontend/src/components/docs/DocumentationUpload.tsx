@@ -81,7 +81,7 @@ export function DocumentationFiles({ entityType, entityId }: { entityType: "task
         <span className={styles.details}><span className={styles.title} title={file.file_name}><bdi>{file.file_name}</bdi></span><span className={styles.caption}><bdi>{size(file.size_bytes)}</bdi></span></span>
       </div>
       <div className={styles.documentActions}>
-        <Button type="button" variant="tertiary" size="sm" disabled={!!downloading} aria-label={`Download ${file.file_name}`} onClick={() => download(file.id, file.file_name)}><Download size={14} aria-hidden />{downloading === file.id ? <LocalizedText message={"Downloading…"} /> : <LocalizedText message={"Download"} />}</Button>
+        <Button type="button" variant="tertiary" size="sm" disabled={!!downloading || !file.download_share_enabled} aria-label={`Download ${file.file_name}`} onClick={() => download(file.id, file.file_name)}><Download size={14} aria-hidden />{downloading === file.id ? <LocalizedText message={"Downloading…"} /> : <LocalizedText message={"Download"} />}</Button>
         <DocumentLifecycleControls attachmentId={file.id} fileName={file.file_name} />
       </div>
     </div>)}

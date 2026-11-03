@@ -120,7 +120,7 @@ async def test_archived_file_download_is_denied_to_owner_and_allowed_to_admin(mo
                 admin = CurrentUser(user_id, "admin@example.com", "Admin", ["SuperAdmin"], [])
                 task = TaskItem(title="File visibility task", status="Ready")
                 db.add(task); await db.flush()
-                attachment = FileAttachment(entity_type="task", entity_id=task.id, file_name="private.txt", content_type="text/plain", size_bytes=12, storage_key=f"test/{uuid4()}", uploaded_by_user_id=user_id)
+                attachment = FileAttachment(entity_type="task", entity_id=task.id, file_name="private.txt", content_type="text/plain", size_bytes=12, storage_key=f"test/{uuid4()}", uploaded_by_user_id=user_id, download_share_enabled=True)
                 space = DocSpace(name=f"File test {uuid4()}", slug=f"file-test-{uuid4()}", visibility="workspace", created_by=user_id)
                 db.add_all([attachment, space]); await db.flush()
                 page = DocPage(space_id=space.id, title="Private file", slug=f"file-{uuid4()}", content="", content_json={}, status="archived", archived_from_status="published", visibility="inherit", created_by=user_id, updated_by=user_id, source_attachment_id=attachment.id, source_entity_type="task", source_entity_id=task.id)

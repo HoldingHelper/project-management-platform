@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import BigInteger, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint, func
+from sqlalchemy import BigInteger, Boolean, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -258,7 +258,7 @@ class DocView(Base):
     viewed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
 
-class DocAttachment(Base, UUIDPKMixin, TimestampMixin):
+class DocAttachment(Base, UUIDPKMixin, TimestampMixin, AuditableMixin):
     __tablename__ = "attachments"
     __table_args__ = {"schema": SCHEMA}
     page_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey(f"{SCHEMA}.pages.id", ondelete="CASCADE"), index=True)
@@ -268,6 +268,9 @@ class DocAttachment(Base, UUIDPKMixin, TimestampMixin):
     uploaded_by: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     storage_key: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)
     size_bytes: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
+    download_share_enabled: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false", nullable=False)
+
+    __audit_parent__ = ("docs.DocPage", "page_id", "attachments", ("id", "file_name", "download_share_enabled"))
 
 
 class DocLink(Base, UUIDPKMixin, TimestampMixin):

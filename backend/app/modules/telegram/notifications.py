@@ -76,6 +76,7 @@ def format_task_assigned_notification(
     assigner_name: str,
     attachments_count: int,
     lang: str = "fa",
+    restricted_count: int = 0,
 ) -> str:
     """Format the rich Telegram push notification message for an assigned task."""
     prio_str = _priority_label(getattr(task.priority, "value", str(task.priority)), lang)
@@ -135,7 +136,9 @@ def format_task_assigned_notification(
             lines.append(f"\n📄 <b>توضیحات:</b>\n<i>{html.escape(desc_snip)}</i>")
 
         if attachments_count > 0:
-            lines.append(f"\n📎 <b>پیوست‌ها:</b> {attachments_count} فایل (در پیام‌های بعد ارسال می‌شود)")
+            lines.append(f"\n📎 <b>پیوست‌ها:</b> {attachments_count} فایل")
+        if restricted_count:
+            lines.append(f"🔒 {restricted_count} فایل مجوز ارسال در تلگرام ندارد؛ آن‌ها را در بخش مستندات برنامه مشاهده کنید.")
 
         return "\n".join(lines)
 
@@ -178,7 +181,9 @@ def format_task_assigned_notification(
         lines.append(f"\n📄 <b>Description:</b>\n<i>{html.escape(desc_snip)}</i>")
 
     if attachments_count > 0:
-        lines.append(f"\n📎 <b>Attachments:</b> {attachments_count} file(s) (attached below)")
+        lines.append(f"\n📎 <b>Attachments:</b> {attachments_count} file(s)")
+    if restricted_count:
+        lines.append(f"🔒 {restricted_count} file(s) cannot be sent through Telegram. View them in the application's Documents/Docs section.")
 
     return "\n".join(lines)
 
@@ -232,6 +237,8 @@ async def send_task_assignment_telegram_notification(event: TaskAssigned) -> Non
             if not task:
                 logger.debug("notification_task_not_found", task_id=str(event.task_id))
                 return
+            if task.status == "Archived":
+                return
 
             # Resolve project & product names
             project_name = "بک‌لاگ"
@@ -244,10 +251,14 @@ async def send_task_assignment_telegram_notification(event: TaskAssigned) -> Non
                     phase_name = phase.name
                     project = await db.get(Project, phase.project_id)
                     if project:
+                        if getattr(project, "status", None) == "archived":
+                            return
                         project_name = project.name
                         if project.product_id:
                             product = await db.get(Product, project.product_id)
                             if product:
+                                if getattr(product, "status", None) == "Archived":
+                                    return
                                 product_name = product.name
             elif event.project_name:
                 project_name = event.project_name
@@ -264,6 +275,8 @@ async def send_task_assignment_telegram_notification(event: TaskAssigned) -> Non
             attachments: List[FileAttachment] = list(
                 await collab_repo.list_file_attachments(db, "task", task.id)
             )
+            from app.modules.docs.lifecycle import visible_upload
+            from app.core.current_user import CurrentUser
 
             # Process each assignee independently
             for assignee_id in event.assignee_user_ids:
@@ -283,6 +296,14 @@ async def send_task_assignment_telegram_notification(event: TaskAssigned) -> Non
 
                     chat_id = conn.telegram_chat_id
                     lang = await get_user_language(chat_id)
+                    recipient = CurrentUser(assignee_id, "", "", [], [])
+                    visible = []
+                    eligible = []
+                    for attachment in attachments:
+                        if await visible_upload(db, recipient, attachment.id):
+                            visible.append(attachment)
+                            if attachment.download_share_enabled:
+                                eligible.append(attachment)
 
                     msg_text = format_task_assigned_notification(
                         task=task,
@@ -290,8 +311,9 @@ async def send_task_assignment_telegram_notification(event: TaskAssigned) -> Non
                         product_name=product_name,
                         phase_name=phase_name,
                         assigner_name=assigner_name,
-                        attachments_count=len(attachments),
+                        attachments_count=len(visible),
                         lang=lang,
+                        restricted_count=len(visible) - len(eligible),
                     )
                     markup = build_assigned_task_keyboard(task.id, lang=lang)
 
@@ -305,9 +327,15 @@ async def send_task_assignment_telegram_notification(event: TaskAssigned) -> Non
 
                     # 2. If task has attachments, send each file to assignee in Telegram
                     short_id = str(task.id)[:8]
-                    for att in attachments:
+                    for att in eligible:
                         try:
+                            await db.refresh(att)
+                            if not att.download_share_enabled or not await visible_upload(db, recipient, att.id):
+                                continue
                             file_bytes = await file_storage_service.download_async(att.storage_key)
+                            await db.refresh(att)
+                            if not att.download_share_enabled or not await visible_upload(db, recipient, att.id):
+                                continue
                             buf = BufferedInputFile(file_bytes, filename=att.file_name)
                             c_type = (att.content_type or "").lower()
                             f_name = att.file_name.lower()

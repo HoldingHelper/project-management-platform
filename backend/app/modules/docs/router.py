@@ -5,6 +5,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, File, Query, Response, UploadFile, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
+from pydantic import BaseModel, StrictBool
 
 from app.core.current_user import CurrentUser
 from app.core.database import get_db
@@ -48,6 +49,9 @@ async def prevent_document_caching(response: Response):
 
 public_docs_router = APIRouter(prefix="/docs/public", tags=["Public documentation"], dependencies=[Depends(prevent_document_caching)])
 docs_router = APIRouter(prefix="/docs", tags=["Documentation"], dependencies=[Depends(prevent_document_caching)])
+
+class SharePermissionUpdate(BaseModel):
+    enabled: StrictBool
 
 
 @public_docs_router.get("/navigation")
@@ -232,6 +236,18 @@ async def attachment_download_url(
     user: CurrentUser = Depends(get_current_user),
 ) -> dict[str, str]:
     return {"url": await service.attachment_download_url(db, user, attachment_id)}
+
+
+@docs_router.get("/attachments/{attachment_id}/sharing")
+async def attachment_sharing(attachment_id: UUID, db: AsyncSession = Depends(get_db), user: CurrentUser = Depends(get_current_user)):
+    from app.modules.collaboration.sharing import doc_permission
+    return await doc_permission(db, user, attachment_id)
+
+
+@docs_router.put("/attachments/{attachment_id}/sharing")
+async def update_attachment_sharing(attachment_id: UUID, payload: SharePermissionUpdate, db: AsyncSession = Depends(get_db), user: CurrentUser = Depends(get_current_user)):
+    from app.modules.collaboration.sharing import set_doc_permission
+    return await set_doc_permission(db, user, attachment_id, payload.enabled)
 
 
 @docs_router.get("/pages/{page_id}/links", response_model=list[LinkRead])
@@ -431,6 +447,9 @@ async def download_attachment(attachment_id: UUID, db: AsyncSession = Depends(ge
     if not attachment:
         raise NotFoundError("Documentation attachment", attachment_id)
     await service.get_page(db, user, attachment.page_id)
+    from app.modules.collaboration.sharing import doc_attachment, require_download_enabled
+    _, source = await doc_attachment(db, user, attachment_id)
+    require_download_enabled(source)
     if not attachment.storage_key:
         raise NotFoundError("Stored documentation file", attachment_id)
     content = await file_storage_service.download_async(attachment.storage_key)

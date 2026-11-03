@@ -289,6 +289,8 @@ async def download_product_documentation(
     document = await get_document(db, product_id)
     from app.modules.docs.lifecycle import require_visible_upload
     await require_visible_upload(db, current_user, document.id)
+    from app.modules.collaboration.sharing import require_download_enabled
+    require_download_enabled(document)
     content = await file_storage_service.download_async(document.storage_key)
     return Response(content, media_type="application/octet-stream", headers={
         "Content-Disposition": f"attachment; filename*=UTF-8''{quote(document.file_name, safe='')}",

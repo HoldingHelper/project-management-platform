@@ -1523,10 +1523,17 @@ class CommandExecutor:
             lines = [f"📚 <b>Documents matching '{intent.query}':</b>\n"]
         else:
             lines = [f"📚 <b>مستندات مرتبط با «{intent.query}»:</b>\n"]
+        buttons = []
         for i, p in enumerate(pages[:8], 1):
-            lines.append(f"{i}. <b>{p.title}</b>")
-
-        return ExecutionResult(text="\n".join(lines), reply_markup=menu_kb)
+            lines.append(f"{i}. <b>{html.escape(p.title)}</b>")
+            attachments = await docs_service.list_attachments(self.db, self.user, p.id)
+            for attachment in attachments:
+                if attachment.download_share_enabled and attachment.stored:
+                    buttons.append([InlineKeyboardButton(text=("📥 دریافت " if intent.language == "fa" else "📥 Get ") + attachment.file_name[:45], callback_data=f"docsfile:{attachment.id}")])
+                elif not attachment.download_share_enabled:
+                    lines.append("  🔒 دریافت در تلگرام مجاز نیست؛ در بخش مستندات برنامه مشاهده کنید." if intent.language == "fa" else "  🔒 Cannot be sent through Telegram; view it in the application's Docs section.")
+        buttons.extend(menu_kb.inline_keyboard)
+        return ExecutionResult(text="\n".join(lines), reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons))
 
     async def _read_doc(self, intent: ReadDocIntent) -> ExecutionResult:
         menu_kb = InlineKeyboardMarkup(
@@ -1546,9 +1553,18 @@ class CommandExecutor:
         page = await docs_service.get_page(self.db, self.user, pages[0].id)
         content_preview = (page.content or "")[:600]
         suffix = "View in web for full content." if intent.language == "en" else "برای مشاهده کامل به وب مراجعه فرمایید."
+        buttons = []
+        restricted = 0
+        for attachment in await docs_service.list_attachments(self.db, self.user, page.id):
+            if attachment.download_share_enabled and attachment.stored:
+                buttons.append([InlineKeyboardButton(text=("📥 دریافت " if intent.language == "fa" else "📥 Get ") + attachment.file_name[:45], callback_data=f"docsfile:{attachment.id}")])
+            elif not attachment.download_share_enabled:
+                restricted += 1
+        notice = (f"\n🔒 {restricted} file(s) cannot be sent through Telegram; view them in the application's Docs section." if intent.language == "en" else f"\n🔒 {restricted} فایل در تلگرام قابل ارسال نیست؛ آن‌ها را در مستندات برنامه مشاهده کنید.") if restricted else ""
+        buttons.extend(menu_kb.inline_keyboard)
         return ExecutionResult(
-            text=f"📄 <b>{page.title}</b>\n\n{content_preview}\n\n<i>... {suffix}</i>",
-            reply_markup=menu_kb,
+            text=f"📄 <b>{html.escape(page.title)}</b>\n\n{html.escape(content_preview)}\n\n<i>... {suffix}</i>{notice}",
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons),
         )
 
     async def _create_diagram(self, intent: CreateDiagramIntent) -> ExecutionResult:

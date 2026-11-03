@@ -222,25 +222,30 @@ async def test_send_task_assignment_with_attachments(sample_task):
         storage_key="tasks/voice.ogg",
         file_name="voice_20261101.ogg",
         content_type="audio/ogg",
+        download_share_enabled=True,
     )
     att_photo = SimpleNamespace(
         id=uuid4(),
         storage_key="tasks/screenshot.png",
         file_name="screenshot.png",
         content_type="image/png",
+        download_share_enabled=True,
     )
     att_doc = SimpleNamespace(
         id=uuid4(),
         storage_key="tasks/spec.pdf",
         file_name="spec.pdf",
         content_type="application/pdf",
+        download_share_enabled=True,
     )
+    blocked = SimpleNamespace(id=uuid4(), storage_key="tasks/private.pdf", file_name="private.pdf", content_type="application/pdf", download_share_enabled=False)
 
     with patch("app.modules.telegram.notifications.get_bot", return_value=mock_bot), \
          patch("app.modules.telegram.notifications.AsyncSessionLocal") as mock_session_local, \
          patch("app.modules.telegram.notifications.projects_repo.get_task", AsyncMock(return_value=sample_task)), \
-         patch("app.modules.telegram.notifications.collab_repo.list_file_attachments", AsyncMock(return_value=[att_voice, att_photo, att_doc])), \
-         patch("app.modules.telegram.notifications.file_storage_service.download_async", AsyncMock(return_value=b"fake-bytes")), \
+         patch("app.modules.telegram.notifications.collab_repo.list_file_attachments", AsyncMock(return_value=[att_voice, att_photo, att_doc, blocked])), \
+         patch("app.modules.telegram.notifications.file_storage_service.download_async", AsyncMock(return_value=b"fake-bytes")) as download_mock, \
+         patch("app.modules.docs.lifecycle.visible_upload", AsyncMock(return_value=True)), \
          patch("app.modules.telegram.notifications.get_user_language", AsyncMock(return_value="fa")):
 
         mock_session_local.return_value.__aenter__.return_value = mock_db
@@ -252,6 +257,8 @@ async def test_send_task_assignment_with_attachments(sample_task):
         assert mock_bot.send_voice.called
         assert mock_bot.send_photo.called
         assert mock_bot.send_document.called
+        assert download_mock.await_count == 3
+        assert "1 فایل" in mock_bot.send_message.call_args.kwargs["text"]
 
 
 @pytest.mark.asyncio

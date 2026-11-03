@@ -20,6 +20,7 @@ const labels: Record<string, string> = {
   label_ids: "Labels", label_id: "Label", checklist_items: "Checklist", is_done: "Completed",
   text: "Text", order: "Order", documents: "Connected documents", attachments: "Attachments",
   file_name: "File name", size_bytes: "Size", content_type: "File type", version: "Version",
+  download_share_enabled: "Allow download and Telegram sharing",
   comments: "Comments", body: "Comment", author_user_id: "User", is_deleted: "Deleted",
   story_points: "Story points", estimated_hours: "Estimated hours", actual_hours: "Actual hours",
   partition: "Partition", board_order: "Order", github_url: "GitHub URL",

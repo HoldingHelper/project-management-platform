@@ -978,3 +978,28 @@ test("project and task actions offer archive instead of delete", async ({ page }
   await expect(dialog.getByRole("button", { name: "Delete", exact: true })).toHaveCount(0);
   await expect(dialog.getByRole("button", { name: "Archive", exact: true })).toBeVisible();
 });
+
+test("file owner can enable and revoke download and Telegram sharing", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "desktop", "The permission control is shared across viewports.");
+  await installApi(page);
+  let enabled = false;
+  const file = { id: DOC_ID, entity_type: "project", entity_id: PROJECT_ID, file_name: "sharing-test.pdf", content_type: "application/pdf", size_bytes: 100, uploaded_by_user_id: USER_ID, version: 1, created_at: NOW };
+  await page.route("**/api/v1/files?**", route => json(route, [{ ...file, download_share_enabled: enabled }]));
+  await page.route(`**/api/v1/files/${DOC_ID}/lifecycle`, route => json(route, { page_id: DOC_ID, status: "published", can_edit: false, can_publish: false, can_archive: true, can_restore: false }));
+  await page.route(`**/api/v1/files/${DOC_ID}/sharing`, route => {
+    if (route.request().method() === "PUT") enabled = route.request().postDataJSON().enabled;
+    return json(route, { enabled, can_manage: true });
+  });
+  await login(page);
+  await page.goto(`/projects/${PROJECT_ID}`);
+  await page.getByRole("tab", { name: "Attachments", exact: true }).click();
+  const checkbox = page.getByRole("checkbox", { name: `Allow download and Telegram sharing for ${file.file_name}` });
+  await expect(checkbox).not.toBeChecked();
+  await expect(page.getByRole("button", { name: "Download", exact: true })).toBeDisabled();
+  await checkbox.click();
+  await expect(checkbox).toBeChecked();
+  await expect(page.getByRole("button", { name: "Download", exact: true })).toBeEnabled();
+  await checkbox.click();
+  await expect(checkbox).not.toBeChecked();
+  await expect(page.getByRole("button", { name: "Download", exact: true })).toBeDisabled();
+});

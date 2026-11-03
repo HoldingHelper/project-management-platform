@@ -75,6 +75,8 @@ import {
 } from "@/components/ds";
 import { ErrorState, PageHeader, PAGE_STYLE, Spinner } from "@/components/ui/States";
 import { DocumentationFiles } from "@/components/docs/DocumentationUpload";
+import { FileSharingControl } from "@/components/docs/FileSharingControl";
+import { FileImagePreview } from "@/components/docs/FileImagePreview";
 import { TaskChecklist } from "@/components/tasks/TaskChecklist";
 import { TaskEditorModal } from "@/components/tasks/TaskEditorModal";
 import { useAuth } from "@/lib/auth/AuthProvider";
@@ -954,7 +956,7 @@ export default function TaskDetailPage({
                               type="button"
                               variant="secondary"
                               size="sm"
-                              disabled={downloadingFileId === file.id}
+                              disabled={downloadingFileId === file.id || !file.download_share_enabled}
                               onClick={() => handleDownloadFile(file.id, file.file_name)}
                               title={translateUI("Download file")}
                             >
@@ -963,15 +965,17 @@ export default function TaskDetailPage({
                             </Button>
                           </div>
 
+                          <FileSharingControl fileId={file.id} fileName={file.file_name} />
+
                           {/* Voice player for voice messages */}
-                          {isVoice && (
+                          {isVoice && file.download_share_enabled && (
                             <div style={{ marginTop: 2 }}>
                               <VoiceBubble attachmentId={file.id} />
                             </div>
                           )}
 
                           {/* Image preview thumbnail */}
-                          {isImage && (
+                          {isImage && file.download_share_enabled && (
                             <div
                               style={{
                                 marginTop: 4,
@@ -984,12 +988,7 @@ export default function TaskDetailPage({
                                 justifyContent: "center",
                               }}
                             >
-                              <img
-                                src={`/api/v1/files/${file.id}/download`}
-                                alt={file.file_name}
-                                style={{ maxWidth: "100%", maxHeight: 160, objectFit: "contain", display: "block" }}
-                                loading="lazy"
-                              />
+                              <FileImagePreview fileId={file.id} fileName={file.file_name} maxHeight={160} />
                             </div>
                           )}
                         </div>

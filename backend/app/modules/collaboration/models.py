@@ -75,7 +75,7 @@ class FileAttachment(Base, UUIDPKMixin, TimestampMixin, AuditableMixin):
     @property
     def __audit_parent__(self):
         entity = {"project": "projects.Project", "task": "projects.TaskItem"}.get(self.entity_type)
-        return (entity, "entity_id", "attachments", ("id", "file_name", "content_type", "size_bytes", "version")) if entity else None
+        return (entity, "entity_id", "attachments", ("id", "file_name", "content_type", "size_bytes", "version", "download_share_enabled")) if entity else None
 
     __tablename__ = "file_attachments"
     __table_args__ = {"schema": SCHEMA}
@@ -92,6 +92,7 @@ class FileAttachment(Base, UUIDPKMixin, TimestampMixin, AuditableMixin):
         UUID(as_uuid=True), nullable=False
     )
     version: Mapped[int] = mapped_column(default=1, nullable=False)
+    download_share_enabled: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false", nullable=False)
 
 
 class Notification(Base, UUIDPKMixin, TimestampMixin):

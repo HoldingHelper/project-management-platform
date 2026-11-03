@@ -63,6 +63,33 @@ logger = structlog.get_logger(__name__)
 router = Router(name="telegram_callbacks")
 
 
+@router.callback_query(F.data.startswith("docsfile:"))
+async def handle_document_download(query: CallbackQuery) -> None:
+    from aiogram.types import BufferedInputFile
+    from app.core.exceptions import ForbiddenError, NotFoundError
+    from app.core.storage import file_storage_service
+    from app.modules.collaboration.sharing import doc_attachment, require_download_enabled
+    lang = await get_user_language(query.from_user.id, query.from_user.language_code)
+    try:
+        attachment_id = UUID((query.data or "").split(":", 1)[1])
+        async with AsyncSessionLocal() as db:
+            _, user = await resolve_telegram_user(db, query.from_user.id)
+            if not user or not TelegramCapabilityService.can_search_docs(user):
+                raise ForbiddenError("Access denied.")
+            attachment, source = await doc_attachment(db, user, attachment_id)
+            require_download_enabled(source)
+            if not attachment.storage_key or not query.message:
+                raise NotFoundError("Stored attachment", attachment_id)
+            content = await file_storage_service.download_async(attachment.storage_key)
+            await db.refresh(source)
+            require_download_enabled(source)
+            await doc_attachment(db, user, attachment_id)
+            await query.message.answer_document(BufferedInputFile(content, filename=attachment.file_name))
+        await query.answer()
+    except (ForbiddenError, NotFoundError, ValueError, IndexError):
+        await query.answer("ارسال این فایل مجاز نیست؛ آن را در مستندات برنامه مشاهده کنید." if lang == "fa" else "This file cannot be sent. View it in the application's Docs section.", show_alert=True)
+
+
 @router.callback_query(F.data.startswith("select:"))
 async def handle_entity_selection(query: CallbackQuery) -> None:
     """Handle user selection from disambiguation keyboard."""

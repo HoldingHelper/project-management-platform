@@ -563,7 +563,7 @@ export interface UserPendingWork { pending_on_me: PendingOnMeItem[]; pending_on_
 
 // ---- Collaboration ----
 export interface CommentRead { id: UUID; entity_type: string; entity_id: UUID; author_user_id: UUID; parent_comment_id?: UUID | null; body: string; mentioned_user_ids: UUID[]; is_deleted: boolean; created_at: string; updated_at: string; }
-export interface FileAttachmentRead { id: UUID; entity_type: string; entity_id: UUID; file_name: string; content_type: string; size_bytes: number; uploaded_by_user_id: UUID; version: number; created_at: string; }
+export interface FileAttachmentRead { id: UUID; entity_type: string; entity_id: UUID; file_name: string; content_type: string; size_bytes: number; uploaded_by_user_id: UUID; version: number; download_share_enabled: boolean; created_at: string; }
 export interface NotificationRead {
   id: UUID;
   user_id: UUID;

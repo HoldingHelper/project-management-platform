@@ -27,10 +27,11 @@ import {
   markChannelRead,
   sendMessage,
 } from "@/lib/api/chat";
-import { getFileDownloadUrl, listFiles, uploadFile } from "@/lib/api/collaboration";
+import { downloadFile, listFiles, uploadFile } from "@/lib/api/collaboration";
 import { Avatar, PresenceDot, useToast } from "@/components/ds";
 import { VoiceRecorder } from "@/components/voice/VoiceRecorder";
 import { VoiceBubble } from "@/components/chat/VoiceBubble";
+import { FileSharingControl } from "@/components/docs/FileSharingControl";
 import { useRealtimeEvent } from "@/lib/ws/RealtimeProvider";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { useUserMap } from "@/lib/hooks";
@@ -265,6 +266,7 @@ export function ChannelConversation({
               {m.message_type === "file" && m.attachment_id && (
                 <MessageAttachment attachmentId={m.attachment_id} file={fileById.get(m.attachment_id)} />
               )}
+              {m.attachment_id && <FileSharingControl fileId={m.attachment_id} fileName={fileById.get(m.attachment_id)?.file_name ?? "attachment"} />}
             </>
           )}
           <div className="pmp-chat-message-actions" style={{ display: "flex", gap: 6, marginTop: 4, alignItems: "center", flexWrap: "wrap" }}>
@@ -588,14 +590,15 @@ function MessageAttachment({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const kind = mediaKind(file?.content_type ?? "");
+  useEffect(() => () => { if (url) URL.revokeObjectURL(url); }, [url]);
 
   async function loadUrl() {
     if (url || loading) return url;
     setLoading(true);
     try {
-      const res = await getFileDownloadUrl(attachmentId);
-      setUrl(res.url);
-      return res.url;
+      const nextUrl = URL.createObjectURL(await downloadFile(attachmentId));
+      setUrl(nextUrl);
+      return nextUrl;
     } catch {
       setError(true);
       return null;

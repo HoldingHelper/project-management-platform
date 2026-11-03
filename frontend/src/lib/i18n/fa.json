@@ -1,4 +1,8 @@
 {
+  "Allow download and Telegram sharing": "اجازه دانلود و ارسال در تلگرام",
+  "Allow download and Telegram sharing for {name}": "اجازه دانلود و ارسال در تلگرام برای {name}",
+  "Could not load download permission.": "بارگذاری مجوز دانلود ممکن نشد.",
+  "Could not update download permission.": "تغییر مجوز دانلود ممکن نشد.",
   "Only a Super Admin can restore an archived task. Continue?": "فقط مدیر کل می‌تواند کار بایگانی‌شده را بازیابی کند. ادامه می‌دهید؟",
   "Product lines": "خطوط محصول",
   "Product line archived.": "خط محصول بایگانی شد.",

@@ -5,6 +5,7 @@ import { Archive, RotateCcw, Send } from "lucide-react";
 import { Button, Modal, useToast } from "@/components/ds";
 import { apiFetch } from "@/lib/api/client";
 import { useI18n } from "@/lib/i18n/I18nProvider";
+import { FileSharingControl } from "./FileSharingControl";
 
 export type DocumentLifecycle = { page_id: string; status: string; can_edit: boolean; can_comment?: boolean; can_publish: boolean; can_archive: boolean; can_restore: boolean };
 export function DocumentLifecycleControls({ attachmentId, pageId, fileName, onArchived, beforePublish }: {
@@ -40,6 +41,7 @@ export function DocumentLifecycleControls({ attachmentId, pageId, fileName, onAr
   }
   if (!access.data) return null;
   return <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+    {attachmentId && <FileSharingControl fileId={attachmentId} fileName={fileName} />}
     <span role="status" style={{ fontSize: 12, color: access.data.status === "archived" ? "var(--accent-primary)" : "var(--text-secondary)", background: access.data.status === "archived" ? "color-mix(in srgb, var(--accent-primary) 10%, var(--surface-1))" : undefined, borderRadius: 6, padding: access.data.status === "archived" ? "4px 8px" : undefined }}>{t(access.data.status === "published" ? "Published · Read-only" : access.data.status === "archived" ? "Archived · Read-only" : "Draft / On Publish")}</span>
     {access.data.can_publish && <Button type="button" size="sm" variant="secondary" onClick={() => setAction("publish")}><Send size={14} />{t("Publish document")}</Button>}
     {access.data.can_archive && <Button type="button" size="sm" variant="tertiary" style={{ background: "color-mix(in srgb, var(--accent-primary) 8%, var(--surface-2))", borderColor: "color-mix(in srgb, var(--accent-primary) 35%, var(--border-default))", color: "var(--text-primary)" }} aria-label={t("Archive document {name}", { name: fileName })} onClick={() => setAction("archive")}><Archive size={15} aria-hidden style={{ color: "var(--accent-primary)" }} />{t("Archive")}</Button>}

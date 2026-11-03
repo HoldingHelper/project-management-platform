@@ -70,6 +70,7 @@ import {
 import { ChecklistEditor, ProjectChecklist, type ChecklistDraft } from "@/components/tasks/TaskChecklist";
 import { DocumentationFiles, DocumentationUpload, uploadDocumentationFiles } from "@/components/docs/DocumentationUpload";
 import { DocumentLifecycleControls } from "@/components/docs/DocumentLifecycleControls";
+import { FileImagePreview } from "@/components/docs/FileImagePreview";
 import { EntityHistory } from "@/components/history/EntityHistory";
 import { ProjectMembersFields, useProjectMembersDraft } from "@/components/projects/ProjectMembersFields";
 import { ProjectSprintsFields, useProjectSprintsDraft } from "@/components/projects/ProjectSprintsFields";
@@ -490,7 +491,7 @@ function ProjectAttachmentsTab({ projectId }: { projectId: string }) {
                     type="button"
                     variant="secondary"
                     size="sm"
-                    disabled={downloadingId === file.id}
+                    disabled={downloadingId === file.id || !file.download_share_enabled}
                     onClick={() => handleDownload(file.id, file.file_name)}
                   >
                     <Download size={13} />
@@ -500,13 +501,13 @@ function ProjectAttachmentsTab({ projectId }: { projectId: string }) {
 
                 <DocumentLifecycleControls attachmentId={file.id} fileName={file.file_name} />
 
-                {isVoice && (
+                {isVoice && file.download_share_enabled && (
                   <div style={{ marginTop: 2 }}>
                     <VoiceBubble attachmentId={file.id} />
                   </div>
                 )}
 
-                {isImage && (
+                {isImage && file.download_share_enabled && (
                   <div
                     style={{
                       marginTop: 4,
@@ -519,12 +520,7 @@ function ProjectAttachmentsTab({ projectId }: { projectId: string }) {
                       justifyContent: "center",
                     }}
                   >
-                    <img
-                      src={`/api/v1/files/${file.id}/download`}
-                      alt={file.file_name}
-                      style={{ maxWidth: "100%", maxHeight: 180, objectFit: "contain", display: "block" }}
-                      loading="lazy"
-                    />
+                    <FileImagePreview fileId={file.id} fileName={file.file_name} />
                   </div>
                 )}
               </div>
