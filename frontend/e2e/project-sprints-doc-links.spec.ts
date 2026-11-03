@@ -267,6 +267,27 @@ async function login(page: Page, sessionUser: typeof user = user) {
   await expect(page).toHaveURL(/\/(?:app\/(?:teams|docs)|h\/holding)$/);
 }
 
+test("project attachment archive warns the author about administrator restoration", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "desktop", "The lifecycle behavior is independent of viewport size.");
+  const actor = { ...user, locale: "fa", calendar: "gregory", numbering_system: "latn" };
+  await installApi(page, actor);
+  let archived = false;
+  const file = { id: DOC_ID, entity_type: "project", entity_id: PROJECT_ID, file_name: "my-document.pdf", content_type: "application/pdf", size_bytes: 1024, uploaded_by_user_id: USER_ID, version: 1, created_at: NOW };
+  await page.route("**/api/v1/files?**", route => json(route, archived ? [] : [file]));
+  await page.route(`**/api/v1/files/${DOC_ID}/lifecycle`, route => json(route, {
+    page_id: DOC_ID, status: archived ? "archived" : "published", can_edit: false, can_publish: false, can_archive: !archived, can_restore: false,
+  }));
+  await page.route(`**/api/v1/docs/pages/${DOC_ID}/archive`, route => { archived = true; return json(route, {}); });
+  await login(page, actor);
+  await page.goto(`/projects/${PROJECT_ID}`);
+  await page.getByRole("tab", { name: "پیوست‌ها", exact: true }).click();
+  await page.getByRole("button", { name: `بایگانی سند ${file.file_name}` }).click();
+  const dialog = page.getByRole("dialog", { name: "سند بایگانی شود؟" });
+  await expect(dialog.getByText("اسناد بایگانی‌شده از همه کاربران عادی، از جمله نویسنده، پنهان هستند. فقط مدیر کل می‌تواند آن‌ها را بازیابی کند.")).toBeVisible();
+  await dialog.getByRole("button", { name: "بایگانی", exact: true }).click();
+  await expect(page.getByTitle(file.file_name)).toHaveCount(0);
+});
+
 for (const locale of ["fa", "en"] as const) test(`executive dashboard uses ${locale} for filters and generated insights`, async ({ page }, testInfo) => {
   test.skip(testInfo.project.name === "tablet", "Phone and desktop cover the dashboard.");
   const actor = { ...user, locale, calendar: "gregory", numbering_system: "latn", permissions: [...user.permissions, "analytics.view_org"] };

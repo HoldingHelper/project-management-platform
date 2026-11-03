@@ -70,6 +70,7 @@ import {
 } from "@/lib/api/docs";
 import { ChecklistEditor, ProjectChecklist, type ChecklistDraft } from "@/components/tasks/TaskChecklist";
 import { DocumentationFiles, DocumentationUpload, uploadDocumentationFiles } from "@/components/docs/DocumentationUpload";
+import { DocumentLifecycleControls } from "@/components/docs/DocumentLifecycleControls";
 import { EntityHistory } from "@/components/history/EntityHistory";
 import { ProjectMembersFields, useProjectMembersDraft } from "@/components/projects/ProjectMembersFields";
 import { ProjectSprintsFields, useProjectSprintsDraft } from "@/components/projects/ProjectSprintsFields";
@@ -515,6 +516,8 @@ function ProjectAttachmentsTab({ projectId }: { projectId: string }) {
                     {downloadingId === file.id ? <LocalizedText message={"Downloading…"} /> : <LocalizedText message={"Download"} />}
                   </Button>
                 </div>
+
+                <DocumentLifecycleControls attachmentId={file.id} fileName={file.file_name} />
 
                 {isVoice && (
                   <div style={{ marginTop: 2 }}>
