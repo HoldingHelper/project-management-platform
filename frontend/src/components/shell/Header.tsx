@@ -29,7 +29,8 @@ import { Avatar, PresenceDot, PRESENCE_LABELS } from "@/components/ds";
 import { UserStatusPickerModal, UserStatusPill } from "@/components/status";
 import { useNotifications } from "@/lib/stores/notifications";
 import { usePresence, useUserStatus } from "@/lib/stores/presence";
-import { formatNotificationBody, relativeTime } from "@/lib/format";
+import { relativeTime } from "@/lib/format";
+import { notificationText } from "@/lib/i18n/notifications";
 import { getRouteMeta } from "./navigation";
 import { HeaderMeetingPill } from "@/components/calendar/HeaderMeetingPill";
 
@@ -54,7 +55,7 @@ export function Header({
 }: {
   onOpenSearch: () => void;
 }) {
-  const { t: translateUI, number: displayNumber } = useI18n();
+  const { t: translateUI, number: displayNumber, locale } = useI18n();
 
   const pathname = usePathname();
   const router = useRouter();
@@ -339,11 +340,11 @@ export function Header({
                     <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--accent-primary)", flexShrink: 0 }} />
                   )}
                     <div style={{ fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                      {n.title}
+                      {notificationText(n, locale).title}
                     </div>
                     {n.body && (
                       <div style={{ fontSize: 11.5, color: "var(--text-secondary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                        {formatNotificationBody(n.body)}
+                        {notificationText(n, locale).body}
                       </div>
                     )}
                     <div style={{ fontSize: 10.5, color: "var(--text-tertiary)" }}>{<LocalizedRelativeTime value={n.created_at} />}</div>

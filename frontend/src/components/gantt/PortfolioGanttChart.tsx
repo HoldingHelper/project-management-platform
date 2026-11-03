@@ -473,7 +473,7 @@ export function PortfolioGanttChart({
                   aria-label={r.name}
                   onKeyDown={event => { if (event.key === "Enter") router.push(`/projects/${r.id}`); }}
                   className={r.archived ? "pmp-archived pmp-archived-timeline-bar" : r.pulse && !(barDrag && barDrag.id === r.id) ? "pmp-pulse" : undefined}
-                  title={canDrag ? `${r.name} · drag to reschedule · click to open` : `${r.name} · ${Math.round(r.progress)}% · click to open`}
+                  title={canDrag ? `${r.name} · ${translateUI("drag to reschedule")} · ${translateUI("click to open")}` : `${r.name} · ${Math.round(r.progress)}% · ${translateUI("click to open")}`}
                   onPointerDown={(e) => beginBarDrag(e, r, "move")}
                   onClick={() => {
                     // Ignore the click that ends a real drag; otherwise open the project.

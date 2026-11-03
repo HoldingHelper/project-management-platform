@@ -382,6 +382,25 @@ test("My work cards and pending items open their corresponding work", async ({ p
   }
 });
 
+for (const locale of ["fa", "en"] as const) test(`notifications activity and timeline use ${locale} language`, async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "desktop", "Language is independent of viewport.");
+  const actor = { ...user, roles: ["SuperAdmin"], locale, calendar: locale === "fa" ? "persian" : "gregory", numbering_system: "latn" };
+  await installApi(page, actor);
+  await page.route("**/api/v1/notifications?**", route => json(route, [{ id: TASK_ID, type: "task_assigned", title: "You were assigned a task", body: 'Task "Important work" in MyProject was assigned to you.', is_read: false, requires_action: false, created_at: NOW }]));
+  await page.route("**/api/v1/analytics/audit-logs?**", route => json(route, [{ id: DOC_ID, entity_type: "TaskItem", action_type: "Update", changes_json: '{"due_date":{}}', user_id: null, occurred_at: NOW }]));
+  await page.route("**/api/v1/portfolio/gantt**", route => json(route, { projects: [], links: [] }));
+  await login(page, actor);
+  await page.goto("/notifications");
+  await expect(page.getByText(locale === "fa" ? "کاری به شما واگذار شد" : "You were assigned a task")).toBeVisible();
+  await expect(page.getByText(/Important work/)).toContainText(locale === "fa" ? "به شما واگذار شد" : "was assigned to you");
+  await page.goto("/activity");
+  await expect(page.getByText(locale === "fa" ? "کار به‌روزشده" : "Updated Task")).toBeVisible();
+  await expect(page.getByText(locale === "fa" ? "تاریخ سررسید" : "Due date", { exact: true })).toBeVisible();
+  await page.goto("/timeline");
+  await expect(page.getByText(locale === "fa" ? "پروژه‌های میان‌بخشی" : "Cross-partition projects", { exact: true })).toBeVisible();
+  await expect(page.getByText(locale === "fa" ? "نمودار گانت میان حوزه‌های کاری" : "Inter-partition Gantt", { exact: true }).first()).toBeVisible();
+});
+
 test("project status filter matches the list and timeline", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "desktop", "The status filter is shared across viewports.");
   await page.clock.setFixedTime(new Date("2026-03-22T12:00:00Z"));

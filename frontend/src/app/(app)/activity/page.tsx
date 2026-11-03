@@ -77,9 +77,10 @@ function humanize(value: string) {
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
-function describe(log: AuditLogRead): string {
-  const entity = humanize(log.entity_type.split(".").pop() ?? log.entity_type);
-  return `${log.action_type}d ${entity}`;
+function describe(log: AuditLogRead, t: (message: string) => string, locale: string): string {
+  const entity = t(humanize(log.entity_type.split(".").pop() ?? log.entity_type));
+  const action = t(({ Create: "Created", Update: "Updated", Delete: "Deleted" } as Record<string, string>)[log.action_type] ?? log.action_type);
+  return locale === "fa" ? `${entity} ${action}` : `${action} ${entity}`;
 }
 
 function changedFields(log: AuditLogRead): string[] {
@@ -92,7 +93,7 @@ function changedFields(log: AuditLogRead): string[] {
 }
 
 export default function ActivityPage() {
-  const { t: translateUI } = useI18n();
+  const { t: translateUI, locale } = useI18n();
 
   const { hasPermission, isSuperAdmin } = useAuth();
   const { nameOf } = useUserMap();
@@ -139,7 +140,7 @@ export default function ActivityPage() {
             onChange={(e) => setEntityFilter(e.target.value)}
             placeholder={translateUI("All entities")}
             aria-label={translateUI("Filter activity by entity type")}
-            options={entityTypes.map((t) => ({ value: t, label: humanize(t.split(".").pop() ?? t) }))}
+            options={entityTypes.map((t) => ({ value: t, label: translateUI(humanize(t.split(".").pop() ?? t)) }))}
           />
         }
       />
@@ -199,7 +200,7 @@ export default function ActivityPage() {
                   <span style={{ fontSize: 13, fontWeight: 600 }}>
                     {log.user_id ? nameOf(log.user_id) : <LocalizedText message={"System"} />}
                   </span>
-                  <span style={{ fontSize: 12.5, color: "var(--text-secondary)" }}>{describe(log)}</span>
+                  <span style={{ fontSize: 12.5, color: "var(--text-secondary)" }}>{describe(log, translateUI, locale)}</span>
                   <span style={{ fontSize: 11.5, color: "var(--text-tertiary)", marginLeft: "auto" }}>
                     {<LocalizedRelativeTime value={log.occurred_at} />}
                   </span>
@@ -218,7 +219,7 @@ export default function ActivityPage() {
                           color: "var(--text-tertiary)",
                         }}
                       >
-                        {humanize(f)}
+                        {translateUI(humanize(f))}
                       </span>
                     ))}
                   </div>
