@@ -184,3 +184,35 @@ async def test_document_unlink_and_attachment_versions_are_logged_without_storag
             finally:
                 await db.close(); await transaction.rollback()
     await engine.dispose()
+
+@pytest.mark.asyncio
+async def test_archiving_project_task_and_product_records_status_changes(monkeypatch):
+    from unittest.mock import AsyncMock
+    from app.core.current_user import CurrentUser
+    from app.modules.projects.enums import TaskStatus
+    events = []
+    monkeypatch.setattr(event_bus, "publish_sync_fire_and_forget", events.append)
+    monkeypatch.setattr(event_bus, "publish", AsyncMock())
+    async with engine.connect() as connection:
+        transaction = await connection.begin()
+        async with AsyncSession(bind=connection, expire_on_commit=False, join_transaction_mode="create_savepoint") as db:
+            actor = (await db.execute(select(User.id).limit(1))).scalar_one()
+            token = current_user_id_var.set(actor)
+            try:
+                product = Product(name=f"Archive history {uuid4()}", owner_user_id=actor, status="Active")
+                db.add(product); await db.flush()
+                project = Project(product_id=product.id, name="History project", status="on-hold")
+                task = TaskItem(title="History task", status="Ready")
+                db.add_all([project, task]); await db.commit()
+                events.clear()
+                user = CurrentUser(actor, "user@example.com", "User", ["Developer"], [])
+                await service.archive_project(db, project.id)
+                await service.update_task_status(db, task.id, TaskStatus.ARCHIVED, actor, user)
+                await service.archive_product(db, product.id)
+                for entity, expected in ((project, "archived"), (task, "Archived"), (product, "Archived")):
+                    log = next(event for event in events if event.entity_id == str(entity.id) and json.loads(event.changes_json).get("status", {}).get("new") == expected)
+                    assert log.user_id == actor
+            finally:
+                current_user_id_var.reset(token)
+                await db.close(); await transaction.rollback()
+    await engine.dispose()

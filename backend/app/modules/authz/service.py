@@ -50,6 +50,8 @@ async def explain(
     node: OrgNode,
     object_type: str = "node",
 ) -> AccessExplanation:
+    if getattr(node, "status", None) == "archived" and not user.is_super_admin():
+        raise NotFoundError("Resource", node.id)
     grants = await _ancestor_grants(db, user.user_id, node)
     explicit = [g for g in grants if g.node.id == node.id]
     owner = next((g for g in grants if g.membership.role == "holding_owner"), None)
@@ -153,6 +155,8 @@ async def visible_nodes(db: AsyncSession, user: CurrentUser) -> list[OrgNode]:
     walls = list((await db.execute(select(VentureWall).where(VentureWall.person_id == user.user_id))).scalars().all())
     visible: list[OrgNode] = []
     for node in nodes:
+        if getattr(node, "status", None) == "archived" and not user.is_super_admin():
+            continue
         grants = [g for g in all_grants if _is_descendant(node.path, g.node.path)]
         target_venture = next((v for v in ventures if _is_descendant(node.path, v.path)), None)
         walled = not owner and not board and target_venture and any(

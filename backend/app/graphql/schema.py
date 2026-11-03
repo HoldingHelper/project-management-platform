@@ -62,6 +62,9 @@ class Query:
         from app.modules.projects.models import ProjectMember
 
         stmt = select(Project)
+        if not user.is_super_admin():
+            from app.modules.projects.models import Product
+            stmt = stmt.where(Project.status != "archived", Project.product_id.in_(select(Product.id).where(Product.status != "Archived")))
         if not _can_view_all_projects(user):
             stmt = stmt.join(ProjectMember, ProjectMember.project_id == Project.id).where(
                 ProjectMember.user_id == user.user_id
@@ -99,6 +102,11 @@ class Query:
         from app.modules.projects.models import Phase, ProjectMember, TaskAssignee
 
         stmt = select(TaskItem)
+        if not user.is_super_admin():
+            from sqlalchemy import or_
+            from app.modules.projects.models import Product
+            visible_phases = select(Phase.id).join(Project, Phase.project_id == Project.id).join(Product, Product.id == Project.product_id).where(Project.status != "archived", Product.status != "Archived")
+            stmt = stmt.where(TaskItem.status != "Archived", or_(TaskItem.phase_id.is_(None), TaskItem.phase_id.in_(visible_phases)))
         if not _can_view_all_projects(user):
             # Show tasks in projects where user is member or tasks directly assigned to user
             from sqlalchemy import or_
@@ -324,8 +332,8 @@ class Mutation:
         task = res.scalar_one_or_none()
         if not task:
             raise NotFoundError("Task", task_id)
-        task.status = status
-        await db.commit()
+        from app.modules.projects.enums import TaskStatus
+        await svc_update_status(db, task_id, TaskStatus(status), changed_by_user_id=user.user_id, current_user=user)
         await db.refresh(task)
         return TaskType(
             id=task.id,

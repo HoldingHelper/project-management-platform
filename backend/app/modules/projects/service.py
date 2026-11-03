@@ -268,30 +268,7 @@ async def create_product(db: AsyncSession, payload: ProductCreate) -> ProductRea
 
 
 async def delete_product(db: AsyncSession, product_id: UUID) -> None:
-    # Lock the parent row to prevent a concurrent project insert from racing deletion.
-    product = (await db.execute(select(Product).where(Product.id == product_id).with_for_update())).scalar_one_or_none()
-    if product is None:
-        raise NotFoundError("Product line", product_id)
-    linked_project = (await db.execute(select(Project.id).where(Project.product_id == product_id).limit(1))).scalar_one_or_none()
-    if linked_project is not None:
-        raise BusinessRuleError("This product line has projects. Move or remove its projects before removing the product line.")
-    from app.modules.collaboration.models import FileAttachment
-    files = list((await db.execute(select(FileAttachment).where(FileAttachment.entity_type == "product", FileAttachment.entity_id == product_id))).scalars().all())
-    from app.modules.docs.models import DocSpace
-    if files or (await db.execute(select(DocSpace.id).where(DocSpace.product_id == product_id).limit(1))).scalar_one_or_none():
-        raise BusinessRuleError("This product line retains documents and cannot be deleted.")
-    await db.execute(delete(FileAttachment).where(FileAttachment.entity_type == "product", FileAttachment.entity_id == product_id))
-    await db.execute(delete(Product).where(Product.id == product_id))
-    await db.commit()
-    # Delete stored objects only after the product removal transaction succeeds.
-    import asyncio
-    import logging
-    from app.core.storage import file_storage_service
-    for attachment in files:
-        try:
-            await asyncio.to_thread(file_storage_service.delete, attachment.storage_key)
-        except Exception:
-            logging.getLogger(__name__).exception("Could not remove product attachment from storage")
+    raise ForbiddenError("Projects, tasks and product lines cannot be deleted. Archive them instead.")
 
 
 async def get_product(db: AsyncSession, product_id: UUID) -> ProductRead:
@@ -302,11 +279,13 @@ async def get_product(db: AsyncSession, product_id: UUID) -> ProductRead:
 
 
 async def update_product(
-    db: AsyncSession, product_id: UUID, payload: ProductUpdate
+    db: AsyncSession, product_id: UUID, payload: ProductUpdate, current_user: CurrentUser | None = None
 ) -> ProductRead:
     product = await membership.lock_product(db, product_id)
     if product is None:
         raise NotFoundError("Product", product_id)
+    if payload.status is not None:
+        _archive_transition(product, payload.status.value, "Archived", current_user)
     if "member_user_ids" in payload.model_fields_set:
         if payload.member_user_ids is None:
             raise ValidationAppError("Members must be a list.")
@@ -319,11 +298,23 @@ async def update_product(
     return ProductRead.model_validate(product)
 
 
+async def archive_product(db: AsyncSession, product_id: UUID) -> ProductRead:
+    product = await membership.lock_product(db, product_id)
+    if product is None:
+        raise NotFoundError("Product", product_id)
+    _archive_transition(product, "Archived", "Archived", None)
+    product.status = "Archived"
+    await db.commit()
+    await db.refresh(product)
+    await db.refresh(product, ["members"])
+    return ProductRead.model_validate(product)
+
+
 async def list_products(
     db: AsyncSession, page: int, page_size: int, actor: CurrentUser | None = None
 ) -> tuple[List[ProductRead], int]:
     ids = await visible_product_ids(db, actor) if actor else None
-    products, total = await repo.list_products(db, (page - 1) * page_size, page_size, product_ids=ids)
+    products, total = await repo.list_products(db, (page - 1) * page_size, page_size, product_ids=ids, include_archived=not actor or actor.is_super_admin())
     return [ProductRead.model_validate(p) for p in products], total
 
 
@@ -430,12 +421,23 @@ async def get_project(db: AsyncSession, project_id: UUID) -> ProjectRead:
     return ProjectRead.model_validate(project)
 
 
+def _archive_transition(entity, new_status: str, archived_status: str, user: CurrentUser | None) -> None:
+    if entity.status == archived_status and new_status != archived_status:
+        if not user or not user.is_super_admin():
+            raise ForbiddenError("Only a Super Admin can restore archived items.")
+        entity.archived_from_status = None
+    elif entity.status != archived_status and new_status == archived_status:
+        entity.archived_from_status = entity.status
+
+
 async def update_project(
-    db: AsyncSession, project_id: UUID, payload: ProjectUpdate
+    db: AsyncSession, project_id: UUID, payload: ProjectUpdate, current_user: CurrentUser | None = None
 ) -> ProjectRead:
     project = await repo.get_project(db, project_id)
     if project is None:
         raise NotFoundError("Project", project_id)
+    if payload.status is not None:
+        _archive_transition(project, payload.status.value, ProjectStatus.ARCHIVED.value, current_user)
     if payload.product_id is not None and payload.product_id != project.product_id:
         product = await repo.get_product(db, payload.product_id)
         if product is None:
@@ -471,6 +473,7 @@ async def update_project(
         "actual_completion_date" in fields_set
         and project.actual_completion_date is not None
         and "status" not in fields_set
+        and project.status != ProjectStatus.ARCHIVED.value
     ):
         project.status = ProjectStatus.COMPLETED.value
     elif project.status == ProjectStatus.NOT_STARTED.value:
@@ -498,6 +501,8 @@ async def archive_project(db: AsyncSession, project_id: UUID) -> ProjectRead:
     if project is None:
         raise NotFoundError("Project", project_id)
     old_status = project.status
+    if old_status != ProjectStatus.ARCHIVED.value:
+        project.archived_from_status = old_status
     project.status = ProjectStatus.ARCHIVED.value
     project.last_modified_by = "manual"
     await db.commit()
@@ -571,24 +576,14 @@ async def _delete_entity_artifacts(
 
 
 async def delete_project(db: AsyncSession, project_id: UUID) -> None:
-    project = await repo.get_project(db, project_id)
-    if project is None:
-        raise NotFoundError("Project", project_id)
-
-    tasks = await repo.list_tasks_by_project(db, project_id)
-    await _delete_entity_artifacts(
-        db,
-        project_ids=[project_id],
-        task_ids=[task.id for task in tasks],
-    )
-    await repo.delete_project(db, project)
+    raise ForbiddenError("Projects, tasks and product lines cannot be deleted. Archive them instead.")
 
 
 async def list_projects_by_product(
-    db: AsyncSession, product_id: UUID, page: int, page_size: int
+    db: AsyncSession, product_id: UUID, page: int, page_size: int, current_user: CurrentUser | None = None
 ) -> tuple[List[ProjectRead], int]:
     projects, total = await repo.list_projects_by_product(
-        db, product_id, (page - 1) * page_size, page_size
+        db, product_id, (page - 1) * page_size, page_size, include_archived=not current_user or current_user.is_super_admin()
     )
     return [ProjectRead.model_validate(p) for p in projects], total
 
@@ -604,7 +599,8 @@ async def list_all_projects(
         user_id = current_user.user_id
     projects, total = await repo.list_all_projects(
         db, (page - 1) * page_size, page_size, user_id=user_id,
-        product_ids=await visible_product_ids(db, current_user) if current_user else None
+        product_ids=await visible_product_ids(db, current_user) if current_user else None,
+        include_archived=bool(current_user and current_user.is_super_admin()),
     )
     return [ProjectRead.model_validate(p) for p in projects], total
 
@@ -615,6 +611,8 @@ async def require_project_manage_access(
     """Ensure caller has permission to mutate a project (C-4)."""
     project = await repo.get_project(db, project_id)
     if project is None:
+        raise NotFoundError("Project", project_id)
+    if project.status == "archived" and not current_user.is_super_admin():
         raise NotFoundError("Project", project_id)
     from app.modules.projects.product_access import require_product_access
     await require_product_access(db, current_user, project.product_id)
@@ -767,7 +765,13 @@ async def require_task_edit_access(
     task = await repo.get_task(db, task_id)
     if task is None:
         raise NotFoundError("Task", task_id)
+    if getattr(task, "status", None) == "Archived" and not current_user.is_super_admin():
+        raise NotFoundError("Task", task_id)
     if _can_manage_task_fields(current_user):
+        if getattr(task, "phase_id", None) is not None:
+            phase = await repo.get_phase(db, task.phase_id)
+            if phase is not None:
+                await _require_project_access(db, current_user, phase.project_id)
         return task
 
     # Verify project access (C-4, H-11)
@@ -809,6 +813,14 @@ async def require_task_board_access(
     it is narrower in effect than changing task content, labels, or assignees,
     which are protected by ``require_task_edit_access`` above.
     """
+    for task_id in task_ids:
+        task = await repo.get_task(db, task_id)
+        if task is None or (getattr(task, "status", None) == "Archived" and not current_user.is_super_admin()):
+            raise NotFoundError("Task", task_id)
+        if task.phase_id is not None:
+            phase = await repo.get_phase(db, task.phase_id)
+            if phase is not None:
+                await _require_project_access(db, current_user, phase.project_id)
     if _can_manage_task_fields(current_user):
         return
 
@@ -1107,7 +1119,6 @@ async def update_task(
     current_user: CurrentUser,
 ) -> TaskRead:
     task = await require_task_edit_access(db, current_user, task_id, payload)
-
     if payload.assignee_user_ids is not None or "reviewer_user_id" in payload.model_fields_set:
         assignees = payload.assignee_user_ids if payload.assignee_user_ids is not None else [entry.user_id for entry in task.assignees]
         reviewer = payload.reviewer_user_id if "reviewer_user_id" in payload.model_fields_set else task.reviewer_user_id
@@ -1202,16 +1213,7 @@ async def _collect_task_tree_ids(db: AsyncSession, task_id: UUID) -> list[UUID]:
 
 
 async def delete_task(db: AsyncSession, task_id: UUID) -> None:
-    task = await repo.get_task(db, task_id)
-    if task is None:
-        raise NotFoundError("Task", task_id)
-
-    phase_id = task.phase_id
-    task_ids = await _collect_task_tree_ids(db, task_id)
-    await _delete_entity_artifacts(db, task_ids=task_ids)
-    await repo.delete_task(db, task)
-    if phase_id is not None:
-        await recalculate_phase_and_project_progress(db, phase_id)
+    raise ForbiddenError("Projects, tasks and product lines cannot be deleted. Archive them instead.")
 
 
 async def update_task_status(
@@ -1219,12 +1221,14 @@ async def update_task_status(
     task_id: UUID,
     new_status: TaskStatus,
     changed_by_user_id: Optional[UUID] = None,
+    current_user: CurrentUser | None = None,
 ) -> TaskRead:
     task = await repo.get_task(db, task_id)
     if task is None:
         raise NotFoundError("Task", task_id)
 
     old_status = task.status
+    _archive_transition(task, new_status.value, TaskStatus.ARCHIVED.value, current_user)
     task.status = new_status.value
     if is_task_done(new_status.value) and task.completed_at is None:
         task.completed_at = datetime.now(timezone.utc)
@@ -1282,7 +1286,7 @@ async def update_checklist_item(
 
     item.is_done = is_done
     old_status = task.status
-    if task.checklist_items and all(entry.is_done for entry in task.checklist_items):
+    if task.status != TaskStatus.ARCHIVED.value and task.checklist_items and all(entry.is_done for entry in task.checklist_items):
         task.status = TaskStatus.DONE.value
         if task.completed_at is None:
             task.completed_at = datetime.now(timezone.utc)
@@ -1360,6 +1364,7 @@ async def list_tasks(
         user_id=user_id,
         offset=(page - 1) * page_size,
         limit=page_size,
+        include_archived=bool(current_user and current_user.is_super_admin()),
     )
     return [_to_task_read(t) for t in tasks], total
 
@@ -1402,8 +1407,10 @@ async def detach_task_from_phase(db: AsyncSession, task_id: UUID) -> TaskRead:
     return _to_task_read(task)
 
 
-async def list_tasks_by_phase(db: AsyncSession, phase_id: UUID) -> List[TaskRead]:
+async def list_tasks_by_phase(db: AsyncSession, phase_id: UUID, current_user: CurrentUser | None = None) -> List[TaskRead]:
     tasks = await repo.list_tasks_by_phase(db, phase_id)
+    if current_user and not current_user.is_super_admin():
+        tasks = [task for task in tasks if task.status != "Archived"]
     return [_to_task_read(t) for t in tasks]
 
 
@@ -1679,7 +1686,7 @@ async def get_portfolio_gantt(
     db: AsyncSession, include_archived: bool = False, current_user: CurrentUser | None = None
 ) -> PortfolioGantt:
     projects, _ = await repo.list_all_projects(db, 0, 500, product_ids=await visible_product_ids(db, current_user) if current_user else None)
-    if not include_archived:
+    if not include_archived or (current_user is not None and not current_user.is_super_admin()):
         projects = [p for p in projects if p.status != ProjectStatus.ARCHIVED.value]
     dependencies = await repo.list_project_dependencies(db)
     all_milestones = await repo.list_all_milestones(db)
@@ -1869,13 +1876,17 @@ async def get_phase_progress_breakdown(
     )
 
 
-async def get_project_timeline(db: AsyncSession, project_id: UUID) -> ProjectTimeline:
+async def get_project_timeline(db: AsyncSession, project_id: UUID, current_user: CurrentUser | None = None) -> ProjectTimeline:
     project = await repo.get_project(db, project_id)
     if project is None:
         raise NotFoundError("Project", project_id)
 
     tasks = await repo.list_tasks_by_project(db, project_id)
     dependencies = await repo.list_dependencies_for_project(db, project_id)
+    if not current_user or not current_user.is_super_admin():
+        tasks = [task for task in tasks if task.status != "Archived"]
+        visible_ids = {task.id for task in tasks}
+        dependencies = [dep for dep in dependencies if dep.predecessor_task_id in visible_ids and dep.successor_task_id in visible_ids]
 
     done_ids = {t.id for t in tasks if is_task_done(t.status)}
     cpm_tasks = [

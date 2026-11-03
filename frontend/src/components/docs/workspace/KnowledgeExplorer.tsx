@@ -212,7 +212,7 @@ export function KnowledgeExplorer({ onNewPage }: { onNewPage?: (spaceId?: string
         {showArchived && <div>
           {archived.isError && <button type="button" onClick={() => archived.refetch()}>{translateUI("Retry")}</button>}
           {archived.data?.length === 0 && <p>{translateUI("No archived documents.")}</p>}
-          {(archived.data ?? []).map((page) => <button type="button" key={page.id} style={{ display: "block", padding: 8, textAlign: "start" }} onClick={() => openTab({ id: page.id, pageId: page.id, spaceId: page.space_id, title: page.title, viewMode: "editor" })}>{page.title}</button>)}
+          {(archived.data ?? []).map((page) => <button type="button" key={page.id} style={{ display: "block", width: "100%", padding: 8, textAlign: "start", color: "var(--accent-primary)", background: "color-mix(in srgb, var(--accent-primary) 10%, var(--surface-1))", borderRadius: 6 }} onClick={() => openTab({ id: page.id, pageId: page.id, spaceId: page.space_id, title: page.title, viewMode: "editor" })}>{page.title} · {translateUI("Archived")}</button>)}
         </div>}
       </div>}
       {/* Navigation Tree */}

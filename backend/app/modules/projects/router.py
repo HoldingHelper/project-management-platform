@@ -203,6 +203,12 @@ async def get_product(
     return await service.get_product(db, product_id)
 
 
+@products_router.get("/{product_id}/history", response_model=list[EntityHistoryRead])
+async def get_product_history(product_id: UUID, current_user: CurrentUser = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    await require_product_access(db, current_user, product_id)
+    return await get_entity_history(db, "projects.Product", product_id)
+
+
 @products_router.put("/{product_id}", response_model=ProductRead)
 async def update_product(
     product_id: UUID,
@@ -212,7 +218,14 @@ async def update_product(
     ),
     db: AsyncSession = Depends(get_db),
 ) -> ProductRead:
-    return await service.update_product(db, product_id, payload)
+    await require_product_access(db, current_user, product_id)
+    return await service.update_product(db, product_id, payload, current_user)
+
+
+@products_router.post("/{product_id}/archive", response_model=ProductRead)
+async def archive_product(product_id: UUID, current_user: CurrentUser = Depends(require_permission(Permissions.PRODUCTS_UPDATE, Permissions.PRODUCTS_MANAGE_ALL)), db: AsyncSession = Depends(get_db)):
+    await require_product_access(db, current_user, product_id)
+    return await service.archive_product(db, product_id)
 
 
 @products_router.get("/{product_id}/members", response_model=list[MembershipPersonRead])
@@ -304,7 +317,7 @@ async def get_projects_by_product(
 ) -> Page[ProjectRead]:
     await require_product_access(db, current_user, product_id)
     items, total = await service.list_projects_by_product(
-        db, product_id, params.page, params.page_size
+        db, product_id, params.page, params.page_size, current_user
     )
     return Page.create(items, total, params)
 
@@ -446,6 +459,64 @@ async def list_projects(
     return Page.create(items, total, params)
 
 
+@projects_router.get("/archive/items")
+async def archive_items(current_user: CurrentUser = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    from sqlalchemy import select
+    from app.core.exceptions import ForbiddenError
+    from app.modules.projects.models import Product, Project, TaskItem
+    from app.modules.docs.models import DocPage
+    from app.modules.org.models import OrgNode
+    if not current_user.is_super_admin():
+        raise ForbiddenError("Only a Super Admin can view archived items.")
+    projects = (await db.execute(select(Project).where(Project.status == "archived").order_by(Project.updated_at.desc()))).scalars().all()
+    products = (await db.execute(select(Product).where(Product.status == "Archived").order_by(Product.updated_at.desc()))).scalars().all()
+    tasks = (await db.execute(select(TaskItem).where(TaskItem.status == "Archived").order_by(TaskItem.updated_at.desc()))).scalars().all()
+    documents = (await db.execute(select(DocPage).where(DocPage.status == "archived").order_by(DocPage.updated_at.desc()))).scalars().all()
+    nodes = (await db.execute(select(OrgNode).where(OrgNode.status == "archived").order_by(OrgNode.path))).scalars().all()
+    return {
+        "projects": [{"id": p.id, "name": p.name} for p in projects],
+        "products": [{"id": p.id, "name": p.name} for p in products],
+        "tasks": [{"id": t.id, "name": t.title} for t in tasks],
+        "documents": [{"id": d.id, "name": d.title, "space_id": d.space_id, "source_type": d.source_entity_type, "source_id": d.source_entity_id} for d in documents],
+        "organization": [{"id": n.id, "name": n.name, "type": n.type} for n in nodes],
+    }
+
+
+@projects_router.post("/archive/{kind}/{item_id}/restore")
+async def restore_archived_item(kind: str, item_id: UUID, current_user: CurrentUser = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    from app.core.exceptions import ForbiddenError, NotFoundError
+    from app.modules.projects import repository as repo
+    from app.modules.projects.enums import TaskStatus
+    from app.modules.docs import service as docs_service
+    from app.modules.org import service as org_service
+    from app.modules.org.schemas import NodeUpdate
+    if not current_user.is_super_admin():
+        raise ForbiddenError("Only a Super Admin can restore archived items.")
+    if kind == "products":
+        item = await repo.get_product(db, item_id)
+        if not item or item.status != "Archived":
+            raise NotFoundError("Archived product", item_id)
+        return await service.update_product(db, item_id, ProductUpdate(status=item.archived_from_status or "Planning"), current_user)
+    if kind == "projects":
+        item = await repo.get_project(db, item_id)
+        if not item or item.status != "archived":
+            raise NotFoundError("Archived project", item_id)
+        return await service.update_project(db, item_id, ProjectUpdate(status=item.archived_from_status or "not-started"), current_user)
+    if kind == "tasks":
+        item = await repo.get_task(db, item_id)
+        if not item or item.status != "Archived":
+            raise NotFoundError("Archived task", item_id)
+        return await service.update_task_status(db, item_id, TaskStatus(item.archived_from_status or "NotStarted"), changed_by_user_id=current_user.user_id, current_user=current_user)
+    if kind == "documents":
+        return await docs_service.set_archived(db, current_user, item_id, False)
+    if kind == "organization":
+        node = await org_service.get_node(db, item_id)
+        if node.status != "archived":
+            raise NotFoundError("Archived scope", item_id)
+        return await org_service.update_node(db, node, NodeUpdate(status="active"), current_user)
+    raise NotFoundError("Archive category", kind)
+
+
 @projects_router.post("/{project_id}/confirm-generation")
 async def confirm_project_generation(
     project_id: UUID,
@@ -546,7 +617,7 @@ async def update_project(
     await service.require_project_manage_access(db, project_id, current_user)
     if payload.product_id is not None:
         await require_product_access(db, current_user, payload.product_id)
-    return await service.update_project(db, project_id, payload)
+    return await service.update_project(db, project_id, payload, current_user)
 
 
 @projects_router.post("/{project_id}/archive", response_model=ProjectRead)
@@ -729,7 +800,7 @@ async def get_project_timeline(
     db: AsyncSession = Depends(get_db),
 ) -> ProjectTimeline:
     await _require_project_access(db, current_user, project_id)
-    return await service.get_project_timeline(db, project_id)
+    return await service.get_project_timeline(db, project_id, current_user)
 
 
 @projects_router.get("/{project_id}/sprints", response_model=list[PhaseRead])
@@ -820,7 +891,7 @@ async def get_tasks_by_phase(
 ) -> list[TaskRead]:
     phase = await service.get_phase(db, phase_id)
     await _require_project_access(db, current_user, phase.project_id)
-    return await service.list_tasks_by_phase(db, phase_id)
+    return await service.list_tasks_by_phase(db, phase_id, current_user)
 
 
 @sprints_router.get("/{phase_id}/progress", response_model=ProgressBreakdown)
@@ -967,7 +1038,7 @@ async def update_task_status(
 ) -> TaskRead:
     await service.require_task_board_access(db, current_user, [task_id])
     return await service.update_task_status(
-        db, task_id, payload.status, changed_by_user_id=current_user.user_id
+        db, task_id, payload.status, changed_by_user_id=current_user.user_id, current_user=current_user
     )
 
 

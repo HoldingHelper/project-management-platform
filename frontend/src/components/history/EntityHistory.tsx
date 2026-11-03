@@ -40,7 +40,7 @@ function parseChanges(raw: string): Record<string, { old: unknown; new: unknown 
   } catch { return {}; }
 }
 
-export function EntityHistory({ entityType, entityId }: { entityType: "project" | "task"; entityId: UUID }) {
+export function EntityHistory({ entityType, entityId }: { entityType: "product" | "project" | "task"; entityId: UUID }) {
   const { t, date } = useI18n();
   const { nameOf } = useUserMap();
   const history = useQuery({

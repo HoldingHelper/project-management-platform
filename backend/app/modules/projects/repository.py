@@ -133,9 +133,11 @@ async def get_product(db: AsyncSession, product_id: UUID) -> Optional[Product]:
 
 
 async def list_products(
-    db: AsyncSession, offset: int, limit: int, product_ids: list[UUID] | None = None,
+    db: AsyncSession, offset: int, limit: int, product_ids: list[UUID] | None = None, include_archived: bool = True,
 ) -> Tuple[Sequence[Product], int]:
     stmt = select(Product)
+    if not include_archived:
+        stmt = stmt.where(Product.status != "Archived")
     if product_ids is not None:
         stmt = stmt.where(Product.id.in_(product_ids))
     total = (await db.execute(select(func.count()).select_from(stmt.subquery()))).scalar_one()
@@ -162,15 +164,16 @@ async def delete_project(db: AsyncSession, project: Project) -> None:
 
 
 async def list_projects_by_product(
-    db: AsyncSession, product_id: UUID, offset: int, limit: int
+    db: AsyncSession, product_id: UUID, offset: int, limit: int, include_archived: bool = True
 ) -> Tuple[Sequence[Project], int]:
-    count_result = await db.execute(
-        select(Project).where(Project.product_id == product_id)
-    )
+    predicate = [Project.product_id == product_id]
+    if not include_archived:
+        predicate.append(Project.status != "archived")
+    count_result = await db.execute(select(Project).where(*predicate))
     total = len(count_result.scalars().all())
     stmt = (
         select(Project)
-        .where(Project.product_id == product_id)
+        .where(*predicate)
         .order_by(Project.created_at.desc())
         .offset(offset)
         .limit(limit)
@@ -180,7 +183,7 @@ async def list_projects_by_product(
 
 
 async def list_all_projects(
-    db: AsyncSession, offset: int, limit: int, user_id: Optional[UUID] = None, product_ids: list[UUID] | None = None
+    db: AsyncSession, offset: int, limit: int, user_id: Optional[UUID] = None, product_ids: list[UUID] | None = None, include_archived: bool = True
 ) -> Tuple[Sequence[Project], int]:
     stmt = select(Project)
     if user_id is not None:
@@ -198,6 +201,8 @@ async def list_all_projects(
         )
     if product_ids is not None:
         stmt = stmt.where(Project.product_id.in_(product_ids))
+    if not include_archived:
+        stmt = stmt.where(Project.status != "archived", Project.product_id.in_(select(Product.id).where(Product.status != "Archived")))
     total = (
         await db.execute(select(func.count()).select_from(stmt.subquery()))
     ).scalar_one()
@@ -319,9 +324,13 @@ async def list_tasks(
     user_id: Optional[UUID] = None,
     offset: int = 0,
     limit: int = 50,
+    include_archived: bool = True,
 ) -> Tuple[Sequence[TaskItem], int]:
     """Org-wide task browser powering the standalone-task views."""
     stmt = select(TaskItem)
+    if not include_archived:
+        visible_phases = select(Phase.id).join(Project, Phase.project_id == Project.id).join(Product, Product.id == Project.product_id).where(Project.status != "archived", Product.status != "Archived")
+        stmt = stmt.where(TaskItem.status != "Archived", or_(TaskItem.phase_id.is_(None), TaskItem.phase_id.in_(visible_phases)))
     if product_id is not None:
         product_phases = select(Phase.id).join(Project, Phase.project_id == Project.id).where(Project.product_id == product_id)
         stmt = stmt.where(TaskItem.phase_id.in_(product_phases))
@@ -476,11 +485,12 @@ async def list_tasks_by_project(
 async def list_tasks_by_assignee(
     db: AsyncSession, user_id: UUID, statuses: Optional[List[str]] = None
 ) -> Sequence[TaskItem]:
+    visible_phases = select(Phase.id).join(Project, Phase.project_id == Project.id).join(Product, Product.id == Project.product_id).where(Project.status != "archived", Product.status != "Archived")
     stmt = (
         select(TaskItem)
         .join(TaskAssignee, TaskAssignee.task_id == TaskItem.id)
         .options(*_TASK_LOAD_OPTIONS)
-        .where(TaskAssignee.user_id == user_id)
+        .where(TaskAssignee.user_id == user_id, TaskItem.status != "Archived", or_(TaskItem.phase_id.is_(None), TaskItem.phase_id.in_(visible_phases)))
     )
     if statuses:
         stmt = stmt.where(TaskItem.status.in_(statuses))

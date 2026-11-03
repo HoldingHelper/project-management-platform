@@ -45,7 +45,6 @@ import {
   archiveProject,
   createMilestone,
   createSprint, createSprintBatch, updateSprint,
-  deleteProject,
   getSprintProgress,
   getSprintTasks,
   getProjectOverview,
@@ -78,7 +77,7 @@ import { SearchSuggestionInput } from "@/components/docs/SearchSuggestionInput";
 import { getBottlenecks } from "@/lib/api/analytics";
 import { listBlockers } from "@/lib/api/blockers";
 import { listChannels } from "@/lib/api/chat";
-import { AppError } from "@/lib/api/client";
+import { AppError, apiFetch } from "@/lib/api/client";
 import { useTaskPartitions, useUserMap } from "@/lib/hooks";
 import { useRealtimeEvent } from "@/lib/ws/RealtimeProvider";
 import {
@@ -237,32 +236,20 @@ function ProjectWorkspaceInner() {
       qc.invalidateQueries({ queryKey: ["doc-spaces"] });
       qc.invalidateQueries({ queryKey: ["portfolio-gantt"] });
       qc.invalidateQueries({ queryKey: ["project-overview", projectId] });
-      overview.refetch();
+      if (isSuperAdmin()) overview.refetch();
+      else router.push("/portfolio");
     },
     onError: () => toast.push("Could not archive project.", "error"),
   });
 
-  const removeProject = useMutation({
-    mutationFn: () => deleteProject(projectId),
-    onSuccess: () => {
-      toast.push("Project deleted.", "success");
-      qc.removeQueries({ queryKey: ["project-overview", projectId] });
-      qc.invalidateQueries({ queryKey: ["projects"] });
-      qc.invalidateQueries({ queryKey: ["doc-pages"] });
-      qc.invalidateQueries({ queryKey: ["doc-spaces"] });
-      qc.invalidateQueries({ queryKey: ["portfolio-gantt"] });
-      qc.invalidateQueries({ queryKey: ["tasks"] });
-      qc.invalidateQueries({ queryKey: ["phase-tasks"] });
-      router.push("/portfolio");
+  const restoreProject = useMutation({
+    mutationFn: () => apiFetch(`/projects/archive/projects/${projectId}/restore`, { method: "POST" }),
+    onSuccess: async () => {
+      await Promise.all(["projects", "project-overview", "admin-archive", "portfolio-gantt"].map(key => qc.invalidateQueries({ queryKey: [key] })));
+      toast.push(translateUI("Project restored."), "success");
     },
-    onError: () => toast.push("Could not delete project.", "error"),
+    onError: () => toast.push(translateUI("Could not restore item."), "error"),
   });
-
-  const confirmDeleteProject = () => {
-    if (window.confirm(translateUI("Delete {name} and all of its tasks? This cannot be undone.", { name: overview.data?.project.name ?? translateUI("this project") }))) {
-      removeProject.mutate();
-    }
-  };
 
   if (!projectId || overview.isLoading)
     return (
@@ -301,6 +288,7 @@ function ProjectWorkspaceInner() {
           <ChevronLeft size={14} />{" "}<LocalizedText message={"Portfolio"} />{" "}</Link>
         <div style={{ display: "flex", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
           <div style={{ flex: 1, minWidth: 260 }}>
+            {p.status === "archived" && <div role="status" style={{ marginBottom: 10, padding: "8px 12px", borderRadius: 8, color: "var(--accent-primary)", background: "color-mix(in srgb, var(--accent-primary) 12%, var(--surface-1))" }}>{translateUI("Archived")}</div>}
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
               <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, letterSpacing: "-0.02em" }}>{p.name}</h1>
               <StatusChip
@@ -329,21 +317,14 @@ function ProjectWorkspaceInner() {
           </div>
           {canManage && (
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {p.status === "archived" && isSuperAdmin() && <Button variant="secondary" disabled={restoreProject.isPending} onClick={() => restoreProject.mutate()}>{translateUI("Restore")}</Button>}
               {p.status !== "archived" && (
-                <Button variant="secondary" disabled={archive.isPending} onClick={() => archive.mutate()}>
+                <Button variant="secondary" disabled={archive.isPending} onClick={() => { if (window.confirm(translateUI("Only a Super Admin can restore an archived project. Continue?"))) archive.mutate(); }}>
                   <Archive size={14} /> {archive.isPending ? <LocalizedText message={"Archiving..."} /> : <LocalizedText message={"Archive"} />}
                 </Button>
               )}
               <Button variant="secondary" onClick={() => setEditOpen(true)}>
                 <Pencil size={14} />{" "}<LocalizedText message={"Edit project"} />{" "}</Button>
-              <Button
-                variant="secondary"
-                disabled={removeProject.isPending}
-                onClick={confirmDeleteProject}
-                style={dangerButton}
-              >
-                <Trash2 size={14} /> {removeProject.isPending ? <LocalizedText message={"Deleting..."} /> : <LocalizedText message={"Delete"} />}
-              </Button>
             </div>
           )}
         </div>

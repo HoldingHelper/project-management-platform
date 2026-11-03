@@ -165,7 +165,7 @@ async def handle_quick_status_change(query: CallbackQuery) -> None:
             return
 
         st_enum = TaskStatus._value2member_map_.get(status_str) or TaskStatus.DONE
-        updated = await update_task_status(db, t_res.entity.id, st_enum, changed_by_user_id=current_user.user_id)
+        updated = await update_task_status(db, t_res.entity.id, st_enum, changed_by_user_id=current_user.user_id, current_user=current_user)
 
         caps = await TelegramCapabilityService.resolve_user_capabilities(db, current_user)
         ans_notice = f"Status changed to {status_str}." if lang == "en" else f"وضعیت به {status_str} تغییر کرد."
@@ -1143,7 +1143,7 @@ async def handle_project_set_value(query: CallbackQuery) -> None:
             await query.answer()
             return
 
-        await projects_service.update_project(db, proj.id, update_payload)
+        await projects_service.update_project(db, proj.id, update_payload, current_user)
         await db.commit()
         await query.answer(ack_msg)
 
@@ -1537,13 +1537,8 @@ async def handle_confirmation_approval(query: CallbackQuery) -> None:
             return
 
         if action_type == "delete_task":
-            from app.modules.projects.service import delete_task
-            await delete_task(db, payload.get("task_id"), current_user=current_user)
-            notice = "Operation completed successfully." if lang == "en" else "عملیات با موفقیت انجام شد."
-            await query.answer(notice)
-            if query.message:
-                del_msg = "✅ Task deleted successfully." if lang == "en" else "✅ تسک با موفقیت حذف شد."
-                await query.message.edit_text(del_msg)
+            notice = "Tasks cannot be deleted. Archive the task instead." if lang == "en" else "حذف کار امکان‌پذیر نیست؛ کار را بایگانی کنید."
+            await query.answer(notice, show_alert=True)
         else:
             notice = "Operation confirmed." if lang == "en" else "عملیات تایید شد."
             await query.answer(notice)

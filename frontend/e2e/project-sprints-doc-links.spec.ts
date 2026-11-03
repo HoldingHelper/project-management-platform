@@ -944,3 +944,37 @@ for (const entityType of ["project", "task"] as const) {
     await page.screenshot({ path: testInfo.outputPath("history.png"), fullPage: true });
   });
 }
+
+test("super administrator can restore a project from the categorized archive", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === "tablet", "Desktop and phone cover the archive layout.");
+  const admin = { ...user, roles: ["SuperAdmin"], locale: "fa", calendar: "gregory", numbering_system: "latn" };
+  await installApi(page, admin);
+  let archived = true;
+  await page.route("**/api/v1/projects/archive/items", route => json(route, {
+    products: [], projects: archived ? [{ id: PROJECT_ID, name: "Archived project" }] : [],
+    tasks: [], documents: [{ id: DOC_ID, name: "Archived document", space_id: "77777777-7777-4777-8777-777777777777" }], organization: [],
+  }));
+  await page.route(`**/api/v1/projects/archive/projects/${PROJECT_ID}/restore`, route => { archived = false; return json(route, {}); });
+  await login(page, admin);
+  await page.goto("/admin/archive");
+  const projects = page.getByRole("heading", { name: /پروژه‌ها/ }).locator("..");
+  await expect(projects.getByRole("link", { name: "Archived project" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Archived document" })).toBeVisible();
+  await projects.getByRole("button", { name: "بازیابی", exact: true }).click();
+  await expect(projects.getByText("مورد بایگانی‌شده‌ای وجود ندارد.")).toBeVisible();
+});
+
+test("project and task actions offer archive instead of delete", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "desktop", "Action labels are independent of viewport size.");
+  const api = await installApi(page);
+  api.createdTask = { id: TASK_ID, title: "Retained task", description: "", phase_id: SPRINT_ID, parent_task_id: null, task_type: "Feature", priority: "P2", status: "Ready", assignee_user_ids: [], labels: [], checklist_items: [], board_order: 0, created_by: "manual", created_at: NOW, updated_at: NOW };
+  await login(page);
+  await page.goto(`/projects/${PROJECT_ID}`);
+  await expect(page.getByRole("button", { name: "Delete", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Archive", exact: true })).toBeVisible();
+  await page.goto("/tasks");
+  await page.getByRole("link", { name: "Retained task", exact: true }).first().click();
+  const dialog = page.getByRole("dialog", { name: "Task details", exact: true });
+  await expect(dialog.getByRole("button", { name: "Delete", exact: true })).toHaveCount(0);
+  await expect(dialog.getByRole("button", { name: "Archive", exact: true })).toBeVisible();
+});

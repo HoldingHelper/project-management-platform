@@ -38,7 +38,6 @@ import {
   Sparkles,
   Tag,
   Ticket,
-  Trash2,
   Upload,
   User,
   Users,
@@ -47,7 +46,6 @@ import {
 import { useEffect, useRef, useState } from "react";
 import {
   createTask,
-  deleteTask,
   getTask,
   listTasks,
   updateTask,
@@ -320,6 +318,7 @@ export default function TaskDetailPage({
       queryClient.invalidateQueries({ queryKey: ["task", taskId] });
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
       queryClient.invalidateQueries({ queryKey: ["phase-tasks"] });
+      if (saved.status === "Archived") { if (embedded) onClose?.(); else router.push("/tasks"); }
     },
     onError: () => toast.push("Could not update task status.", "error"),
   });
@@ -335,26 +334,6 @@ export default function TaskDetailPage({
     },
     onError: () => toast.push("Could not create subtask.", "error"),
   });
-
-  const removeTask = useMutation({
-    mutationFn: () => deleteTask(taskId as UUID),
-    onSuccess: () => {
-      toast.push("Task deleted.", "success");
-      queryClient.removeQueries({ queryKey: ["task", taskId] });
-      queryClient.invalidateQueries({ queryKey: ["tasks"] });
-      queryClient.invalidateQueries({ queryKey: ["phase-tasks"] });
-      queryClient.invalidateQueries({ queryKey: ["project-overview"] });
-      if (embedded) onClose?.();
-      else router.push("/tasks");
-    },
-    onError: () => toast.push("Could not delete task.", "error"),
-  });
-
-  const confirmDeleteTask = () => {
-    if (window.confirm(`Delete "${task.data?.title ?? "this task"}"? This cannot be undone.`)) {
-      removeTask.mutate();
-    }
-  };
 
   const copyTaskLink = () => {
     if (typeof window !== "undefined") {
@@ -438,15 +417,9 @@ export default function TaskDetailPage({
                 <Edit3 size={13} />
                 <span><LocalizedText message={"Full Edit"} /></span>
               </button>
-              <button
-                type="button"
-                onClick={confirmDeleteTask}
-                disabled={removeTask.isPending}
-                className="task-action-btn danger"
-              >
-                <Trash2 size={13} />
-                <span><LocalizedText message={"Delete"} /></span>
-              </button>
+              {row.status !== "Archived" && <button type="button" className="task-action-btn" disabled={changeStatus.isPending} onClick={() => { if (window.confirm(translateUI("Only a Super Admin can restore an archived task. Continue?"))) changeStatus.mutate("Archived"); }}>
+                <span><LocalizedText message="Archive" /></span>
+              </button>}
               {row.status !== "Done" ? (
                 <button
                   type="button"

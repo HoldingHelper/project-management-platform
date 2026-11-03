@@ -825,7 +825,7 @@ async def execute_mcp_tool(name: str, args: dict[str, Any], user: CurrentUser) -
                 )
                 if field in args
             }
-            project = await projects_service.update_project(db, project_id, ProjectUpdate(**changes))
+            project = await projects_service.update_project(db, project_id, ProjectUpdate(**changes), user)
             return {"status": "updated", "project": project.model_dump(mode="json")}
 
         if name == "pmp_project_members_add":
@@ -1073,7 +1073,7 @@ async def execute_mcp_tool(name: str, args: dict[str, Any], user: CurrentUser) -
             await authorize_entity_access(db, user, "task", task_id)
             await projects_service.require_task_edit_access(db, user, task_id)
             task = await projects_service.update_task_status(
-                db, task_id, TaskStatus(args["status"]), changed_by_user_id=user.user_id
+                db, task_id, TaskStatus(args["status"]), changed_by_user_id=user.user_id, current_user=user
             )
             return {"status": "updated", "task": task.model_dump(mode="json")}
 

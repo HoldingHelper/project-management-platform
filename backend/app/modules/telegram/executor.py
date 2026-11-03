@@ -406,7 +406,7 @@ class CommandExecutor:
         # 2. Map status enum
         st_enum = TaskStatus._value2member_map_.get(intent.status) or TaskStatus.DONE
         updated = await projects_service.update_task_status(
-            self.db, task.id, st_enum, changed_by_user_id=self.user.user_id
+            self.db, task.id, st_enum, changed_by_user_id=self.user.user_id, current_user=self.user
         )
 
         await conversation_state_manager.set_context(self.chat_id, "last_task_id", str(task.id))
@@ -1021,7 +1021,7 @@ class CommandExecutor:
         if intent.budget is not None:
             update_payload.budget = intent.budget
 
-        await projects_service.update_project(self.db, project.id, update_payload)
+        await projects_service.update_project(self.db, project.id, update_payload, self.user)
         await self.db.commit()
 
         overview, product_name, manager_name, members_names = await self._get_project_card_data(project.id)

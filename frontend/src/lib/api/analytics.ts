@@ -15,7 +15,7 @@ export function listAuditLogs(limit = 50) {
 
 export type EntityHistoryEntry = Pick<AuditLogRead, "id" | "user_id" | "entity_type" | "entity_id" | "action_type" | "changes_json" | "occurred_at"> & { user_name?: string | null };
 
-export function getEntityHistory(type: "project" | "task", id: UUID) {
+export function getEntityHistory(type: "product" | "project" | "task", id: UUID) {
   return apiFetch<EntityHistoryEntry[]>(`/${type}s/${id}/history`);
 }
 

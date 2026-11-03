@@ -88,6 +88,7 @@ class Product(Base, UUIDPKMixin, TimestampMixin, AuditableMixin):
     status: Mapped[str] = mapped_column(
         String(30), default=ProductStatus.PLANNING.value, nullable=False
     )
+    archived_from_status: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
     technology_stack: Mapped[List[str]] = mapped_column(
         ARRAY(String), default=list, nullable=False
     )
@@ -157,6 +158,7 @@ class Project(Base, UUIDPKMixin, TimestampMixin, AuditableMixin):
     status: Mapped[str] = mapped_column(
         String(20), default=ProjectStatus.NOT_STARTED.value, nullable=False
     )
+    archived_from_status: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     tags: Mapped[List[str]] = mapped_column(ARRAY(String), default=list, nullable=False)
     checklist_items: Mapped[list[dict]] = mapped_column(JSONB, default=list, server_default="[]", nullable=False)
     progress_percentage: Mapped[float] = mapped_column(
@@ -305,6 +307,7 @@ class TaskItem(Base, UUIDPKMixin, TimestampMixin, AuditableMixin):
     status: Mapped[str] = mapped_column(
         String(20), default=TaskStatus.NOT_STARTED.value, nullable=False
     )
+    archived_from_status: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     board_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     story_points: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     estimated_hours: Mapped[Optional[float]] = mapped_column(
