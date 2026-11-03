@@ -18,7 +18,7 @@ import { getAccessToken, isTokenExpired } from "@/lib/auth/token-store";
 import { refreshAccessToken } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth/AuthProvider";
 
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:8000/ws";
+const WS_URL = process.env.NEXT_PUBLIC_WS_URL || (typeof window !== "undefined" ? `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}/ws` : "");
 
 export interface RealtimeEvent {
   event: string;

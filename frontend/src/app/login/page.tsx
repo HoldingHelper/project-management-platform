@@ -61,6 +61,7 @@ export default function LoginPage() {
       footer={translateUI("Use your Project Management Platform account credentials.")}
     >
 
+      <Link href="/login/sso">Sign in with Avenour</Link>
       <form onSubmit={onSubmit} className="pmp-access-form">
         <Field label={translateUI("Email or username")}>
           <TextInput

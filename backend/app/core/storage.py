@@ -30,6 +30,10 @@ class FileStorageService:
             client_kwargs["aws_secret_access_key"] = settings.s3_secret_key.strip()
 
         self._client = boto3.client("s3", **client_kwargs)
+        self._public_client = self._client
+        if settings.s3_public_endpoint_url:
+            public_kwargs = {**client_kwargs, "endpoint_url": settings.s3_public_endpoint_url, "use_ssl": True}
+            self._public_client = boto3.client("s3", **public_kwargs)
         self._bucket = settings.s3_bucket
 
     def ensure_bucket(self) -> None:
@@ -53,7 +57,7 @@ class FileStorageService:
         params: dict[str, Any] = {"Bucket": self._bucket, "Key": key}
         disposition = f'attachment; filename="{filename}"' if filename else "attachment"
         params["ResponseContentDisposition"] = disposition
-        return self._client.generate_presigned_url(
+        return self._public_client.generate_presigned_url(
             "get_object",
             Params=params,
             ExpiresIn=expires_in,

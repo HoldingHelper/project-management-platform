@@ -550,3 +550,32 @@ async def get_permissions(
 ) -> list[PermissionRead]:
     permissions = await list_permissions(db)
     return [PermissionRead.model_validate(p) for p in permissions]
+
+
+@router.get("/oidc/configuration")
+async def oidc_configuration(response: Response):
+    from app.core.config import get_settings
+    from fastapi import HTTPException
+    config = get_settings()
+    if not config.oidc_issuer: raise HTTPException(503, "Single sign-on is unavailable")
+    response.headers["Cache-Control"] = "no-store"
+    return {"issuer": config.oidc_issuer, "client_id": config.oidc_client_id}
+
+
+@router.post("/oidc/exchange", response_model=TokenResponse)
+async def oidc_exchange(request: Request, response: Response, db: AsyncSession = Depends(get_db)):
+    import asyncio
+    from fastapi import HTTPException
+    from app.core.config import get_settings
+    from .oidc import identity
+    authorization = request.headers.get("authorization", "")
+    if not authorization.startswith("Bearer ") or len(authorization) > 16400:
+        raise HTTPException(401, "Invalid single sign-on token")
+    account_id = await asyncio.to_thread(identity, authorization[7:], get_settings())
+    user = await repo.get_user_by_id(db, account_id)
+    if user is None or not user.is_active: raise HTTPException(403, "Identity is not assigned to an active account")
+    access_token, expires_in = service._issue_access_token(user)
+    refresh_token = await service._issue_refresh_token(db, user, request.client.host if request.client else None)
+    await db.commit()
+    response.headers["Cache-Control"] = "no-store"
+    return TokenResponse(access_token=access_token, expires_in=expires_in, refresh_token=refresh_token, user=service.to_user_read(user))

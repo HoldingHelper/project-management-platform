@@ -37,6 +37,25 @@ class Settings(BaseSettings):
     # JWT / Auth
     jwt_secret: str = _DEFAULT_JWT_SECRET
     jwt_algorithm: str = "HS256"
+    oidc_issuer: str = ""
+    oidc_client_id: str = ""
+    oidc_subject_accounts: dict[str, str] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def validate_oidc(self):
+        from urllib.parse import urlsplit
+        from uuid import UUID
+        if self.oidc_issuer:
+            u = urlsplit(self.oidc_issuer)
+            if u.scheme != "https" or not u.hostname or u.username or u.password or u.query or u.fragment or not self.oidc_client_id:
+                raise ValueError("OIDC requires an HTTPS issuer and client ID")
+        elif self.oidc_client_id or self.oidc_subject_accounts:
+            raise ValueError("OIDC issuer is required")
+        for subject, account in self.oidc_subject_accounts.items():
+            if not subject: raise ValueError("Empty OIDC subject")
+            UUID(account)
+        return self
+
     access_token_expire_minutes: int = 15
     refresh_token_expire_days: int = 7
 
@@ -94,6 +113,7 @@ class Settings(BaseSettings):
 
     # S3 / MinIO
     s3_endpoint_url: str = "http://localhost:9000"
+    s3_public_endpoint_url: str = ""
     s3_access_key: str = "pmp_minio_admin"
     s3_secret_key: str = "pmp_minio_password"
     s3_bucket: str = "project-management-platform"
