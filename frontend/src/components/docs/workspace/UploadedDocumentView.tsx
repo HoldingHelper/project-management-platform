@@ -29,7 +29,7 @@ export function UploadedDocumentView({ page }: { page: DocPage }) {
   return <section style={{ padding: "32px clamp(20px, 4vw, 56px)", overflowY: "auto", height: "100%", background: "var(--surface-1)", color: "var(--text-primary)" }}>
     <p style={{ color: "var(--text-secondary)", fontSize: 12 }}><LocalizedText message={"Uploaded documentation"} /></p>
     <h1 style={{ fontSize: 24, overflowWrap: "anywhere" }}>{page.title}</h1>
-    <div style={{ display: "flex", alignItems: "center", gap: 16, padding: 20, border: "1px solid var(--border-subtle)", borderRadius: 12, flexWrap: "wrap" }}>
+    <div data-archive-container="" style={{ display: "flex", alignItems: "center", gap: 16, padding: 20, border: "1px solid var(--border-subtle)", borderRadius: 12, flexWrap: "wrap" }}>
       <FileText size={32} color="var(--accent-primary)" aria-hidden />
       <div style={{ flex: 1, minWidth: 120 }}><strong>{files.data?.[0]?.file_name ?? page.title}</strong><p style={{ fontSize: 12, color: "var(--text-secondary)" }}>{files.data?.[0]?.size_bytes != null ? `${(files.data[0].size_bytes! / 1024).toFixed(1)} KB · ` : ""}<LocalizedText message={"Original uploaded file"} /></p></div>
       <Button disabled={busy || !files.data?.[0]?.download_share_enabled} onClick={download}><Download size={16} aria-hidden />{busy ? <LocalizedText message={"Downloading…"} /> : <LocalizedText message={"Download file"} />}</Button>

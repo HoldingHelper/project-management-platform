@@ -36,7 +36,7 @@ export function HoldingCockpit({ slug }: { slug: string }) {
         ) : products.data?.length ? (
           <div className="venture-card-grid">
             {products.data.map((product) => (
-              <Card key={product.id} title={product.name} right={<div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}><span className="scope-badge">{product.status}</span><EditProductLine product={product} products={products.data ?? []} /><RemoveProductLine product={product} /></div>}>
+              <Card key={product.id} className={product.status === "Archived" ? "pmp-archived" : undefined} title={product.name} right={<div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}><span className="scope-badge">{translateUI(product.status)}</span><EditProductLine product={product} products={products.data ?? []} /><RemoveProductLine product={product} /></div>}>
                 <p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6 }}>
                   {product.description || "No description added yet."}
                 </p>

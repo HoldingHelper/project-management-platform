@@ -180,7 +180,7 @@ export function MarkdownWorkspaceEditor({ pageId }: Props) {
       }}
     >
       {/* Top Bar: Tabs, View Toggle, Status */}
-      <div className="knowledge-editor-topbar"
+      <div className={`knowledge-editor-topbar ${page.status === "archived" ? "pmp-archived" : ""}`}
         style={{
           display: "flex",
           alignItems: "center",

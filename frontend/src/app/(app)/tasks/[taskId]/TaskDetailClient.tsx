@@ -449,7 +449,7 @@ export default function TaskDetailPage({
       </div>
 
       {/* 2. TASK TITLE & JIRA QUICK PROPERTIES BAR */}
-      <div className="task-hero-block">
+      <div className={`task-hero-block ${row.status === "Archived" ? "pmp-archived" : ""}`}>
         {isEditingTitle ? (
           <div className="task-title-edit-row">
             <input
@@ -680,7 +680,7 @@ export default function TaskDetailPage({
                 <span className="text-xs text-neutral-500"><LocalizedText message={"No subtasks created yet."} /></span>
               ) : (
                 subtaskList.map((sub) => (
-                  <Link key={sub.id} href={`/tasks/${sub.id}`} className="subtask-item-card">
+                  <Link key={sub.id} href={`/tasks/${sub.id}`} className={`subtask-item-card ${sub.status === "Archived" ? "pmp-archived" : ""}`}>
                     <span className="subtask-title" title={sub.title}>
                       {sub.title}
                     </span>

@@ -289,7 +289,7 @@ function ProjectWorkspaceInner() {
           <ChevronLeft size={14} />{" "}<LocalizedText message={"Portfolio"} />{" "}</Link>
         <div style={{ display: "flex", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
           <div style={{ flex: 1, minWidth: 260 }}>
-            {p.status === "archived" && <div role="status" style={{ marginBottom: 10, padding: "8px 12px", borderRadius: 8, color: "var(--accent-primary)", background: "color-mix(in srgb, var(--accent-primary) 12%, var(--surface-1))" }}>{translateUI("Archived")}</div>}
+            {p.status === "archived" && <div role="status" className="pmp-archived" style={{ marginBottom: 10, padding: "8px 12px", borderRadius: 8, border: "1px solid var(--border-default)" }}>{translateUI("Archived")}</div>}
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
               <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, letterSpacing: "-0.02em" }}>{p.name}</h1>
               <StatusChip
@@ -450,6 +450,7 @@ function ProjectAttachmentsTab({ projectId }: { projectId: string }) {
             return (
               <div
                 key={file.id}
+                data-archive-container=""
                 style={{
                   display: "flex",
                   flexDirection: "column",
@@ -1634,7 +1635,7 @@ function TaskCard({
         event.stopPropagation();
         onDropBefore();
       }}
-      className="pmp-row"
+      className={`pmp-row ${task.status === "Archived" ? "pmp-archived" : ""}`}
       style={{ background: "var(--surface-2)", border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-2)", padding: 14, display: "flex", flexDirection: "column", gap: 11, minHeight: 118 }}
     >
       <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>

@@ -237,7 +237,7 @@ function TasksPage() {
             <Link
               href={`/tasks/${t.id}`}
               style={{
-                color: "var(--text-primary)",
+                color: t.status === "Archived" ? "var(--text-secondary)" : "var(--text-primary)",
                 fontWeight: 750,
                 fontSize: 14,
                 overflow: "hidden",
@@ -643,7 +643,7 @@ function TasksPage() {
       ) : (
         <>
           <div className="pmp-task-list" style={{ background: "var(--surface-2)", border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-3)", overflow: "hidden" }}>
-            <DataTable columns={columns} rows={pageRows} rowKey={(t) => t.id} emptyText={hasFilters ? localizeAttribute("No tasks match these filters. Clear filters to see more work.") : localizeAttribute("No tasks yet.")} />
+            <DataTable columns={columns} rows={pageRows} rowKey={(t) => t.id} rowClassName={(t) => t.status === "Archived" ? "pmp-archived" : undefined} emptyText={hasFilters ? localizeAttribute("No tasks match these filters. Clear filters to see more work.") : localizeAttribute("No tasks yet.")} />
           </div>
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 12, alignItems: "center" }}>
             <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>{" "}<LocalizedText message={"Page"} />{" "}{displayNumber(page)}{" "}<LocalizedText message={"of"} />{" "}{displayNumber(totalPages)}
@@ -782,6 +782,7 @@ function MonthlyTaskPlanner({
                 {tasks.map((task) => (
                   <div
                     key={task.id}
+                    className={task.status === "Archived" ? "pmp-archived" : undefined}
                     draggable={canAttach}
                     onDragStart={() => setDragId(task.id)}
                     onDragEnd={() => setDragId(null)}
@@ -808,7 +809,7 @@ function MonthlyTaskPlanner({
                     )}
                     <Link
                       href={`/tasks/${task.id}`}
-                      style={{ display: "block", color: "var(--text-primary)", textDecoration: "none", fontSize: 13.5, fontWeight: 800, lineHeight: "18px" }}
+                      style={{ display: "block", color: task.status === "Archived" ? "var(--text-secondary)" : "var(--text-primary)", textDecoration: "none", fontSize: 13.5, fontWeight: 800, lineHeight: "18px" }}
                     >
                       {task.title}
                     </Link>

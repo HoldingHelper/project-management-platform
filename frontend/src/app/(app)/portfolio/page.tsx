@@ -315,8 +315,8 @@ export default function PortfolioPage() {
               <Link
                 key={p.id}
                 href={`/projects/${p.id}`}
-                className="pmp-row"
-                style={{ display: "grid", gridTemplateColumns: "minmax(220px,1.35fr) 160px 150px 120px 150px 260px 140px 90px 110px", alignItems: "center", padding: "13px 18px", borderBottom: "1px solid var(--border-subtle)", background: archived ? "color-mix(in srgb, var(--accent-primary) 10%, var(--surface-2))" : undefined }}
+                className={`pmp-row ${archived ? "pmp-archived" : ""}`}
+                style={{ display: "grid", gridTemplateColumns: "minmax(220px,1.35fr) 160px 150px 120px 150px 260px 140px 90px 110px", alignItems: "center", padding: "13px 18px", borderBottom: "1px solid var(--border-subtle)" }}
               >
                 <span style={{ minWidth: 0 }}>
                   <span style={{ display: "block", fontWeight: 700, fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</span>
