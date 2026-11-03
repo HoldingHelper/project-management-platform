@@ -1254,6 +1254,8 @@ function BoardTab({
   const qc = useQueryClient();
   const toast = useToast();
   const { nameOf } = useUserMap();
+  const requestedSprint = useSearchParams().get("sprint");
+  const appliedSprint = useRef<string | null>(null);
   const [phaseId, setPhaseId] = useViewState<UUID | null>(`project-${projectId}-sprint`, null);
   const [dragId, setDragId] = useState<UUID | null>(null);
   const [sortMode, setSortMode] = useViewState<TaskSortMode>(`project-${projectId}-sort`, "manual");
@@ -1272,12 +1274,17 @@ function BoardTab({
   const phases = useQuery({ queryKey: ["phases", projectId], queryFn: () => getProjectSprints(projectId) });
 
   useEffect(() => {
+    if (requestedSprint && requestedSprint !== appliedSprint.current && phases.data) {
+      appliedSprint.current = requestedSprint;
+      const requested = phases.data.find((sprint) => sprint.id === requestedSprint);
+      if (requested) { setPhaseId(requested.id); return; }
+    }
     if (!phaseId && phases.data && phases.data.length > 0) {
       const today = new Date().toISOString().slice(0, 10);
       const current = phases.data.find((sprint) => sprint.start_date && sprint.end_date && sprint.start_date <= today && today <= sprint.end_date);
       setPhaseId((current ?? phases.data[0]).id);
     }
-  }, [phases.data, phaseId]);
+  }, [phases.data, phaseId, requestedSprint, setPhaseId]);
 
   const tasks = useQuery({
     queryKey: ["phase-tasks", phaseId],

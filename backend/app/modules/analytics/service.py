@@ -29,6 +29,7 @@ from app.modules.analytics.schemas import (
     HeatmapCell,
     KPIExecutiveSummary,
     PersonalDashboard,
+    PersonalSprint,
     PredictabilityReport,
     ProjectHealthReport,
     SeriesPoint,
@@ -409,6 +410,11 @@ async def get_personal_dashboard(db: AsyncSession, user_id: UUID) -> PersonalDas
         velocity_points_completed=float(velocity_points),
         hours_logged=hours_logged,
     )
+
+
+async def get_personal_sprints(db: AsyncSession, current_user) -> list[PersonalSprint]:
+    from app.modules.projects.service import get_personal_sprints as list_sprints
+    return [PersonalSprint.model_validate(item) for item in await list_sprints(db, current_user)]
 
 
 # ============================================================================

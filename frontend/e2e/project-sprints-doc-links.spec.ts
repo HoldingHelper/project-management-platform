@@ -1003,3 +1003,19 @@ test("file owner can enable and revoke download and Telegram sharing", async ({ 
   await expect(checkbox).not.toBeChecked();
   await expect(page.getByRole("button", { name: "Download", exact: true })).toBeDisabled();
 });
+
+test("my work lists every assigned and led sprint", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === "tablet", "Desktop and phone cover the sprint list layout.");
+  const actor = { ...user, locale: "fa", calendar: "gregory", numbering_system: "latn" };
+  await installApi(page, actor);
+  const rows = Array.from({ length: 8 }, (_, index) => ({ id: index === 0 ? SPRINT_ID : index === 1 ? DOC_ID : `sprint-${index}`, name: `اسپرینت ${index + 1}`, project_id: PROJECT_ID, project_name: "پروژه نمونه", status: "in-progress", start_date: "2026-08-24", end_date: "2026-09-06", assigned_tasks: 2, completed_tasks: 1, is_lead: index === 0 }));
+  await page.route("**/api/v1/analytics/my-sprints", route => json(route, rows));
+  await page.route(`**/api/v1/projects/${PROJECT_ID}/sprints`, route => json(route, [{ ...sprint, name: "اسپرینت 1" }, { ...sprint, id: DOC_ID, name: "اسپرینت 2", sequence: 2 }]));
+  await login(page, actor);
+  await page.goto("/my-work");
+  await expect(page.getByText("اسپرینت‌های من", { exact: true })).toBeVisible();
+  for (const row of rows) await expect(page.getByRole("link", { name: new RegExp(row.name) })).toHaveAttribute("href", `/projects/${PROJECT_ID}?tab=board&sprint=${row.id}`);
+  await expect(page.getByRole("link", { name: /اسپرینت 1/ })).toContainText("1 از 2 کار تکمیل شده");
+  await page.getByRole("link", { name: /اسپرینت 2/ }).click();
+  await expect(page.getByRole("button", { name: /اسپرینت 2/ })).toHaveAttribute("aria-pressed", "true");
+});

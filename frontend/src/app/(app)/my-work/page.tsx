@@ -1,6 +1,7 @@
 "use client";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { LocalizedText } from "@/lib/i18n/I18nProvider";
+import { LocalizedDate } from "@/lib/i18n/I18nProvider";
 
 import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
@@ -8,7 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { Activity, CalendarClock, CheckCircle2, Clock, Crosshair, TrendingUp, UserRound, Zap } from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { getContributions, getExecutiveDashboard, getPersonalDashboard, getWorkload } from "@/lib/api/analytics";
+import { getContributions, getExecutiveDashboard, getMySprints, getPersonalDashboard, getWorkload } from "@/lib/api/analytics";
 import { listBlockers, getUserPendingWork } from "@/lib/api/blockers";
 import { listProjects } from "@/lib/api/projects";
 import { useUserMap } from "@/lib/hooks";
@@ -25,6 +26,7 @@ export default function HomePage() {
 
   const exec = useQuery({ queryKey: ["exec-dash"], queryFn: getExecutiveDashboard, enabled: canExec });
   const personal = useQuery({ queryKey: ["personal-dash"], queryFn: getPersonalDashboard });
+  const sprints = useQuery({ queryKey: ["my-sprints", user?.id], queryFn: getMySprints, enabled: !!user });
   const blockers = useQuery({ queryKey: ["blockers", "home"], queryFn: () => listBlockers() });
   const pending = useQuery({ queryKey: ["pending-work", user?.id], queryFn: () => getUserPendingWork(user!.id), enabled: !!user });
   const projects = useQuery({ queryKey: ["projects"], queryFn: () => listProjects(1, 200) });
@@ -213,8 +215,15 @@ export default function HomePage() {
 
         {/* Personal stats from the personal dashboard endpoint */}
         <section style={{ background: "var(--surface-2)", border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-3)", padding: 16 }}>
-          <div style={{ fontSize: 15, fontWeight: 700 }}><LocalizedText message={"My Sprint"} /></div>
-          <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginBottom: 16 }}><LocalizedText message={"From your personal dashboard"} /></div>
+          <div style={{ fontSize: 15, fontWeight: 700 }}><LocalizedText message={"My Sprints"} /></div>
+          <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginBottom: 16 }}><LocalizedText message={"Sprints you lead or have assigned tasks in"} /></div>
+          {sprints.isLoading ? <Spinner /> : sprints.isError ? <div role="alert"><LocalizedText message={"Could not load your sprints."} /> <button type="button" onClick={() => sprints.refetch()}><LocalizedText message={"Retry"} /></button></div> : !sprints.data?.length ? <p style={{ color: "var(--text-secondary)", fontSize: 13 }}><LocalizedText message={"No assigned sprints yet."} /></p> : <div style={{ display: "grid", gap: 8, marginBottom: 16 }}>
+            {sprints.data.map(sprint => <Link key={sprint.id} href={`/projects/${sprint.project_id}?tab=board&sprint=${sprint.id}`} className="pmp-row" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 10, padding: 12, border: "1px solid var(--border-subtle)", borderRadius: 8, color: "inherit" }}>
+              <span style={{ minWidth: 0, overflowWrap: "anywhere" }}><strong>{sprint.name}</strong><span style={{ display: "block", color: "var(--text-secondary)", fontSize: 12 }}>{sprint.project_name}{sprint.is_lead ? ` · ${translateUI("Sprint lead")}` : ""}</span></span>
+              <span style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, fontSize: 12 }}><StatusChip status={sprint.status} size="sm" /><span>{translateUI("{completed} of {total} tasks completed", { completed: sprint.completed_tasks, total: sprint.assigned_tasks })}</span>{sprint.start_date && sprint.end_date && <span><LocalizedDate value={sprint.start_date} /> – <LocalizedDate value={sprint.end_date} /></span>}</span>
+            </Link>)}
+          </div>}
+          <div style={{ fontSize: 12, fontWeight: 700, margin: "8px 0" }}><LocalizedText message={"Personal totals"} /></div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 16 }}>
             <Stat label={translateUI("Velocity (points completed)")} value={personal.data?.velocity_points_completed ?? "—"} />
             <Stat label={translateUI("Hours logged")} value={personal.data?.hours_logged ?? "—"} />
