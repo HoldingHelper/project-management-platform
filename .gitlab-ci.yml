@@ -24,16 +24,16 @@ frontend-check:
     - npx --no-install tsx --test src/lib/i18n/*.test.ts
     - npm run build
 
-deploy-production:
+deploy-demo:
   stage: deploy
   image: google/cloud-sdk:slim@sha256:b38f2881552c3054d140c8eeb4ad88bdc0eb4deeeb38507c5dac1403adc3ee64
   tags: [avenour-deploy]
   timeout: 90m
-  resource_group: pmp-production
+  resource_group: pmp-demo
   interruptible: false
   environment:
-    name: production
-    url: https://pmp.avenourgroup.com
+    name: demo
+    url: https://demo.pmp.avenourgroup.com
   id_tokens:
     GCP_ID_TOKEN:
       aud: https://iam.googleapis.com/projects/706796253833/locations/global/workloadIdentityPools/pmp-gitlab/providers/gitlab
@@ -41,4 +41,14 @@ deploy-production:
     - if: '$CI_COMMIT_BRANCH == "main" && $CI_COMMIT_REF_PROTECTED == "true" && $CI_PIPELINE_SOURCE =~ /^(push|web|api)$/ '
     - when: never
   script:
-    - bash scripts/ci/deploy-production.sh
+    - bash scripts/ci/deploy-server.sh demo
+
+deploy-production:
+  extends: deploy-demo
+  needs: [deploy-demo]
+  resource_group: pmp-production
+  environment:
+    name: production
+    url: https://pmp.avenourgroup.com
+  script:
+    - bash scripts/ci/deploy-server.sh prod
