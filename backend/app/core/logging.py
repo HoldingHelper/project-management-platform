@@ -23,6 +23,15 @@ def redact_access_token(url: str) -> str:
     return _ACCESS_TOKEN_RE.sub(r"\1***REDACTED***", url)
 
 
+class AccessTokenFilter(logging.Filter):
+    """Uvicorn logs WebSocket handshakes through its error logger."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        record.msg = redact_access_token(record.getMessage())
+        record.args = ()
+        return True
+
+
 def configure_logging(debug: bool = True) -> None:
     logging.basicConfig(
         format="%(message)s",
@@ -32,6 +41,7 @@ def configure_logging(debug: bool = True) -> None:
     # including query strings) at INFO level -- our middleware logs a
     # redacted, structured equivalent instead.
     logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
+    logging.getLogger("uvicorn.error").addFilter(AccessTokenFilter())
 
     structlog.configure(
         processors=[
